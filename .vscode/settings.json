@@ -1,0 +1,44 @@
+{
+    "Lua.runtime.version": "Lua 5.1",
+    "Lua.runtime.builtin": {
+        "basic": "disable",
+        "debug": "disable",
+        "io": "disable",
+        "math": "disable",
+        "os": "disable",
+        "package": "disable",
+        "string": "disable",
+        "table": "disable",
+        "utf8": "disable"
+    },
+    "Lua.workspace.library": [
+        "c:\\Users\\aigars\\.cursor\\extensions\\ketho.wow-api-0.21.0\\Annotations\\Core"
+    ],
+    "Lua.diagnostics.globals": [
+        "SlashCmdList",
+        "CreateFramePool",
+        "UIParent",
+        "CreateKeyChordStringUsingMetaKeyState",
+        "BackdropTemplateMixin",
+        "ScrollBoxMixin",
+        "Round",
+        "ipairs_reverse",
+        "ReloadUI",
+        "PaperDollFrame_SetLabelAndText",
+        "STAT_AVERAGE_ITEM_LEVEL",
+        "CharacterStatsPane",
+        "CharacterFrame",
+        "CharacterFrameInset",
+        "CharacterModelScene",
+        "CharacterModelFrameBackgroundTopLeft",
+        "CharacterModelFrameBackgroundBotLeft",
+        "CharacterModelFrameBackgroundOverlay",
+        "CharacterModelFrameBackgroundBotRight",
+        "CharacterMainHandSlot",
+        "MAX_NUM_SOCKETS",
+        "ENCHANTED_TOOLTIP_LINE",
+        "Settings",
+        "ColorPickerFrame"
+    ],
+    "Lua.type.weakUnionCheck": true
+}

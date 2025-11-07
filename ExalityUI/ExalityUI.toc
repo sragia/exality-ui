@@ -1,0 +1,58 @@
+## Interface: 110200
+## Title: ExalityUI
+## Notes: TBD
+## Author: Exality
+## SavedVariables: ExalityUIData
+## SavedVariablesPerCharacter: ExalityUICharData
+## Version: @project-version@
+
+# Libs
+Libs/LibStub/LibStub.lua
+Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
+Libs/LibSharedMedia-3.0/lib.xml
+
+# Core Functionality
+Util.lua 
+Init.lua
+Core.lua
+Data.lua
+
+Media.lua
+
+# Frame Components
+Frames/Inputs/Tooltip.lua
+Frames/Inputs/EditBox.lua
+Frames/Inputs/Range.lua
+Frames/Inputs/Toggle.lua
+Frames/Inputs/Button.lua
+Frames/Inputs/ToggleButton.lua
+Frames/Inputs/LuaEditor.lua
+Frames/Inputs/Keybind.lua
+Frames/Inputs/Dropdown.lua
+Frames/Inputs/Spacer.lua
+Frames/Inputs/Title.lua
+Frames/Inputs/Description.lua
+Frames/Inputs/ColorPicker.lua
+Frames/Inputs/SlimDropdown.lua
+Frames/OptionFrames/ModuleItem.lua
+Frames/Dialog.lua
+Frames/WindowManager.lua
+Frames/Window.lua
+Frames/Panel.lua
+Frames/ScrollFrame.lua
+Frames/InputGroup.lua
+
+# Options
+Options/ReloadDialog.lua
+Options/Controller.lua
+Options/Editor.lua
+Options/Main.lua
+Options/ModuleSelector.lua
+Options/Fields.lua
+
+# Modules
+Modules/General.lua
+Modules/PowerBar.lua
+
+
+Cmd.lua
