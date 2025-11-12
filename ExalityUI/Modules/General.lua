@@ -32,6 +32,10 @@ generalModule.GetName = function(self)
     return 'General'
 end
 
+generalModule.GetOrder = function(self)
+    return 10
+end
+
 generalModule.GetDefaults = function(self)
     return {
         uiScale = defaultUIScale,

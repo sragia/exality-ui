@@ -140,6 +140,10 @@ end
 editor.EnableEditor = function(self)
     for _, f in ipairs(self.frames) do
         f.frame.editor:Show()
+        if (not f.frame:IsShown()) then
+            f.frame:Show()
+            f.frame.editor.shouldHide = true
+        end
         f.frame.isMovable = true
         f.frame:SetMovable(true)
     end
@@ -148,6 +152,10 @@ end
 editor.DisableEditor = function(self)
     for _, f in ipairs(self.frames) do
         f.frame.editor:Hide()
+        if (f.frame.editor.shouldHide) then
+            f.frame:Hide()
+            f.frame.editor.shouldHide = false
+        end
         f.frame.isMovable = false
         f.frame:SetMovable(false)
     end

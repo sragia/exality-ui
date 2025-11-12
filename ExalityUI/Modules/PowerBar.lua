@@ -255,7 +255,6 @@ powerBarModule.GetOptions = function(self)
                 return data:GetDataByKey('powerBarXOff')
             end,
             onChange = function(f, value)
-                -- Reload UI
                 data:SetDataByKey('powerBarXOff', value)
                 self:CreateOrRefresh()
             end
@@ -457,6 +456,10 @@ powerBarModule.GetOptions = function(self)
     }
 end
 
+powerBarModule.GetOrder = function(self)
+    return 20
+end
+
 powerBarModule.Create = function(self)
     local powerBar = CreateFrame('Frame', nil, UIParent)
     powerBar.activeTicks = {}
@@ -492,7 +495,7 @@ powerBarModule.Create = function(self)
         end
         local power = UnitPower('player', self.powerType)
         self:SetValue(power)
-        self.powerText:SetText(power)
+        self.powerText:SetText(AbbreviateNumbers(power))
         self:SetMinMaxValues(0, UnitPowerMax('player', self.powerType))
     end
 

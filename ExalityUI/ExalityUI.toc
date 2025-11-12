@@ -53,6 +53,7 @@ Options/Fields.lua
 # Modules
 Modules/General.lua
 Modules/PowerBar.lua
+Modules/RaidTools.lua
 
 
 Cmd.lua
