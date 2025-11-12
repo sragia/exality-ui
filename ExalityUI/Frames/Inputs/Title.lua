@@ -36,6 +36,8 @@ local function ConfigureFrame(f)
     local bg = f:CreateTexture(nil, 'BACKGROUND')
     bg:SetTexture(EXUI.const.textures.frame.titleBg)
     bg:SetVertexColor(1, 1, 1, 0.2)
+    bg:SetTextureSliceMargins(20, 20, 20, 20)
+    bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
     bg:SetPoint('TOPLEFT')
     bg:SetPoint('BOTTOMLEFT', 100, 0)
     f.bg = bg

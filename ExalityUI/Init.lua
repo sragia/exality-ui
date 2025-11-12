@@ -40,6 +40,11 @@ EXUI.const = {
         paperDoll = {
             charBg = [[Interface/Addons/ExalityUI/Assets/Images/PaperDoll/charBg.png]],
         },
+        raidTools = {
+            check = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/check.png]],
+            skull = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/skull.png]],
+            clock = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/clock.png]],
+        },
         vignetteGradient = [[Interface/Addons/ExalityUI/Assets/Images/Frames/vignette.png]],
         logo = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
     },
