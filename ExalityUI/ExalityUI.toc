@@ -54,6 +54,11 @@ Options/Fields.lua
 Modules/General.lua
 Modules/PowerBar.lua
 Modules/RaidTools.lua
+Modules/StaggerBar.lua
 
+# UnitFrames
+Modules/UnitFrames/Core.lua
+Modules/UnitFrames/Player.lua
+Modules/UnitFrames/Target.lua
 
 Cmd.lua

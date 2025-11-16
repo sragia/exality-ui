@@ -74,6 +74,7 @@ powerBarModule.GetDefaults = function(self)
         powerBarPowerTextYOff = 0,
         powerBarTicksColor = {r = 1, g = 1, b = 1, a = 1},
         powerBarTicksWidth = 2,
+        powerBarBorderColor = {r = 0, g = 0, b = 0, a = 1},
     }
 end
 
@@ -166,6 +167,19 @@ powerBarModule.GetOptions = function(self)
             end,
             onChange = function(value)
                 data:SetDataByKey('powerBarBackgroundColor', value)
+                self:CreateOrRefresh()
+            end,
+            width = 16
+        },
+        {
+            label = 'Border Color',
+            name = 'powerBarBorderColor',
+            type = 'color-picker',
+            currentValue = function()
+                return data:GetDataByKey('powerBarBorderColor')
+            end,
+            onChange = function(value)
+                data:SetDataByKey('powerBarBorderColor', value)
                 self:CreateOrRefresh()
             end,
             width = 16
@@ -461,15 +475,22 @@ powerBarModule.GetOrder = function(self)
 end
 
 powerBarModule.Create = function(self)
-    local powerBar = CreateFrame('Frame', nil, UIParent)
+    local powerBar = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
     powerBar.activeTicks = {}
-    local statusBar = CreateFrame('StatusBar', nil, powerBar)
+    local statusBar = CreateFrame('StatusBar', nil, powerBar, 'BackdropTemplate')
     local defaultTexture = LSM:Fetch('statusbar', 'ExalityUI Status Bar')
-    local bgTexture = powerBar:CreateTexture(nil, 'BACKGROUND')
-    bgTexture:SetTexture(defaultTexture)
-    bgTexture:SetAllPoints()
-    bgTexture:SetVertexColor(0, 0, 0, 1)
-    powerBar.bgTexture = bgTexture
+    powerBar:SetBackdrop(
+        {
+            bgFile = "Interface\\BUTTONS\\WHITE8X8.blp",
+            edgeFile = "Interface\\BUTTONS\\WHITE8X8.blp",
+            tile = false,
+            tileSize = 0,
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 } 
+        }
+    )
+    powerBar:SetBackdropBorderColor(0, 0, 0, 1)
+    powerBar:SetBackdropColor(0, 0, 0, 1)
 
     statusBar:SetStatusBarTexture(defaultTexture)
     statusBar:SetMinMaxValues(0, 100)
@@ -488,15 +509,23 @@ powerBarModule.Create = function(self)
     statusBar.powerText = powerText
 
     statusBar:RegisterUnitEvent('UNIT_POWER_FREQUENT', 'player')
+    statusBar:RegisterEvent('PLAYER_ENTERING_WORLD')
 
-    statusBar.OnChange = function(self)
-        if (self.powerType == '') then
-            self.powerType = nil
+    statusBar.OnChange = function(self, event)
+        if (event == 'UNIT_POWER_FREQUENT') then
+            if (self.powerType == '') then
+                self.powerType = nil
+            end
+            local power = UnitPower('player', self.powerType)
+            self:SetValue(power)
+            self.powerText:SetText(AbbreviateNumbers(power))
+            self:SetMinMaxValues(0, UnitPowerMax('player', self.powerType))
         end
-        local power = UnitPower('player', self.powerType)
-        self:SetValue(power)
-        self.powerText:SetText(AbbreviateNumbers(power))
-        self:SetMinMaxValues(0, UnitPowerMax('player', self.powerType))
+        if (event == 'PLAYER_ENTERING_WORLD') then
+            C_Timer.After(0.1, function()
+                self:OnChange('UNIT_POWER_FREQUENT') -- fake event with small delay
+            end)
+        end
     end
 
     statusBar:SetScript('OnEvent', statusBar.OnChange)
@@ -596,7 +625,9 @@ powerBarModule.CreateOrRefresh = function(self)
         data:GetDataByKey('powerBarYOff')
     )
     local bgColor = data:GetDataByKey('powerBarBackgroundColor')
-    self.powerBar.bgTexture:SetVertexColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
+    self.powerBar:SetBackdropColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
+    local borderColor = data:GetDataByKey('powerBarBorderColor')
+    self.powerBar:SetBackdropBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
     self.powerBar:ChangeColor(data:GetDataByKey('powerBarColor'))
     self.powerBar.statusBar:OnChange()
     if (data:GetDataByKey('powerBarPowerTextEnabled')) then

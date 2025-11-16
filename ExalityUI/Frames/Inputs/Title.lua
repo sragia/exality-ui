@@ -22,6 +22,13 @@ local function ConfigureFrame(f)
     f.SetOptionData = function(self, option) 
         self.optionData = option
         self.titleText:SetText(option.label)
+        if (option.size) then
+            self.titleText:SetFont(EXUI.const.fonts.DEFAULT, option.size, 'OUTLINE')
+            self:SetHeight(option.size + 12)
+        else
+            self:SetHeight(30)
+            self.titleText:SetFont(EXUI.const.fonts.DEFAULT, 18, 'OUTLINE')
+        end
     end
 
     local titleText = f:CreateFontString(nil, 'OVERLAY')

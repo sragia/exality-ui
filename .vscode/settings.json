@@ -38,7 +38,11 @@
         "MAX_NUM_SOCKETS",
         "ENCHANTED_TOOLTIP_LINE",
         "Settings",
-        "ColorPickerFrame"
+        "ColorPickerFrame",
+        "RegisterUnitWatch",
+        "RegisterStateDriver",
+        "PlayerFrame",
+        "TargetFrame"
     ],
     "Lua.type.weakUnionCheck": true
 }

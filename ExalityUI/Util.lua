@@ -573,5 +573,28 @@ EXUI.utils = {
             rowFrame:Show()
             prevRowFrame = rowFrame
         end
+    end,
+    getPowerTypeColor = function(powerType)
+        if (powerType == Enum.PowerType.Mana) then
+            return 0, 54/255, 204/255 , 1
+        elseif (powerType == Enum.PowerType.Rage) then
+            return 181/255, 0, 9/255, 1
+        elseif (powerType == Enum.PowerType.Energy) then
+            return 230/255, 199/255, 0, 1
+        elseif (powerType == Enum.PowerType.Focus) then
+            return 1, 157/255, 87/255, 1
+        else
+            return 230/255, 199/255, 0, 1
+        end
+    end,
+    getJustifyHFromAnchor = function(anchor)
+        if (string.find(anchor, 'LEFT')) then
+            return 'LEFT'
+        elseif (string.find(anchor, 'RIGHT')) then
+            return 'RIGHT'
+        elseif (string.find(anchor, 'CENTER')) then
+            return 'CENTER'
+        end
+        return 'LEFT'
     end
 }

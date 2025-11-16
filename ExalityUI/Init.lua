@@ -52,6 +52,16 @@ EXUI.const = {
         Bahnschrift = [[Interface/Addons/ExalityUI/Assets/Fonts/bahnschrift.ttf]],
         DEFAULT = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
     },
+    backdrop = {
+        DEFAULT = {
+            bgFile = "Interface\\BUTTONS\\WHITE8X8.blp",
+            edgeFile = "Interface\\BUTTONS\\WHITE8X8.blp",
+            tile = false,
+            tileSize = 0,
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 } 
+        }
+    },
     ilvlColors = {
         -- Midnight --
         {ilvl = 200, str = "ff26ff3f"}, {ilvl = 540, str = "ff26ffba"},
@@ -70,6 +80,7 @@ EXUI.const = {
         TOP = 'TOP',
         BOTTOM = 'BOTTOM',
         LEFT = 'LEFT',
+        RIGHT = 'RIGHT',
     },
     colWidth = 150
 }

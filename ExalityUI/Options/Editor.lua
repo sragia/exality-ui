@@ -8,17 +8,19 @@ local editor = EXUI:GetModule('editor')
 
 editor.frames = {}
 
-editor.RegisterFrameForEditor = function(self, frame, label, onChange)
+editor.RegisterFrameForEditor = function(self, frame, label, onChange, onShow, onHide)
     table.insert(self.frames, {
         label = label,
-        frame = frame
+        frame = frame,
+        onShow = onShow,
+        onHide = onHide
     })
     self:AddEditorOverlay(frame, label, onChange)
 end
 
 editor.AddEditorOverlay = function(self, frame, label, onChange)
     if (frame.editor) then return end
-    frame.editor = CreateFrame('Frame', nil, frame)
+    frame.editor = CreateFrame('Frame', nil, UIParent)
     frame.editor.onChange = onChange
 
     frame.isMovable = false
@@ -37,7 +39,8 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
         end
     end)
 
-    frame.editor:SetAllPoints()
+    frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+    frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     frame.editor:SetFrameStrata('FULLSCREEN_DIALOG')
     local background = frame.editor:CreateTexture(nil, 'BACKGROUND')
     background:SetTexture(EXUI.const.textures.frame.solidBg)
@@ -140,9 +143,8 @@ end
 editor.EnableEditor = function(self)
     for _, f in ipairs(self.frames) do
         f.frame.editor:Show()
-        if (not f.frame:IsShown()) then
-            f.frame:Show()
-            f.frame.editor.shouldHide = true
+        if (f.onShow) then
+            f.onShow(f.frame)
         end
         f.frame.isMovable = true
         f.frame:SetMovable(true)
@@ -152,9 +154,8 @@ end
 editor.DisableEditor = function(self)
     for _, f in ipairs(self.frames) do
         f.frame.editor:Hide()
-        if (f.frame.editor.shouldHide) then
-            f.frame:Hide()
-            f.frame.editor.shouldHide = false
+        if (f.onHide) then
+            f.onHide(f.frame)
         end
         f.frame.isMovable = false
         f.frame:SetMovable(false)

@@ -555,22 +555,37 @@ raidToolsModule.CreateBrezz = function(self)
         end
     end
     
-    self.brezzFrame:RegisterEvent('PLAYER_IN_COMBAT_CHANGED')
+    self.brezzFrame:RegisterEvent('ENCOUNTER_START')
+    self.brezzFrame:RegisterEvent('ENCOUNTER_END')
+    self.brezzFrame:RegisterEvent('CHALLENGE_MODE_START')
+    self.brezzFrame:RegisterEvent('CHALLENGE_MODE_COMPLETED')
     self.brezzFrame:SetScript('OnEvent', function(self, event, ...)
-        if (event == 'PLAYER_IN_COMBAT_CHANGED') then
-            self.inCombat = ...
-            if (self.inCombat) then
-                self:Show()
-                self:SetScript('OnUpdate', self.onUpdate)
-            else
-                self:Hide()
-                self:SetScript('OnUpdate', nil)
-            end
+        if (event == 'ENCOUNTER_START' or event == 'CHALLENGE_MODE_START') then
+            self.shouldShow = true
+        elseif (event == 'ENCOUNTER_END' or event == 'CHALLENGE_MODE_COMPLETED') then
+            self.shouldShow = false
+        end
+
+        if (self.shouldShow) then
+            self:Show()
+            self:SetScript('OnUpdate', self.onUpdate)
+        else
+            self:Hide()
+            self:SetScript('OnUpdate', nil)
         end
     end)
     
 
     self.brezzFrame:SetSize(100, 100)
+
+    local editorOnShow = function(frame)
+        frame:Show()
+    end
+
+    local editorOnHide = function(frame)
+        frame:Hide()
+        raidToolsModule:CreateOrRefreshBrezz()
+    end
 
     editor:RegisterFrameForEditor(self.brezzFrame, 'Brezz', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
@@ -578,7 +593,7 @@ raidToolsModule.CreateBrezz = function(self)
         data:SetDataByKey('brezzRelativePoint', relativePoint)
         data:SetDataByKey('brezzXOff', xOfs)
         data:SetDataByKey('brezzYOff', yOfs)
-    end)
+    end, editorOnShow, editorOnHide)
 end
 
 raidToolsModule.CreateOrRefreshBrezz = function(self)
@@ -666,23 +681,34 @@ raidToolsModule.CreateReadyCheck = function(self)
         DoReadyCheck()
     end)
 
+    local editorOnShow = function(frame)
+        frame:SetPoint(data:GetDataByKey('readyCheckAnchor'), data:GetDataByKey('readyCheckXOff'), data:GetDataByKey('readyCheckYOff'))
+        frame:SetSize(data:GetDataByKey('readyCheckWidth'), data:GetDataByKey('readyCheckHeight'))
+        frame:Show()
+    end
+
+    local editorOnHide = function(frame)
+        frame:Hide()
+        raidToolsModule:CreateOrRefreshReadyCheck()
+    end
+
     editor:RegisterFrameForEditor(self.readyCheckFrame, 'Ready Check', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
         data:SetDataByKey('readyCheckAnchor', point)
         data:SetDataByKey('readyCheckRelativePoint', relativePoint)
         data:SetDataByKey('readyCheckXOff', xOfs)
         data:SetDataByKey('readyCheckYOff', yOfs)
-    end)
+    end, editorOnShow, editorOnHide)
 end
 
 raidToolsModule.CreateOrRefreshReadyCheck = function(self)
     local isEnabled = data:GetDataByKey('readyCheckEnabled')
+    if (not self.readyCheckFrame and isEnabled) then self:CreateReadyCheck() end 
     if (not self.showStatus) then 
         if (self.readyCheckFrame) then
             self.readyCheckFrame:Hide()
         end
         return end
-    if (not self.readyCheckFrame and isEnabled) then self:CreateReadyCheck() end 
     if (not isEnabled) then
         if (self.readyCheckFrame) then
             self.readyCheckFrame:Hide()
@@ -772,23 +798,34 @@ raidToolsModule.CreatePullTimer = function(self)
         end
     end)
 
+    local editorOnShow = function(frame)
+        frame:Show()
+        frame:SetPoint(data:GetDataByKey('pullTimerAnchor'), data:GetDataByKey('pullTimerXOff'), data:GetDataByKey('pullTimerYOff'))
+        frame:SetSize(data:GetDataByKey('pullTimerWidth'), data:GetDataByKey('pullTimerHeight'))
+    end
+
+    local editorOnHide = function(frame)
+        frame:Hide()
+        raidToolsModule:CreateOrRefreshPullTimer()
+    end
+
     editor:RegisterFrameForEditor(self.pullTimerFrame, 'Pull Timer', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
         data:SetDataByKey('pullTimerAnchor', point)
         data:SetDataByKey('pullTimerRelativePoint', relativePoint)
         data:SetDataByKey('pullTimerXOff', xOfs)
         data:SetDataByKey('pullTimerYOff', yOfs)
-    end)
+    end, editorOnShow, editorOnHide)
 end
 
 raidToolsModule.CreateOrRefreshPullTimer = function(self)
     local isEnabled = data:GetDataByKey('pullTimerEnabled')
+    if (not self.pullTimerFrame and isEnabled) then self:CreatePullTimer() end 
     if (not self.showStatus) then 
         if (self.pullTimerFrame) then
             self.pullTimerFrame:Hide()
         end
         return end
-    if (not self.pullTimerFrame and isEnabled) then self:CreatePullTimer() end 
     if (not isEnabled) then
         if (self.pullTimerFrame) then
             self.pullTimerFrame:Hide()
