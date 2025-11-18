@@ -33,14 +33,14 @@ end
 optionsModuleSelector.Populate = function(self)
     local modules = optionsController:GetAllModules()
 
-    for _, module in EXUI.utils.spairs(modules, function(t, a, b) return t[a]:GetOrder() < t[b]:GetOrder() end) do
+    for _, module in EXUI.utils.spairs(modules, function(t, a, b) return t[a].module:GetOrder() < t[b].module:GetOrder() end) do
         local item = moduleItem:Create({
             onClick = function(self)
                 optionsController:SetSelectedModule(self.data:GetName())
             end
         }, self.container)
-        item:SetModule(module)
-        item:SetSelected(module:GetName() == optionsController.selectedModule)
+        item:SetModule(module.module)
+        item:SetSelected(module.module:GetName() == optionsController.selectedModule)
         table.insert(self.buttons, item)
     end
 

@@ -20,8 +20,24 @@ end
 
 editor.AddEditorOverlay = function(self, frame, label, onChange)
     if (frame.editor) then return end
-    frame.editor = CreateFrame('Frame', nil, UIParent)
+    frame.editor = CreateFrame('Frame', nil, UIParent, "BackdropTemplate")
+    frame.editor.__owner = frame
     frame.editor.onChange = onChange
+
+    frame.editor.SetEditorAsMovable = function(self)
+        self.__owner.editorMoveOverride = true
+        self:SetMovable(true)
+        self.__owner:SetMovable(false)
+        self:EnableMouse(true)
+        self:RegisterForDrag("LeftButton")
+        self:SetScript('OnDragStart', function(self)
+            self:StartMoving()
+        end)
+        self:SetScript('OnDragStop', function(self)
+            self:StopMovingOrSizing()
+            self.onChange(self)
+        end)
+    end
 
     frame.isMovable = false
     frame:SetMovable(false) -- remove, only enable when the editor is visible
@@ -42,38 +58,9 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
     frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     frame.editor:SetFrameStrata('FULLSCREEN_DIALOG')
-    local background = frame.editor:CreateTexture(nil, 'BACKGROUND')
-    background:SetTexture(EXUI.const.textures.frame.solidBg)
-    background:SetAllPoints()
-    background:SetVertexColor(0, 0, 0, 0.7)
-
-    local borderTop = frame.editor:CreateTexture(nil, 'BACKGROUND')
-    borderTop:SetTexture(EXUI.const.textures.frame.solidBg)
-    borderTop:SetPoint('TOPLEFT')
-    borderTop:SetPoint('TOPRIGHT')
-    borderTop:SetHeight(1)
-    borderTop:SetVertexColor(1, 1, 1, 1)
-
-    local borderBottom = frame.editor:CreateTexture(nil, 'BACKGROUND')
-    borderBottom:SetTexture(EXUI.const.textures.frame.solidBg)
-    borderBottom:SetPoint('BOTTOMLEFT')
-    borderBottom:SetPoint('BOTTOMRIGHT')
-    borderBottom:SetHeight(1)
-    borderBottom:SetVertexColor(1, 1, 1, 1)
-
-    local borderLeft = frame.editor:CreateTexture(nil, 'BACKGROUND')
-    borderLeft:SetTexture(EXUI.const.textures.frame.solidBg)
-    borderLeft:SetPoint('TOPLEFT')
-    borderLeft:SetPoint('BOTTOMLEFT')
-    borderLeft:SetWidth(1)
-    borderLeft:SetVertexColor(1, 1, 1, 1)
-
-    local borderRight = frame.editor:CreateTexture(nil, 'BACKGROUND')
-    borderRight:SetTexture(EXUI.const.textures.frame.solidBg)
-    borderRight:SetPoint('TOPRIGHT')
-    borderRight:SetPoint('BOTTOMRIGHT')
-    borderRight:SetWidth(1)
-    borderRight:SetVertexColor(1, 1, 1, 1)
+    frame.editor:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    frame.editor:SetBackdropBorderColor(1, 1, 1, 1)
+    frame.editor:SetBackdropColor(0, 0, 0, 0.7)
 
     local labelText = frame.editor:CreateFontString(nil, 'OVERLAY')
     labelText:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')
@@ -128,10 +115,13 @@ editor.AddOffsetArrow = function(self, frame, direction, sign)
 
     arrow:SetScript('OnClick', function(self)
         local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(1)
+        frame:ClearAllPoints()
         if (direction == 'X') then
             frame:SetPoint(point, relativeTo, relativePoint, xOfs + sign * 1, yOfs)
+            frame.editor:SetPoint(point, relativeTo, relativePoint, xOfs + sign * 1, yOfs)
         else
             frame:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs + 1 * sign)
+            frame.editor:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs + 1 * sign)
         end
 
         if (frame.editor.onChange) then
@@ -146,8 +136,10 @@ editor.EnableEditor = function(self)
         if (f.onShow) then
             f.onShow(f.frame)
         end
-        f.frame.isMovable = true
-        f.frame:SetMovable(true)
+        if (not f.frame.editorMoveOverride) then
+            f.frame.isMovable = true
+            f.frame:SetMovable(true)
+        end
     end
 end
 

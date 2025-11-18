@@ -94,12 +94,8 @@ local function ConfigureFrame(f, options)
     f.SetOptionData = function(self, option)
         self.optionData = option
         self:SetLabel(option.label)
-    end
-
-
-    f.SetElementData = function(self, element)
-        self.element = element
-        self:SetEditorValue(element[self.optionData.name] or '')
+        self:SetEditorValue(option.currentValue and option.currentValue() or '')
+        self.onChange = option.onChange
     end
 
     f.SetFrameWidth = function(self, width)

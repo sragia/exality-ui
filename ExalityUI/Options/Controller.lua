@@ -25,8 +25,11 @@ optionsController.SetSelectedModule = function(self, moduleName)
     self:SetValue('selectedModule', moduleName)
 end
 
-optionsController.RegisterModule = function(self, module)
-    self.modules[module:GetName()] = module
+optionsController.RegisterModule = function(self, module, optionHandler)
+    self.modules[module:GetName()] = {
+        module = module,
+        optionHandler = optionHandler
+    }
 end
 
 optionsController.GetAllModules = function(self)

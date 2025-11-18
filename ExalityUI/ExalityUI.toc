@@ -10,6 +10,7 @@
 Libs/LibStub/LibStub.lua
 Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
 Libs/LibSharedMedia-3.0/lib.xml
+Libs/oUF/oUF.xml
 
 # Core Functionality
 Util.lua 
@@ -36,6 +37,8 @@ Frames/Inputs/ColorPicker.lua
 Frames/Inputs/SlimDropdown.lua
 Frames/OptionFrames/ModuleItem.lua
 Frames/Dialog.lua
+Frames/SplitOptions.lua
+Frames/Tabs.lua
 Frames/WindowManager.lua
 Frames/Window.lua
 Frames/Panel.lua
@@ -50,6 +53,9 @@ Options/Main.lua
 Options/ModuleSelector.lua
 Options/Fields.lua
 
+# UF Options
+Modules/UnitFrames/Options/UFOptions.xml
+
 # Modules
 Modules/General.lua
 Modules/PowerBar.lua
@@ -58,7 +64,11 @@ Modules/StaggerBar.lua
 
 # UnitFrames
 Modules/UnitFrames/Core.lua
-Modules/UnitFrames/Player.lua
-Modules/UnitFrames/Target.lua
+
+# UF Elements
+Modules/UnitFrames/Elements/Elements.xml
+
+# UF Units
+Modules/UnitFrames/Units/Units.xml
 
 Cmd.lua

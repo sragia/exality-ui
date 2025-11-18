@@ -27,12 +27,23 @@ optionsFields.Create = function(self, container)
 end
 
 optionsFields.Refresh = function(self)
-    local currentModule = optionsController:GetSelectedModule()
+    local module = optionsController:GetSelectedModule()
 
     for _, field in pairs(self.fields) do
         field:Destroy()
     end
+    for _, module in pairs(optionsController:GetAllModules()) do
+        if (module.optionHandler) then
+            module.optionHandler(self.container, true)
+        end
+    end
     self.fields = {}
+    
+    if (module.optionHandler) then
+        module.optionHandler(self.container)
+        return;
+    end
+    local currentModule = module.module
 
     if (currentModule) then
         local fields = currentModule:GetOptions()
@@ -40,6 +51,7 @@ optionsFields.Refresh = function(self)
             local fieldFrame = self:GetField(field)
             if (fieldFrame) then
                 fieldFrame:SetOptionData(field)
+                fieldFrame:SetParent(self.container)
                 table.insert(self.fields, fieldFrame)
             end
         end
@@ -94,6 +106,11 @@ optionsFields.GetField = function(self, field)
         end,
         ['description'] = function()
             local f = EXUI:GetModule('description'):Create()
+            return f
+        end,
+        ['edit-box'] = function()
+            local f = EXUI:GetModule('edit-box-input'):Create({})
+            f:SetHeight(40)
             return f
         end,
         default = function()

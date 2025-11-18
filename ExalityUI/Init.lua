@@ -35,6 +35,10 @@ EXUI.const = {
                 arrowActive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/editor/arrow-active.png]],
                 arrowInactive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/editor/arrow-inactive.png]],
             },
+            tabs = {
+                active = [[Interface/Addons/ExalityUI/Assets/Images/Frames/tabs/active.png]],
+                inactive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/tabs/inactive.png]],
+            },
             solidBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/white.png]],
         },
         paperDoll = {
@@ -81,6 +85,12 @@ EXUI.const = {
         BOTTOM = 'BOTTOM',
         LEFT = 'LEFT',
         RIGHT = 'RIGHT',
+    },
+    fontFlags = {
+        OUTLINE = 'OUTLINE',
+        THICKOUTLINE = 'THICKOUTLINE',
+        MONOCHROME = 'MONOCHROME',
+        [""] = 'NONE',
     },
     colWidth = 150
 }

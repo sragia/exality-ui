@@ -1,0 +1,11 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Core.lua"/>
+	<Script file="Elements/SizeAndPosition.lua"/>
+	<Script file="Elements/GenericText.lua"/>
+	<Script file="Elements/Tag.lua"/>
+	<Script file="Elements/GenericEnable.lua"/>
+
+	<Script file="GeneralOptions.lua"/>
+	<Script file="Units/Player.lua"/>
+	<Script file="Units/Target.lua"/>
+</Ui>
