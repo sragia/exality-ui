@@ -98,6 +98,10 @@ local function ConfigureFrame(f, options)
         self.onChange = option.onChange
     end
 
+    f.SetMultiLine = function(self)
+        input:SetMultiLine(true)  
+    end
+
     f.SetFrameWidth = function(self, width)
         self:SetWidth(width)
     end

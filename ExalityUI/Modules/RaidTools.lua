@@ -519,8 +519,23 @@ raidToolsModule.HandleChecks = function(self, recheck)
 end
 
 raidToolsModule.CreateBrezz = function(self)
-    self.brezzFrame = CreateFrame('Frame', nil, UIParent)
+    self.brezzFrame = CreateFrame('Frame', nil, UIParent, "BackdropTemplate")
     self.brezzFrame.inCombat = false
+
+    local cooldown = CreateFrame('Cooldown', nil, self.brezzFrame)
+    cooldown:SetPoint('TOPLEFT', -1, 1)
+    cooldown:SetPoint('BOTTOMRIGHT', 1, -1)
+    cooldown:SetSwipeColor(0,0,0, 0.6)
+    cooldown:SetSwipeTexture(EXUI.const.textures.frame.bg)
+    self.brezzFrame.cooldown = cooldown
+
+    self.brezzFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    self.brezzFrame:SetBackdropColor(0,0,0, 0.4)
+    self.brezzFrame:SetBackdropBorderColor(0,0,0, 1)
+
+    local elementFrame = CreateFrame('Frame', nil, self.brezzFrame)
+    elementFrame:SetAllPoints()
+    elementFrame:SetFrameLevel(cooldown:GetFrameLevel() + 10)
 
     local texture = self.brezzFrame:CreateTexture(nil, 'BACKGROUND')
     texture:SetTexture([[Interface/ICONS/spell_nature_reincarnation]])
@@ -528,14 +543,9 @@ raidToolsModule.CreateBrezz = function(self)
     texture:SetVertexColor(1, 1, 1, 0.8)
     texture:SetTexCoord(0.15, 0.85, 0.15, 0.85)
 
-    local mask = self.brezzFrame:CreateMaskTexture(nil, 'BACKGROUND')
-    mask:SetTexture(EXUI.const.textures.frame.roundedSquare)
-    mask:SetAllPoints()
-    texture:AddMaskTexture(mask)
-
-    local text = self.brezzFrame:CreateFontString(nil, 'OVERLAY')
+    local text = elementFrame:CreateFontString(nil, 'OVERLAY')
     text:SetFont(EXUI.const.fonts.DEFAULT, 24, 'OUTLINE')
-    text:SetPoint('CENTER')
+    text:SetPoint('CENTER', elementFrame, 'TOPRIGHT', -5, -2)
     text:SetText('1')
     text:SetVertexColor(1, 1, 1, 1)
     self.brezzFrame.text = text
@@ -550,6 +560,7 @@ raidToolsModule.CreateBrezz = function(self)
                 self:Hide()
                 return;
             end
+            self.cooldown:SetCooldown(charges.cooldownStartTime, charges.cooldownDuration)
             self.text:SetText(charges.currentCharges)
             self:Show()
         end
@@ -559,14 +570,21 @@ raidToolsModule.CreateBrezz = function(self)
     self.brezzFrame:RegisterEvent('ENCOUNTER_END')
     self.brezzFrame:RegisterEvent('CHALLENGE_MODE_START')
     self.brezzFrame:RegisterEvent('CHALLENGE_MODE_COMPLETED')
+    self.brezzFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
+    self.brezzFrame.CheckVisibility = function(self)
+        local isInMPlus = C_ChallengeMode.IsChallengeModeActive()
+        local isInEncounter = self.inEncounter
+        local isInCombat = InCombatLockdown()
+        return isInMPlus or (isInEncounter and isInCombat)
+    end
     self.brezzFrame:SetScript('OnEvent', function(self, event, ...)
-        if (event == 'ENCOUNTER_START' or event == 'CHALLENGE_MODE_START') then
-            self.shouldShow = true
-        elseif (event == 'ENCOUNTER_END' or event == 'CHALLENGE_MODE_COMPLETED') then
-            self.shouldShow = false
+        if (event == 'ENCOUNTER_START') then
+            self.inEncounter = true
+        elseif (event == 'ENCOUNTER_END') then
+            self.inEncounter = false
         end
 
-        if (self.shouldShow) then
+        if (self:CheckVisibility()) then
             self:Show()
             self:SetScript('OnUpdate', self.onUpdate)
         else
@@ -574,17 +592,18 @@ raidToolsModule.CreateBrezz = function(self)
             self:SetScript('OnUpdate', nil)
         end
     end)
+
+    local cdFont = CreateFont('ExalityUI_Brezz_CD_Font')
+    cdFont:SetFont(EXUI.const.fonts.DEFAULT, 14, 'OUTLINE')
+
+    self.brezzFrame.cdFont = cdFont
+    self.brezzFrame.cooldown:SetCountdownFont('ExalityUI_Brezz_CD_Font')
     
 
     self.brezzFrame:SetSize(100, 100)
 
     local editorOnShow = function(frame)
-        frame:Show()
-    end
-
-    local editorOnHide = function(frame)
-        frame:Hide()
-        raidToolsModule:CreateOrRefreshBrezz()
+        frame.editor:SetEditorAsMovable()
     end
 
     editor:RegisterFrameForEditor(self.brezzFrame, 'Brezz', function(frame)
@@ -593,7 +612,8 @@ raidToolsModule.CreateBrezz = function(self)
         data:SetDataByKey('brezzRelativePoint', relativePoint)
         data:SetDataByKey('brezzXOff', xOfs)
         data:SetDataByKey('brezzYOff', yOfs)
-    end, editorOnShow, editorOnHide)
+        raidToolsModule:CreateOrRefreshBrezz()
+    end, editorOnShow)
 end
 
 raidToolsModule.CreateOrRefreshBrezz = function(self)
@@ -606,12 +626,8 @@ raidToolsModule.CreateOrRefreshBrezz = function(self)
         end
         return;
     end
-    if (InCombatLockdown()) then
-        self.brezzFrame:Show()
-    else 
-        self.brezzFrame:Hide()
-    end
 
+    self.brezzFrame:ClearAllPoints()
     self.brezzFrame:SetPoint(data:GetDataByKey('brezzAnchor'), data:GetDataByKey('brezzXOff'), data:GetDataByKey('brezzYOff'))
     self.brezzFrame:SetSize(data:GetDataByKey('brezzSize'), data:GetDataByKey('brezzSize'))
 
@@ -621,32 +637,23 @@ raidToolsModule.CreateOrRefreshBrezz = function(self)
     end
     local brezzFontName = tostring(brezzFont)
     local brezzFontSize = tonumber(data:GetDataByKey('brezzFontSize')) or 24
+    self.brezzFrame.cdFont:SetFont(brezzFontName, 14, 'OUTLINE')
     ---@diagnostic disable-next-line:param-type-mismatch
     self.brezzFrame.text:SetFont(brezzFontName, brezzFontSize, 'OUTLINE')
 end
 
 raidToolsModule.CreateReadyCheck = function(self)
-    self.readyCheckFrame = CreateFrame('Button', nil, UIParent)
-    self.readyCheckFrame:SetClipsChildren(true)
-    local texture = self.readyCheckFrame:CreateTexture(nil, 'BACKGROUND')
-    texture:SetTexture(EXUI.const.textures.frame.inputs.buttonBg)
-    texture:SetTextureSliceMargins(10, 10, 10, 10)
-    texture:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
-    texture:SetAllPoints()
+    self.readyCheckFrame = CreateFrame('Button', nil, UIParent, "BackdropTemplate")
+    self.readyCheckFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    self.readyCheckFrame:SetBackdropColor(0,0,0, 0.4)
+    self.readyCheckFrame:SetBackdropBorderColor(0,0,0, 1)
+
     local readyBg = data:GetDataByKey('readyCheckBackgroundColor')
     if (type(readyBg) == 'table') then
-        texture:SetVertexColor(readyBg.r or 0, readyBg.g or 0, readyBg.b or 0, readyBg.a or 1)
+        self.readyCheckFrame:SetBackdropColor(readyBg.r or 0, readyBg.g or 0, readyBg.b or 0, readyBg.a or 1)
     else
-        texture:SetVertexColor(0, 0, 0, 0.8)
+        self.readyCheckFrame:SetBackdropColor(0, 0, 0, 0.8)
     end
-    self.readyCheckFrame.background = texture
-
-    local icon = self.readyCheckFrame:CreateTexture(nil, 'OVERLAY')
-    icon:SetTexture(EXUI.const.textures.raidTools.check)
-    icon:SetSize(50, 50)
-    icon:SetPoint('LEFT', 10, 0)
-    icon:SetVertexColor(1, 1, 1, 0.15)
-    self.readyCheckFrame.icon = icon
 
     local text = self.readyCheckFrame:CreateFontString(nil, 'OVERLAY')
     text:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
@@ -655,26 +662,11 @@ raidToolsModule.CreateReadyCheck = function(self)
     text:SetVertexColor(1, 1, 1, 1)
     self.readyCheckFrame.text = text
 
-    local hover = CreateFrame('Frame', nil, self.readyCheckFrame)
-    hover:SetAllPoints()
-    local hoverTexture = hover:CreateTexture(nil, 'BACKGROUND')
-    hoverTexture:SetTexture(EXUI.const.textures.frame.inputs.buttonHover)
-    hoverTexture:SetTextureSliceMargins(25, 25, 25, 25)
-    hoverTexture:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
-    hoverTexture:SetVertexColor(1, 1, 1, 1)
-    hoverTexture:SetAllPoints()
-    hover:SetAlpha(0.2)
-
-    local onHover = EXUI.utils.animation.fade(hover, 0.1, 0.2, 1)
-    local onLeave = EXUI.utils.animation.fade(hover, 0.1, 1, 0.2)
-    self.readyCheckFrame.onHover = onHover
-    self.readyCheckFrame.onLeave = onLeave
-
     self.readyCheckFrame:SetScript('OnEnter', function(self)
-        self.onHover:Play()
+        self:SetBackdropBorderColor(1, 1, 1, 1)
     end)
     self.readyCheckFrame:SetScript('OnLeave', function(self)
-        self.onLeave:Play()
+        self:SetBackdropBorderColor(0,0,0, 1)
     end)
 
     self.readyCheckFrame:SetScript('OnClick', function(self)
@@ -719,12 +711,10 @@ raidToolsModule.CreateOrRefreshReadyCheck = function(self)
     self.readyCheckFrame:SetPoint(data:GetDataByKey('readyCheckAnchor'), data:GetDataByKey('readyCheckXOff'), data:GetDataByKey('readyCheckYOff'))
     self.readyCheckFrame:SetSize(data:GetDataByKey('readyCheckWidth'), data:GetDataByKey('readyCheckHeight'))
     local readyBg = data:GetDataByKey('readyCheckBackgroundColor')
-    if (self.readyCheckFrame.background) then
-        if (type(readyBg) == 'table') then
-            self.readyCheckFrame.background:SetVertexColor(readyBg.r or 0, readyBg.g or 0, readyBg.b or 0, readyBg.a or 1)
-        else
-            self.readyCheckFrame.background:SetVertexColor(0, 0, 0, 0.8)
-        end
+    if (type(readyBg) == 'table') then
+        self.readyCheckFrame:SetBackdropColor(readyBg.r or 0, readyBg.g or 0, readyBg.b or 0, readyBg.a or 1)
+    else
+        self.readyCheckFrame:SetBackdropColor(0, 0, 0, 0.8)
     end
     local readyFont = LSM:Fetch('font', data:GetDataByKey('readyCheckFont'))
     if (type(readyFont) ~= 'string') then
@@ -736,28 +726,20 @@ raidToolsModule.CreateOrRefreshReadyCheck = function(self)
 end
 
 raidToolsModule.CreatePullTimer = function(self)
-    self.pullTimerFrame = CreateFrame('Button', nil, UIParent)
+    self.pullTimerFrame = CreateFrame('Button', nil, UIParent, "BackdropTemplate")
+    self.pullTimerFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    self.pullTimerFrame:SetBackdropColor(0,0,0, 0.4)
+    self.pullTimerFrame:SetBackdropBorderColor(0,0,0, 1)
+
     self.pullTimerFrame:SetClipsChildren(true)
     self.pullTimerFrame:RegisterForClicks('LeftButtonDown', 'RightButtonDown')
-    local texture = self.pullTimerFrame:CreateTexture(nil, 'BACKGROUND')
-    texture:SetTexture(EXUI.const.textures.frame.inputs.buttonBg)
-    texture:SetTextureSliceMargins(10, 10, 10, 10)
-    texture:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
-    texture:SetAllPoints()
+
     local pullBg = data:GetDataByKey('pullTimerBackgroundColor')
     if (type(pullBg) == 'table') then
-        texture:SetVertexColor(pullBg.r or 0, pullBg.g or 0, pullBg.b or 0, pullBg.a or 1)
+        self.pullTimerFrame:SetBackdropColor(pullBg.r or 0, pullBg.g or 0, pullBg.b or 0, pullBg.a or 1)
     else
-        texture:SetVertexColor(0, 0, 0, 0.8)
+        self.pullTimerFrame:SetBackdropColor(0, 0, 0, 0.8)
     end
-    self.pullTimerFrame.background = texture
-
-    local icon = self.pullTimerFrame:CreateTexture(nil, 'OVERLAY')
-    icon:SetTexture(EXUI.const.textures.raidTools.clock)
-    icon:SetSize(50, 50)
-    icon:SetPoint('LEFT', 10, 0)
-    icon:SetVertexColor(1, 1, 1, 0.15)
-    self.pullTimerFrame.icon = icon
 
     local text = self.pullTimerFrame:CreateFontString(nil, 'OVERLAY')
     text:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
@@ -766,26 +748,11 @@ raidToolsModule.CreatePullTimer = function(self)
     text:SetVertexColor(1, 1, 1, 1)
     self.pullTimerFrame.text = text
 
-    local hover = CreateFrame('Frame', nil, self.pullTimerFrame)
-    hover:SetAllPoints()
-    local hoverTexture = hover:CreateTexture(nil, 'BACKGROUND')
-    hoverTexture:SetTexture(EXUI.const.textures.frame.inputs.buttonHover)
-    hoverTexture:SetTextureSliceMargins(25, 25, 25, 25)
-    hoverTexture:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
-    hoverTexture:SetVertexColor(1, 1, 1, 1)
-    hoverTexture:SetAllPoints()
-    hover:SetAlpha(0.2)
-
-    local onHover = EXUI.utils.animation.fade(hover, 0.1, 0.2, 1)
-    local onLeave = EXUI.utils.animation.fade(hover, 0.1, 1, 0.2)
-    self.pullTimerFrame.onHover = onHover
-    self.pullTimerFrame.onLeave = onLeave
-
     self.pullTimerFrame:SetScript('OnEnter', function(self)
-        self.onHover:Play()
+        self:SetBackdropBorderColor(1, 1, 1, 1)
     end)
     self.pullTimerFrame:SetScript('OnLeave', function(self)
-        self.onLeave:Play()
+        self:SetBackdropBorderColor(0,0,0, 1)
     end)
 
     self.pullTimerFrame:SetScript('OnClick', function(self, button)
@@ -836,12 +803,10 @@ raidToolsModule.CreateOrRefreshPullTimer = function(self)
     self.pullTimerFrame:SetPoint(data:GetDataByKey('pullTimerAnchor'), data:GetDataByKey('pullTimerXOff'), data:GetDataByKey('pullTimerYOff'))
     self.pullTimerFrame:SetSize(data:GetDataByKey('pullTimerWidth'), data:GetDataByKey('pullTimerHeight'))
     local pullBg = data:GetDataByKey('pullTimerBackgroundColor')
-    if (self.pullTimerFrame.background) then
-        if (type(pullBg) == 'table') then
-            self.pullTimerFrame.background:SetVertexColor(pullBg.r or 0, pullBg.g or 0, pullBg.b or 0, pullBg.a or 1)
-        else
-            self.pullTimerFrame.background:SetVertexColor(0, 0, 0, 0.8)
-        end
+    if (type(pullBg) == 'table') then
+        self.pullTimerFrame:SetBackdropColor(pullBg.r or 0, pullBg.g or 0, pullBg.b or 0, pullBg.a or 1)
+    else
+        self.pullTimerFrame:SetBackdropColor(0, 0, 0, 0.8)
     end
     local pullFont = LSM:Fetch('font', data:GetDataByKey('pullTimerFont'))
     if (type(pullFont) ~= 'string') then

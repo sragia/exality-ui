@@ -8,7 +8,7 @@ local name = EXUI:GetModule('uf-element-name')
 
 name.Create = function(self, frame)
     local name = frame.ElementFrame:CreateFontString(nil, 'OVERLAY')
-
+    name:SetWidth(100)
     return name
 end
 
@@ -22,6 +22,14 @@ name.Update = function(self, frame)
     end
     name:Show()
     name:SetFont(LSM:Fetch('font', db.nameFont), db.nameFontSize, db.nameFontFlag)
+    if (db.nameMaxWidth) then
+        local width = Round(db.sizeWidth * db.nameMaxWidth / 100)
+        name:SetWidth(width)
+    else
+        name:SetWidth(db.sizeWidth)
+    end
+    name:SetJustifyH(EXUI.utils.getJustifyHFromAnchor(db.nameAnchorPoint))
+    name:ClearAllPoints()
     name:SetPoint(db.nameAnchorPoint, frame.ElementFrame, db.nameRelativeAnchorPoint, db.nameXOffset, db.nameYOffset)
     name:SetVertexColor(db.nameFontColor.r, db.nameFontColor.g, db.nameFontColor.b, db.nameFontColor.a)
     local ok, err = pcall(function()

@@ -22,7 +22,7 @@ health.Create = function(self, frame)
     return health
 end
 
-health.PostUpdateColor = function(self, unit, r, g, b)
+health.PostUpdateColor = function(self)
     local baseFrame = self:GetParent()
     local generalDB = baseFrame.generalDB
     if (generalDB.useCustomHealthColor) then
@@ -37,9 +37,10 @@ end
 health.Update = function(self, frame)
     local generalDB = frame.generalDB
     local health = frame.Health
-    health.colorTapping = true
     health.colorDisconnected = true
+    health.colorTapping = true
     health.colorClass = true
+    health.colorReaction = true
 
     health.bg.multiplier = generalDB.useClassColoredBackdrop and 1 or 0.2
 

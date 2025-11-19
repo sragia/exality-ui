@@ -30,6 +30,7 @@ player.Init = function(self)
         ['nameRelativeAnchorPoint'] = 'LEFT',
         ['nameXOffset'] = 0,
         ['nameYOffset'] = 0,
+        ['nameMaxWidth'] = 100,
         ['healthEnable'] = true,
         ['healthFont'] = 'DMSans',
         ['healthFontSize'] = 12,

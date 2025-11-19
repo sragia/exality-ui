@@ -22,6 +22,7 @@ healthText.Update = function(self, frame)
     end
     healthText:Show()
     healthText:SetFont(LSM:Fetch('font', db.healthFont), db.healthFontSize, db.healthFontFlag)
+    healthText:ClearAllPoints()
     healthText:SetPoint(db.healthAnchorPoint, frame.ElementFrame, db.healthRelativeAnchorPoint, db.healthXOffset, db.healthYOffset)
     healthText:SetVertexColor(db.healthFontColor.r, db.healthFontColor.g, db.healthFontColor.b, db.healthFontColor.a)
     local ok, err = pcall(function()

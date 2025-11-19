@@ -31,7 +31,9 @@ data.CreateProfile = function(self, name, copyFromCurrent)
     if (copyFromCurrent) then
         self.data.profiles[name] = self.data.profiles[self.currentProfile]
     else
-        self.data.profiles[name] = self.data.profiles.Base
+        self.data.profiles[name] = {
+            showMinimap = true
+        }
     end
 end
 

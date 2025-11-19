@@ -28,10 +28,10 @@ power.Update = function(self, frame)
     local generalDB = frame.generalDB
     local powerBar = frame.Power
     if (not db.powerEnable) then
-        powerBar:Hide()
+        frame:DisableElement('Power')
         return
     end
-    powerBar:Show()
+    frame:EnableElement('Power')
     powerBar:SetHeight(db.powerHeight)
     powerBar:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.statusBarTexture))
 end

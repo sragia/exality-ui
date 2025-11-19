@@ -66,6 +66,8 @@ core.Base = function(self, frame)
     elementFrame:SetBackdropColor(0, 0, 0, 0)
 
     frame.ElementFrame = elementFrame
+
+    frame:RegisterForClicks('AnyUp')
 end
 
 core.UpdateFrame = function(self, frame)

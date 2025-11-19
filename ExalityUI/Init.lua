@@ -13,6 +13,7 @@ EXUI.const = {
             iconMask = [[Interface/Addons/ExalityUI/Assets/Images/Frames/icon-mask]],
             titleBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/title-bg.png]],
             roundedSquare = [[Interface/Addons/ExalityUI/Assets/Images/Frames/rounded-square.png]],
+            settingsIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/settings-icon.png]],
             inputs = {
                 toggle = [[Interface/Addons/ExalityUI/Assets/Images/Frames/toggle]],
                 editboxBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/editbox-bg]],

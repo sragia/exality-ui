@@ -27,6 +27,21 @@ core:AddOption({
                 function() 
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'name')
                 end,
+                {
+                    type = 'range',
+                    label = 'Name Max Width %',
+                    name = 'nameMaxWidth',
+                    min = 0,
+                    max = 100,
+                    step = 1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('target', 'nameMaxWidth')
+                    end,
+                    onChange = function(f,value)
+                        ufCore:UpdateValueForUnit('target', 'nameMaxWidth', value)
+                        ufCore:UpdateFrameForUnit('target')
+                    end,
+                },
                 function() 
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('target', 'name')
                 end,

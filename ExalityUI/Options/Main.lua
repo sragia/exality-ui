@@ -22,6 +22,9 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIEditor
 local editor = EXUI:GetModule('editor')
 
+---@class EXUIProfiles
+local profiles = EXUI:GetModule('profiles')
+
 ----------------
 
 ---@class EXUIOptionsMain
@@ -39,7 +42,7 @@ optionsMain.CreateWindow = function(self)
 
     -- Profile Selector
     local profilePanel = EXUI:GetModule('panel-frame'):Create()
-    profilePanel:SetWidth(250)
+    profilePanel:SetWidth(236)
     profilePanel:SetParent(window)
     profilePanel:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
     profilePanel:SetPoint('BOTTOMRIGHT', window.close, 'BOTTOMLEFT', -5, 0)
@@ -64,15 +67,19 @@ optionsMain.CreateWindow = function(self)
     }, profilePanel)
     profileSelector:SetPoint('LEFT', profileLabel, 'RIGHT', 5, 0)
 
-    local addNewProfileButton = button:Create({
-        text = 'Add',
+    local profileSettingsButton = button:Create({
+        text = '',
         onClick = function()
-            optionsMain.profileSwitcher:ShowWindow()
+            profiles:Show()
         end,
-        color = {0, 130/255, 9/255, 1},
-        size = {40, 25},
+        color = {0.19, 0.19, 0.19, 1},
+        size = {25, 25},
     }, profilePanel)
-    addNewProfileButton:SetPoint('LEFT', profileSelector, 'RIGHT', 5, 0)
+    local icon = profileSettingsButton:CreateTexture(nil, 'BACKGROUND')
+    icon:SetTexture(EXUI.const.textures.frame.settingsIcon)
+    icon:SetSize(18, 18)
+    icon:SetPoint('CENTER', profileSettingsButton, 'CENTER')
+    profileSettingsButton:SetPoint('LEFT', profileSelector, 'RIGHT', 5, 0)
 
     local modulesPanel = EXUI:GetModule('panel-frame'):Create()
     modulesPanel:SetParent(window.container)
@@ -117,36 +124,7 @@ optionsMain.CreateWindow = function(self)
     }, configPanel)
     editModeBtn:SetPoint('RIGHT', profilePanel, 'LEFT', -5, 0)
     
-    self:CreateProfileSwitcher()
     return window
-end
-
-optionsMain.CreateProfileSwitcher = function(self)
-    local profileSwitchWindow = EXUI:GetModule('window-frame'):Create({
-        size = {240, 130},
-        title = 'Create New Profile',
-        hideVersion = true,
-    });
-
-    local profileNameInput = EXUI:GetModule('edit-box-input'):Create({
-        label = 'Profile Name',
-    }, profileSwitchWindow.container)
-    profileNameInput:SetSize(200, 40)
-    profileNameInput:SetPoint('TOP', 0, 15)
-
-    local createProfileButton = button:Create({
-        text = 'Create',
-        onClick = function()
-            data:CreateProfile(profileNameInput:GetEditorValue(), true)
-            data:SetCurrentProfile(profileNameInput:GetEditorValue())
-            ReloadUI()
-        end,
-        color = {0, 130/255, 9/255, 1}
-    }, profileSwitchWindow.container)
-    createProfileButton:SetPoint('BOTTOMLEFT')
-    createProfileButton:SetPoint('BOTTOMRIGHT')
-
-    self.profileSwitcher = profileSwitchWindow
 end
 
 optionsMain.Show = function(self)

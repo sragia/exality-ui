@@ -7,15 +7,15 @@ local editor = EXUI:GetModule('editor')
 ---@class EXUIUnitFramesCore
 local core = EXUI:GetModule('uf-core')
 
----@class EXUIUnitFramesTarget
-local target = EXUI:GetModule('uf-unit-target')
+---@class EXUIUnitFramesFocus
+local focus = EXUI:GetModule('uf-unit-focus')
 
-target.unit = 'target'
+focus.unit = 'focus'
 
-target.Init = function(self)
+focus.Init = function(self)
     core:SetDefaultsForUnit(self.unit, {
-        ['sizeWidth'] = 200,
-        ['sizeHeight'] = 40,
+        ['sizeWidth'] = 120,
+        ['sizeHeight'] = 30,
         ['positionAnchorPoint'] = 'TOPLEFT',
         ['positionRelativePoint'] = 'CENTER',
         ['positionXOff'] = 100,
@@ -25,47 +25,24 @@ target.Init = function(self)
         ['nameFontSize'] = 12,
         ['nameFontFlag'] = 'OUTLINE',
         ['nameFontColor'] = {r = 1, g = 1, b = 1, a = 1},
-        ['nameAnchorPoint'] = 'LEFT',
-        ['nameRelativeAnchorPoint'] = 'LEFT',
+        ['nameAnchorPoint'] = 'CENTER',
+        ['nameRelativeAnchorPoint'] = 'CENTER',
         ['nameTag'] = '[name]',
         ['nameXOffset'] = 0,
         ['nameYOffset'] = 0,
-        ['nameMaxWidth'] = 100,
-        ['healthEnable'] = true,
-        ['healthFont'] = 'DMSans',
-        ['healthFontSize'] = 12,
-        ['healthFontFlag'] = 'OUTLINE',
-        ['healthFontColor'] = {r = 1, g = 1, b = 1, a = 1},
-        ['healthAnchorPoint'] = 'RIGHT',
-        ['healthRelativeAnchorPoint'] = 'RIGHT',
-        ['healthXOffset'] = -5,
-        ['healthYOffset'] = -10,
-        ['healthTag'] = '[curhp:formatted]',
-        ['healthpercEnable'] = true,
-        ['healthpercFont'] = 'DMSans',
-        ['healthpercFontSize'] = 16,
-        ['healthpercFontFlag'] = 'OUTLINE',
-        ['healthpercFontColor'] = {r = 1, g = 1, b = 1, a = 1},
-        ['healthpercAnchorPoint'] = 'RIGHT',
-        ['healthpercRelativeAnchorPoint'] = 'RIGHT',
-        ['healthpercXOffset'] = -5,
-        ['healthpercYOffset'] = 3,
-        ['healthpercTag'] = '[perhp]%',
         ['powerEnable'] = true,
         ['powerHeight'] = 5,
     })
 end
 
-target.Create = function(self, frame)
+focus.Create = function(self, frame)
     core:Base(frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
     frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
-    frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
-    frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
 
-    editor:RegisterFrameForEditor(frame, 'Target', function(frame)
+    editor:RegisterFrameForEditor(frame, 'Focus', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
         core:UpdateValueForUnit(self.unit, 'positionAnchorPoint', point)
         core:UpdateValueForUnit(self.unit, 'positionRelativePoint', relativePoint)
@@ -77,7 +54,7 @@ target.Create = function(self, frame)
     end)
 end
 
-target.Update = function(self, frame)
+focus.Update = function(self, frame)
     local db = core:GetDBForUnit(self.unit)
     local generalDB = core:GetDBForUnit('general')
     frame.db = db   
@@ -94,4 +71,4 @@ target.Update = function(self, frame)
     core:UpdateFrame(frame)
 end
 
-EXUI:GetModule('uf-core'):RegisterUnit('target')
+EXUI:GetModule('uf-core'):RegisterUnit('focus')

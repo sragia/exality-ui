@@ -1,4 +1,4 @@
-## Interface: 110200
+## Interface: 120000
 ## Title: ExalityUI
 ## Notes: TBD
 ## Author: Exality
@@ -44,6 +44,8 @@ Frames/Window.lua
 Frames/Panel.lua
 Frames/ScrollFrame.lua
 Frames/InputGroup.lua
+
+Profiles.lua
 
 # Options
 Options/ReloadDialog.lua

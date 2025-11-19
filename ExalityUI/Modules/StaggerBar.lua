@@ -424,7 +424,7 @@ staggerBarModule.Create = function(self)
             local stagger = UnitStagger('player')
             self:SetValue(stagger)
             self.staggerText:SetText(AbbreviateNumbers(stagger))
-            self:SetMinMaxValues(0, UnitHealthMax('player') * 3)
+            self:SetMinMaxValues(0, UnitHealthMax('player'))
         end
     end
 
