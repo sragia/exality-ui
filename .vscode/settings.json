@@ -69,5 +69,8 @@
         "FindInTable",
         "MergeTable"
     ],
-    "Lua.type.weakUnionCheck": true
+    "Lua.type.weakUnionCheck": true,
+    "Lua.diagnostics.disable": [
+        "assign-type-mismatch"
+    ]
 }

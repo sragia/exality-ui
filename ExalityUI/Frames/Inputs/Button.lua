@@ -1,7 +1,7 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
----@class EXUIButtonOptions : {text: string, onClick: function, size?: table<number>, color?: table<number>}
+---@class EXUIButtonOptions : {text: string, onClick: function, size?: table<number>, color?: table<number>, icon?: {texture: string, width: number, height: number}}
 
 ---@class EXUIButton
 local button = EXUI:GetModule('button')
@@ -20,6 +20,11 @@ local function ConfigureFrame(f)
     text:SetPoint('CENTER')
     text:SetWidth(0)
     f.text = text
+
+    local icon = f:CreateTexture(nil, 'ARTWORK')
+    icon:SetPoint('CENTER')
+    icon:SetSize(16, 16)
+    f.icon = icon
 
     local bg = f:CreateTexture(nil, 'BACKGROUND')
     bg:SetTexture(EXUI.const.textures.frame.inputs.buttonBg)
@@ -65,6 +70,11 @@ local function ConfigureFrame(f)
             self:onClick()
         end
     end)
+
+    f.SetIcon = function(self, texture, width, height)
+        self.icon:SetTexture(texture)
+        self.icon:SetSize(width, height)
+    end
 
     f.SetOptionData = function(self, option)
         self.optionData = option
@@ -121,8 +131,14 @@ button.Create = function(self, options, parent)
         f.onClick = options.onClick
     end
 
+    if (options and options.icon) then
+        f:SetIcon(options.icon.texture, options.icon.width, options.icon.height)
+    end
+
     f.Destroy = function(self)
         self:ClearObservable()
+        self.icon:SetTexture(nil)
+        self.icon:SetSize(0, 0)
         button.pool:Release(self)
     end
 

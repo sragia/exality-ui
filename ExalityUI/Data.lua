@@ -37,8 +37,26 @@ data.CreateProfile = function(self, name, copyFromCurrent)
     end
 end
 
+data.CreateProfileFromData = function(self, name, data)
+    self.data.profiles[name] = data
+end
+
 data.SetCurrentProfile = function(self, profile)
     self.currentProfile = profile
+end
+
+data.GetDuplicateProfileName = function(self, name)
+    local baseName = name
+    local indx = 1
+    while (self:HasProfile(name)) do
+        name = baseName .. ' (' .. indx .. ')'
+        indx = indx + 1
+    end
+    return name
+end
+
+data.HasProfile = function(self, name)
+    return self.data.profiles[name] ~= nil
 end
 
 data.GetCurrentProfile = function(self)
@@ -51,6 +69,10 @@ data.GetAllProfiles = function(self)
         profiles[name] = name
     end
     return profiles
+end
+
+data.GetData = function(self)
+    return self.data.profiles[self.currentProfile]
 end
 
 data.Save = function(self)

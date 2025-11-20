@@ -74,11 +74,12 @@ optionsMain.CreateWindow = function(self)
         end,
         color = {0.19, 0.19, 0.19, 1},
         size = {25, 25},
+        icon = {
+            texture = EXUI.const.textures.frame.settingsIcon,
+            width = 18,
+            height = 18
+        }
     }, profilePanel)
-    local icon = profileSettingsButton:CreateTexture(nil, 'BACKGROUND')
-    icon:SetTexture(EXUI.const.textures.frame.settingsIcon)
-    icon:SetSize(18, 18)
-    icon:SetPoint('CENTER', profileSettingsButton, 'CENTER')
     profileSettingsButton:SetPoint('LEFT', profileSelector, 'RIGHT', 5, 0)
 
     local modulesPanel = EXUI:GetModule('panel-frame'):Create()

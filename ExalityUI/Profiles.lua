@@ -11,6 +11,7 @@ profiles.window = nil
 profiles.copyFromCurrent = false
 profiles.newProfileName = ''
 profiles.importInput = nil
+profiles.exportInput = nil
 
 profiles.Init = function(self)
 end
@@ -24,7 +25,7 @@ profiles.CreateImportInput = function(self, container)
     input:SetBackdrop(EXUI.const.backdrop.DEFAULT)
     input:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
     input:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
-    input:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
+    input:SetFont(EXUI.const.fonts.DEFAULT, 8, 'OUTLINE')
     input:SetTextInsets(10, 10, 10, 10)
     input:SetScript('OnEscapePressed', function(self) self:ClearFocus() end)
 
@@ -33,7 +34,7 @@ end
 
 profiles.SetupWindow = function(self)
     local window = EXUI:GetModule('window-frame'):Create({
-        size = {500, 510},
+        size = {500, 630},
         title = 'Profiles'
     })
 
@@ -97,7 +98,7 @@ profiles.SetupWindow = function(self)
     local importContainer = EXUI:GetModule('panel-frame'):Create()
     importContainer:SetParent(window.container)
     importContainer:SetPoint('TOPLEFT', createContainer, 'BOTTOMLEFT', 0, -10)
-    importContainer:SetPoint('BOTTOMRIGHT', createContainer, 'BOTTOMRIGHT', 0, -140)
+    importContainer:SetPoint('BOTTOMRIGHT', createContainer, 'BOTTOMRIGHT', 0, -200)
 
     local importLabel = importContainer:CreateFontString(nil, 'OVERLAY')
     importLabel:SetFont(EXUI.const.fonts.DEFAULT, 16, 'OUTLINE')
@@ -108,11 +109,12 @@ profiles.SetupWindow = function(self)
     importInput:SetPoint('TOPLEFT', importLabel, 'BOTTOMLEFT', 0, -10)
     importInput:SetPoint('TOPRIGHT', importContainer, 'TOPRIGHT', -10, 0);
     importInput:SetPoint('BOTTOM', importContainer, 'BOTTOM', 0, 40);
+    self.importInput = importInput
 
     local importButton = EXUI:GetModule('button'):Create({
         text = 'Import',
         onClick = function()
-            print('import')
+            self:OnImport()
         end,
         color = {0, 130/255, 9/255, 1},
         size = {60, 27}
@@ -124,7 +126,7 @@ profiles.SetupWindow = function(self)
     local exportContainer = EXUI:GetModule('panel-frame'):Create()
     exportContainer:SetParent(window.container)
     exportContainer:SetPoint('TOPLEFT', importContainer, 'BOTTOMLEFT', 0, -10)
-    exportContainer:SetPoint('BOTTOMRIGHT', importContainer, 'BOTTOMRIGHT', 0, -140)
+    exportContainer:SetPoint('BOTTOMRIGHT', importContainer, 'BOTTOMRIGHT', 0, -200)
 
     local exportLabel = exportContainer:CreateFontString(nil, 'OVERLAY')
     exportLabel:SetFont(EXUI.const.fonts.DEFAULT, 16, 'OUTLINE')
@@ -135,11 +137,12 @@ profiles.SetupWindow = function(self)
     exportInput:SetPoint('TOPLEFT', exportLabel, 'BOTTOMLEFT', 0, -10)
     exportInput:SetPoint('TOPRIGHT', exportContainer, 'TOPRIGHT', -10, 0);
     exportInput:SetPoint('BOTTOM', exportContainer, 'BOTTOM', 0, 40);
+    self.exportInput = exportInput
 
     local exportButton = EXUI:GetModule('button'):Create({
         text = 'Export',
         onClick = function()
-            print('export')
+            self:GenerateExportString()
         end,
         color = {237/255, 138/255, 0, 1},
         size = {60, 27}
@@ -157,4 +160,86 @@ profiles.Show = function(self)
     end
 
     self.window:ShowWindow()
+end
+
+profiles.GenerateExportString = function(self)
+    local profileData = data:GetData()
+
+    local exportData = {
+        name = data:GetCurrentProfile(),
+        data = profileData
+    }
+
+    local serialized = C_EncodingUtil.SerializeCBOR(exportData)
+    local compressed = C_EncodingUtil.CompressString(serialized)
+    local exportString = C_EncodingUtil.EncodeBase64(compressed)
+
+    self.exportInput:SetText(exportString)
+end
+
+profiles.OnImport = function(self)
+    local importString = self.importInput:GetText()
+
+    local decoded = C_EncodingUtil.DecodeBase64(importString)
+    local decompressed = C_EncodingUtil.DecompressString(decoded)
+    local profileData = C_EncodingUtil.DeserializeCBOR(decompressed)
+
+    local valid = self:Validate(profileData)
+    if (not valid or not profileData) then
+        return
+    end
+
+    if (data:HasProfile(profileData.name)) then
+        local dialog = EXUI:GetModule('dialog-frame'):Create()
+        dialog:SetText('Profile already exists. Overwrite?')
+        dialog:SetButtons({
+            {
+                text = 'Overwrite',
+                onClick = function()
+                    data:CreateProfileFromData(profileData.name, profileData.data)
+                    data:SetCurrentProfile(profileData.name)
+                    ReloadUI()
+                end,
+                color = {235/255, 162/255, 52/255, 1}
+            },
+            {
+                text = 'Duplicate',
+                onClick = function()
+                    local newName = data:GetDuplicateProfileName(profileData.name)
+                    data:CreateProfileFromData(newName, profileData.data)
+                    data:SetCurrentProfile(newName)
+                    ReloadUI()
+                end,
+                color = {235/255, 162/255, 52/255, 1}
+            },
+            {
+                text = 'Cancel',
+                onClick = function()
+                    dialog:HideDialog()
+                    return
+                end,
+                color = {235/255, 52/255, 52/255, 1}
+            }
+        })
+
+        dialog:ShowDialog()
+        return;
+    end
+
+    data:CreateProfileFromData(profileData.name, profileData.data)
+    data:SetCurrentProfile(profileData.name)
+    ReloadUI()
+end
+
+profiles.Validate = function(self, data)
+    if (not data) then
+        EXUI.utils.printOut('Invalid profile data')
+        return false
+    end
+    if (not data.name or not data.data) then
+        EXUI.utils.printOut('Invalid profile data')
+        return false
+    end
+
+    return true
 end

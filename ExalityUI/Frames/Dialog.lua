@@ -67,7 +67,7 @@ local function ConfigureFrame(f)
         self:OrganizeButtons()
     end
 
-    f.buttons = {button:Create(nil, f), button:Create(nil, f)}
+    f.buttons = {button:Create(nil, f), button:Create(nil, f), button:Create(nil, f)}
 
     f.OrganizeButtons = function(self)
         local prev = nil
