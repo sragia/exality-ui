@@ -1,0 +1,134 @@
+---@class ExalityUI
+local EXUI = select(2, ...)
+
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
+
+---@class EXUIOptionsEditor
+local editor = EXUI:GetModule('editor')
+
+---@class EXUIUnitFramesBoss
+local boss = EXUI:GetModule('uf-unit-boss')
+
+boss.unit = 'boss'
+boss.container = nil
+boss.frames = {}
+
+boss.Init = function(self)
+    self.container = CreateFrame('Frame', nil, UIParent)
+    self.container:SetSize(200, 40 * 5 + 5 * 4) -- Container of all boss units
+    self.container:SetFrameStrata('LOW')
+    self.container:SetFrameLevel(1)
+    core:SetDefaultsForUnit(self.unit, {
+        -- Container
+        ['positionAnchorPoint'] = 'TOPLEFT',
+        ['positionRelativePoint'] = 'CENTER',
+        ['positionXOff'] = 100,
+        ['positionYOff'] = -100,
+        ['spacing'] = 5,
+        -- Individual Unit
+        ['sizeWidth'] = 200,
+        ['sizeHeight'] = 40,
+        -- Name
+        ['nameEnable'] = true,
+        ['nameFont'] = 'DMSans',
+        ['nameFontSize'] = 12,
+        ['nameFontFlag'] = 'OUTLINE',
+        ['nameFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['nameAnchorPoint'] = 'LEFT',
+        ['nameRelativeAnchorPoint'] = 'LEFT',
+        ['nameTag'] = '[name]',
+        ['nameXOffset'] = 0,
+        ['nameYOffset'] = 0,
+        ['nameMaxWidth'] = 100,
+        -- Health Text
+        ['healthEnable'] = true,
+        ['healthFont'] = 'DMSans',
+        ['healthFontSize'] = 12,
+        ['healthFontFlag'] = 'OUTLINE',
+        ['healthFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthAnchorPoint'] = 'RIGHT',
+        ['healthRelativeAnchorPoint'] = 'RIGHT',
+        ['healthXOffset'] = -5,
+        ['healthYOffset'] = -10,
+        ['healthTag'] = '[curhp:formatted]',
+        -- Health Percentage
+        ['healthpercEnable'] = true,
+        ['healthpercFont'] = 'DMSans',
+        ['healthpercFontSize'] = 16,
+        ['healthpercFontFlag'] = 'OUTLINE',
+        ['healthpercFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthpercAnchorPoint'] = 'RIGHT',
+        ['healthpercRelativeAnchorPoint'] = 'RIGHT',
+        ['healthpercXOffset'] = -5,
+        ['healthpercYOffset'] = 3,
+        ['healthpercTag'] = '[perhp]%',
+         -- Power
+         ['powerEnable'] = true,
+         ['powerHeight'] = 5,
+         -- Raid Target Indicator
+        ['raidTargetIndicatorEnable'] = true,
+        ['raidTargetIndicatorScale'] = 1,
+        ['raidTargetIndicatorAnchorPoint'] = 'CENTER',
+        ['raidTargetIndicatorRelativeAnchorPoint'] = 'TOP',
+        ['raidTargetIndicatorXOff'] = 0,
+        ['raidTargetIndicatorYOff'] = 0,
+        ['raidRolesEnable'] = true,
+        ['raidRolesAnchorPoint'] = 'RIGHT',
+        ['raidRolesRelativeAnchorPoint'] = 'TOPRIGHT',
+        ['raidRolesXOff'] = 0,
+        ['raidRolesYOff'] = 0,
+        ['raidRolesScale'] = 1,
+    })
+    self.container:SetPoint(
+        core:GetValueForUnit('boss', 'positionAnchorPoint'), 
+        UIParent,
+        core:GetValueForUnit('boss', 'positionRelativePoint'), 
+        core:GetValueForUnit('boss', 'positionXOff'), 
+        core:GetValueForUnit('boss', 'positionYOff')
+    )
+
+    editor:RegisterFrameForEditor(self.container, 'Boss Frames', function(frame)
+        local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
+        core:UpdateValueForUnit(self.unit, 'positionAnchorPoint', point)
+        core:UpdateValueForUnit(self.unit, 'positionRelativePoint', relativePoint)
+        core:UpdateValueForUnit(self.unit, 'positionXOff', xOfs)
+        core:UpdateValueForUnit(self.unit, 'positionYOff', yOfs)
+        core:UpdateFrameForUnit(self.unit)
+    end)
+end
+
+boss.Create = function(self, frame)
+    core:Base(frame)
+
+    frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
+    frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
+    frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
+    frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
+    frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
+    frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
+
+    frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
+end
+
+boss.Update = function(self, frame)
+    self.frames[frame.index] = frame
+    local db = core:GetDBForUnit(self.unit)
+    local generalDB = core:GetDBForUnit('general')
+    self.container:SetSize(db.sizeWidth, db.sizeHeight * #self.frames + db.spacing * (#self.frames - 1))
+
+    frame.db = db
+    frame.generalDB = generalDB
+    frame:SetSize(db.sizeWidth, db.sizeHeight)
+    frame:SetFrameLevel(self.container:GetFrameLevel() + 1)
+
+    if (frame.index == 1) then
+        frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
+    else
+        frame:SetPoint('TOPLEFT', self.frames[frame.index - 1], 'BOTTOMLEFT', 0, -db.spacing)
+    end
+    
+    core:UpdateFrame(frame)
+end
+
+EXUI:GetModule('uf-core'):RegisterUnit('boss', true, 5)

@@ -135,6 +135,7 @@ editBox.Create = function(self, options, parent)
     end
 
     f.Destroy = function(self)
+        self:SetEditorValue('')
         editBox.pool:Release(self)
     end
 

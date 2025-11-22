@@ -13,6 +13,8 @@ local data = EXUI:GetModule('data')
 local core = EXUI:GetModule('uf-core')
 
 core.units = {}
+core.groupUnits = {}
+core.groupUnitMap = {}
 core.frames = {}
 
 core.Init = function(self)
@@ -21,12 +23,24 @@ core.Init = function(self)
     EXUI.oUF:Factory(self.Factory)
 end
 
-core.RegisterUnit = function(self, unit)
-    table.insert(self.units, unit)
+core.RegisterUnit = function(self, unit, isGroup, numUnits)
+    if (isGroup) then
+        self.groupUnits[unit] = numUnits
+        for i = 1, numUnits do
+            self.groupUnitMap[unit .. i] = unit
+        end
+    else
+        table.insert(self.units, unit)
+    end
 end
 
 core.SharedStyle = function(frame, unit)
-    local frameFactory = EXUI:GetModule('uf-unit-' .. unit)
+    local frameFactory = nil
+    if (not core.groupUnitMap[unit]) then
+        frameFactory = EXUI:GetModule('uf-unit-' .. unit)
+    else
+        frameFactory = EXUI:GetModule('uf-unit-' .. core.groupUnitMap[unit])
+    end
 
     if (frameFactory and frameFactory.Create) then
         frameFactory:Create(frame, unit)
@@ -36,9 +50,12 @@ end
 core.Factory = function(oUF)
     oUF:SetActiveStyle("ExalityUI")
 
-
     for _, unit in ipairs(core.units) do
         core:CreateOrUpdate(oUF, unit)
+    end
+
+    for group, numUnits in pairs(core.groupUnits) do
+        core:CreateOrUpdateGroup(oUF, group, numUnits)
     end
 end
 
@@ -56,6 +73,24 @@ core.CreateOrUpdate = function(self, oUF, unit)
     frame:Update()
 end
 
+core.CreateOrUpdateGroup = function(self, oUF, group, numUnits)
+    for i = 1, numUnits do
+        local unit = group .. i
+        local frame = core.frames[unit]
+        if (not frame) then
+            frame = oUF:Spawn(unit, 'ExalityUI_' .. unit, 'SecureUnitButtonTemplate, PingableUnitFrameTemplate')
+            core.frames[unit] = frame
+            frame.index = i
+        end
+
+        if not frame.Update then
+            frame.Update = function() EXUI:GetModule('uf-unit-' .. group):Update(frame) end
+        end
+
+        frame:Update()
+    end
+end
+
 core.Base = function(self, frame)
     local elementFrame = CreateFrame('Frame', '$parent_ElementFrame', frame, 'BackdropTemplate')
     elementFrame:SetAllPoints()
@@ -67,7 +102,11 @@ core.Base = function(self, frame)
 
     frame.ElementFrame = elementFrame
 
-    frame.db = self:GetDBForUnit(frame.unit)
+    if (not self.groupUnitMap[frame.unit]) then
+        frame.db = self:GetDBForUnit(frame.unit)
+    else
+        frame.db = self:GetDBForUnit(self.groupUnitMap[frame.unit])
+    end
 
     frame:RegisterForClicks('AnyUp')
 end
@@ -122,9 +161,18 @@ core.UpdateFrame = function(self, frame)
 end
 
 core.UpdateFrameForUnit = function(self, unit)
-    local frame = core.frames[unit]
-    if (frame) then
-        frame:Update()
+    if (not self.groupUnits[unit]) then
+        local frame = core.frames[unit]
+        if (frame) then
+            frame:Update()
+        end
+    else
+        for i = 1, self.groupUnits[unit] do
+            local frame = core.frames[unit .. i]
+            if (frame) then
+                frame:Update()
+            end
+        end
     end
 end
 

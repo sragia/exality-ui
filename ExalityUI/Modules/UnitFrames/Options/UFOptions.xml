@@ -13,4 +13,5 @@
 	<Script file="Units/Target.lua"/>
 	<Script file="Units/TargetTarget.lua"/>
 	<Script file="Units/Focus.lua"/>
+	<Script file="GroupUnits/Boss.lua"/>
 </Ui>

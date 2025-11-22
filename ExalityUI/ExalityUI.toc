@@ -72,5 +72,6 @@ Modules/UnitFrames/Elements/Elements.xml
 
 # UF Units
 Modules/UnitFrames/Units/Units.xml
+Modules/UnitFrames/GroupUnits/GroupUnits.xml
 
 Cmd.lua

@@ -28,6 +28,8 @@ name.Update = function(self, frame)
     else
         name:SetWidth(db.sizeWidth)
     end
+
+    name:SetHeight(db.nameFontSize + db.nameFontSize / 2)
     name:SetJustifyH(EXUI.utils.getJustifyHFromAnchor(db.nameAnchorPoint))
     name:ClearAllPoints()
     name:SetPoint(db.nameAnchorPoint, frame.ElementFrame, db.nameRelativeAnchorPoint, db.nameXOffset, db.nameYOffset)
