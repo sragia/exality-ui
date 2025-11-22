@@ -98,6 +98,32 @@ target.Init = function(self)
         ['castbarBackgroundColor'] = {r = 0, g = 0, b = 0, a = 0.5},
         ['castbarBackgroundBorderColor'] = {r = 0, g = 0, b = 0, a = 1},
         ['castbarForegroundColor'] = {r = 1, g = 1, b = 1, a = 1},
+        -- Debuffs
+        ['debuffsEnable'] = true,
+        ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['debuffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['debuffsXOff'] = 0,
+        ['debuffsYOff'] = 2,
+        ['debuffsIconWidth'] = 20,
+        ['debuffsIconHeight'] = 20,
+        ['debuffsOnlyShowPlayer'] = false,
+        ['debuffsSpacing'] = 2,
+        ['debuffsNum'] = 32,
+        ['debuffsColNum'] = 6,
+        ['debuffsAnchorToBuffs'] = true,
+        -- Buffs
+        ['buffsEnable'] = true,
+        ['buffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['buffsXOff'] = 0,
+        ['buffsYOff'] = 2,
+        ['buffsIconWidth'] = 20,
+        ['buffsIconHeight'] = 20,
+        ['buffsOnlyShowPlayer'] = false,
+        ['buffsSpacing'] = 2,
+        ['buffsNum'] = 32,
+        ['buffsColNum'] = 6,
+        ['buffsAnchorToDebuffs'] = false,
     })
 end
 
@@ -113,6 +139,8 @@ target.Create = function(self, frame)
     frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
     frame.CombatIndicator = EXUI:GetModule('uf-element-combat-indicator'):Create(frame)
     frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
+    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
+    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Target', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

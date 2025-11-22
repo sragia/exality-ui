@@ -8,4 +8,6 @@
 	<Script file="RaidRoles.lua"/>
 	<Script file="CombatIndicator.lua"/>
 	<Script file="CastBar.lua"/>
+	<Script file="Debuffs.lua"/>
+	<Script file="Buffs.lua"/>
 </Ui>

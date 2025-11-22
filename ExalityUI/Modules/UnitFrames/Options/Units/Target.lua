@@ -115,6 +115,24 @@ core:AddOption({
             }
         },
         {
+            name = 'Buffs',
+            id = 'buffs',
+            options = {
+                function() 
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('target', 'buffs', true)
+                end
+            }
+        },
+        {
+            name = 'Debuffs',
+            id = 'debuffs',
+            options = {
+                function() 
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('target', 'debuffs', false)
+                end
+            }
+        },
+        {
             name = 'Marker Icon',
             id = 'markericon',
             options = {

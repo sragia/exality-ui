@@ -109,6 +109,14 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-cast-bar'):Update(frame)
     end
 
+    if (frame.Buffs) then
+        EXUI:GetModule('uf-element-buffs'):Update(frame)
+    end
+
+    if (frame.Debuffs) then
+        EXUI:GetModule('uf-element-debuffs'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
 end
