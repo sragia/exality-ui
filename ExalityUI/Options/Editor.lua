@@ -18,6 +18,29 @@ editor.RegisterFrameForEditor = function(self, frame, label, onChange, onShow, o
     self:AddEditorOverlay(frame, label, onChange)
 end
 
+editor.IsFrameRegistered = function(self, frame)
+    for _, f in ipairs(self.frames) do
+        if (f.frame == frame) then
+            return true
+        end
+    end
+    return false
+end
+
+editor.UnregisterFrameForEditor = function(self, frame)
+    local index = nil
+    for i, f in ipairs(self.frames) do
+        if (f.frame == frame) then
+            index = i
+            break
+        end
+    end
+
+    if (index) then
+        table.remove(self.frames, index)
+    end
+end
+
 editor.AddEditorOverlay = function(self, frame, label, onChange)
     if (frame.editor) then return end
     frame.editor = CreateFrame('Frame', nil, UIParent, "BackdropTemplate")

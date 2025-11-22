@@ -20,6 +20,7 @@ focus.Init = function(self)
         ['positionRelativePoint'] = 'CENTER',
         ['positionXOff'] = 100,
         ['positionYOff'] = -100,
+        -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
@@ -30,8 +31,16 @@ focus.Init = function(self)
         ['nameTag'] = '[name]',
         ['nameXOffset'] = 0,
         ['nameYOffset'] = 0,
+        -- Power
         ['powerEnable'] = true,
         ['powerHeight'] = 5,
+        -- Raid Target Indicator
+        ['raidTargetIndicatorEnable'] = true,
+        ['raidTargetIndicatorAnchorPoint'] = 'CENTER',
+        ['raidTargetIndicatorRelativeAnchorPoint'] = 'TOP',
+        ['raidTargetIndicatorXOff'] = 0,
+        ['raidTargetIndicatorYOff'] = 0,
+        ['raidTargetIndicatorScale'] = 0.8,
     })
 end
 
@@ -41,6 +50,7 @@ focus.Create = function(self, frame)
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
     frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
+    frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Focus', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

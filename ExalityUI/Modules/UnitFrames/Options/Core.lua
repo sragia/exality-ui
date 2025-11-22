@@ -118,19 +118,23 @@ core.HandleOptions = function(self)
         if (type(option) == 'function') then
             local fields = option(container)
             for _, field in ipairs(fields) do
-                local fieldFrame = EXUI:GetModule('options-fields'):GetField(field)
-                if (fieldFrame) then
-                    fieldFrame:SetOptionData(field)
-                    fieldFrame:SetParent(container)
-                    table.insert(self.fields, fieldFrame)
+                if (not field.depends or field.depends()) then
+                    local fieldFrame = EXUI:GetModule('options-fields'):GetField(field)
+                    if (fieldFrame) then
+                        fieldFrame:SetOptionData(field)
+                        fieldFrame:SetParent(container)
+                        table.insert(self.fields, fieldFrame)
+                    end
                 end
             end
         elseif (type(option) == 'table') then
-            local fieldFrame = EXUI:GetModule('options-fields'):GetField(option)
-            if (fieldFrame) then
-                fieldFrame:SetOptionData(option)
-                fieldFrame:SetParent(container)
-                table.insert(self.fields, fieldFrame)
+            if (not option.depends or option.depends()) then
+                local fieldFrame = EXUI:GetModule('options-fields'):GetField(option)
+                if (fieldFrame) then
+                    fieldFrame:SetOptionData(option)
+                    fieldFrame:SetParent(container)
+                    table.insert(self.fields, fieldFrame)
+                end
             end
         end
     end
@@ -139,4 +143,10 @@ end
 
 core.AddOption = function(self, option)
     table.insert(self.options, option)
+end
+
+core.RefreshCurrentView = function(self)
+    C_Timer.After(0.3, function() -- Small delay to allow inputs to finish animating
+        self:HandleOptions()
+    end)
 end

@@ -20,6 +20,7 @@ target.Init = function(self)
         ['positionRelativePoint'] = 'CENTER',
         ['positionXOff'] = 100,
         ['positionYOff'] = -100,
+        -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
@@ -31,6 +32,7 @@ target.Init = function(self)
         ['nameXOffset'] = 0,
         ['nameYOffset'] = 0,
         ['nameMaxWidth'] = 100,
+        -- Health Text
         ['healthEnable'] = true,
         ['healthFont'] = 'DMSans',
         ['healthFontSize'] = 12,
@@ -41,6 +43,7 @@ target.Init = function(self)
         ['healthXOffset'] = -5,
         ['healthYOffset'] = -10,
         ['healthTag'] = '[curhp:formatted]',
+        -- Health Percentage
         ['healthpercEnable'] = true,
         ['healthpercFont'] = 'DMSans',
         ['healthpercFontSize'] = 16,
@@ -51,8 +54,50 @@ target.Init = function(self)
         ['healthpercXOffset'] = -5,
         ['healthpercYOffset'] = 3,
         ['healthpercTag'] = '[perhp]%',
+        -- Power
         ['powerEnable'] = true,
         ['powerHeight'] = 5,
+        -- Raid Target Indicator
+        ['raidTargetIndicatorEnable'] = true,
+        ['raidTargetIndicatorScale'] = 1,
+        ['raidTargetIndicatorAnchorPoint'] = 'CENTER',
+        ['raidTargetIndicatorRelativeAnchorPoint'] = 'TOP',
+        ['raidTargetIndicatorXOff'] = 0,
+        ['raidTargetIndicatorYOff'] = 0,
+        ['raidRolesEnable'] = true,
+        ['raidRolesAnchorPoint'] = 'RIGHT',
+        ['raidRolesRelativeAnchorPoint'] = 'TOPRIGHT',
+        ['raidRolesXOff'] = 0,
+        ['raidRolesYOff'] = 0,
+        ['raidRolesScale'] = 1,
+        -- Combat Indicator
+        ['combatIndicatorEnable'] = true,
+        ['combatIndicatorScale'] = 1,
+        ['combatIndicatorAnchorPoint'] = 'LEFT',
+        ['combatIndicatorRelativeAnchorPoint'] = 'TOPLEFT',
+        ['combatIndicatorXOff'] = 0,
+        ['combatIndicatorYOff'] = 0,
+        -- Cast Bar
+        ['castbarEnable'] = true,
+        ['castbarAnchorToFrame'] = true,
+        ['castbarAnchorPoint'] = 'TOP',
+        ['castbarRelativeAnchorPoint'] = 'BOTTOM',
+        ['castbarXOff'] = 0,
+        ['castbarYOff'] = 0,
+        ['castbarAnchorPointUIParent'] = 'CENTER',
+        ['castbarRelativeAnchorPointUIParent'] = 'CENTER',
+        ['castbarXOffUIParent'] = 100,
+        ['castbarYOffUIParent'] = -100,
+        ['castbarMatchFrameWidth'] = true,
+        ['castbarWidth'] = 200,
+        ['castbarHeight'] = 20,
+        ['castbarFont'] = 'DMSans',
+        ['castbarFontSize'] = 12,
+        ['castbarFontFlag'] = 'OUTLINE',
+        ['castbarFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['castbarBackgroundColor'] = {r = 0, g = 0, b = 0, a = 0.5},
+        ['castbarBackgroundBorderColor'] = {r = 0, g = 0, b = 0, a = 1},
+        ['castbarForegroundColor'] = {r = 1, g = 1, b = 1, a = 1},
     })
 end
 
@@ -64,6 +109,10 @@ target.Create = function(self, frame)
     frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
     frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
+    frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
+    frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
+    frame.CombatIndicator = EXUI:GetModule('uf-element-combat-indicator'):Create(frame)
+    frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Target', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

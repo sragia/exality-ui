@@ -56,6 +56,33 @@ core:AddOption({
                     width = 25
                 }
             },
-        }
+        },
+        {
+            name = 'Marker Icon',
+            id = 'markericon',
+            options = {
+                function() 
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'raidTargetIndicator')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'raidTargetIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('focus', 'raidTargetIndicatorScale')
+                    end,
+                    onChange = function(f, value)
+                        ufCore:UpdateValueForUnit('focus', 'raidTargetIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('focus')
+                    end,
+                },
+                function() 
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('focus', 'raidTargetIndicator')
+                end,
+            }
+        },
     }
 })

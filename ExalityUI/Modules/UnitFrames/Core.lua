@@ -67,6 +67,8 @@ core.Base = function(self, frame)
 
     frame.ElementFrame = elementFrame
 
+    frame.db = self:GetDBForUnit(frame.unit)
+
     frame:RegisterForClicks('AnyUp')
 end
 
@@ -89,6 +91,22 @@ core.UpdateFrame = function(self, frame)
 
     if (frame.Health) then
         EXUI:GetModule('uf-element-health'):Update(frame)
+    end
+
+    if (frame.RaidTargetIndicator) then
+        EXUI:GetModule('uf-element-raid-target-indicator'):Update(frame)
+    end
+
+    if (frame.RaidRoles) then
+        EXUI:GetModule('uf-element-raid-roles'):Update(frame)
+    end
+
+    if (frame.CombatIndicator) then
+        EXUI:GetModule('uf-element-combat-indicator'):Update(frame)
+    end
+
+    if (frame.Castbar) then
+        EXUI:GetModule('uf-element-cast-bar'):Update(frame)
     end
 
     frame:UpdateTags()
@@ -125,7 +143,7 @@ core.SetDefaultsForUnit = function(self, unit, defaults)
     db = db or {}
     db[unit] = db[unit] or {}
     for key, value in pairs(defaults) do
-        if (not db[unit][key]) then
+        if (db[unit][key] == nil ) then
             db[unit][key] = value
         end
     end

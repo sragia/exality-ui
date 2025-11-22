@@ -1,0 +1,33 @@
+---@class ExalityUI
+local EXUI = select(2, ...)
+
+local combatIndicator = EXUI:GetModule('uf-element-combat-indicator')
+
+combatIndicator.Create = function(self, frame)
+    local combatIndicator = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
+    combatIndicator:SetSize(16, 16)
+    combatIndicator:SetPoint('RIGHT', frame.ElementFrame, 'TOPRIGHT', 0, 0)
+
+    return combatIndicator
+end
+
+combatIndicator.Update = function(self, frame)
+    local db = frame.db
+    local combatIndicator = frame.CombatIndicator
+    if (not db.combatIndicatorEnable) then
+        frame:DisableElement('CombatIndicator')
+        return
+    end
+
+    frame:EnableElement('CombatIndicator')
+    local size = (db.combatIndicatorScale or 1) * 16
+    combatIndicator:SetSize(size, size)
+    combatIndicator:ClearAllPoints()
+    combatIndicator:SetPoint(
+        db.combatIndicatorAnchorPoint,
+        frame.ElementFrame,
+        db.combatIndicatorRelativeAnchorPoint,
+        db.combatIndicatorXOff,
+        db.combatIndicatorYOff
+    )
+end

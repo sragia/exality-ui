@@ -17,6 +17,12 @@ local function ConfigureFrame(f)
     f.min = 0
     f.max = 100
     f.value = 0
+
+    hooksecurefunc(f, 'SetPoint', function(self)
+        C_Timer.After(0.01, function()
+            self:UpdateDotPosition()
+        end)
+    end)
     
     local label = f:CreateFontString(nil, 'OVERLAY')
     label:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
@@ -105,6 +111,7 @@ local function ConfigureFrame(f)
         dotTexture:SetTexture(EXUI.const.textures.frame.range.dot)
         self:SetScript('OnUpdate', nil)
     end)
+    dot:SetAlpha(0)
 
     local editBoxContainer = CreateFrame('Frame', nil, f)
     editBoxContainer:SetSize(50, 15)
@@ -125,7 +132,13 @@ local function ConfigureFrame(f)
     editBox:SetAutoFocus(false)
     f.editBox = editBox
 
-    editBox:SetScript('OnTextChanged', function(self)
+    editBox:SetScript('OnEditFocusLost', function(self)
+        local currValue = f.value
+        -- Set current value again in case value did not get commited
+        f:SetValue('value', currValue)
+    end)
+
+    editBox:SetScript('OnEnterPressed', function(self)
         local value = tonumber(self:GetText())
         if (not value) then return end
         value = math.max(math.min(value, f.max), f.min)
@@ -143,6 +156,7 @@ local function ConfigureFrame(f)
 
     f.SetFrameWidth = function(self, width)
         self:SetWidth(width)
+        self:UpdateDotPosition()
     end
 
     f.SetOptionData = function(self, option)
@@ -151,6 +165,7 @@ local function ConfigureFrame(f)
         self.max = option.max or 100
         self.step = option.step or 1
         self:SetLabel(option.label)
+        self.dot:SetAlpha(0)
         if (option.currentValue) then
             self:SetValue('value', option.currentValue())
         end
@@ -174,6 +189,10 @@ local function ConfigureFrame(f)
 
     f.UpdateDotPosition = function(self)
         local frameWidth = self.track:GetWidth()
+        if (frameWidth < 1) then
+            return 
+        end
+        self.dot:SetAlpha(1)
         local value = self.value
         local offset = value - self.min
         local perc = offset / (self.max - self.min)

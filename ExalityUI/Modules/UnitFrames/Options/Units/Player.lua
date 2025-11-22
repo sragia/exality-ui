@@ -79,6 +79,99 @@ core:AddOption({
                     return EXUI:GetModule('uf-options-tag'):GetOptions('player', 'healthperc')
                 end
             }
+        },
+        {
+            name = 'Cast Bar',
+            id = 'castbar',
+            options = {
+                function() 
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'castbar')
+                end,
+                function() 
+                    return EXUI:GetModule('uf-options-cast-bar'):GetOptions('player')
+                end
+            }
+        },
+        {
+            name = 'Marker Icon',
+            id = 'markericon',
+            options = {
+                function() 
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'raidTargetIndicator')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'raidTargetIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('player', 'raidTargetIndicatorScale')
+                    end,
+                    onChange = function(f, value)
+                        ufCore:UpdateValueForUnit('player', 'raidTargetIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('player')
+                    end,
+                },
+                function() 
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'raidTargetIndicator')
+                end,
+            }
+        },
+        {
+            name = 'Raid Role Icons',
+            id = 'raidroles',
+            options = {
+                function() 
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'raidRoles')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'raidRolesScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('player', 'raidRolesScale')
+                    end,
+                    onChange = function(f, value)
+                        ufCore:UpdateValueForUnit('player', 'raidRolesScale', value)
+                        ufCore:UpdateFrameForUnit('player')
+                    end,
+                },
+                function() 
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'raidRoles')
+                end,
+            }
+        },
+        {
+            name = 'Combat Icon',
+            id = 'combatindicator',
+            options = {
+                function() 
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'combatIndicator')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'combatIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('player', 'combatIndicatorScale')
+                    end,
+                    onChange = function(f, value)
+                        ufCore:UpdateValueForUnit('player', 'combatIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('player')
+                    end,
+                },
+                function() 
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'combatIndicator')
+                end,
+            }
         }
     }
 })

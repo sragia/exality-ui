@@ -4,4 +4,8 @@
 	<Script file="Name.lua"/>
 	<Script file="HealthText.lua"/>
 	<Script file="HealthPerc.lua"/>
+	<Script file="RaidTargetIndicator.lua"/>
+	<Script file="RaidRoles.lua"/>
+	<Script file="CombatIndicator.lua"/>
+	<Script file="CastBar.lua"/>
 </Ui>

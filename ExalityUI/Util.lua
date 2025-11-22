@@ -596,5 +596,8 @@ EXUI.utils = {
             return 'CENTER'
         end
         return 'LEFT'
+    end,
+    capitalize = function(str)
+        return str:gsub('^%l', string.upper)
     end
 }
