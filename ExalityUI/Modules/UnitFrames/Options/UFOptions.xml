@@ -7,6 +7,7 @@
 	<Script file="Elements/GenericPosition.lua"/>
 	<Script file="Elements/CastBar.lua"/>
 	<Script file="Elements/GenericAuras.lua"/>
+	<Script file="Elements/GenericShowPreview.lua"/>
 
 	<Script file="GeneralOptions.lua"/>
 	<Script file="Units/Player.lua"/>

@@ -37,7 +37,10 @@ optionsMain.editModeDialog = nil
 optionsMain.CreateWindow = function(self)
     local window = EXUI:GetModule('window-frame'):Create({
         size = {1300, 900},
-        title = 'ExalityUI'
+        title = 'ExalityUI',
+        onClose = function()
+            EXUI:GetModule('uf-core'):UnforceAll()
+        end
     })
 
     -- Profile Selector

@@ -67,9 +67,13 @@ local function ConfigureFrame(f)
 
     f:SetScript('OnClick', function(self)
         if (self.onClick) then
-            self:onClick()
+            self:onClick(self)
         end
     end)
+
+    f.SetOnClick = function(self, onClick)
+        self.onClick = onClick
+    end
 
     f.SetIcon = function(self, texture, width, height)
         self.icon:SetTexture(texture)

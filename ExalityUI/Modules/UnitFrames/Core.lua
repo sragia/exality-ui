@@ -16,6 +16,7 @@ core.units = {}
 core.groupUnits = {}
 core.groupUnitMap = {}
 core.frames = {}
+core.forcedFrames = {}
 
 core.Init = function(self)
     self:AddTags()
@@ -227,4 +228,82 @@ end
 core.GetValueForUnit = function(self, unit, key)
     local db = self:GetDBForUnit(unit)
     return db[key]
+end
+
+-- For Options. Force Show frames for editting
+core.ForceShow = function(self, unit)
+    if (InCombatLockdown()) then return end
+
+    if (self.groupUnits[unit]) then
+        for i = 1, self.groupUnits[unit] do
+            local frame = self.frames[unit .. i]
+            if (frame) then
+                self.forcedFrames[unit .. i] = frame 
+                self:ForceFrame(frame)
+            end 
+        end
+    elseif (self.frames[unit]) then
+        local frame = self.frames[unit]
+        if (frame) then
+            self.forcedFrames[unit] = frame 
+            self:ForceFrame(frame)
+        end
+    end
+end
+
+core.ForceFrame = function(self, frame)
+    if (frame.isFake) then return end
+    frame.originalUnit = frame.unit
+    frame.unit = 'player'
+    frame.isFake = true
+
+    frame:EnableMouse(false)
+    frame:Show()
+
+    UnregisterUnitWatch(frame)
+    RegisterUnitWatch(frame, true)
+
+    if (frame.Update) then
+        frame:Update()
+    end
+end
+
+
+core.Unforce = function(self, unit)
+    if (InCombatLockdown()) then return end
+
+    if (self.groupUnits[unit]) then
+        for i = 1, self.groupUnits[unit] do
+            local frame = self.frames[unit .. i]
+            if (frame) then
+                self.forcedFrames[unit .. i] = nil
+                self:UnforceFrame(frame)
+            end
+        end
+    elseif (self.frames[unit]) then
+        local frame = self.frames[unit]
+        if (frame) then
+            self.forcedFrames[unit] = nil
+            self:UnforceFrame(frame)
+        end
+    end
+end
+
+core.UnforceFrame = function(self, frame)
+    if (not frame.isFake) then return end
+    frame.unit = frame.originalUnit
+    frame:EnableMouse(true)
+    frame.isFake = false
+
+	UnregisterUnitWatch(frame)
+	RegisterUnitWatch(frame)
+end
+
+core.UnforceAll = function(self)
+    for _, frame in pairs(self.forcedFrames) do
+        if (frame) then
+            self:UnforceFrame(frame)
+        end
+    end
+    self.forcedFrames = {}
 end

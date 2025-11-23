@@ -58,6 +58,9 @@ local configure = function(frame)
 
     frame.HideWindow = function(self)
         self.fadeOut:Play()
+        if (self.onClose) then
+            self.onClose()
+        end
         self:SetScript('OnUpdate', nil)
     end
 
@@ -204,6 +207,10 @@ window.Create = function(self, options)
 
     if (options and options.hideVersion) then
         f:HideVersion(options.hideVersion)
+    end
+
+    if (options and options.onClose) then
+        f.onClose = options.onClose
     end
 
     return f

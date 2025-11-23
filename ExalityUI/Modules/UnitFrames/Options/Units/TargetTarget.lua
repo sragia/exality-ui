@@ -10,6 +10,7 @@ local ufCore = EXUI:GetModule('uf-core')
 core:AddOption({
     name = 'Target of Target',
     id = 'targettarget',
+    allowPreview = true,
     menu = {
         {
             name = 'Size & Position',

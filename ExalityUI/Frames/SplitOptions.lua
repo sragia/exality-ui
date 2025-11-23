@@ -71,11 +71,17 @@ local configure = function(f)
     f.scrollFrame = scrollFrame
     f.container = scrollFrame.child
 
+    local extraButton = EXUI:GetModule('button'):Create()
+    extraButton:SetHeight(30)
+    extraButton:SetParent(leftPanel)
+    extraButton:SetPoint('BOTTOMLEFT', leftPanel, 'BOTTOMLEFT', 5, 5)
+    extraButton:SetPoint('BOTTOMRIGHT', leftPanel, 'BOTTOMRIGHT', -5, 5)
+    extraButton:Hide()
+    f.extraButton = extraButton
+
     f.UpdateScroll = function(self)
         self.scrollFrame:UpdateScrollChild(self.rightPanel:GetWidth() - 50, self.rightPanel:GetHeight() - 25)
     end
-
-
 
     f.onItemClick = function(self, id)
         for _, item in ipairs(f.items) do
@@ -117,8 +123,25 @@ local configure = function(f)
         self.onItemChange = callback
     end
     
+    f.AddExtraButton = function(self, buttonOptions)
+        self.extraButton:Show()
+        if (buttonOptions.color) then
+            self.extraButton:SetColor(unpack(buttonOptions.color))
+        end
+        if (buttonOptions.text) then
+            self.extraButton:SetText(buttonOptions.text)
+        end
+        if (buttonOptions.onClick) then
+            self.extraButton:SetOnClick(buttonOptions.onClick)
+        end
+    end
+
+    f.DisableExtraButton = function(self)
+        self.extraButton:Hide()
+    end
     
     f.Destroy = function(self)
+        self.extraButton:Hide()
         splitOptions.pool:Release(self)
     end
 

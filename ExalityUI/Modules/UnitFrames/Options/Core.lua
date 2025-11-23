@@ -93,6 +93,28 @@ core.OnTabChange = function(self, id)
         end
 
         self.tabOptions:AddItems(items)
+        if (option.allowPreview) then
+            local onClick = {}
+
+            onClick.show = function(self, button)
+                ufCore:ForceShow(option.id)
+                button:SetText('Hide Preview')
+                button:SetOnClick(onClick.hide)
+            end
+            onClick.hide = function(self, button)
+                ufCore:Unforce(option.id)
+                button:SetText('Show Preview')
+                button:SetOnClick(onClick.show)
+            end
+
+            self.tabOptions:AddExtraButton({
+                text = 'Show Preview',
+                onClick = onClick.show,
+                color = {249/255, 95/255, 9/255, 1}
+            })
+        else
+            self.tabOptions:DisableExtraButton()
+        end
         self.tabOptions:SetOnItemChange(function(id) self:OnItemChange(id) end)
         self.tabOptions:onItemClick(items[1].ID)
     end
