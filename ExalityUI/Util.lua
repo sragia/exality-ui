@@ -90,7 +90,7 @@ local function CreateRowFrame(parent)
 end
 
 local MyScanningTooltip = CreateFrame("GameTooltip", "ExalityUIScanningTooltip",
-                                      UIParent, "GameTooltipTemplate")
+    UIParent, "GameTooltipTemplate")
 
 function MyScanningTooltip.ClearTooltip(self)
     local TooltipName = self:GetName()
@@ -111,7 +111,7 @@ EXUI.utils = {
         for i = 1, MyScanningTooltip:NumLines() do
             if _G["ExalityUIScanningTooltipTextLeft" .. i]:GetText() and
                 _G["ExalityUIScanningTooltipTextLeft" .. i]:GetText()
-                    :match(enchantKey) then
+                :match(enchantKey) then
                 -- name,id
                 local name =
                     _G["ExalityUIScanningTooltipTextLeft" .. i]:GetText()
@@ -127,7 +127,7 @@ EXUI.utils = {
             local name, iLink = C_Item.GetItemGem(itemLink, i)
             if iLink then
                 local icon = select(10, C_Item.GetItemInfo(iLink))
-                table.insert(t, {name = name, icon = icon})
+                table.insert(t, { name = name, icon = icon })
             end
         end
         MyScanningTooltip:ClearTooltip()
@@ -138,7 +138,7 @@ EXUI.utils = {
             if tex then
                 tex = tostring(tex)
                 if tex == '458977' then
-                    table.insert(t, {name = "Empty Slot", icon = tex})
+                    table.insert(t, { name = "Empty Slot", icon = tex })
                 end
             end
         end
@@ -485,7 +485,7 @@ EXUI.utils = {
 
         for _, child in ipairs_reverse(children) do
             child:ClearAllPoints()
-        end 
+        end
 
         for indx, child in ipairs(children) do
             if (not prev) then
@@ -514,12 +514,12 @@ EXUI.utils = {
             child:ClearAllPoints()
         end
 
-        local rows = {{}}
+        local rows = { {} }
         local runningPerc = 100
         for _, child in ipairs(children) do
             local childPerc = child.optionData and child.optionData.width or 25
             if ((runningPerc - childPerc) < 0) then
-                table.insert(rows, {child})
+                table.insert(rows, { child })
                 runningPerc = 100 - childPerc
             else
                 table.insert(rows[#rows], child)
@@ -527,7 +527,7 @@ EXUI.utils = {
             end
         end
         local prevRowFrame = nil
-        for _, row  in ipairs(rows) do
+        for _, row in ipairs(rows) do
             local rowFrame = CreateRowFrame(parentContainer)
             table.insert(rowFrames[gridId], rowFrame)
             if (prevRowFrame) then
@@ -544,7 +544,7 @@ EXUI.utils = {
             for _, child in ipairs(row) do
                 child:SetParent(rowFrame)
                 local perc = child.optionData and child.optionData.width or 25
-                child:SetFrameWidth(perc/100 * rowMaxWidth)
+                child:SetFrameWidth(perc / 100 * rowMaxWidth)
                 if (prev) then
                     child:SetPoint('TOPLEFT', prev, 'TOPRIGHT', gap, 0)
                 else
@@ -576,15 +576,15 @@ EXUI.utils = {
     end,
     getPowerTypeColor = function(powerType)
         if (powerType == Enum.PowerType.Mana) then
-            return 0, 54/255, 204/255 , 1
+            return 0, 54 / 255, 204 / 255, 1
         elseif (powerType == Enum.PowerType.Rage) then
-            return 181/255, 0, 9/255, 1
+            return 181 / 255, 0, 9 / 255, 1
         elseif (powerType == Enum.PowerType.Energy) then
-            return 230/255, 199/255, 0, 1
+            return 230 / 255, 199 / 255, 0, 1
         elseif (powerType == Enum.PowerType.Focus) then
-            return 1, 157/255, 87/255, 1
+            return 1, 157 / 255, 87 / 255, 1
         else
-            return 230/255, 199/255, 0, 1
+            return 230 / 255, 199 / 255, 0, 1
         end
     end,
     getJustifyHFromAnchor = function(anchor)
@@ -599,5 +599,12 @@ EXUI.utils = {
     end,
     capitalize = function(str)
         return str:gsub('^%l', string.upper)
+    end,
+    combineArrays = function(...)
+        local output = {}
+        for _, array in ipairs(...) do
+            tAppendAll(output, array)
+        end
+        return output
     end
 }

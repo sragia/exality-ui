@@ -67,7 +67,9 @@
         "PetCastingBarFrame",
         "ID",
         "FindInTable",
-        "MergeTable"
+        "MergeTable",
+        "TargetFrameToT",
+        "EditModeManagerFrame"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

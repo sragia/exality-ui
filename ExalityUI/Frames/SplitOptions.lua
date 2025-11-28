@@ -35,7 +35,7 @@ local function CreateItem(parent)
     end
 
     button.SetText = function(self, text)
-        self.text:SetText(text)
+        self.text:SetText(text or "")
     end
 
     button:SetScript('OnClick', function(self)
@@ -142,6 +142,7 @@ local configure = function(f)
     
     f.Destroy = function(self)
         self.extraButton:Hide()
+        self:ClearAllPoints()
         splitOptions.pool:Release(self)
     end
 

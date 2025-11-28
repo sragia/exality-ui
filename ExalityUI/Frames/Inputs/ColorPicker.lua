@@ -13,14 +13,18 @@ end
 local function ConfigureFrame(f)
     EXUI.utils.addObserver(f)
     f:SetHeight(20)
-    f.color = {r = 1, g = 1, b = 1, a = 1}
-    local colorBoxContainer = CreateFrame('Frame', nil, f)
+    f.color = { r = 1, g = 1, b = 1, a = 1 }
+    local colorBoxContainer = CreateFrame('Frame', nil, f, 'BackdropTemplate')
+    colorBoxContainer:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    colorBoxContainer:SetBackdropColor(0, 0, 0, 0)
+    colorBoxContainer:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
     colorBoxContainer:SetSize(20, 20)
     colorBoxContainer:SetPoint('LEFT')
     local colorBox = colorBoxContainer:CreateTexture(nil, 'BACKGROUND')
     colorBox:SetTexture(EXUI.const.textures.frame.solidBg)
     colorBox:SetVertexColor(1, 1, 1, 1)
-    colorBox:SetAllPoints()
+    colorBox:SetPoint('TOPLEFT', 1, -1)
+    colorBox:SetPoint('BOTTOMRIGHT', -1, 1)
     f.colorBox = colorBox
 
     local label = f:CreateFontString(nil, 'OVERLAY')
@@ -52,26 +56,26 @@ local function ConfigureFrame(f)
         local r, g, b = ColorPickerFrame:GetColorRGB()
         local a = ColorPickerFrame:GetColorAlpha()
 
-        f:SetValue('color', {r = r, g = g, b = b, a = a})
+        f:SetValue('color', { r = r, g = g, b = b, a = a })
     end
 
     f.OnCancel = function()
         local r, g, b, a = ColorPickerFrame:GetPreviousValues();
-        f:SetValue('color', {r = r, g = g, b = b, a = a})
+        f:SetValue('color', { r = r, g = g, b = b, a = a })
     end
-    
-    f.SetFrameWidth = function(self, width) 
+
+    f.SetFrameWidth = function(self, width)
         self:SetWidth(width)
     end
 
-    f.SetOptionData = function(self, option) 
+    f.SetOptionData = function(self, option)
         self.optionData = option
-        self:SetValue('color', option.currentValue and option.currentValue() or {r = 1, g = 1, b = 1, a = 1})
+        self:SetValue('color', option.currentValue and option.currentValue() or { r = 1, g = 1, b = 1, a = 1 })
         self.onChange = option.onChange
         self:SetLabel(option.label)
     end
 
-    f:Observe('color', function(color, _, _, self) 
+    f:Observe('color', function(color, _, _, self)
         self.colorBox:SetVertexColor(color.r, color.g, color.b, color.a)
         if (self.onChange) then
             self.onChange(color)
@@ -88,11 +92,11 @@ colorPicker.Create = function(self)
     local f = self.pool:Acquire()
     if (not f.configured) then
         ConfigureFrame(f)
-    end 
+    end
 
     f.Destroy = function(self)
         self.onChange = nil
-        self.color = {r = 1, g = 1, b = 1, a = 1}
+        self.color = { r = 1, g = 1, b = 1, a = 1 }
         colorPicker.pool:Release(self)
     end
 

@@ -101,6 +101,7 @@ local configure = function(frame)
     end
 
     frame.Destroy = function(self)
+        self:ClearAllPoints()
         tabs.pool:Release(self)
     end
 

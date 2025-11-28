@@ -60,9 +60,8 @@ Modules/UnitFrames/Options/UFOptions.xml
 
 # Modules
 Modules/General.lua
-Modules/PowerBar.lua
 Modules/RaidTools.lua
-Modules/StaggerBar.lua
+Modules/ResourceDisplays/ResourceDisplays.xml
 
 # UnitFrames
 Modules/UnitFrames/Core.lua

@@ -61,6 +61,10 @@ core.OptionHandler = function(container, shouldHide)
             core.tabOptions:Destroy()
             core.tabs = nil
             core.tabOptions = nil
+            for _, field in pairs(core.fields) do
+                field:Destroy()
+            end
+            core.fields = {}
         end
         return;
     end

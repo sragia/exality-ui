@@ -1,0 +1,12 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- Core Module File -->
+	<Script file="ResourceDisplays.lua"/> 
+
+	<!-- Power Type Modules -->
+	<Script file="PowerType/GenericPower.lua"/>
+	<Script file="PowerType/Stagger.lua"/>
+
+	<!-- Elements Modules -->
+	<Script file="Elements/StatusBar.lua"/>
+	<Script file="Elements/Text.lua"/>
+</Ui>

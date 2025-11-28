@@ -75,7 +75,7 @@ generalModule.GetOptions = function(self)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end,
             width = 16,
-            color = { 219/255, 73/255, 0 , 1 }
+            color = { 219 / 255, 73 / 255, 0, 1 }
         },
         {
             label = 'Paper Doll Improvements',
@@ -117,7 +117,7 @@ generalModule.GetOptions = function(self)
             width = 100,
         },
         {
-            label = 'Font',
+            label = 'Replacement Font',
             name = 'font',
             type = 'dropdown',
             getOptions = function()
@@ -168,7 +168,7 @@ end
 generalModule.paperDoll = {
     Init = function(self)
         if (not data:GetDataByKey('paperDollEnabled')) then return end
-        local callback = function() 
+        local callback = function()
             C_Timer.After(1, function() generalModule.paperDoll:Refresh() end)
             generalModule.paperDoll:Refresh()
         end
@@ -406,7 +406,7 @@ generalModule.paperDoll = {
                     0,
                     12
                 )
-    
+
                 baseFrame.SetIlvlText = function(self, ilvl)
                     if (not ilvl) then
                         ilvlText:SetText('')
@@ -424,10 +424,10 @@ generalModule.paperDoll = {
                 baseFrame.SetGem = function(self, gem)
                     gemText:SetText(gem or '')
                 end
-    
+
                 gearSlot.frame = baseFrame
             end
-    
+
             local iLink = GetInventoryItemLink("player", gearSlot.slotId)
             if iLink then
                 local ilvl = C_Item.GetDetailedItemLevelInfo(iLink)
@@ -446,13 +446,14 @@ generalModule.paperDoll = {
                 gearSlot.frame:SetGem()
             end
         end
-    
+
         local avgIlvl, avgEquipped = GetAverageItemLevel()
         local ilvlString = string.format('%.2f', avgEquipped)
         if (avgIlvl ~= avgEquipped) then
             ilvlString = string.format('%.2f / %.2f', avgEquipped, avgIlvl)
         end
-        PaperDollFrame_SetLabelAndText(CharacterStatsPane.ItemLevelFrame, STAT_AVERAGE_ITEM_LEVEL, ilvlString, false, avgIlvl)
+        PaperDollFrame_SetLabelAndText(CharacterStatsPane.ItemLevelFrame, STAT_AVERAGE_ITEM_LEVEL, ilvlString, false,
+            avgIlvl)
     end,
     ModifyLayout = function(self)
         CharacterFrame:SetWidth(700)
