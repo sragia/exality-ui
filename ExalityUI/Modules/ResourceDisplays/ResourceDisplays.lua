@@ -31,6 +31,21 @@ core.splitViewExtraButton = {
     end
 }
 
+core.DEFAULTS = {
+    enable = true,
+    name = 'New Display',
+    width = 200,
+    height = 20,
+    anchorPoint = 'CENTER',
+    relativeAnchorPoint = 'CENTER',
+    XOff = 0,
+    YOff = 0,
+    showOverride = false,
+    hasLoadConditions = false,
+    onlyLoadOnPlayer = '',
+    dontLoadOnPlayer = '',
+}
+
 core.eventHandler = CreateFrame('Frame')
 core.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
 core.eventHandler:SetScript('OnEvent', function(self)
@@ -258,6 +273,65 @@ core.GetOptions = function(self, currTabID, currItemID)
             width = 100
         },
         {
+            type = 'toggle',
+            label = 'Enable Load Condtions',
+            name = 'hasLoadConditions',
+            currentValue = function()
+                return self:GetValueForDisplay(currItemID, 'hasLoadConditions')
+            end,
+            onObserve = function(value)
+                self:UpdateValueForDisplay(currItemID, 'hasLoadConditions', value)
+                self:RefreshDisplayByID(currItemID)
+            end,
+            width = 100
+        },
+        {
+            type = 'edit-box',
+            label = 'Load Only on Player/s',
+            name = 'onlyLoadOnPlayer',
+            tooltip = {
+                text = 'Comma separated list of players to load the display on.'
+            },
+            depends = function()
+                return self:GetValueForDisplay(currItemID, 'hasLoadConditions')
+            end,
+            currentValue = function()
+                return self:GetValueForDisplay(currItemID, 'onlyLoadOnPlayer')
+            end,
+            onChange = function(_, value)
+                self:UpdateValueForDisplay(currItemID, 'onlyLoadOnPlayer', value)
+                self:RefreshDisplayByID(currItemID)
+            end,
+            width = 40
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
+            type = 'edit-box',
+            label = 'Dont Load on Player/s',
+            name = 'dontLoadOnPlayer',
+            tooltip = {
+                text = 'Comma separated list of players to not load the display on.'
+            },
+            depends = function()
+                return self:GetValueForDisplay(currItemID, 'hasLoadConditions')
+            end,
+            currentValue = function()
+                return self:GetValueForDisplay(currItemID, 'dontLoadOnPlayer')
+            end,
+            onChange = function(_, value)
+                self:UpdateValueForDisplay(currItemID, 'dontLoadOnPlayer', value)
+                self:RefreshDisplayByID(currItemID)
+            end,
+            width = 40
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
             type = 'button',
             label = 'Delete',
             onClick = function()
@@ -292,6 +366,9 @@ core.CreateNewDisplay = function(self)
         relativeAnchorPoint = 'CENTER',
         XOff = 0,
         YOff = 0,
+        hasLoadConditions = false,
+        onlyLoadOnPlayer = '',
+        dontLoadOnPlayer = '',
     }
 
     self:SetDisplayToDB(display)
@@ -380,7 +457,8 @@ core.RefreshDisplayByID = function(self, displayID)
     if (not frame) then
         return
     end
-    if (not frame.IsActive or not frame:IsActive()) then
+
+    if (not frame.IsActive or not frame:IsActive() or not self:CheckLoadConditions(displayID)) then
         frame:Hide()
         return;
     end
@@ -415,21 +493,39 @@ core.RefreshDisplayByID = function(self, displayID)
     self:UpdateFrame(frame)
 end
 
+core.CheckLoadConditions = function(self, ID)
+    local db = self:GetDBByDisplayID(ID)
+    if (not db.hasLoadConditions) then
+        return true
+    end
+    local playerName = UnitName('player')
+
+    local onlyLoadOnPlayer = db.onlyLoadOnPlayer
+    if (onlyLoadOnPlayer ~= '') then
+        local players = { strsplit(',', onlyLoadOnPlayer) }
+        if (not tContains(players, playerName)) then
+            return false
+        end
+    end
+
+    local dontLoadOnPlayer = db.dontLoadOnPlayer
+    if (dontLoadOnPlayer ~= '') then
+        local players = { strsplit(',', dontLoadOnPlayer) }
+        if (tContains(players, playerName)) then
+            return false
+        end
+    end
+
+    return true
+end
+
 core.RegisterPowerType = function(self, powerType)
     table.insert(self.powerTypes, powerType)
 end
 
 core.UpdateDefaultByPowerType = function(self, displayID, powerTypeName)
     local powerTypeControl = self:GetPowerTypeControl(powerTypeName)
-    self:UpdateDefaultValuesForDisplay(displayID, {
-        width = 200,
-        height = 20,
-        anchorPoint = 'CENTER',
-        relativeAnchorPoint = 'CENTER',
-        XOff = 0,
-        YOff = 0,
-        showOverride = false,
-    })
+    self:UpdateDefaultValuesForDisplay(displayID, self.DEFAULTS)
     if (powerTypeControl) then
         powerTypeControl:UpdateDefault(displayID)
     end

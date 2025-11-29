@@ -167,6 +167,7 @@ core.HandleOptions = function(self)
             for _, field in ipairs(fields) do
                 if (not field.depends or field.depends()) then
                     local fieldFrame = EXUI:GetModule('options-fields'):GetField(field)
+                    EXUI:GetModule('options-fields'):CreateOrUpdateTooltip(fieldFrame, field.tooltip)
                     if (fieldFrame) then
                         fieldFrame:SetOptionData(field)
                         fieldFrame:SetParent(container)
@@ -177,6 +178,7 @@ core.HandleOptions = function(self)
         elseif (type(option) == 'table') then
             if (not option.depends or option.depends()) then
                 local fieldFrame = EXUI:GetModule('options-fields'):GetField(option)
+                EXUI:GetModule('options-fields'):CreateOrUpdateTooltip(fieldFrame, option.tooltip)
                 if (fieldFrame) then
                     fieldFrame:SetOptionData(option)
                     fieldFrame:SetParent(container)

@@ -42,39 +42,56 @@ cooldownDisplay.Create = function(self, frame)
     StackText:Hide()
     frame.StackText = StackText
 
-    frame.OnChange = function(self, event)
+    frame.OnChange = function(self, event, ...)
         local db = self.db
         if (not db.enable) then
             return
         end
-        if (db.isItem and db.itemID ~= '') then
-            -- Item
-            local start, duration, count = cooldownDisplay:GetItemData(db.itemID)
-            if (start) then
-                self.Cooldown:SetCooldown(start, duration)
-                self.CooldownSwipe:SetCooldown(start, duration)
-                self.StackText:SetText(count)
+        if (event == 'ITEM_DATA_LOAD_RESULT') then
+            local itemID = ...
+            if (itemID == db.itemID) then
+                self.Texture:SetTexture(cooldownDisplay:GetTexture(db))
             end
-        elseif (not db.isItem and db.spellID ~= '') then
-            -- Spell
-            if (db.showStacks) then
-                local charges, start, duration, modRate = cooldownDisplay:GetChargeData(db.spellID)
-                if (charges) then
-                    self.Cooldown:SetCooldown(start, duration, modRate)
-                    self.CooldownSwipe:SetCooldown(start, duration, modRate)
-                    self.StackText:SetText(charges)
-                end
-            else
-                local start, duration, modRate = cooldownDisplay:GetCooldownData(db.spellID)
+        else
+            if (db.isItem and db.itemID ~= '') then
+                -- Item
+                local start, duration, count = cooldownDisplay:GetItemData(db.itemID)
                 if (start) then
-                    self.Cooldown:SetCooldown(start, duration, modRate)
-                    self.CooldownSwipe:SetCooldown(start, duration, modRate)
+                    self.Cooldown:SetCooldown(start, duration)
+                    self.CooldownSwipe:SetCooldown(start, duration)
+                    self.StackText:SetText(count)
+                end
+            elseif (not db.isItem and db.spellID ~= '') then
+                -- Spell
+                if (db.showStacks) then
+                    local charges, start, duration, modRate = cooldownDisplay:GetChargeData(db.spellID)
+                    if (charges) then
+                        self.Cooldown:SetCooldown(start, duration, modRate)
+                        self.CooldownSwipe:SetCooldown(start, duration, modRate)
+                        self.StackText:SetText(charges)
+                    end
+                else
+                    local start, duration, modRate = cooldownDisplay:GetCooldownData(db.spellID)
+                    if (start) then
+                        self.Cooldown:SetCooldown(start, duration, modRate)
+                        self.CooldownSwipe:SetCooldown(start, duration, modRate)
+                    end
                 end
             end
         end
     end
 
-    frame:RegisterEvent('SPELL_UPDATE_COOLDOWN')
+    frame.Events = {
+        'ITEM_DATA_LOAD_RESULT',
+        'SPELL_UPDATE_COOLDOWN'
+    }
+
+    frame.RegisterFrameEvents = function(self)
+        for _, event in ipairs(self.Events) do
+            self:RegisterEvent(event)
+        end
+    end
+
     frame:SetScript('OnEvent', frame.OnChange)
 end
 
@@ -130,11 +147,14 @@ cooldownDisplay.Update = function(self, frame)
 
     frame:Show()
 
-    if (db.isItem and db.showStacks) then
-        frame:RegisterEvent('ITEM_COUNT_CHANGED')
+    if (db.isItem and db.showStacks and not tContains(frame.Events, 'ITEM_COUNT_CHANGED')) then
+        table.insert(frame.Events, 'ITEM_COUNT_CHANGED')
     else
-        frame:UnregisterEvent('ITEM_COUNT_CHANGED')
+        tDeleteItem(frame.Events, 'ITEM_COUNT_CHANGED')
     end
+    frame:RegisterFrameEvents()
+
+
 
     frame:SetSize(db.width, db.height)
     frame:ClearAllPoints()

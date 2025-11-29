@@ -109,6 +109,8 @@ core.Base = function(self, frame)
         frame.db = self:GetDBForUnit(self.groupUnitMap[frame.unit])
     end
 
+    self:AddTooltip(frame)
+
     frame:RegisterForClicks('AnyUp')
 end
 
@@ -161,6 +163,24 @@ core.UpdateFrame = function(self, frame)
     frame:UpdateAllElements('RefreshUnit')
 end
 
+core.AddTooltip = function(self, frame)
+    frame:SetScript('OnEnter', function(self)
+        if (GameTooltip:IsForbidden()) then return end
+
+        GameTooltip:SetOwner(self, 'ANCHOR_NONE')
+        GameTooltip_SetDefaultAnchor(GameTooltip, self)
+        GameTooltip:SetUnit(self.unit)
+        self.UpdateTooltip = function(self)
+            GameTooltip:SetUnit(frame.unit)
+        end
+    end)
+    frame:SetScript('OnLeave', function(self)
+        if (GameTooltip:IsForbidden()) then return end
+        self.UpdateTooltip = nil
+        GameTooltip:Hide()
+    end)
+end
+
 core.UpdateFrameForUnit = function(self, unit)
     if (not self.groupUnits[unit]) then
         local frame = core.frames[unit]
@@ -200,7 +220,7 @@ core.SetDefaultsForUnit = function(self, unit, defaults)
     db = db or {}
     db[unit] = db[unit] or {}
     for key, value in pairs(defaults) do
-        if (db[unit][key] == nil ) then
+        if (db[unit][key] == nil) then
             db[unit][key] = value
         end
     end
@@ -238,14 +258,14 @@ core.ForceShow = function(self, unit)
         for i = 1, self.groupUnits[unit] do
             local frame = self.frames[unit .. i]
             if (frame) then
-                self.forcedFrames[unit .. i] = frame 
+                self.forcedFrames[unit .. i] = frame
                 self:ForceFrame(frame)
-            end 
+            end
         end
     elseif (self.frames[unit]) then
         local frame = self.frames[unit]
         if (frame) then
-            self.forcedFrames[unit] = frame 
+            self.forcedFrames[unit] = frame
             self:ForceFrame(frame)
         end
     end
@@ -295,8 +315,8 @@ core.UnforceFrame = function(self, frame)
     frame:EnableMouse(true)
     frame.isFake = false
 
-	UnregisterUnitWatch(frame)
-	RegisterUnitWatch(frame)
+    UnregisterUnitWatch(frame)
+    RegisterUnitWatch(frame)
 end
 
 core.UnforceAll = function(self)

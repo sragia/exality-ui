@@ -22,6 +22,9 @@ raidToolsModule.readyCheckFrame = nil
 raidToolsModule.pullTimerFrame = nil
 raidToolsModule.showStatus = false
 
+raidToolsModule.useTabs = true
+raidToolsModule.useSplitView = false
+
 raidToolsModule.Init = function(self)
     optionsController:RegisterModule(self)
     data:UpdateDefaults(self:GetDefaults())
@@ -78,417 +81,433 @@ raidToolsModule.GetDefaults = function(self)
     }
 end
 
-raidToolsModule.GetOptions = function(self)
+raidToolsModule.GetTabs = function(self)
     return {
         {
-            type = 'title',
+            ID = 'brezz',
             label = 'Battle Ress',
-            width = 100
         },
         {
-            type = 'toggle',
-            name = 'brezzEnabled',
-            label = 'Enable',
-            onObserve = function(value, oldValue)
-                data:SetDataByKey('brezzEnabled', value)
-                self:CreateOrRefreshBrezz()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('brezzEnabled')
-            end,
-            width = 100,
-        },
-        {
-            type = 'range',
-            name = 'brezzSize',
-            label = 'Size',
-            min = 10,
-            max = 100,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('brezzSize')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('brezzSize', value)
-                self:CreateOrRefreshBrezz()
-            end
-        },
-        {
-            type = 'spacer',
-            width = 83
-        },
-        {
-            type = 'range',
-            name = 'brezzXOff',
-            label = 'X Offset',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('brezzXOff')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('brezzXOff', value)
-                self:CreateOrRefreshBrezz()
-            end
-        },
-        {
-            type = 'range',
-            name = 'brezzYOff',
-            label = 'Y Offset',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('brezzYOff')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('brezzYOff', value)
-                self:CreateOrRefreshBrezz()
-            end
-        },
-        {
-            type = 'spacer',
-            width = 50
-        },
-        {
-            type = 'dropdown',
-            name = 'brezzFont',
-            label = 'Font',
-            getOptions = function()
-                local fonts = LSM:List('font')
-                local options = {}
-                for _, font in ipairs(fonts) do
-                    options[font] = font
-                end
-                return options
-            end,
-            isFontDropdown = true,
-            currentValue = function()
-                return data:GetDataByKey('brezzFont')
-            end,
-            onChange = function(value)
-                data:SetDataByKey('brezzFont', value)
-                self:CreateOrRefreshBrezz()
-            end,
-            width = 33
-        },
-        {
-            type = 'range',
-            name = 'brezzFontSize',
-            label = 'Font Size',
-            min = 10,
-            max = 100,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('brezzFontSize')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('brezzFontSize', value)
-                self:CreateOrRefreshBrezz()
-            end
-        },
-        {
-            type = 'title',
+            ID = 'readyCheck',
             label = 'Ready Check',
-            width = 100
         },
         {
-            type = 'toggle',
-            name = 'readyCheckEnabled',
-            label = 'Enable',
-            onObserve = function(value, oldValue)
-                data:SetDataByKey('readyCheckEnabled', value)
-                self:CreateOrRefreshReadyCheck()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('readyCheckEnabled')
-            end,
-            width = 100,
-        },
-        {
-            type = 'range',
-            name = 'readyCheckWidth',
-            label = 'Width',
-            min = 10,
-            max = 300,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('readyCheckWidth')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('readyCheckWidth', value)
-                self:CreateOrRefreshReadyCheck()
-            end
-        },
-        {
-            type = 'range',
-            name = 'readyCheckHeight',
-            label = 'Height',
-            min = 10,
-            max = 100,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('readyCheckHeight')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('readyCheckHeight', value)
-                self:CreateOrRefreshReadyCheck()
-            end
-        },
-        {
-            type = 'color-picker',
-            name = 'readyCheckBackgroundColor',
-            label = 'Background Color',
-            currentValue = function()
-                return data:GetDataByKey('readyCheckBackgroundColor')
-            end,
-            onChange = function(value)
-                data:SetDataByKey('readyCheckBackgroundColor', value)
-                self:CreateOrRefreshReadyCheck()
-            end,
-            width = 16
-        },
-        {
-            type = 'spacer',
-            width = 52
-        },
-        {
-            type = 'dropdown',
-            name = 'readyCheckFont',
-            label = 'Font',
-            getOptions = function()
-                local fonts = LSM:List('font')
-                local options = {}
-                for _, font in ipairs(fonts) do
-                    options[font] = font
-                end
-                return options
-            end,
-            isFontDropdown = true,
-            currentValue = function()
-                return data:GetDataByKey('readyCheckFont')
-            end,
-            onChange = function(value)
-                data:SetDataByKey('readyCheckFont', value)
-                self:CreateOrRefreshReadyCheck()
-            end,
-            width = 33
-        },
-        {
-            type = 'range',
-            name = 'readyCheckFontSize',
-            label = 'Font Size',
-            min = 10,
-            max = 100,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('readyCheckFontSize')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('readyCheckFontSize', value)
-                self:CreateOrRefreshReadyCheck()
-            end
-        },
-        {
-            type = 'spacer',
-            width = 50
-        },
-        {
-            type = 'range',
-            name = 'readyCheckXOff',
-            label = 'X Offset',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('readyCheckXOff')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('readyCheckXOff', value)
-                self:CreateOrRefreshReadyCheck()
-            end
-        },
-        {
-            type = 'range',
-            name = 'readyCheckYOff',
-            label = 'Y Offset',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('readyCheckYOff')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('readyCheckYOff', value)
-                self:CreateOrRefreshReadyCheck()
-            end
-        },
-        {
-            type = 'title',
+            ID = 'pullTimer',
             label = 'Pull Timer',
-            width = 100
-        },
-        {
-            type = 'toggle',
-            name = 'pullTimerEnabled',
-            label = 'Enable',
-            onObserve = function(value, oldValue)
-                data:SetDataByKey('pullTimerEnabled', value)
-                self:CreateOrRefreshPullTimer()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerEnabled')
-            end,
-            width = 100,
-        },
-        {
-            type = 'range',
-            name = 'pullTimerWidth',
-            label = 'Width',
-            min = 10,
-            max = 300,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerWidth')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('pullTimerWidth', value)
-                self:CreateOrRefreshPullTimer()
-            end
-        },
-        {
-            type = 'range',
-            name = 'pullTimerHeight',
-            label = 'Height',
-            min = 10,
-            max = 100,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerHeight')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('pullTimerHeight', value)
-                self:CreateOrRefreshPullTimer()
-            end
-        },
-        {
-            type = 'color-picker',
-            name = 'pullTimerBackgroundColor',
-            label = 'Background Color',
-            currentValue = function()
-                return data:GetDataByKey('pullTimerBackgroundColor')
-            end,
-            onChange = function(value)
-                data:SetDataByKey('pullTimerBackgroundColor', value)
-                self:CreateOrRefreshPullTimer()
-            end,
-            width = 16
-        },
-        {
-            type = 'range',
-            name = 'pullTimerSeconds',
-            label = 'Seconds',
-            min = 5,
-            max = 20,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerSeconds')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('pullTimerSeconds', value)
-            end
-        },
-        {
-            type = 'spacer',
-            width = 36
-        },
-        {
-            type = 'dropdown',
-            name = 'pullTimerFont',
-            label = 'Font',
-            getOptions = function()
-                local fonts = LSM:List('font')
-                local options = {}
-                for _, font in ipairs(fonts) do
-                    options[font] = font
+        }
+    }
+end
+
+
+raidToolsModule.GetOptions = function(self, currTabID)
+    if (currTabID == 'brezz') then
+        return {
+            {
+                type = 'toggle',
+                name = 'brezzEnabled',
+                label = 'Enable',
+                onObserve = function(value, oldValue)
+                    data:SetDataByKey('brezzEnabled', value)
+                    self:CreateOrRefreshBrezz()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('brezzEnabled')
+                end,
+                width = 100,
+            },
+            {
+                type = 'range',
+                name = 'brezzSize',
+                label = 'Size',
+                min = 10,
+                max = 100,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('brezzSize')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('brezzSize', value)
+                    self:CreateOrRefreshBrezz()
                 end
-                return options
-            end,
-            isFontDropdown = true,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerFont')
-            end,
-            onChange = function(value)
-                data:SetDataByKey('pullTimerFont', value)
-                self:CreateOrRefreshPullTimer()
-            end,
-            width = 33
-        },
-        {
-            type = 'range',
-            name = 'pullTimerFontSize',
-            label = 'Font Size',
-            min = 10,
-            max = 100,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerFontSize')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('pullTimerFontSize', value)
-                self:CreateOrRefreshPullTimer()
-            end
-        },
-        {
-            type = 'spacer',
-            width = 50
-        },
-        {
-            type = 'range',
-            name = 'pullTimerXOff',
-            label = 'X Offset',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerXOff')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('pullTimerXOff', value)
-                self:CreateOrRefreshPullTimer()
-            end
-        },
-        {
-            type = 'range',
-            name = 'pullTimerYOff',
-            label = 'Y Offset',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 16,
-            currentValue = function()
-                return data:GetDataByKey('pullTimerYOff')
-            end,
-            onChange = function(f, value)
-                data:SetDataByKey('pullTimerYOff', value)
-                self:CreateOrRefreshPullTimer()
-            end
-        },
+            },
+            {
+                type = 'spacer',
+                width = 83
+            },
+            {
+                type = 'range',
+                name = 'brezzXOff',
+                label = 'X Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('brezzXOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('brezzXOff', value)
+                    self:CreateOrRefreshBrezz()
+                end
+            },
+            {
+                type = 'range',
+                name = 'brezzYOff',
+                label = 'Y Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('brezzYOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('brezzYOff', value)
+                    self:CreateOrRefreshBrezz()
+                end
+            },
+            {
+                type = 'spacer',
+                width = 50
+            },
+            {
+                type = 'dropdown',
+                name = 'brezzFont',
+                label = 'Font',
+                getOptions = function()
+                    local fonts = LSM:List('font')
+                    local options = {}
+                    for _, font in ipairs(fonts) do
+                        options[font] = font
+                    end
+                    return options
+                end,
+                isFontDropdown = true,
+                currentValue = function()
+                    return data:GetDataByKey('brezzFont')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('brezzFont', value)
+                    self:CreateOrRefreshBrezz()
+                end,
+                width = 33
+            },
+            {
+                type = 'range',
+                name = 'brezzFontSize',
+                label = 'Font Size',
+                min = 10,
+                max = 100,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('brezzFontSize')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('brezzFontSize', value)
+                    self:CreateOrRefreshBrezz()
+                end
+            },
+        }
+    end
+    if (currTabID == 'readyCheck') then
+        return {
+            {
+                type = 'toggle',
+                name = 'readyCheckEnabled',
+                label = 'Enable',
+                onObserve = function(value, oldValue)
+                    data:SetDataByKey('readyCheckEnabled', value)
+                    self:CreateOrRefreshReadyCheck()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckEnabled')
+                end,
+                width = 100,
+            },
+            {
+                type = 'range',
+                name = 'readyCheckWidth',
+                label = 'Width',
+                min = 10,
+                max = 300,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckWidth')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('readyCheckWidth', value)
+                    self:CreateOrRefreshReadyCheck()
+                end
+            },
+            {
+                type = 'range',
+                name = 'readyCheckHeight',
+                label = 'Height',
+                min = 10,
+                max = 100,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckHeight')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('readyCheckHeight', value)
+                    self:CreateOrRefreshReadyCheck()
+                end
+            },
+            {
+                type = 'color-picker',
+                name = 'readyCheckBackgroundColor',
+                label = 'Background Color',
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckBackgroundColor')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('readyCheckBackgroundColor', value)
+                    self:CreateOrRefreshReadyCheck()
+                end,
+                width = 16
+            },
+            {
+                type = 'spacer',
+                width = 52
+            },
+            {
+                type = 'dropdown',
+                name = 'readyCheckFont',
+                label = 'Font',
+                getOptions = function()
+                    local fonts = LSM:List('font')
+                    local options = {}
+                    for _, font in ipairs(fonts) do
+                        options[font] = font
+                    end
+                    return options
+                end,
+                isFontDropdown = true,
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckFont')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('readyCheckFont', value)
+                    self:CreateOrRefreshReadyCheck()
+                end,
+                width = 33
+            },
+            {
+                type = 'range',
+                name = 'readyCheckFontSize',
+                label = 'Font Size',
+                min = 10,
+                max = 100,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckFontSize')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('readyCheckFontSize', value)
+                    self:CreateOrRefreshReadyCheck()
+                end
+            },
+            {
+                type = 'spacer',
+                width = 50
+            },
+            {
+                type = 'range',
+                name = 'readyCheckXOff',
+                label = 'X Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckXOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('readyCheckXOff', value)
+                    self:CreateOrRefreshReadyCheck()
+                end
+            },
+            {
+                type = 'range',
+                name = 'readyCheckYOff',
+                label = 'Y Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('readyCheckYOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('readyCheckYOff', value)
+                    self:CreateOrRefreshReadyCheck()
+                end
+            },
+        }
+    end
+    if (currTabID == 'pullTimer') then
+        return {
+            {
+                type = 'toggle',
+                name = 'pullTimerEnabled',
+                label = 'Enable',
+                onObserve = function(value, oldValue)
+                    data:SetDataByKey('pullTimerEnabled', value)
+                    self:CreateOrRefreshPullTimer()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerEnabled')
+                end,
+                width = 100,
+            },
+            {
+                type = 'range',
+                name = 'pullTimerWidth',
+                label = 'Width',
+                min = 10,
+                max = 300,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerWidth')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('pullTimerWidth', value)
+                    self:CreateOrRefreshPullTimer()
+                end
+            },
+            {
+                type = 'range',
+                name = 'pullTimerHeight',
+                label = 'Height',
+                min = 10,
+                max = 100,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerHeight')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('pullTimerHeight', value)
+                    self:CreateOrRefreshPullTimer()
+                end
+            },
+            {
+                type = 'color-picker',
+                name = 'pullTimerBackgroundColor',
+                label = 'Background Color',
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerBackgroundColor')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('pullTimerBackgroundColor', value)
+                    self:CreateOrRefreshPullTimer()
+                end,
+                width = 16
+            },
+            {
+                type = 'range',
+                name = 'pullTimerSeconds',
+                label = 'Seconds',
+                min = 5,
+                max = 20,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerSeconds')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('pullTimerSeconds', value)
+                end
+            },
+            {
+                type = 'spacer',
+                width = 36
+            },
+            {
+                type = 'dropdown',
+                name = 'pullTimerFont',
+                label = 'Font',
+                getOptions = function()
+                    local fonts = LSM:List('font')
+                    local options = {}
+                    for _, font in ipairs(fonts) do
+                        options[font] = font
+                    end
+                    return options
+                end,
+                isFontDropdown = true,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerFont')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('pullTimerFont', value)
+                    self:CreateOrRefreshPullTimer()
+                end,
+                width = 33
+            },
+            {
+                type = 'range',
+                name = 'pullTimerFontSize',
+                label = 'Font Size',
+                min = 10,
+                max = 100,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerFontSize')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('pullTimerFontSize', value)
+                    self:CreateOrRefreshPullTimer()
+                end
+            },
+            {
+                type = 'spacer',
+                width = 50
+            },
+            {
+                type = 'range',
+                name = 'pullTimerXOff',
+                label = 'X Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerXOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('pullTimerXOff', value)
+                    self:CreateOrRefreshPullTimer()
+                end
+            },
+            {
+                type = 'range',
+                name = 'pullTimerYOff',
+                label = 'Y Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('pullTimerYOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('pullTimerYOff', value)
+                    self:CreateOrRefreshPullTimer()
+                end
+            },
+        }
+    end
+
+    return {
     }
 end
 
@@ -525,13 +544,13 @@ raidToolsModule.CreateBrezz = function(self)
     local cooldown = CreateFrame('Cooldown', nil, self.brezzFrame)
     cooldown:SetPoint('TOPLEFT', -1, 1)
     cooldown:SetPoint('BOTTOMRIGHT', 1, -1)
-    cooldown:SetSwipeColor(0,0,0, 0.6)
+    cooldown:SetSwipeColor(0, 0, 0, 0.6)
     cooldown:SetSwipeTexture(EXUI.const.textures.frame.bg)
     self.brezzFrame.cooldown = cooldown
 
     self.brezzFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
-    self.brezzFrame:SetBackdropColor(0,0,0, 0.4)
-    self.brezzFrame:SetBackdropBorderColor(0,0,0, 1)
+    self.brezzFrame:SetBackdropColor(0, 0, 0, 0.4)
+    self.brezzFrame:SetBackdropBorderColor(0, 0, 0, 1)
 
     local elementFrame = CreateFrame('Frame', nil, self.brezzFrame)
     elementFrame:SetAllPoints()
@@ -550,7 +569,7 @@ raidToolsModule.CreateBrezz = function(self)
     text:SetVertexColor(1, 1, 1, 1)
     self.brezzFrame.text = text
     self.brezzFrame.timer = 0
-    
+
     self.brezzFrame.onUpdate = function(self, elapsed)
         self.timer = self.timer + elapsed
         if (self.timer >= 1) then
@@ -565,7 +584,7 @@ raidToolsModule.CreateBrezz = function(self)
             self:Show()
         end
     end
-    
+
     self.brezzFrame:RegisterEvent('ENCOUNTER_START')
     self.brezzFrame:RegisterEvent('ENCOUNTER_END')
     self.brezzFrame:RegisterEvent('CHALLENGE_MODE_START')
@@ -598,7 +617,7 @@ raidToolsModule.CreateBrezz = function(self)
 
     self.brezzFrame.cdFont = cdFont
     self.brezzFrame.cooldown:SetCountdownFont('ExalityUI_Brezz_CD_Font')
-    
+
 
     self.brezzFrame:SetSize(100, 100)
 
@@ -618,7 +637,7 @@ end
 
 raidToolsModule.CreateOrRefreshBrezz = function(self)
     local isEnabled = data:GetDataByKey('brezzEnabled')
-    if (not self.brezzFrame and isEnabled) then self:CreateBrezz() end 
+    if (not self.brezzFrame and isEnabled) then self:CreateBrezz() end
     if (not isEnabled) then
         if (self.brezzFrame) then
             self.brezzFrame:SetScript('OnUpdate', nil)
@@ -628,7 +647,8 @@ raidToolsModule.CreateOrRefreshBrezz = function(self)
     end
 
     self.brezzFrame:ClearAllPoints()
-    self.brezzFrame:SetPoint(data:GetDataByKey('brezzAnchor'), data:GetDataByKey('brezzXOff'), data:GetDataByKey('brezzYOff'))
+    self.brezzFrame:SetPoint(data:GetDataByKey('brezzAnchor'), data:GetDataByKey('brezzXOff'),
+        data:GetDataByKey('brezzYOff'))
     self.brezzFrame:SetSize(data:GetDataByKey('brezzSize'), data:GetDataByKey('brezzSize'))
 
     local brezzFont = LSM:Fetch('font', data:GetDataByKey('brezzFont'))
@@ -645,8 +665,8 @@ end
 raidToolsModule.CreateReadyCheck = function(self)
     self.readyCheckFrame = CreateFrame('Button', nil, UIParent, "BackdropTemplate")
     self.readyCheckFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
-    self.readyCheckFrame:SetBackdropColor(0,0,0, 0.4)
-    self.readyCheckFrame:SetBackdropBorderColor(0,0,0, 1)
+    self.readyCheckFrame:SetBackdropColor(0, 0, 0, 0.4)
+    self.readyCheckFrame:SetBackdropBorderColor(0, 0, 0, 1)
 
     local readyBg = data:GetDataByKey('readyCheckBackgroundColor')
     if (type(readyBg) == 'table') then
@@ -666,7 +686,7 @@ raidToolsModule.CreateReadyCheck = function(self)
         self:SetBackdropBorderColor(1, 1, 1, 1)
     end)
     self.readyCheckFrame:SetScript('OnLeave', function(self)
-        self:SetBackdropBorderColor(0,0,0, 1)
+        self:SetBackdropBorderColor(0, 0, 0, 1)
     end)
 
     self.readyCheckFrame:SetScript('OnClick', function(self)
@@ -674,7 +694,8 @@ raidToolsModule.CreateReadyCheck = function(self)
     end)
 
     local editorOnShow = function(frame)
-        frame:SetPoint(data:GetDataByKey('readyCheckAnchor'), data:GetDataByKey('readyCheckXOff'), data:GetDataByKey('readyCheckYOff'))
+        frame:SetPoint(data:GetDataByKey('readyCheckAnchor'), data:GetDataByKey('readyCheckXOff'),
+            data:GetDataByKey('readyCheckYOff'))
         frame:SetSize(data:GetDataByKey('readyCheckWidth'), data:GetDataByKey('readyCheckHeight'))
         frame:Show()
     end
@@ -695,12 +716,13 @@ end
 
 raidToolsModule.CreateOrRefreshReadyCheck = function(self)
     local isEnabled = data:GetDataByKey('readyCheckEnabled')
-    if (not self.readyCheckFrame and isEnabled) then self:CreateReadyCheck() end 
-    if (not self.showStatus) then 
+    if (not self.readyCheckFrame and isEnabled) then self:CreateReadyCheck() end
+    if (not self.showStatus) then
         if (self.readyCheckFrame) then
             self.readyCheckFrame:Hide()
         end
-        return end
+        return
+    end
     if (not isEnabled) then
         if (self.readyCheckFrame) then
             self.readyCheckFrame:Hide()
@@ -708,7 +730,8 @@ raidToolsModule.CreateOrRefreshReadyCheck = function(self)
         return;
     end
     self.readyCheckFrame:Show()
-    self.readyCheckFrame:SetPoint(data:GetDataByKey('readyCheckAnchor'), data:GetDataByKey('readyCheckXOff'), data:GetDataByKey('readyCheckYOff'))
+    self.readyCheckFrame:SetPoint(data:GetDataByKey('readyCheckAnchor'), data:GetDataByKey('readyCheckXOff'),
+        data:GetDataByKey('readyCheckYOff'))
     self.readyCheckFrame:SetSize(data:GetDataByKey('readyCheckWidth'), data:GetDataByKey('readyCheckHeight'))
     local readyBg = data:GetDataByKey('readyCheckBackgroundColor')
     if (type(readyBg) == 'table') then
@@ -728,8 +751,8 @@ end
 raidToolsModule.CreatePullTimer = function(self)
     self.pullTimerFrame = CreateFrame('Button', nil, UIParent, "BackdropTemplate")
     self.pullTimerFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
-    self.pullTimerFrame:SetBackdropColor(0,0,0, 0.4)
-    self.pullTimerFrame:SetBackdropBorderColor(0,0,0, 1)
+    self.pullTimerFrame:SetBackdropColor(0, 0, 0, 0.4)
+    self.pullTimerFrame:SetBackdropBorderColor(0, 0, 0, 1)
 
     self.pullTimerFrame:SetClipsChildren(true)
     self.pullTimerFrame:RegisterForClicks('LeftButtonDown', 'RightButtonDown')
@@ -752,7 +775,7 @@ raidToolsModule.CreatePullTimer = function(self)
         self:SetBackdropBorderColor(1, 1, 1, 1)
     end)
     self.pullTimerFrame:SetScript('OnLeave', function(self)
-        self:SetBackdropBorderColor(0,0,0, 1)
+        self:SetBackdropBorderColor(0, 0, 0, 1)
     end)
 
     self.pullTimerFrame:SetScript('OnClick', function(self, button)
@@ -767,7 +790,8 @@ raidToolsModule.CreatePullTimer = function(self)
 
     local editorOnShow = function(frame)
         frame:Show()
-        frame:SetPoint(data:GetDataByKey('pullTimerAnchor'), data:GetDataByKey('pullTimerXOff'), data:GetDataByKey('pullTimerYOff'))
+        frame:SetPoint(data:GetDataByKey('pullTimerAnchor'), data:GetDataByKey('pullTimerXOff'),
+            data:GetDataByKey('pullTimerYOff'))
         frame:SetSize(data:GetDataByKey('pullTimerWidth'), data:GetDataByKey('pullTimerHeight'))
     end
 
@@ -787,12 +811,13 @@ end
 
 raidToolsModule.CreateOrRefreshPullTimer = function(self)
     local isEnabled = data:GetDataByKey('pullTimerEnabled')
-    if (not self.pullTimerFrame and isEnabled) then self:CreatePullTimer() end 
-    if (not self.showStatus) then 
+    if (not self.pullTimerFrame and isEnabled) then self:CreatePullTimer() end
+    if (not self.showStatus) then
         if (self.pullTimerFrame) then
             self.pullTimerFrame:Hide()
         end
-        return end
+        return
+    end
     if (not isEnabled) then
         if (self.pullTimerFrame) then
             self.pullTimerFrame:Hide()
@@ -800,7 +825,8 @@ raidToolsModule.CreateOrRefreshPullTimer = function(self)
         return;
     end
     self.pullTimerFrame:Show()
-    self.pullTimerFrame:SetPoint(data:GetDataByKey('pullTimerAnchor'), data:GetDataByKey('pullTimerXOff'), data:GetDataByKey('pullTimerYOff'))
+    self.pullTimerFrame:SetPoint(data:GetDataByKey('pullTimerAnchor'), data:GetDataByKey('pullTimerXOff'),
+        data:GetDataByKey('pullTimerYOff'))
     self.pullTimerFrame:SetSize(data:GetDataByKey('pullTimerWidth'), data:GetDataByKey('pullTimerHeight'))
     local pullBg = data:GetDataByKey('pullTimerBackgroundColor')
     if (type(pullBg) == 'table') then

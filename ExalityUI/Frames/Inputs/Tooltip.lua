@@ -5,7 +5,7 @@ local moduleName = 'frame-input-tooltip'
 
 ---@class EXUITooltipOptions : {text: string}
 
----@class TooltipInput
+---@class EXUITooltipInput
 local tooltip = EXUI:GetModule(moduleName)
 tooltip.pool = {}
 

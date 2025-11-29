@@ -7,6 +7,7 @@ local EXUI = select(2, ...)
 local editor = EXUI:GetModule('editor')
 
 editor.frames = {}
+editor.activeFrame = nil
 
 editor.RegisterFrameForEditor = function(self, frame, label, onChange, onShow, onHide)
     table.insert(self.frames, {
@@ -51,6 +52,14 @@ editor.UnregisterFrameForEditor = function(self, frame)
     end
 end
 
+editor.SetActiveFrame = function(self, frame)
+    if (self.activeFrame) then
+        self.activeFrame.editor:HideArrows()
+    end
+    self.activeFrame = frame
+    frame.editor:ShowArrows()
+end
+
 editor.AddEditorOverlay = function(self, frame, label, onChange)
     if (frame.editor) then return end
     frame.editor = CreateFrame('Frame', nil, UIParent, "BackdropTemplate")
@@ -62,6 +71,7 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
         self:SetMovable(true)
         self.__owner:SetMovable(false)
         self:EnableMouse(true)
+        self:SetPropagateMouseClicks(false)
         self:RegisterForDrag("LeftButton")
         self:SetScript('OnDragStart', function(self)
             self:StartMoving()
@@ -95,6 +105,11 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     frame.editor:SetBackdropBorderColor(1, 1, 1, 1)
     frame.editor:SetBackdropColor(0, 0, 0, 0.7)
 
+    frame.editor:SetPropagateMouseClicks(true)
+    frame.editor:SetScript('OnMouseDown', function(self)
+        editor:SetActiveFrame(frame)
+    end)
+
     local labelText = frame.editor:CreateFontString(nil, 'OVERLAY')
     labelText:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')
     labelText:SetPoint('LEFT', 3, 0)
@@ -102,10 +117,22 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     labelText:SetText(label)
     frame.editor.labelText = labelText
 
-    self:AddOffsetArrow(frame, 'X', 1)
-    self:AddOffsetArrow(frame, 'X', -1)
-    self:AddOffsetArrow(frame, 'Y', 1)
-    self:AddOffsetArrow(frame, 'Y', -1)
+    frame.editor.arrows = {}
+    table.insert(frame.editor.arrows, self:AddOffsetArrow(frame, 'X', 1))
+    table.insert(frame.editor.arrows, self:AddOffsetArrow(frame, 'X', -1))
+    table.insert(frame.editor.arrows, self:AddOffsetArrow(frame, 'Y', 1))
+    table.insert(frame.editor.arrows, self:AddOffsetArrow(frame, 'Y', -1))
+
+    frame.editor.ShowArrows = function(self)
+        for _, arrow in ipairs(self.arrows) do
+            arrow:Show()
+        end
+    end
+    frame.editor.HideArrows = function(self)
+        for _, arrow in ipairs(self.arrows) do
+            arrow:Hide()
+        end
+    end
 
     frame.editor:Hide()
 end
@@ -162,6 +189,10 @@ editor.AddOffsetArrow = function(self, frame, direction, sign)
             frame.editor.onChange(frame)
         end
     end)
+
+    arrow:Hide()
+
+    return arrow
 end
 
 editor.EnableEditor = function(self)

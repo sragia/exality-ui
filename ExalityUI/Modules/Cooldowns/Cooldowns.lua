@@ -39,6 +39,10 @@ cooldowns.DEFAULTS = {
     isItem = false,
     spellID = '',
     itemID = '',
+    -- Load Conditions
+    hasLoadConditions = false,
+    onlyLoadOnPlayer = '',
+    dontLoadOnPlayer = '',
     -- Size
     width = 80,
     height = 80,
@@ -690,6 +694,66 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             width = 100
         },
         {
+            type = 'toggle',
+            label = 'Enable Load Condtions',
+            name = 'hasLoadConditions',
+            currentValue = function()
+                return self:GetValueForCD(currItemID, 'hasLoadConditions')
+            end,
+            onObserve = function(value)
+                self:UpdateValueForCD(currItemID, 'hasLoadConditions', value)
+                self:UpdateById(currItemID)
+                optionsFields:RefreshOptions()
+            end,
+            width = 100
+        },
+        {
+            type = 'edit-box',
+            label = 'Load Only on Player/s',
+            name = 'onlyLoadOnPlayer',
+            tooltip = {
+                text = 'Comma separated list of players to load the cooldown on.'
+            },
+            depends = function()
+                return self:GetValueForCD(currItemID, 'hasLoadConditions')
+            end,
+            currentValue = function()
+                return self:GetValueForCD(currItemID, 'onlyLoadOnPlayer')
+            end,
+            onChange = function(_, value)
+                self:UpdateValueForCD(currItemID, 'onlyLoadOnPlayer', value)
+                self:UpdateById(currItemID)
+            end,
+            width = 40
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
+            type = 'edit-box',
+            label = 'Dont Load on Player/s',
+            name = 'dontLoadOnPlayer',
+            tooltip = {
+                text = 'Comma separated list of players to not load the cooldown on.'
+            },
+            depends = function()
+                return self:GetValueForCD(currItemID, 'hasLoadConditions')
+            end,
+            currentValue = function()
+                return self:GetValueForCD(currItemID, 'dontLoadOnPlayer')
+            end,
+            onChange = function(_, value)
+                self:UpdateValueForCD(currItemID, 'dontLoadOnPlayer', value)
+                self:UpdateById(currItemID)
+            end,
+            width = 40
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
             type = 'button',
             label = 'Duplicate',
             onClick = function()
@@ -758,6 +822,12 @@ cooldowns.UpdateById = function(self, ID)
     local frame = self.frames[ID]
     if (frame) then
         self:SetDefaults(ID)
+        if (not self:CheckLoadConditions(ID)) then
+            frame:Hide()
+            frame:UnregisterAllEvents()
+            return
+        end
+        frame:Show()
         frame.db = self:GetCDDBByID(ID)
         cooldownDisplay:Update(frame)
 
@@ -773,6 +843,32 @@ cooldowns.UpdateById = function(self, ID)
             editor:UpdateFrameLabel(frame, 'CD: ' .. frame.db.name)
         end
     end
+end
+
+cooldowns.CheckLoadConditions = function(self, ID)
+    local db = self:GetCDDBByID(ID)
+    if (not db.hasLoadConditions) then
+        return true
+    end
+    local playerName = UnitName('player')
+
+    local onlyLoadOnPlayer = db.onlyLoadOnPlayer
+    if (onlyLoadOnPlayer ~= '') then
+        local players = { strsplit(',', onlyLoadOnPlayer) }
+        if (not tContains(players, playerName)) then
+            return false
+        end
+    end
+
+    local dontLoadOnPlayer = db.dontLoadOnPlayer
+    if (dontLoadOnPlayer ~= '') then
+        local players = { strsplit(',', dontLoadOnPlayer) }
+        if (tContains(players, playerName)) then
+            return false
+        end
+    end
+
+    return true
 end
 
 cooldowns.UpdateAll = function(self)

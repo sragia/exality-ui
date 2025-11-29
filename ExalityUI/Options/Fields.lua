@@ -4,6 +4,9 @@ local EXUI = select(2, ...)
 ---@class EXUIOptionsController
 local optionsController = EXUI:GetModule('options-controller')
 
+---@class EXUITooltipInput
+local tooltip = EXUI:GetModule('frame-input-tooltip')
+
 -------------
 
 ---@class EXUIOptionsFields
@@ -77,7 +80,28 @@ optionsFields.AddTabs = function(self, module)
     self.tabs:SetAllPoints()
     self.container = self.tabs.container
 
-    -- TODO Finish implementing this when I need this somewhere...
+    local tabs = module:GetTabs()
+    self.tabs:AddTabs(tabs)
+
+
+    self.tabs:SetOnTabChange(function(id)
+        self.currTabID = id
+        self:RefreshFields()
+    end)
+
+    if (#tabs > 0) then
+        local found = false
+        for _, tab in ipairs(tabs) do
+            if (tab.ID == self.currTabID) then
+                self.tabs:onTabClick(tab.ID)
+                found = true
+                break
+            end
+        end
+        if (not found) then
+            self.tabs:onTabClick(tabs[1].ID)
+        end
+    end
 end
 
 optionsFields.Refresh = function(self)
@@ -130,6 +154,43 @@ optionsFields.RefreshOptions = function(self)
     end)
 end
 
+optionsFields.CreateOrUpdateTooltip = function(self, field, tooltipInfo)
+    if (not field.Tooltip and tooltipInfo) then
+        local tooltip = tooltip:Get({
+            text = tooltipInfo.text,
+        }, field)
+        field.Tooltip = tooltip
+        field.isTooltipEnabled = true
+
+        field.OriginalOnEnter = field:GetScript('OnEnter')
+        field.OriginalOnLeave = field:GetScript('OnLeave')
+
+        field:SetScript('OnEnter', function(self, ...)
+            if (self.isTooltipEnabled) then
+                self.Tooltip:ShowTooltip()
+            end
+            if (self.OriginalOnEnter) then
+                self.OriginalOnEnter(self, ...)
+            end
+        end)
+        field:SetScript('OnLeave', function(self, ...)
+            if (self.isTooltipEnabled) then
+                self.Tooltip:HideTooltip()
+            end
+            if (self.OriginalOnLeave) then
+                self.OriginalOnLeave(self, ...)
+            end
+        end)
+    end
+
+    if (tooltipInfo and tooltipInfo.text and tooltipInfo.text ~= '') then
+        field.Tooltip:SetText(tooltipInfo.text)
+        field.isTooltipEnabled = true
+    else
+        field.isTooltipEnabled = false
+    end
+end
+
 optionsFields.RefreshFields = function(self)
     local module = optionsController:GetSelectedModule()
     local currentModule = module.module
@@ -143,6 +204,7 @@ optionsFields.RefreshFields = function(self)
     for _, field in ipairs(fields) do
         if (not field.depends or field.depends()) then
             local fieldFrame = self:GetField(field)
+            self:CreateOrUpdateTooltip(fieldFrame, field.tooltip)
             if (fieldFrame) then
                 fieldFrame:SetOptionData(field)
                 fieldFrame:SetParent(self.container)
