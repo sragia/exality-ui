@@ -26,7 +26,7 @@ local function CreateItem(parent)
 
     button.SetActive = function(self, active)
         if (active) then
-            button:SetBackdropBorderColor(249/255, 95/255, 9/255, 1)
+            button:SetBackdropBorderColor(249 / 255, 95 / 255, 9 / 255, 1)
             button:SetBackdropColor(0.15, 0.15, 0.15, 1)
         else
             button:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
@@ -50,7 +50,8 @@ end
 local configure = function(f)
     f.items = {}
     f.onItemClick = nil
-    
+    f.activeID = nil
+
     local leftPanel = EXUI:GetModule('panel-frame'):Create()
     leftPanel:SetBackgroundColor(0.05, 0.05, 0.05, 0.8)
     leftPanel:SetParent(f)
@@ -66,7 +67,7 @@ local configure = function(f)
 
     local scrollFrame = scrollFrame:Create()
     scrollFrame:SetParent(rightPanel)
-    scrollFrame:SetPoint('TOPLEFT', 5 , -15)
+    scrollFrame:SetPoint('TOPLEFT', 5, -15)
     scrollFrame:SetPoint('BOTTOMRIGHT', -30, 8)
     f.scrollFrame = scrollFrame
     f.container = scrollFrame.child
@@ -84,6 +85,7 @@ local configure = function(f)
     end
 
     f.onItemClick = function(self, id)
+        f.activeID = id
         for _, item in ipairs(f.items) do
             item:SetActive(item.ID == id)
         end
@@ -106,7 +108,6 @@ local configure = function(f)
             button:SetText(item.label)
             button.onItemClick = self.onItemClick
             if (not prev) then
-                button:SetActive(true)
                 button:SetPoint('TOPLEFT', leftPanel, 'TOPLEFT', 3, -5)
                 button:SetPoint('TOPRIGHT', leftPanel, 'TOPRIGHT', -3, -5)
             else
@@ -115,14 +116,21 @@ local configure = function(f)
                 button:SetPoint('TOPRIGHT', prev, 'BOTTOMRIGHT', 0, -3)
             end
 
+            if (self.activeID and self.activeID == item.ID) then
+                button:SetActive(true)
+            elseif (not self.activeID and not prev) then
+                button:SetActive(true)
+                self.activeID = item.ID
+            end
+
             prev = button
         end
     end
-    
+
     f.SetOnItemChange = function(self, callback)
         self.onItemChange = callback
     end
-    
+
     f.AddExtraButton = function(self, buttonOptions)
         self.extraButton:Show()
         if (buttonOptions.color) then
@@ -139,9 +147,10 @@ local configure = function(f)
     f.DisableExtraButton = function(self)
         self.extraButton:Hide()
     end
-    
+
     f.Destroy = function(self)
         self.extraButton:Hide()
+        self.activeID = nil
         self:ClearAllPoints()
         splitOptions.pool:Release(self)
     end

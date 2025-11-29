@@ -27,8 +27,8 @@ local function CreateTabButton(parent)
 
     button.SetActive = function(self, active)
         texture:SetTexture(
-            active and 
-            EXUI.const.textures.frame.tabs.active or 
+            active and
+            EXUI.const.textures.frame.tabs.active or
             EXUI.const.textures.frame.tabs.inactive
         )
     end
@@ -49,6 +49,7 @@ end
 
 local configure = function(frame)
     frame.tabs = {}
+    frame.activeTabID = nil
 
     local tabBar = CreateFrame('Frame', nil, frame)
     tabBar:SetPoint('TOPLEFT', 0, 0)
@@ -64,6 +65,7 @@ local configure = function(frame)
     frame.container = container
 
     frame.onTabClick = function(self, id)
+        frame.activeTabID = id
         for _, tab in ipairs(frame.tabs) do
             tab:SetActive(tab.ID == id)
         end
@@ -86,11 +88,16 @@ local configure = function(frame)
             button:SetText(tab.label)
             button.onClick = self.onTabClick
             if (not prev) then
-                button:SetActive(true)
                 button:SetPoint('BOTTOMLEFT', self.tabBar, 'BOTTOMLEFT', 20, 0)
             else
-                button:SetActive(false)
                 button:SetPoint('BOTTOMLEFT', prev, 'BOTTOMRIGHT', 3, 0)
+            end
+
+            if (self.activeTabID and self.activeTabID == tab.ID) then
+                button:SetActive(true)
+            elseif (not self.activeTabID and not prev) then
+                button:SetActive(true)
+                self.activeTabID = tab.ID
             end
             prev = button
         end

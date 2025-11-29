@@ -50,11 +50,23 @@ optionsFields.AddSplitView = function(self, module)
     end
     local items = module.GetSplitViewItems()
     self.splitView:AddItems(items)
-    self.splitView:SetOnItemChange(function(id) 
+    self.splitView:SetOnItemChange(function(id)
         self.currItemID = id
         self:RefreshFields()
     end)
-    self.splitView:onItemClick(items[1].ID)
+    if (#items > 0) then
+        local found = false
+        for _, item in ipairs(items) do
+            if (item.ID == self.currItemID) then
+                self.splitView:onItemClick(item.ID)
+                found = true
+                break
+            end
+        end
+        if (not found) then
+            self.splitView:onItemClick(items[1].ID)
+        end
+    end
 
     self.container = self.splitView.container
 end
@@ -91,25 +103,31 @@ optionsFields.Refresh = function(self)
 
     self.container = self.baseContainer
     self.fields = {}
-    
+
     if (module.optionHandler) then
         module.optionHandler(self.container)
         return;
     end
     local currentModule = module.module
-    
+
     if (currentModule) then
         if (currentModule.useTabs) then
             self:AddTabs(currentModule)
             -- TODO: How to handle after this
         end
-    
+
         if (currentModule.useSplitView) then
             self:AddSplitView(currentModule)
         end
     end
 
     self:RefreshFields()
+end
+
+optionsFields.RefreshOptions = function(self)
+    C_Timer.After(0.3, function()
+        self:RefreshFields()
+    end)
 end
 
 optionsFields.RefreshFields = function(self)
@@ -123,15 +141,29 @@ optionsFields.RefreshFields = function(self)
 
     local fields = currentModule:GetOptions(self.currTabID, self.currItemID)
     for _, field in ipairs(fields) do
-        local fieldFrame = self:GetField(field)
-        if (fieldFrame) then
-            fieldFrame:SetOptionData(field)
-            fieldFrame:SetParent(self.container)
-            table.insert(self.fields, fieldFrame)
+        if (not field.depends or field.depends()) then
+            local fieldFrame = self:GetField(field)
+            if (fieldFrame) then
+                fieldFrame:SetOptionData(field)
+                fieldFrame:SetParent(self.container)
+                table.insert(self.fields, fieldFrame)
+            end
         end
     end
-    
+
     EXUI.utils.organizeFramesInGrid('fields', self.fields, 10, self.container, 10, 10)
+end
+
+optionsFields.RefreshItemList = function(self)
+    local module = optionsController:GetSelectedModule()
+    local items = module.module:GetSplitViewItems()
+    self.splitView:AddItems(items)
+end
+
+optionsFields.SetItemID = function(self, itemID)
+    if (self.splitView) then
+        self.splitView:onItemClick(itemID)
+    end
 end
 
 optionsFields.GetField = function(self, field)
@@ -188,7 +220,7 @@ optionsFields.GetField = function(self, field)
             return f
         end,
         default = function()
-            EXUI.utils.printOut('Unknown Field Type: ' .. field.type)    
+            EXUI.utils.printOut('Unknown Field Type: ' .. field.type)
         end
     })
 end

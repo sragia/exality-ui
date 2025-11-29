@@ -62,6 +62,7 @@ Modules/UnitFrames/Options/UFOptions.xml
 Modules/General.lua
 Modules/RaidTools.lua
 Modules/ResourceDisplays/ResourceDisplays.xml
+Modules/Cooldowns/Cooldowns.xml
 
 # UnitFrames
 Modules/UnitFrames/Core.lua

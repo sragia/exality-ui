@@ -27,6 +27,16 @@ editor.IsFrameRegistered = function(self, frame)
     return false
 end
 
+editor.UpdateFrameLabel = function(self, frame, label)
+    for _, f in ipairs(self.frames) do
+        if (f.frame == frame) then
+            f.label = label
+            f.frame.editor.labelText:SetText(label)
+            break
+        end
+    end
+end
+
 editor.UnregisterFrameForEditor = function(self, frame)
     local index = nil
     for i, f in ipairs(self.frames) do
@@ -64,7 +74,7 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
 
     frame.isMovable = false
     frame:SetMovable(false) -- remove, only enable when the editor is visible
-    frame:EnableMouse(true)
+    frame.editor.isMouseEnabledByDefault = frame:IsMouseEnabled()
     frame:RegisterForDrag("LeftButton")
     frame:SetScript('OnDragStart', function(self)
         if (frame.isMovable) then
@@ -90,12 +100,13 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     labelText:SetPoint('LEFT', 3, 0)
     labelText:SetWidth(0)
     labelText:SetText(label)
+    frame.editor.labelText = labelText
 
     self:AddOffsetArrow(frame, 'X', 1)
     self:AddOffsetArrow(frame, 'X', -1)
     self:AddOffsetArrow(frame, 'Y', 1)
     self:AddOffsetArrow(frame, 'Y', -1)
-    
+
     frame.editor:Hide()
 end
 
@@ -105,7 +116,7 @@ editor.AddOffsetArrow = function(self, frame, direction, sign)
     texture:SetTexture(EXUI.const.textures.frame.editor.arrowInactive)
     texture:SetVertexColor(1, 1, 1, 1)
 
-    arrow:SetSize(18,12)
+    arrow:SetSize(18, 12)
 
     EXUI.utils.switch(direction, {
         ['X'] = function()
@@ -162,6 +173,7 @@ editor.EnableEditor = function(self)
         if (not f.frame.editorMoveOverride) then
             f.frame.isMovable = true
             f.frame:SetMovable(true)
+            f.frame:EnableMouse(true)
         end
     end
 end
@@ -174,5 +186,6 @@ editor.DisableEditor = function(self)
         end
         f.frame.isMovable = false
         f.frame:SetMovable(false)
+        f.frame:EnableMouse(f.frame.editor.isMouseEnabledByDefault)
     end
 end

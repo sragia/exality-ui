@@ -41,7 +41,6 @@ stagger.IsActive = function(self, frame)
     if (specId == 268) then -- Brewmaster
         return enabled
     end
-    print('not brew')
 
     return false
 end

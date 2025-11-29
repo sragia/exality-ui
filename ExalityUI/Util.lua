@@ -527,6 +527,7 @@ EXUI.utils = {
             end
         end
         local prevRowFrame = nil
+        DevTool:AddData(rows)
         for _, row in ipairs(rows) do
             local rowFrame = CreateRowFrame(parentContainer)
             table.insert(rowFrames[gridId], rowFrame)

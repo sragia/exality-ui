@@ -64,17 +64,17 @@ EXUI.const = {
             tile = false,
             tileSize = 0,
             edgeSize = 1,
-            insets = { left = 0, right = 0, top = 0, bottom = 0 } 
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
         }
     },
     ilvlColors = {
         -- Midnight --
-        {ilvl = 200, str = "ff26ff3f"}, {ilvl = 540, str = "ff26ffba"},
-        {ilvl = 230, str = "ff26e2ff"}, {ilvl = 560, str = "ff26a0ff"},
-        {ilvl = 240, str = "ff2663ff"}, {ilvl = 580, str = "ff8e26ff"},
-        {ilvl = 250, str = "ffe226ff"}, {ilvl = 600, str = "ffff2696"},
-        {ilvl = 260, str = "ffff2634"}, {ilvl = 620, str = "ffff7526"},
-        {ilvl = 277, str = "ffffc526"}
+        { ilvl = 200, str = "ff26ff3f" }, { ilvl = 540, str = "ff26ffba" },
+        { ilvl = 230, str = "ff26e2ff" }, { ilvl = 560, str = "ff26a0ff" },
+        { ilvl = 240, str = "ff2663ff" }, { ilvl = 580, str = "ff8e26ff" },
+        { ilvl = 250, str = "ffe226ff" }, { ilvl = 600, str = "ffff2696" },
+        { ilvl = 260, str = "ffff2634" }, { ilvl = 620, str = "ffff7526" },
+        { ilvl = 277, str = "ffffc526" }
     },
     anchorPoints = {
         TOPLEFT = 'TOPLEFT',
@@ -86,6 +86,16 @@ EXUI.const = {
         BOTTOM = 'BOTTOM',
         LEFT = 'LEFT',
         RIGHT = 'RIGHT',
+    },
+    frameStrata = {
+        BACKGROUND = 'BACKGROUND',
+        LOW = 'LOW',
+        MEDIUM = 'MEDIUM',
+        HIGH = 'HIGH',
+        DIALOG = 'DIALOG',
+        FULLSCREEN = 'FULLSCREEN',
+        FULLSCREEN_DIALOG = 'FULLSCREEN_DIALOG',
+        TOOLTIP = 'TOOLTIP',
     },
     fontFlags = {
         OUTLINE = 'OUTLINE',

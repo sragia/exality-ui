@@ -19,6 +19,7 @@ boss.Init = function(self)
     self.container:SetSize(200, 40 * 5 + 5 * 4) -- Container of all boss units
     self.container:SetFrameStrata('LOW')
     self.container:SetFrameLevel(1)
+
     core:SetDefaultsForUnit(self.unit, {
         -- Container
         ['positionAnchorPoint'] = 'TOPLEFT',
@@ -34,7 +35,7 @@ boss.Init = function(self)
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
         ['nameFontFlag'] = 'OUTLINE',
-        ['nameFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['nameFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['nameAnchorPoint'] = 'LEFT',
         ['nameRelativeAnchorPoint'] = 'LEFT',
         ['nameTag'] = '[name]',
@@ -46,7 +47,7 @@ boss.Init = function(self)
         ['healthFont'] = 'DMSans',
         ['healthFontSize'] = 12,
         ['healthFontFlag'] = 'OUTLINE',
-        ['healthFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['healthAnchorPoint'] = 'RIGHT',
         ['healthRelativeAnchorPoint'] = 'RIGHT',
         ['healthXOffset'] = -5,
@@ -57,16 +58,16 @@ boss.Init = function(self)
         ['healthpercFont'] = 'DMSans',
         ['healthpercFontSize'] = 16,
         ['healthpercFontFlag'] = 'OUTLINE',
-        ['healthpercFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthpercFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['healthpercAnchorPoint'] = 'RIGHT',
         ['healthpercRelativeAnchorPoint'] = 'RIGHT',
         ['healthpercXOffset'] = -5,
         ['healthpercYOffset'] = 3,
         ['healthpercTag'] = '[perhp]%',
-         -- Power
-         ['powerEnable'] = true,
-         ['powerHeight'] = 5,
-         -- Raid Target Indicator
+        -- Power
+        ['powerEnable'] = true,
+        ['powerHeight'] = 5,
+        -- Raid Target Indicator
         ['raidTargetIndicatorEnable'] = true,
         ['raidTargetIndicatorScale'] = 1,
         ['raidTargetIndicatorAnchorPoint'] = 'CENTER',
@@ -81,10 +82,10 @@ boss.Init = function(self)
         ['raidRolesScale'] = 1,
     })
     self.container:SetPoint(
-        core:GetValueForUnit('boss', 'positionAnchorPoint'), 
+        core:GetValueForUnit('boss', 'positionAnchorPoint'),
         UIParent,
-        core:GetValueForUnit('boss', 'positionRelativePoint'), 
-        core:GetValueForUnit('boss', 'positionXOff'), 
+        core:GetValueForUnit('boss', 'positionRelativePoint'),
+        core:GetValueForUnit('boss', 'positionXOff'),
         core:GetValueForUnit('boss', 'positionYOff')
     )
 
@@ -95,6 +96,8 @@ boss.Init = function(self)
         core:UpdateValueForUnit(self.unit, 'positionXOff', xOfs)
         core:UpdateValueForUnit(self.unit, 'positionYOff', yOfs)
         core:UpdateFrameForUnit(self.unit)
+    end, function(frame)
+        frame.editor:SetEditorAsMovable()
     end)
 end
 
@@ -116,6 +119,15 @@ boss.Update = function(self, frame)
     local db = core:GetDBForUnit(self.unit)
     local generalDB = core:GetDBForUnit('general')
     self.container:SetSize(db.sizeWidth, db.sizeHeight * #self.frames + db.spacing * (#self.frames - 1))
+    self.container:ClearAllPoints()
+    self.container:SetPoint(
+        db.positionAnchorPoint,
+        UIParent,
+        db.positionRelativePoint,
+        db.positionXOff,
+        db.positionYOff
+    )
+
 
     frame.db = db
     frame.generalDB = generalDB
@@ -127,7 +139,7 @@ boss.Update = function(self, frame)
     else
         frame:SetPoint('TOPLEFT', self.frames[frame.index - 1], 'BOTTOMLEFT', 0, -db.spacing)
     end
-    
+
     core:UpdateFrame(frame)
 end
 

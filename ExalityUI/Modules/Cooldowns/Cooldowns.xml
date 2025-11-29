@@ -1,0 +1,7 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- Core Module File -->
+	<Script file="Cooldowns.lua"/> 
+
+	<!-- Display Module File -->
+	<Script file="CooldownDisplay.lua"/>
+</Ui>

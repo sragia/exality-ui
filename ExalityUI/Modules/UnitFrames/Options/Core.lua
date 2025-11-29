@@ -22,10 +22,10 @@ core.Init = function(self)
     optionsController:RegisterModule(self, self.OptionHandler)
     ufCore:SetDefaultsForUnit('general', {
         ['useCustomHealthColor'] = false,
-        ['customHealthColor'] = {r = 0.5, g = 0.5, b = 0.5, a = 1},
+        ['customHealthColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
         ['useClassColoredBackdrop'] = false,
         ['useCustomBackdropColor'] = false,
-        ['customBackdropColor'] = {r = 0.5, g = 0.5, b = 0.5, a = 1},
+        ['customBackdropColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
         ['statusBarTexture'] = 'ExalityUI Status Bar'
     })
 end
@@ -81,7 +81,17 @@ core.OptionHandler = function(container, shouldHide)
     end
     core.tabs:AddTabs(tabs)
     core.tabs:SetOnTabChange(function(id) core:OnTabChange(id) end)
-    core.tabs:onTabClick(tabs[1].ID)
+    local found = false
+    for _, tab in ipairs(tabs) do
+        if (tab.ID == core.currTabId) then
+            core.tabs:onTabClick(tab.ID)
+            found = true
+            break
+        end
+    end
+    if (not found) then
+        core.tabs:onTabClick(tabs[1].ID)
+    end
 end
 
 core.OnTabChange = function(self, id)
@@ -114,13 +124,24 @@ core.OnTabChange = function(self, id)
             self.tabOptions:AddExtraButton({
                 text = 'Show Preview',
                 onClick = onClick.show,
-                color = {249/255, 95/255, 9/255, 1}
+                color = { 249 / 255, 95 / 255, 9 / 255, 1 }
             })
         else
             self.tabOptions:DisableExtraButton()
         end
         self.tabOptions:SetOnItemChange(function(id) self:OnItemChange(id) end)
-        self.tabOptions:onItemClick(items[1].ID)
+
+        local found = false
+        for _, item in ipairs(items) do
+            if (item.ID == core.currItemId) then
+                self.tabOptions:onItemClick(item.ID)
+                found = true
+                break
+            end
+        end
+        if (not found) then
+            self.tabOptions:onItemClick(items[1].ID)
+        end
     end
 end
 

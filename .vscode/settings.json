@@ -69,7 +69,8 @@
         "FindInTable",
         "MergeTable",
         "TargetFrameToT",
-        "EditModeManagerFrame"
+        "EditModeManagerFrame",
+        "BACK"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

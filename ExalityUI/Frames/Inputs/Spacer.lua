@@ -15,8 +15,9 @@ spacer.Init = function(self)
 end
 
 local function ConfigureFrame(f)
+    f:SetSize(1, 1)
     f.SetFrameWidth = function() end
-    f.SetOptionData = function(self, option) 
+    f.SetOptionData = function(self, option)
         self.optionData = option
     end
 
@@ -30,7 +31,7 @@ spacer.Create = function(self)
     local f = self.pool:Acquire()
     if (not f.configured) then
         ConfigureFrame(f)
-    end 
+    end
     f.Destroy = function(self)
         spacer.pool:Release(self)
     end
