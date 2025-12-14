@@ -70,7 +70,9 @@
         "MergeTable",
         "TargetFrameToT",
         "EditModeManagerFrame",
-        "BACK"
+        "BACK",
+        "PixelUtil",
+        "FrameDeltaLerp"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

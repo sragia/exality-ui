@@ -71,10 +71,15 @@ cooldownDisplay.Create = function(self, frame)
                         self.StackText:SetText(charges)
                     end
                 else
-                    local start, duration, modRate = cooldownDisplay:GetCooldownData(db.spellID)
+                    local start, duration, modRate, isOnCD = cooldownDisplay:GetCooldownData(db.spellID)
                     if (start) then
                         self.Cooldown:SetCooldown(start, duration, modRate)
                         self.CooldownSwipe:SetCooldown(start, duration, modRate)
+                        if (isOnCD) then
+                            self.Texture:SetVertexColor(0.5, 0.5, 0.5, 1)
+                        else
+                            self.Texture:SetVertexColor(1, 1, 1, 1)
+                        end
                     end
                 end
             end
@@ -109,7 +114,8 @@ cooldownDisplay.GetCooldownData = function(self, spellID)
     local spellCooldown = C_Spell.GetSpellCooldown(spellID)
 
     if (spellCooldown) then
-        return spellCooldown.startTime, spellCooldown.duration, spellCooldown.modRate
+        return spellCooldown.startTime, spellCooldown.duration, spellCooldown.modRate,
+            type(spellCooldown.timeUntilEndOfStartRecovery) ~= 'nil'
     end
     return 0, 0, 1
 end
@@ -129,6 +135,8 @@ cooldownDisplay.GetTexture = function(self, db)
         -- TODO: We might get it with a event callback?
         if (itemTexture) then
             return itemTexture
+        else
+            C_Item.RequestLoadItemDataByID(db.itemID)
         end
     elseif (db.spellID ~= '') then
         -- Spell

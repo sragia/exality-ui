@@ -14,8 +14,8 @@ statusBar.Create = function(self, frame)
     statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     statusBar:SetMinMaxValues(0, 100)
     statusBar:SetValue(0)
-    statusBar:SetPoint('TOPLEFT', 1, -1)
-    statusBar:SetPoint('BOTTOMRIGHT', -1, 1)
+    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
+    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
 
 
     return statusBar

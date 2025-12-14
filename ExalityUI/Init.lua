@@ -65,7 +65,14 @@ EXUI.const = {
             tileSize = 0,
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
-        }
+        },
+        pixelPerfect = function()
+            return {
+                bgFile = "Interface\\BUTTONS\\WHITE8X8.blp",
+                edgeFile = "Interface\\BUTTONS\\WHITE8X8.blp",
+                edgeSize = EXUI:ScalePixel(1)
+            }
+        end
     },
     ilvlColors = {
         -- Midnight --

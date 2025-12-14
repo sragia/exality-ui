@@ -24,7 +24,7 @@ targettarget.Init = function(self)
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
         ['nameFontFlag'] = 'OUTLINE',
-        ['nameFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['nameFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['nameAnchorPoint'] = 'CENTER',
         ['nameRelativeAnchorPoint'] = 'CENTER',
         ['nameTag'] = '[name]',
@@ -46,7 +46,7 @@ targettarget.Create = function(self, frame)
         core:UpdateValueForUnit(self.unit, 'positionXOff', xOfs)
         core:UpdateValueForUnit(self.unit, 'positionYOff', yOfs)
         core:UpdateFrameForUnit(self.unit)
-    end, function(frame) 
+    end, function(frame)
         frame.editor:SetEditorAsMovable()
     end)
 end
@@ -54,12 +54,12 @@ end
 targettarget.Update = function(self, frame)
     local db = core:GetDBForUnit(self.unit)
     local generalDB = core:GetDBForUnit('general')
-    frame.db = db   
+    frame.db = db
     frame.generalDB = generalDB
 
     frame:ClearAllPoints()
-    frame:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
-    frame:SetSize(db.sizeWidth, db.sizeHeight)
+    EXUI:SetPoint(frame, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
 
     core:UpdateFrame(frame)
 end

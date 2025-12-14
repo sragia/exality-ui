@@ -97,7 +97,7 @@ core.Base = function(self, frame)
     elementFrame:SetAllPoints()
     elementFrame:SetFrameLevel(frame:GetFrameLevel() + 100)
     -- Add Border
-    elementFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    elementFrame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     elementFrame:SetBackdropBorderColor(0, 0, 0, 1)
     elementFrame:SetBackdropColor(0, 0, 0, 0)
 

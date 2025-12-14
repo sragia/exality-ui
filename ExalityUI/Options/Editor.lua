@@ -101,7 +101,7 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
     frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     frame.editor:SetFrameStrata('FULLSCREEN_DIALOG')
-    frame.editor:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    frame.editor:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     frame.editor:SetBackdropBorderColor(1, 1, 1, 1)
     frame.editor:SetBackdropColor(0, 0, 0, 0.7)
 

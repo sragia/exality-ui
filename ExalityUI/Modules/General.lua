@@ -145,6 +145,7 @@ end
 generalModule.UpdateUIScale = function(self)
     local uiScale = data:GetDataByKey('uiScale') or defaultUIScale
     UIParent:SetScale(uiScale)
+    EXUI:GetModule('pixel-perfect'):Initialize()
 end
 
 -- Only called on load

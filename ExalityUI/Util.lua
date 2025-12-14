@@ -340,11 +340,11 @@ EXUI.utils = {
     printOut = function(outputString)
         print("|cffc334eb[ExalityUI]|r " .. outputString)
     end,
-    addDebugTexture = function(frame)
+    addDebugTexture = function(frame, r, g, b, a)
         local tex = frame:CreateTexture()
         tex:SetTexture(EXUI.const.textures.frame.bg)
         tex:SetTexCoord(0.49, 0.51, 0.49, 0.51)
-        tex:SetVertexColor(1, 0, 0, 0.4)
+        tex:SetVertexColor(r or 1, g or 0, b or 0, a or 0.4)
         tex:SetAllPoints()
     end,
     debugWithDevTools = function(data)

@@ -376,7 +376,7 @@ end
 
 core.Create = function(self, resourceType)
     local frame = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
-    frame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     frame:SetBackdropBorderColor(0, 0, 0, 1)
     frame:SetBackdropColor(0, 0, 0, 0.5)
 
@@ -477,8 +477,15 @@ core.RefreshDisplayByID = function(self, displayID)
     frame:Show()
     local displayDB = self:GetDBByDisplayID(displayID)
     frame.db = displayDB
-    frame:SetSize(displayDB.width, displayDB.height)
-    frame:SetPoint(displayDB.anchorPoint, UIParent, displayDB.relativeAnchorPoint, displayDB.XOff, displayDB.YOff)
+    EXUI:SetSize(frame, displayDB.width, displayDB.height)
+    EXUI:SetPoint(
+        frame,
+        displayDB.anchorPoint,
+        UIParent,
+        displayDB.relativeAnchorPoint,
+        displayDB.XOff,
+        displayDB.YOff
+    )
 
     if (not frame.Update) then
         frame.Update = function(self)
@@ -502,7 +509,13 @@ core.CheckLoadConditions = function(self, ID)
 
     local onlyLoadOnPlayer = db.onlyLoadOnPlayer
     if (onlyLoadOnPlayer ~= '') then
-        local players = { strsplit(',', onlyLoadOnPlayer) }
+        local players = {}
+        for _, name in ipairs({ strsplit(',', onlyLoadOnPlayer) }) do
+            name = strtrim(name)
+            if name ~= "" then
+                table.insert(players, name)
+            end
+        end
         if (not tContains(players, playerName)) then
             return false
         end
@@ -510,7 +523,13 @@ core.CheckLoadConditions = function(self, ID)
 
     local dontLoadOnPlayer = db.dontLoadOnPlayer
     if (dontLoadOnPlayer ~= '') then
-        local players = { strsplit(',', dontLoadOnPlayer) }
+        local players = {}
+        for _, name in ipairs({ strsplit(',', dontLoadOnPlayer) }) do
+            name = strtrim(name)
+            if name ~= "" then
+                table.insert(players, name)
+            end
+        end
         if (tContains(players, playerName)) then
             return false
         end

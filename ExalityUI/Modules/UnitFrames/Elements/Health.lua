@@ -11,8 +11,8 @@ health.Create = function(self, frame)
     health:SetAllPoints()
     health:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
     health.PostUpdateColor = self.PostUpdateColor
-    
-    -- Background 
+
+    -- Background
     local background = health:CreateTexture(nil, 'BACKGROUND')
     background:SetTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
     background:SetAllPoints()
@@ -26,11 +26,13 @@ health.PostUpdateColor = function(self)
     local baseFrame = self:GetParent()
     local generalDB = baseFrame.generalDB
     if (generalDB.useCustomHealthColor) then
-        self:SetStatusBarColor(generalDB.customHealthColor.r, generalDB.customHealthColor.g, generalDB.customHealthColor.b)
+        self:SetStatusBarColor(generalDB.customHealthColor.r, generalDB.customHealthColor.g,
+            generalDB.customHealthColor.b)
     end
 
     if (generalDB.useCustomBackdropColor) then
-        self.bg:SetVertexColor(generalDB.customBackdropColor.r, generalDB.customBackdropColor.g, generalDB.customBackdropColor.b)
+        self.bg:SetVertexColor(generalDB.customBackdropColor.r, generalDB.customBackdropColor.g,
+            generalDB.customBackdropColor.b)
     end
 end
 

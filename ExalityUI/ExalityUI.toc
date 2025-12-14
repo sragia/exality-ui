@@ -18,6 +18,8 @@ Init.lua
 Core.lua
 Data.lua
 
+PixelPerfect.lua
+
 Media.lua
 
 # Frame Components

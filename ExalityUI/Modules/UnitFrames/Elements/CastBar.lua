@@ -18,9 +18,9 @@ castBar.Create = function(self, frame, unit)
     castBar.backdrop = backdrop
     castBar:SetSize(200, 20)
     castBar:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
-    backdrop:SetPoint('TOPLEFT', castBar, 'TOPLEFT', -1, 1)
-    backdrop:SetPoint('BOTTOMRIGHT', castBar, 'BOTTOMRIGHT', 1, -1)
-    backdrop:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    EXUI:SetPoint(backdrop, 'TOPLEFT', castBar, 'TOPLEFT', -1, 1)
+    EXUI:SetPoint(backdrop, 'BOTTOMRIGHT', castBar, 'BOTTOMRIGHT', 1, -1)
+    backdrop:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     backdrop:SetBackdropBorderColor(0, 0, 0, 1)
     backdrop:SetBackdropColor(0, 0, 0, 0) -- Hide backdrop background. Use oUF one
 
@@ -29,7 +29,7 @@ castBar.Create = function(self, frame, unit)
     background:SetAllPoints()
     background:SetColorTexture(0, 0, 0, 0.5)
     castBar.bg = background
-    
+
     -- Spark
     local spark = castBar:CreateTexture(nil, 'OVERLAY')
     spark:SetSize(1, 20)
@@ -51,7 +51,7 @@ castBar.Create = function(self, frame, unit)
     spellText:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
     castBar.Text = spellText
 
-    -- Icon 
+    -- Icon
     local icon = castBar:CreateTexture(nil, 'OVERLAY')
     icon:SetSize(20, 20)
     icon:SetPoint('TOPLEFT', castBarContainer, 'TOPLEFT', 0, 0)
@@ -59,7 +59,7 @@ castBar.Create = function(self, frame, unit)
 
 
     if (frame.db.castbarAnchorToFrame) then
-            castBarContainer:SetPoint(
+        castBarContainer:SetPoint(
             frame.db.castbarAnchorPoint,
             frame,
             frame.db.castbarRelativeAnchorPoint,
@@ -68,9 +68,9 @@ castBar.Create = function(self, frame, unit)
         )
     else
         castBarContainer:SetPoint(
-            frame.db.castbarAnchorPointUIParent, 
-            UIParent, 
-            frame.db.castbarRelativeAnchorPointUIParent, 
+            frame.db.castbarAnchorPointUIParent,
+            UIParent,
+            frame.db.castbarRelativeAnchorPointUIParent,
             frame.db.castbarXOffUIParent,
             frame.db.castbarYOffUIParent
         )
@@ -94,21 +94,24 @@ castBar.Update = function(self, frame)
 
     frame:EnableElement('Castbar')
 
-    local iconSize = db.castbarHeight + 2 
+    local iconSize = db.castbarHeight + 2
     if (db.castbarMatchFrameWidth) then
         local frameWidth = db.sizeWidth
-        container:SetSize(frameWidth, db.castbarHeight)
+        EXUI:SetSize(container, frameWidth, db.castbarHeight)
     else
-        container:SetSize(db.castbarWidth, db.castbarHeight)
+        EXUI:SetSize(container, db.castbarWidth, db.castbarHeight)
     end
-    castBar.Icon:SetSize(iconSize, iconSize)
+    EXUI:SetSize(castBar.Icon, iconSize, iconSize)
     castBar.Time:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
-    castBar.Time:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b, db.castbarFontColor.a)
+    castBar.Time:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
+        db.castbarFontColor.a)
     castBar.Text:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
-    castBar.Text:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b, db.castbarFontColor.a)
-    castBar.Spark:SetHeight(db.castbarHeight)
+    castBar.Text:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
+        db.castbarFontColor.a)
+    EXUI:SetHeight(castBar.Spark, db.castbarHeight)
 
-    castBar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b, db.castbarBackgroundColor.a)
+    castBar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b,
+        db.castbarBackgroundColor.a)
     castBar.backdrop:SetBackdropBorderColor(
         db.castbarBackgroundBorderColor.r,
         db.castbarBackgroundBorderColor.g,
@@ -116,7 +119,7 @@ castBar.Update = function(self, frame)
         db.castbarBackgroundBorderColor.a
     )
     castBar:SetStatusBarColor(
-        db.castbarForegroundColor.r, 
+        db.castbarForegroundColor.r,
         db.castbarForegroundColor.g,
         db.castbarForegroundColor.b,
         db.castbarForegroundColor.a
@@ -125,17 +128,17 @@ castBar.Update = function(self, frame)
 
     container:ClearAllPoints()
     if (db.castbarAnchorToFrame) then
-        container:SetPoint(
-        db.castbarAnchorPoint, 
-        frame, 
-        db.castbarRelativeAnchorPoint, 
-        db.castbarXOff,
-        db.castbarYOff)
+        EXUI:SetPoint(container,
+            db.castbarAnchorPoint,
+            frame,
+            db.castbarRelativeAnchorPoint,
+            db.castbarXOff,
+            db.castbarYOff)
     else
-        container:SetPoint(
-            db.castbarAnchorPointUIParent, 
-            UIParent, 
-            db.castbarRelativeAnchorPointUIParent, 
+        EXUI:SetPoint(container,
+            db.castbarAnchorPointUIParent,
+            UIParent,
+            db.castbarRelativeAnchorPointUIParent,
             db.castbarXOffUIParent,
             db.castbarYOffUIParent
         )
