@@ -29,7 +29,7 @@ statusBar.Update = function(self, frame)
         local texture = LSM:Fetch('statusbar', db.barTexture)
         statusBar:SetStatusBarTexture(texture)
     end
-    if (db.barColor) then
+    if (db.barColor and not self.NOCOLOR) then
         statusBar:SetStatusBarColor(db.barColor.r, db.barColor.g, db.barColor.b, db.barColor.a)
     end
 end
