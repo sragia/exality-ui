@@ -18,6 +18,8 @@ Init.lua
 Core.lua
 Data.lua
 
+Masque/Masque.xml
+
 PixelPerfect.lua
 
 Media.lua

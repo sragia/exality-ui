@@ -53,6 +53,13 @@ EXUI.const = {
         vignetteGradient = [[Interface/Addons/ExalityUI/Assets/Images/Frames/vignette.png]],
         logo = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
     },
+    masque = {
+        rectangle = {
+            border = [[Interface/Addons/ExalityUI/Assets/Images/Masque/Border.png]],
+            highlight = [[Interface/Addons/ExalityUI/Assets/Images/Masque/Highlight.png]],
+            spellHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Masque/SpellHighlight.png]],
+        }
+    },
     fonts = {
         Bahnschrift = [[Interface/Addons/ExalityUI/Assets/Fonts/bahnschrift.ttf]],
         DEFAULT = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
