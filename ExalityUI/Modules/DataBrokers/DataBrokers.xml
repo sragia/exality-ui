@@ -1,3 +1,9 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 	<Script file="DataBrokers.lua"/>
+
+    <Script file="Brokers/Clock.lua"/>
+    <Script file="Brokers/FPS.lua"/>
+    <Script file="Brokers/Gold.lua"/>
+    <Script file="Brokers/Guild.lua"/>
+    <Script file="Brokers/Friends.lua"/>
 </Ui>

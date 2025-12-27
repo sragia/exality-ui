@@ -70,12 +70,23 @@ EXUI.handler.eventHandlers = {
     ]]
 }
 
+---Register a new event handler
+---@param self ExalityUI
+---@param event string | string[]
+---@param id any
+---@param func function
 EXUI.RegisterEventHandler = function(self, event, id, func)
-    if (not self.handler.eventHandlers[event]) then
-        self.handler:RegisterEvent(event)
+    if (type(event) ~= 'table') then
+        event = { event }
     end
-    self.handler.eventHandlers[event] = self.handler.eventHandlers[event] or {}
-    self.handler.eventHandlers[event][id] = func
+
+    for _, event in ipairs(event) do
+        if (not self.handler.eventHandlers[event]) then
+            self.handler:RegisterEvent(event)
+        end
+        self.handler.eventHandlers[event] = self.handler.eventHandlers[event] or {}
+        self.handler.eventHandlers[event][id] = func
+    end
 end
 
 EXUI.UnregisterEventHandler = function(self, event, id)

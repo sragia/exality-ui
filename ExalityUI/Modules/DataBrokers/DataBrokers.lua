@@ -109,6 +109,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'brokerName', value)
                 dataBrokers.Displays:UpdateById(currItemId)
+                optionsFields:RefreshItemList()
             end,
             width = 50
         },

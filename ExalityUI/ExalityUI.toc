@@ -12,6 +12,7 @@ Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
 Libs/LibSharedMedia-3.0/lib.xml
 Libs/oUF/oUF.xml
 Libs/libdatabroker-1-1/LibDataBroker-1.1.lua
+Libs/LibQTip-1.0/lib.xml
 
 # Core Functionality
 Util.lua 

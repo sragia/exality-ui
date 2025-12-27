@@ -19,6 +19,10 @@ Masque:AddSkin('ExalityUI Square', {
     Normal = {
         Hide = true
     },
+    Cooldown = {
+        Width = 36,
+        Height = 36,
+    },
     Highlight = {
         Texture = EXUI.const.masque.rectangle.highlight,
         Color = { 1, 1, 1, 0.6 },
