@@ -3,46 +3,114 @@ local EXUI = select(2, ...)
 
 local buffs = EXUI:GetModule('uf-element-buffs')
 
-buffs.Create = function(self, frame)
-    local buffs = CreateFrame('Frame', nil, frame)
+local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
-    return buffs
+buffs.CountdownFontName = 'ExalityUI_Buffs_CountdownFont'
+buffs.CountdownFont = CreateFont(buffs.CountdownFontName)
+
+buffs.Create = function(self, frame)
+    local Buffs = CreateFrame('Frame', nil, frame)
+    Buffs.PostCreateButton = buffs.PostCreateButton
+    return Buffs
 end
 
 buffs.Update = function(self, frame)
     local db = frame.db
-    local buffs = frame.Buffs
-    
+    local Buffs = frame.Buffs
+
     if (not db.debuffsEnable and not db.buffsEnable) then
         frame:DisableElement('Auras')
         return
     end
     if (not db.buffsEnable) then
-        buffs.num = 0
-        buffs:ForceUpdate()
+        Buffs.num = 0
+        Buffs:ForceUpdate()
         return
     end
     frame:EnableElement('Auras')
 
-    buffs.width = db.buffsIconWidth
-    buffs.height = db.buffsIconHeight
-    buffs.spacing = db.buffsSpacing
-    buffs.num = db.buffsNum
+    Buffs.width = db.buffsIconWidth
+    Buffs.height = db.buffsIconHeight
+    Buffs.spacing = db.buffsSpacing
+    Buffs.num = db.buffsNum
 
     local growthX = string.find(db.buffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.buffsAnchorPoint, 'TOP') and 'DOWN' or 'UP'
-    buffs['growth-x'] = growthX
-    buffs['growth-y'] = growthY
-    buffs.onlyShowPlayer = db.buffsOnlyShowPlayer
+    Buffs['growth-x'] = growthX
+    Buffs['growth-y'] = growthY
+    if (growthX == 'LEFT' and growthY == 'UP') then
+        Buffs.initialAnchor = 'BOTTOMRIGHT'
+    elseif (growthX == 'RIGHT' and growthY == 'UP') then
+        Buffs.initialAnchor = 'BOTTOMLEFT'
+    elseif (growthX == 'LEFT' and growthY == 'DOWN') then
+        Buffs.initialAnchor = 'TOPRIGHT'
+    elseif (growthX == 'RIGHT' and growthY == 'DOWN') then
+        Buffs.initialAnchor = 'TOPLEFT'
+    end
+    Buffs.onlyShowPlayer = db.buffsOnlyShowPlayer
 
     local col = db.buffsColNum or 6
     local width = (db.buffsIconWidth + db.buffsSpacing) * col - db.buffsSpacing
     local height = (db.buffsIconHeight + db.buffsSpacing) * (math.ceil(db.buffsNum / db.buffsColNum))
-    buffs:SetSize(width, height)
+    Buffs:SetSize(width, height)
     local anchorFrame = frame
     if (db.buffsAnchorToDebuffs and not db.debuffsAnchorToBuffs and frame.Debuffs and db.debuffsEnable) then
         anchorFrame = frame.Debuffs
     end
-    buffs:SetPoint(db.buffsAnchorPoint, anchorFrame, db.buffsRelativeAnchorPoint, db.buffsXOff, db.buffsYOff)
-    buffs:ForceUpdate()
+    Buffs:SetPoint(db.buffsAnchorPoint, anchorFrame, db.buffsRelativeAnchorPoint, db.buffsXOff, db.buffsYOff)
+    self:UpdateAspectRatio(Buffs, db.buffsIconWidth, db.buffsIconHeight)
+    self:UpdateAllTexts(Buffs)
+    self:UpdateCountdownFont(db)
+    Buffs:ForceUpdate()
+end
+
+buffs.PostCreateButton = function(Buffs, button)
+    local icon = button.Icon
+    local db = Buffs.__owner.db
+    icon:SetTexCoord(EXUI.utils.getTexCoords(db.buffsIconWidth, db.buffsIconHeight, 5))
+    buffs:UpdateCountText(button, db)
+    buffs:UpdateDurationText(button)
+end
+
+buffs.UpdateAspectRatio = function(self, Buffs, width, height)
+    local left, right, top, bottom = EXUI.utils.getTexCoords(width, height, 5)
+    for _, button in ipairs(Buffs) do
+        local icon = button.Icon
+        icon:SetTexCoord(left, right, top, bottom)
+    end
+end
+
+buffs.UpdateAllTexts = function(self, Buffs)
+    local db = Buffs.__owner.db
+    for _, button in ipairs(Buffs) do
+        self:UpdateCountText(button, db)
+    end
+end
+
+buffs.UpdateCountText = function(self, button, db)
+    local count = button.Count
+    count:SetFont(LSM:Fetch('font', db.buffsCountFont), db.buffsCountFontSize, db.buffsCountFontFlag)
+    count:SetVertexColor(
+        db.buffsCountFontColor.r,
+        db.buffsCountFontColor.g,
+        db.buffsCountFontColor.b,
+        db.buffsCountFontColor.a
+    )
+    count:ClearAllPoints()
+    count:SetPoint(
+        db.buffsCountAnchorPoint,
+        count:GetParent(),
+        db.buffsCountRelativeAnchorPoint,
+        db.buffsCountXOff,
+        db.buffsCountYOff
+    )
+end
+
+buffs.UpdateCountdownFont = function(self, db)
+    self.CountdownFont:SetFont(LSM:Fetch('font', db.buffsDurationFont), db.buffsDurationFontSize,
+        db.buffsDurationFontFlag)
+end
+
+buffs.UpdateDurationText = function(self, button)
+    button.Cooldown:SetCountdownFont(self.CountdownFontName)
 end

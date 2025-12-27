@@ -19,7 +19,7 @@ castBar.Create = function(self, frame, unit)
     castBar:SetSize(200, 20)
     castBar:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
     EXUI:SetPoint(backdrop, 'TOPLEFT', castBar, 'TOPLEFT', -1, 1)
-    EXUI:SetPoint(backdrop, 'BOTTOMRIGHT', castBar, 'BOTTOMRIGHT', 1, -1)
+    EXUI:SetPoint(backdrop, 'BOTTOMRIGHT', castBar, 'BOTTOMRIGHT', 1, 0)
     backdrop:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     backdrop:SetBackdropBorderColor(0, 0, 0, 1)
     backdrop:SetBackdropColor(0, 0, 0, 0) -- Hide backdrop background. Use oUF one
@@ -49,6 +49,9 @@ castBar.Create = function(self, frame, unit)
     local spellText = castBar:CreateFontString(nil, 'OVERLAY')
     spellText:SetPoint('LEFT', 2, 0)
     spellText:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
+    spellText:SetWidth(300)
+    spellText:SetHeight(20)
+    spellText:SetJustifyH('LEFT')
     castBar.Text = spellText
 
     -- Icon
@@ -108,6 +111,8 @@ castBar.Update = function(self, frame)
     castBar.Text:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
     castBar.Text:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
         db.castbarFontColor.a)
+    castBar.Text:SetWidth(container:GetWidth() - 50)
+    castBar.Text:SetHeight(db.castbarHeight)
     EXUI:SetHeight(castBar.Spark, db.castbarHeight)
 
     castBar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b,

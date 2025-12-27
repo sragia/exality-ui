@@ -209,5 +209,218 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             end,
             width = 100
         },
+        {
+            type = 'title',
+            label = 'Texts',
+            width = 100
+        },
+        {
+            type = 'title',
+            label = 'Count',
+            width = 100,
+            size = 14
+        },
+        {
+            type = 'title',
+            width = 100,
+            label = 'Font Style',
+            size = 12
+        },
+        {
+            type = 'dropdown',
+            label = 'Font',
+            name = prefix .. 'CountFont',
+            getOptions = function()
+                local fonts = LSM:List('font')
+                local options = {}
+                for _, font in ipairs(fonts) do
+                    options[font] = font
+                end
+                return options
+            end,
+            isFontDropdown = true,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountFont')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountFont', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 23
+        },
+        {
+            type = 'dropdown',
+            label = 'Font Flag',
+            name = prefix .. 'CountFontFlag',
+            getOptions = function()
+                return EXUI.const.fontFlags
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountFontFlag')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountFontFlag', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 23
+        },
+        {
+            type = 'range',
+            label = 'Size',
+            name = prefix .. 'CountFontSize',
+            min = 1,
+            max = 40,
+            step = 1,
+            width = 20,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountFontSize')
+            end,
+            onChange = function(f, value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountFontSize', value)
+                core:UpdateFrameForUnit(unit)
+            end
+        },
+        {
+            type = 'color-picker',
+            label = 'Color',
+            name = prefix .. 'CountFontColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountFontColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountFontColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'title',
+            width = 100,
+            label = 'Position',
+            size = 12
+        },
+        {
+            type = 'dropdown',
+            label = 'Anchor Point',
+            name = prefix .. 'CountAnchorPoint',
+            getOptions = function()
+                return EXUI.const.anchorPoints
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountAnchorPoint')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountAnchorPoint', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 23
+        },
+        {
+            type = 'dropdown',
+            label = 'Relative Anchor Point',
+            name = prefix .. 'CountRelativeAnchorPoint',
+            getOptions = function()
+                return EXUI.const.anchorPoints
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountRelativeAnchorPoint')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountRelativeAnchorPoint', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 23
+        },
+        {
+            type = 'range',
+            label = 'X Offset',
+            name = prefix .. 'CountXOff',
+            min = -1000,
+            max = 1000,
+            step = 1,
+            width = 20,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountXOff')
+            end,
+            onChange = function(f, value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountXOff', value)
+                core:UpdateFrameForUnit(unit)
+            end
+        },
+        {
+            type = 'range',
+            label = 'Y Offset',
+            name = prefix .. 'CountYOff',
+            min = -1000,
+            max = 1000,
+            step = 1,
+            width = 20,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'CountYOff')
+            end,
+            onChange = function(f, value)
+                core:UpdateValueForUnit(unit, prefix .. 'CountYOff', value)
+                core:UpdateFrameForUnit(unit)
+            end
+        },
+        {
+            type = 'title',
+            label = 'Duration',
+            width = 100,
+        },
+        {
+            type = 'dropdown',
+            label = 'Font',
+            name = prefix .. 'DurationFont',
+            getOptions = function()
+                local fonts = LSM:List('font')
+                local options = {}
+                for _, font in ipairs(fonts) do
+                    options[font] = font
+                end
+                return options
+            end,
+            isFontDropdown = true,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'DurationFont')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'DurationFont', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 23
+        },
+        {
+            type = 'dropdown',
+            label = 'Font Flag',
+            name = prefix .. 'DurationFontFlag',
+            getOptions = function()
+                return EXUI.const.fontFlags
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'DurationFontFlag')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'DurationFontFlag', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 23
+        },
+        {
+            type = 'range',
+            label = 'Size',
+            name = prefix .. 'DurationFontSize',
+            min = 1,
+            max = 40,
+            step = 1,
+            width = 20,
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'DurationFontSize')
+            end,
+            onChange = function(f, value)
+                core:UpdateValueForUnit(unit, prefix .. 'DurationFontSize', value)
+                core:UpdateFrameForUnit(unit)
+            end
+        },
     }
 end

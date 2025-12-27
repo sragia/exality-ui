@@ -23,7 +23,7 @@ local function ConfigureFrame(f)
             self:UpdateDotPosition()
         end)
     end)
-    
+
     local label = f:CreateFontString(nil, 'OVERLAY')
     label:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
     label:SetPoint('TOPLEFT', 2, -2)
@@ -148,7 +148,7 @@ local function ConfigureFrame(f)
     editBox:SetScript('OnEscapePressed', function(self)
         self:ClearFocus()
     end)
-    
+
     --- Functions
     f.SetLabel = function(self, text)
         self.label:SetText(text)
@@ -190,7 +190,7 @@ local function ConfigureFrame(f)
     f.UpdateDotPosition = function(self)
         local frameWidth = self.track:GetWidth()
         if (frameWidth < 1) then
-            return 
+            return
         end
         self.dot:SetAlpha(1)
         local value = self.value
@@ -208,10 +208,11 @@ local function ConfigureFrame(f)
 
     f:Observe('value', function(value)
         f:UpdateDotPosition()
-        if (Round(f.step) == f.step) then
+        if (not value) then return end
+        if (value % 1 == 0) then
             f.editBox:SetText(string.format('%.0f', value))
         else
-            f.editBox:SetText(string.format('%.3f', value))
+            f.editBox:SetText(string.format('%.2f', value))
         end
         if (f.OnChange and not f.dot.isDragging) then
             f:OnChange(value)

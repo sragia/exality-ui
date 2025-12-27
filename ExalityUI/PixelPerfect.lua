@@ -15,7 +15,7 @@ pixelPerfect.Initialize = function(self)
 end
 
 EXUI.ScalePixel = function(self, value)
-    return PixelUtil.GetNearestPixelSize(value, pixelPerfect.UIScale) - 0.06
+    return PixelUtil.GetNearestPixelSize(value, pixelPerfect.UIScale) - 0.07
 end
 
 function EXUI:SetSize(frame, width, height)

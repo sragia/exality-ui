@@ -21,7 +21,7 @@ stagger.Create = function(self, frame)
         if (event == 'UNIT_ABSORB_AMOUNT_CHANGED' or event == 'PLAYER_DEAD') then
             local stagger = UnitStagger('player')
             self.StatusBar:SetMinMaxValues(0, UnitHealthMax('player'))
-            self.StatusBar:SetValue(stagger)
+            self.StatusBar:SetValue(stagger, Enum.StatusBarInterpolation.ExponentialEaseOut)
             self.Text:SetText(AbbreviateNumbers(stagger))
 
             if (stagger == 0 and self.db.hideWhenZero) then

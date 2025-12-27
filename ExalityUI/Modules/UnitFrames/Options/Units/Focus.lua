@@ -16,7 +16,7 @@ core:AddOption({
             name = 'Size & Position',
             id = 'sizeposition',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-size-and-position'):GetOptions('focus')
                 end
             }
@@ -25,13 +25,13 @@ core:AddOption({
             name = 'Name',
             id = 'name',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'name')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('focus', 'name')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('focus', 'name')
                 end
             }
@@ -40,7 +40,7 @@ core:AddOption({
             name = 'Power',
             id = 'power',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'power')
                 end,
                 {
@@ -62,7 +62,7 @@ core:AddOption({
             name = 'Marker Icon',
             id = 'markericon',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'raidTargetIndicator')
                 end,
                 {
@@ -80,9 +80,27 @@ core:AddOption({
                         ufCore:UpdateFrameForUnit('focus')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('focus', 'raidTargetIndicator')
                 end,
+            }
+        },
+        {
+            name = 'Buffs',
+            id = 'buffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('focus', 'buffs', true)
+                end
+            }
+        },
+        {
+            name = 'Debuffs',
+            id = 'debuffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('focus', 'debuffs', false)
+                end
             }
         },
     }

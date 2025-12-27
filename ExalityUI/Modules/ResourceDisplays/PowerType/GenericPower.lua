@@ -26,7 +26,7 @@ genericPower.Create = function(self, frame)
         end
         if (event == 'UNIT_POWER_FREQUENT') then
             local power = UnitPower('player', self.powerType)
-            self.StatusBar:SetValue(power)
+            self.StatusBar:SetValue(power, Enum.StatusBarInterpolation.ExponentialEaseOut)
             self.StatusBar:SetMinMaxValues(0, UnitPowerMax('player', self.powerType))
             self.Text:SetText(AbbreviateNumbers(power))
         end

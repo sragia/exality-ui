@@ -80,6 +80,54 @@ boss.Init = function(self)
         ['raidRolesXOff'] = 0,
         ['raidRolesYOff'] = 0,
         ['raidRolesScale'] = 1,
+        -- Debuffs
+        ['debuffsEnable'] = true,
+        ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['debuffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['debuffsXOff'] = 0,
+        ['debuffsYOff'] = 2,
+        ['debuffsIconWidth'] = 20,
+        ['debuffsIconHeight'] = 20,
+        ['debuffsOnlyShowPlayer'] = false,
+        ['debuffsSpacing'] = 2,
+        ['debuffsNum'] = 32,
+        ['debuffsColNum'] = 6,
+        ['debuffsAnchorToBuffs'] = true,
+        ['debuffsCountFont'] = 'DMSans',
+        ['debuffsCountFontSize'] = 12,
+        ['debuffsCountFontFlag'] = 'OUTLINE',
+        ['debuffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['debuffsCountAnchorPoint'] = 'CENTER',
+        ['debuffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['debuffsCountXOff'] = 0,
+        ['debuffsCountYOff'] = 0,
+        ['debuffsDurationFont'] = 'DMSans',
+        ['debuffsDurationFontSize'] = 12,
+        ['debuffsDurationFontFlag'] = 'OUTLINE',
+        -- Buffs
+        ['buffsEnable'] = true,
+        ['buffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['buffsXOff'] = 0,
+        ['buffsYOff'] = 2,
+        ['buffsIconWidth'] = 20,
+        ['buffsIconHeight'] = 20,
+        ['buffsOnlyShowPlayer'] = false,
+        ['buffsSpacing'] = 2,
+        ['buffsNum'] = 32,
+        ['buffsColNum'] = 6,
+        ['buffsAnchorToDebuffs'] = false,
+        ['buffsCountFont'] = 'DMSans',
+        ['buffsCountFontSize'] = 12,
+        ['buffsCountFontFlag'] = 'OUTLINE',
+        ['buffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['buffsCountAnchorPoint'] = 'CENTER',
+        ['buffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['buffsCountXOff'] = 0,
+        ['buffsCountYOff'] = 0,
+        ['buffsDurationFont'] = 'DMSans',
+        ['buffsDurationFontSize'] = 12,
+        ['buffsDurationFontFlag'] = 'OUTLINE',
     })
     self.container:SetPoint(
         core:GetValueForUnit('boss', 'positionAnchorPoint'),
@@ -110,6 +158,8 @@ boss.Create = function(self, frame)
     frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
     frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
+    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
+    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
 
     frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
 end

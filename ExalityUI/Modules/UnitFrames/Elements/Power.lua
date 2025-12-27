@@ -9,15 +9,16 @@ local power = EXUI:GetModule('uf-element-power')
 power.Create = function(self, frame)
     local power = CreateFrame('StatusBar', '$parent_Power', frame)
     power:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
-    -- Background 
+    -- Background
     local background = power:CreateTexture(nil, 'BACKGROUND')
     background:SetTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
     background:SetVertexColor(0, 0, 0, 1)
     background:SetAllPoints()
     background.multiplier = 0.2
     power.bg = background
+    power.smoothing = Enum.StatusBarInterpolation.ExponentialEaseOut
 
-    -- Options 
+    -- Options
     power.colorPower = true
 
     return power

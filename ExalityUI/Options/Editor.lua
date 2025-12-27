@@ -198,6 +198,9 @@ end
 editor.EnableEditor = function(self)
     for _, f in ipairs(self.frames) do
         f.frame.editor:Show()
+        f.frame.editor:ClearAllPoints()
+        f.frame.editor:SetPoint('TOPLEFT', f.frame, 'TOPLEFT', 0, 0)
+        f.frame.editor:SetPoint('BOTTOMRIGHT', f.frame, 'BOTTOMRIGHT', 0, 0)
         if (f.onShow) then
             f.onShow(f.frame)
         end

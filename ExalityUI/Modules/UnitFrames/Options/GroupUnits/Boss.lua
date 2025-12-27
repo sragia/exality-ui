@@ -16,7 +16,7 @@ core:AddOption({
             name = 'Size & Position',
             id = 'sizeposition',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-size-and-position'):GetOptions('boss')
                 end,
                 {
@@ -41,7 +41,7 @@ core:AddOption({
             name = 'Name',
             id = 'name',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('boss', 'name')
                 end,
                 {
@@ -54,15 +54,15 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('boss', 'nameMaxWidth')
                     end,
-                    onChange = function(f,value)
+                    onChange = function(f, value)
                         ufCore:UpdateValueForUnit('boss', 'nameMaxWidth', value)
                         ufCore:UpdateFrameForUnit('boss')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('boss', 'name')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('boss', 'name')
                 end
             }
@@ -71,13 +71,13 @@ core:AddOption({
             name = 'Health',
             id = 'health',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('boss', 'health')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('boss', 'health')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('boss', 'health')
                 end
             }
@@ -86,13 +86,13 @@ core:AddOption({
             name = 'Health %',
             id = 'healthperc',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('boss', 'healthperc')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('boss', 'healthperc')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('boss', 'healthperc')
                 end
             }
@@ -101,7 +101,7 @@ core:AddOption({
             name = 'Power',
             id = 'power',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('boss', 'power')
                 end,
                 {
@@ -117,6 +117,24 @@ core:AddOption({
                     end,
                     width = 25
                 }
+            }
+        },
+        {
+            name = 'Buffs',
+            id = 'buffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('boss', 'buffs', true)
+                end
+            }
+        },
+        {
+            name = 'Debuffs',
+            id = 'debuffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('boss', 'debuffs', false)
+                end
             }
         },
     }

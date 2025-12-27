@@ -664,7 +664,7 @@ end
 
 raidToolsModule.CreateReadyCheck = function(self)
     self.readyCheckFrame = CreateFrame('Button', nil, UIParent, "BackdropTemplate")
-    self.readyCheckFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    self.readyCheckFrame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     self.readyCheckFrame:SetBackdropColor(0, 0, 0, 0.4)
     self.readyCheckFrame:SetBackdropBorderColor(0, 0, 0, 1)
 
@@ -730,9 +730,15 @@ raidToolsModule.CreateOrRefreshReadyCheck = function(self)
         return;
     end
     self.readyCheckFrame:Show()
-    self.readyCheckFrame:SetPoint(data:GetDataByKey('readyCheckAnchor'), data:GetDataByKey('readyCheckXOff'),
-        data:GetDataByKey('readyCheckYOff'))
-    self.readyCheckFrame:SetSize(data:GetDataByKey('readyCheckWidth'), data:GetDataByKey('readyCheckHeight'))
+    EXUI:SetPoint(
+        self.readyCheckFrame,
+        data:GetDataByKey('readyCheckAnchor'),
+        UIParent,
+        data:GetDataByKey('readyCheckAnchor'),
+        data:GetDataByKey('readyCheckXOff'),
+        data:GetDataByKey('readyCheckYOff')
+    )
+    EXUI:SetSize(self.readyCheckFrame, data:GetDataByKey('readyCheckWidth'), data:GetDataByKey('readyCheckHeight'))
     local readyBg = data:GetDataByKey('readyCheckBackgroundColor')
     if (type(readyBg) == 'table') then
         self.readyCheckFrame:SetBackdropColor(readyBg.r or 0, readyBg.g or 0, readyBg.b or 0, readyBg.a or 1)
@@ -750,7 +756,7 @@ end
 
 raidToolsModule.CreatePullTimer = function(self)
     self.pullTimerFrame = CreateFrame('Button', nil, UIParent, "BackdropTemplate")
-    self.pullTimerFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    self.pullTimerFrame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     self.pullTimerFrame:SetBackdropColor(0, 0, 0, 0.4)
     self.pullTimerFrame:SetBackdropBorderColor(0, 0, 0, 1)
 
@@ -825,9 +831,15 @@ raidToolsModule.CreateOrRefreshPullTimer = function(self)
         return;
     end
     self.pullTimerFrame:Show()
-    self.pullTimerFrame:SetPoint(data:GetDataByKey('pullTimerAnchor'), data:GetDataByKey('pullTimerXOff'),
-        data:GetDataByKey('pullTimerYOff'))
-    self.pullTimerFrame:SetSize(data:GetDataByKey('pullTimerWidth'), data:GetDataByKey('pullTimerHeight'))
+    EXUI:SetPoint(
+        self.pullTimerFrame,
+        data:GetDataByKey('pullTimerAnchor'),
+        UIParent,
+        data:GetDataByKey('pullTimerAnchor'),
+        data:GetDataByKey('pullTimerXOff'),
+        data:GetDataByKey('pullTimerYOff')
+    )
+    EXUI:SetSize(self.pullTimerFrame, data:GetDataByKey('pullTimerWidth'), data:GetDataByKey('pullTimerHeight'))
     local pullBg = data:GetDataByKey('pullTimerBackgroundColor')
     if (type(pullBg) == 'table') then
         self.pullTimerFrame:SetBackdropColor(pullBg.r or 0, pullBg.g or 0, pullBg.b or 0, pullBg.a or 1)

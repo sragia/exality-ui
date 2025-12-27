@@ -85,7 +85,8 @@ data.SetDataByKey = function(self, key, data)
 end
 
 data.GetDataByKey = function(self, key)
-    return self.data.profiles[self.currentProfile][key];
+    self.data.profiles[self.currentProfile] = self.data.profiles[self.currentProfile] or {}
+    return self.data.profiles[self.currentProfile][key] or {};
 end
 
 data.AddDataToKey = function(self, key, data)
@@ -93,7 +94,7 @@ data.AddDataToKey = function(self, key, data)
     table.insert(self.data.profiles[self.currentProfile][key], data)
 end
 
-data.UpdateDefaults = function(self, defaults) 
+data.UpdateDefaults = function(self, defaults)
     for key, value in pairs(defaults) do
         if (self.data.profiles[self.currentProfile][key] == nil) then
             self.data.profiles[self.currentProfile][key] = value

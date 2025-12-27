@@ -7,7 +7,7 @@ local LSM = LibStub('LibSharedMedia-3.0')
 local name = EXUI:GetModule('uf-element-name')
 
 name.Create = function(self, frame)
-    local name = frame.ElementFrame:CreateFontString(nil, 'OVERLAY')
+    local name = frame.ElementFrame:CreateFontString('EXUI_Name_' .. frame.unit, 'OVERLAY')
     name:SetWidth(100)
     return name
 end

@@ -16,7 +16,7 @@ core:AddOption({
             name = 'Size & Position',
             id = 'sizeposition',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-size-and-position'):GetOptions('targettarget')
                 end
             }
@@ -25,16 +25,16 @@ core:AddOption({
             name = 'Name',
             id = 'name',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('targettarget', 'name')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('targettarget', 'name')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('targettarget', 'name')
                 end
             }
-        }
+        },
     }
 })

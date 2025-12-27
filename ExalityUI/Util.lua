@@ -607,5 +607,16 @@ EXUI.utils = {
             tAppendAll(output, array)
         end
         return output
+    end,
+    getTexCoords = function(width, height, zoom)
+        zoom = zoom or 0
+        local zoomReduction = (zoom / 100) / 2
+        if (width > height) then
+            local ratio = 1 - (height / width)
+            return 0 + zoomReduction, 1 - zoomReduction, 0 + zoomReduction + ratio / 2, 1 - zoomReduction - ratio / 2
+        else
+            local ratio = 1 - (width / height)
+            return 0 + zoomReduction + ratio / 2, 1 - zoomReduction - ratio / 2, 0 + zoomReduction, 1 - zoomReduction
+        end
     end
 }

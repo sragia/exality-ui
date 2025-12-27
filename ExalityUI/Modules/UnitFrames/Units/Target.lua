@@ -25,7 +25,7 @@ target.Init = function(self)
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
         ['nameFontFlag'] = 'OUTLINE',
-        ['nameFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['nameFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['nameAnchorPoint'] = 'LEFT',
         ['nameRelativeAnchorPoint'] = 'LEFT',
         ['nameTag'] = '[name]',
@@ -37,7 +37,7 @@ target.Init = function(self)
         ['healthFont'] = 'DMSans',
         ['healthFontSize'] = 12,
         ['healthFontFlag'] = 'OUTLINE',
-        ['healthFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['healthAnchorPoint'] = 'RIGHT',
         ['healthRelativeAnchorPoint'] = 'RIGHT',
         ['healthXOffset'] = -5,
@@ -48,7 +48,7 @@ target.Init = function(self)
         ['healthpercFont'] = 'DMSans',
         ['healthpercFontSize'] = 16,
         ['healthpercFontFlag'] = 'OUTLINE',
-        ['healthpercFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthpercFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['healthpercAnchorPoint'] = 'RIGHT',
         ['healthpercRelativeAnchorPoint'] = 'RIGHT',
         ['healthpercXOffset'] = -5,
@@ -94,10 +94,10 @@ target.Init = function(self)
         ['castbarFont'] = 'DMSans',
         ['castbarFontSize'] = 12,
         ['castbarFontFlag'] = 'OUTLINE',
-        ['castbarFontColor'] = {r = 1, g = 1, b = 1, a = 1},
-        ['castbarBackgroundColor'] = {r = 0, g = 0, b = 0, a = 0.5},
-        ['castbarBackgroundBorderColor'] = {r = 0, g = 0, b = 0, a = 1},
-        ['castbarForegroundColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['castbarFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['castbarBackgroundColor'] = { r = 0, g = 0, b = 0, a = 0.5 },
+        ['castbarBackgroundBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
+        ['castbarForegroundColor'] = { r = 1, g = 1, b = 1, a = 1 },
         -- Debuffs
         ['debuffsEnable'] = true,
         ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
@@ -111,6 +111,17 @@ target.Init = function(self)
         ['debuffsNum'] = 32,
         ['debuffsColNum'] = 6,
         ['debuffsAnchorToBuffs'] = true,
+        ['debuffsCountFont'] = 'DMSans',
+        ['debuffsCountFontSize'] = 12,
+        ['debuffsCountFontFlag'] = 'OUTLINE',
+        ['debuffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['debuffsCountAnchorPoint'] = 'CENTER',
+        ['debuffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['debuffsCountXOff'] = 0,
+        ['debuffsCountYOff'] = 0,
+        ['debuffsDurationFont'] = 'DMSans',
+        ['debuffsDurationFontSize'] = 12,
+        ['debuffsDurationFontFlag'] = 'OUTLINE',
         -- Buffs
         ['buffsEnable'] = true,
         ['buffsAnchorPoint'] = 'BOTTOMLEFT',
@@ -124,6 +135,17 @@ target.Init = function(self)
         ['buffsNum'] = 32,
         ['buffsColNum'] = 6,
         ['buffsAnchorToDebuffs'] = false,
+        ['buffsCountFont'] = 'DMSans',
+        ['buffsCountFontSize'] = 12,
+        ['buffsCountFontFlag'] = 'OUTLINE',
+        ['buffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['buffsCountAnchorPoint'] = 'CENTER',
+        ['buffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['buffsCountXOff'] = 0,
+        ['buffsCountYOff'] = 0,
+        ['buffsDurationFont'] = 'DMSans',
+        ['buffsDurationFontSize'] = 12,
+        ['buffsDurationFontFlag'] = 'OUTLINE',
     })
 end
 
@@ -149,7 +171,7 @@ target.Create = function(self, frame)
         core:UpdateValueForUnit(self.unit, 'positionXOff', xOfs)
         core:UpdateValueForUnit(self.unit, 'positionYOff', yOfs)
         core:UpdateFrameForUnit(self.unit)
-    end, function(frame) 
+    end, function(frame)
         frame.editor:SetEditorAsMovable()
     end)
 end
@@ -157,7 +179,7 @@ end
 target.Update = function(self, frame)
     local db = core:GetDBForUnit(self.unit)
     local generalDB = core:GetDBForUnit('general')
-    frame.db = db   
+    frame.db = db
     frame.generalDB = generalDB
 
     frame:ClearAllPoints()

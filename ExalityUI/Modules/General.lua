@@ -489,7 +489,6 @@ generalModule.fonts = {
     Init = function(self)
         if (not data:GetDataByKey('replaceFonts')) then return end
         self:UpdateFonts()
-        EXUI:GetModule('data'):AddDataToKey('TESTFonts', GetFonts())
     end,
     fontsToReplace = {
         "SystemFont_Shadow_Small_Outline",

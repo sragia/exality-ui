@@ -18,6 +18,7 @@ health.Create = function(self, frame)
     background:SetAllPoints()
     background.multiplier = 0.2
     health.bg = background
+    health.smoothing = Enum.StatusBarInterpolation.ExponentialEaseOut
 
     return health
 end
