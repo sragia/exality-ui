@@ -72,7 +72,8 @@
         "EditModeManagerFrame",
         "BACK",
         "PixelUtil",
-        "FrameDeltaLerp"
+        "FrameDeltaLerp",
+        "DEFAULTS"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

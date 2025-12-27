@@ -137,7 +137,6 @@ optionsFields.Refresh = function(self)
     if (currentModule) then
         if (currentModule.useTabs) then
             self:AddTabs(currentModule)
-            -- TODO: How to handle after this
         end
 
         if (currentModule.useSplitView) then

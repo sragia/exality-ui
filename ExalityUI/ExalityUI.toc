@@ -11,6 +11,7 @@ Libs/LibStub/LibStub.lua
 Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
 Libs/LibSharedMedia-3.0/lib.xml
 Libs/oUF/oUF.xml
+Libs/libdatabroker-1-1/LibDataBroker-1.1.lua
 
 # Core Functionality
 Util.lua 
@@ -77,5 +78,8 @@ Modules/UnitFrames/Elements/Elements.xml
 # UF Units
 Modules/UnitFrames/Units/Units.xml
 Modules/UnitFrames/GroupUnits/GroupUnits.xml
+
+# Data Brokers
+Modules/DataBrokers/DataBrokers.xml
 
 Cmd.lua
