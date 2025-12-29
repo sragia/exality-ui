@@ -18,10 +18,10 @@ local PROJECT_NAMES = {
 
 
 local GetText = function()
-    local WoWFriends = C_FriendList.GetNumOnlineFriends()
+    local WoWFriends = C_FriendList.GetNumOnlineFriends() or 0
     local _, BNetFriendsOnline = BNGetNumFriends()
 
-    local online = WoWFriends + BNetFriendsOnline
+    local online = WoWFriends + (BNetFriendsOnline or 0)
     return 'Friends: ' .. online
 end
 
@@ -35,6 +35,10 @@ local wowFriends = {}
 local bnetFriends = {}
 
 local function ShowTooltip(self)
+    if (#bnetFriends == 0 and #wowFriends == 0) then
+        return
+    end
+
     tooltip = QTip:Acquire('EXUI: Friends Broker', 4, 'LEFT', 'LEFT', 'LEFT', 'RIGHT')
     -- Style
     Mixin(tooltip.NineSlice, BackdropTemplateMixin)

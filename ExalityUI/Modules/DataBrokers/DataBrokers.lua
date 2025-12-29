@@ -31,7 +31,6 @@ dataBrokers.splitViewExtraButton = {
     text = 'New',
     color = { 249 / 255, 95 / 255, 9 / 255, 1 },
     onClick = function()
-        print('Create New Data Broker Display')
         local id = dataBrokers.Displays:CreateNew()
         optionsFields:Refresh()
         optionsFields:SetItemID(id)
@@ -432,6 +431,7 @@ dataBrokers.Displays = {
         text:SetWidth(0)
         frame.Text = text
 
+        frame:EnableMouse(true)
         frame:Show()
         editor:RegisterFrameForEditor(frame, 'Broker: ' .. id, function(frame)
             local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
@@ -456,7 +456,6 @@ dataBrokers.Displays = {
 
         frame.broker = db.brokerName
 
-        EXUI:SetSize(frame, db.width, db.height)
         frame:ClearAllPoints()
         EXUI:SetPoint(frame, db.anchor, UIParent, db.relativeAnchor, db.XOff, db.YOff)
 
@@ -466,6 +465,8 @@ dataBrokers.Displays = {
         text:SetPoint(db.fontAnchor, frame, db.fontRelativeAnchor, db.fontXOff, db.fontYOff)
         text:SetText(broker.text or db.brokerName)
 
+        local width, height = text:GetSize()
+        EXUI:SetSize(frame, width + 10, height + 5)
         if (broker.OnClick) then
             frame:SetScript('OnMouseDown', broker.OnClick)
         else

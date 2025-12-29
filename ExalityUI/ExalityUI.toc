@@ -83,4 +83,7 @@ Modules/UnitFrames/GroupUnits/GroupUnits.xml
 # Data Brokers
 Modules/DataBrokers/DataBrokers.xml
 
+# Custom Windows
+CustomWindows/CustomWindows.xml
+
 Cmd.lua

@@ -41,7 +41,12 @@ local configure = function(frame)
 
     frame.ShowWindow = function(self, hideAfter)
         self:Show()
-        windowManager:SetValidCenterPosition(self)
+        if (self.StaticAnchor) then
+            self:ClearAllPoints()
+            EXUI:SetPoint(self, unpack(self.StaticAnchor))
+        else
+            windowManager:SetValidCenterPosition(self)
+        end
         self.fadeIn:Play()
         if (hideAfter) then
             self.timerContainer:Show();
@@ -183,6 +188,39 @@ local configure = function(frame)
         container:SetPoint("TOPLEFT", 15, -50)
         container:SetPoint("BOTTOMRIGHT", -15, 15)
     end
+
+    frame.DisableResize = function(self)
+        -- It's still resizeable but button to do it is not there so basically disabled
+        self.resizeBtn:Hide()
+    end
+
+    frame.SetTitleSize = function(self, size)
+        self.title:SetFont(EXUI.const.fonts.DEFAULT, size, 'OUTLINE')
+    end
+
+    frame.DisableLogoAndVersion = function(self)
+        self.logo:Hide()
+        self.HideVersion(true)
+    end
+
+    ---@param options {staticAnchor?: table, disableResize?: boolean, disableLogoAndVersion?: boolean, titleSize?: number}
+    frame.Configure = function(self, options)
+        if (options) then
+            if (options.disableResize) then
+                self:DisableResize()
+            end
+            if (options.staticAnchor) then
+                self.StaticAnchor = options.staticAnchor
+            end
+            if (options.disableLogoAndVersion) then
+                self:DisableLogoAndVersion()
+            end
+            if (options.titleSize) then
+                self:SetTitleSize(options.titleSize)
+            end
+        end
+    end
+
     windowManager:RegisterWindow(frame)
     frame.configured = true
 end

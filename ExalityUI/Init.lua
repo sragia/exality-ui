@@ -50,6 +50,26 @@ EXUI.const = {
             skull = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/skull.png]],
             clock = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/clock.png]],
         },
+        characterFrame = {
+            border = {
+                empty = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-empty.png]],
+                white = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-white.png]],
+                uncommon = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-uncommon.png]],
+                rare = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-rare.png]],
+                epic = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-epic.png]],
+                legendary = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-legendary.png]],
+                max = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-max.png]],
+            },
+            highlight = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/highlight.png]],
+            dot = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/dot.png]],
+            toBlizzIcon = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/to-blizz-icon.png]],
+            stats = {
+                bars = {
+                    stats = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/stats-bar-stats.png]],
+                    header = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/stats-bar-header.png]],
+                }
+            }
+        },
         vignetteGradient = [[Interface/Addons/ExalityUI/Assets/Images/Frames/vignette.png]],
         logo = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
     },

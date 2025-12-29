@@ -101,3 +101,35 @@ data.UpdateDefaults = function(self, defaults)
         end
     end
 end
+
+--- Returns a table with functions to update value under a key
+---@param dataKey string
+---@return { GetDB: function, SetDB: function, GetValue: function, SetValue: function, UpdateDefaults: function }
+data.GetControlsForKey = function(self, dataKey)
+    return {
+        GetDB = function(self)
+            return data:GetDataByKey(dataKey)
+        end,
+        SetDB = function(self, db)
+            data:SetDataByKey(dataKey, db)
+        end,
+        GetValue = function(self, key)
+            local db = self:GetDB()
+            return db[key]
+        end,
+        SetValue = function(self, key, value)
+            local db = self:GetDB()
+            db[key] = value
+            self:SetDB(db)
+        end,
+        UpdateDefaults = function(self, defaults)
+            local db = self:GetDB()
+            for key, value in pairs(defaults) do
+                if (db[key] == nil) then
+                    db[key] = value
+                end
+            end
+            self:SetDB(db)
+        end
+    }
+end
