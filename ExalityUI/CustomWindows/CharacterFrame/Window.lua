@@ -36,11 +36,44 @@ local BOTTOM_SLOTS = {
 
 local blizzFunc = nil
 
+characterFrame.ReplaceItemSocketingFrameOnShow = function(self)
+    if (ItemSocketingFrame) then
+        local isfOnShow = ItemSocketingFrame:GetScript('OnShow')
+        ItemSocketingFrame:SetScript('OnShow', function(self)
+            if (isfOnShow) then
+                isfOnShow(self)
+            end
+            if (characterFrame.window and characterFrame.window:IsShown()) then
+                local window = characterFrame.window
+                local left, bottom, width, height = window:GetRect()
+                self:ClearAllPoints()
+                local x = left + width + 10
+                local y = bottom + height
+                self:SetPoint('TOPLEFT', UIParent, 'BOTTOMLEFT', x, y)
+            end
+        end)
+    end
+end
+
 characterFrame.ReplaceBlizzFunc = function(self)
     if (not blizzFunc) then
         blizzFunc = ToggleCharacter
-        ToggleCharacter = function()
-            self:OnShow()
+        ToggleCharacter = function(frameName)
+            if (not CharacterFrame:IsShown() and frameName == 'PaperDollFrame') then
+                self:OnShow()
+            else
+                blizzFunc(frameName)
+            end
+        end
+        if (ItemSocketingFrame) then
+            self:ReplaceItemSocketingFrameOnShow()
+        else
+            -- Addon not Loaded wait for event
+            EXUI:RegisterEventHandler('ADDON_LOADED', 'character-frame', function(event, addonName)
+                if (addonName == 'Blizzard_ItemSocketingUI') then
+                    self:ReplaceItemSocketingFrameOnShow()
+                end
+            end)
         end
     end
 end
@@ -60,8 +93,8 @@ end
 
 characterFrame.AddSlots = function(self, slots, parent, side)
     local prev = nil
-    for _, slotId in ipairs(slots) do
-        local slot = equipmentSlot:Create(slotId, side, parent)
+    for index, slotId in ipairs(slots) do
+        local slot = equipmentSlot:Create(slotId, side, index, parent)
         if (side == 'BOTTOM') then
             if (prev) then
                 slot:SetPoint('LEFT', prev, 'RIGHT', 6, 0)
@@ -86,8 +119,9 @@ characterFrame.UpdateHeader = function(self)
     local avgIlvl, avgEquipped = GetAverageItemLevel()
 
     self.window.Header.LevelText:SetText(level)
+    local classColor = C_ClassColor.GetClassColor(englishClass)
     self.window.Header.ClassSpecText:SetText(string.format('%s %s', specName,
-        C_ClassColor.GetClassColor(englishClass):WrapTextInColorCode(class)))
+        classColor:WrapTextInColorCode(class)))
 
     local avgIlvlString = WrapTextInColorCode(string.format('%.2f', avgEquipped), EXUI.utils.getIlvlColor(avgEquipped))
     local avgEquippedString = WrapTextInColorCode(string.format('%.2f', avgEquipped),
@@ -99,6 +133,7 @@ characterFrame.UpdateHeader = function(self)
     end
 
     self.window:SetTitle(UnitPVPName("player"))
+    self.window.CharacterGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
 end
 
 characterFrame.CreateToBlizzIcon = function(self, window)
@@ -151,7 +186,7 @@ characterFrame.Create = function(self)
     local window = windowConstruct:Create({
         size = {
             800,
-            500
+            450
         },
         title = 'Exality'
     });
@@ -196,9 +231,69 @@ characterFrame.Create = function(self)
     modelFrame:SetSize(380, 350)
     modelFrame:SetPoint('TOPLEFT', leftSlots, 'TOPRIGHT', 10, 0)
 
+    local glow = modelFrame:CreateTexture(nil, "OVERLAY")
+    glow:SetTexture(EXUI.const.textures.characterFrame.characterGlow)
+    glow:SetSize(250, 350)
+    glow:SetPoint('CENTER')
+    glow:SetVertexColor(1, 1, 1, 1)
+    glow:SetAlpha(0.5)
+    self.window.CharacterGlow = glow
+
     local characterModel = CreateFrame('PlayerModel', nil, modelFrame)
     characterModel:SetAllPoints()
     characterModel:SetUnit('player')
+    characterModel:SetCamDistanceScale(1.2)
+    local rotation = math.rad(20)
+    local ROTATION_SENSITIVITY = 0.05
+
+    characterModel:SetRotation(rotation)
+
+    characterModel:EnableMouse(true)
+
+    local function StopRotation(self)
+        self.lastMouseX = nil
+        self:SetScript("OnUpdate", nil)
+    end
+
+    local function OnRotationUpdate(self)
+        if not IsMouseButtonDown("LeftButton") then
+            StopRotation(self)
+            return
+        end
+
+        if self.lastMouseX then
+            local currentX = GetCursorPosition()
+            local deltaX = currentX - self.lastMouseX
+            self.lastMouseX = currentX
+
+            rotation = rotation + (deltaX * ROTATION_SENSITIVITY)
+
+            if rotation < 0 then
+                rotation = rotation + (2 * math.pi)
+            elseif rotation >= (2 * math.pi) then
+                rotation = rotation - (2 * math.pi)
+            end
+
+            self:SetRotation(rotation)
+        end
+    end
+
+    -- Handle mouse down
+    characterModel:SetScript("OnMouseDown", function(self, button)
+        if button == "LeftButton" then
+            local x = GetCursorPosition()
+            self.lastMouseX = x
+            self:SetScript("OnUpdate", OnRotationUpdate)
+        end
+    end)
+
+    -- Handle mouse up
+    characterModel:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" then
+            StopRotation(self)
+        end
+    end)
+
 
 
     local rightSlots = CreateFrame('Frame', nil, container)

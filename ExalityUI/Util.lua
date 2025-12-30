@@ -127,7 +127,7 @@ EXUI.utils = {
             local name, iLink = C_Item.GetItemGem(itemLink, i)
             if iLink then
                 local icon = select(10, C_Item.GetItemInfo(iLink))
-                table.insert(t, { name = name, icon = icon })
+                table.insert(t, { name = name, icon = icon, iLink = iLink })
             end
         end
         MyScanningTooltip:ClearTooltip()

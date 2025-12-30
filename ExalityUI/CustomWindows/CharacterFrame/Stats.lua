@@ -78,6 +78,10 @@ stats.CreateStat = function(self, statName, config, parent)
         self.container.RegisterUpdateFunc(self.container, stat, statName, config.update)
     end
 
+    if (config.shouldShow) then
+        stat.ShouldShow = config.shouldShow
+    end
+
     if (config.onEnter) then
         stat.onEnterFunc = config.onEnter
         stat:SetScript('OnEnter', config.onEnter)
@@ -133,7 +137,7 @@ stats.Create = function(self, container)
     end)
 
     self.container.updateFuncs = {}
-    self.container.RegisterUpdateFunc = function(self, parent, statName, updateFunc)
+    self.container.RegisterUpdateFunc = function(self, parent, statName, updateFunc, shouldShowFunc)
         self.updateFuncs[statName] = {
             update = updateFunc,
             parent = parent,
@@ -326,7 +330,7 @@ stats.Create = function(self, container)
                     if (HasAPEffectsSpellPower()) then
                         frame.tooltipLines[2] = STAT_TOOLTIP_BONUS_AP_SP;
                     end
-                    frame.tooltipLines[2] = format(frame.tooltipLinesp[2], BreakUpLargeNumbers(attackPower));
+                    frame.tooltipLines[2] = format(frame.tooltipLines[2], BreakUpLargeNumbers(attackPower));
                     if (role == "TANK") then
                         local increasedParryChance = GetParryChanceFromAttribute();
                         if (increasedParryChance > 0) then
@@ -416,7 +420,128 @@ stats.Create = function(self, container)
                 end
             end
         }, container),
-        self:CreateHeader('Tertiary', container)
+        self:CreateHeader('Other', container),
+        self:CreateStat(STAT_AVOIDANCE, {
+            update = function(frame)
+                local avoidance = GetAvoidance();
+                if (avoidance == 0) then
+                    return
+                end
+                frame.StatRating:SetText(string.format('%.2f%%', avoidance))
+                frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
+                    format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAT_AVOIDANCE) ..
+                    " " .. format("%.2F%%", avoidance) .. FONT_COLOR_CODE_CLOSE;
+
+                frame.tooltipLines[2] = format(CR_AVOIDANCE_TOOLTIP, BreakUpLargeNumbers(GetCombatRating(CR_AVOIDANCE)),
+                    GetCombatRatingBonus(CR_AVOIDANCE));
+            end,
+            shouldShow = function()
+                return GetAvoidance() > 0
+            end
+        }, container),
+        self:CreateStat(STAT_LIFESTEAL, {
+            update = function(frame)
+                local lifesteal = GetLifesteal();
+                frame.StatRating:SetText(string.format('%.2f%%', lifesteal))
+                frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
+                    format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAT_LIFESTEAL) ..
+                    " " .. format("%.2F%%", lifesteal) .. FONT_COLOR_CODE_CLOSE;
+
+                frame.tooltipLines[2] = format(CR_LIFESTEAL_TOOLTIP, BreakUpLargeNumbers(GetCombatRating(CR_LIFESTEAL)),
+                    GetCombatRatingBonus(CR_LIFESTEAL));
+            end,
+            shouldShow = function()
+                return GetLifesteal() > 0
+            end
+        }, container),
+        self:CreateStat(STAT_DODGE, {
+            update = function(frame)
+                local chance = GetDodgeChance();
+                frame.StatRating:SetText(string.format("%.2f%%", chance))
+                frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
+                    format(PAPERDOLLFRAME_TOOLTIP_FORMAT, DODGE_CHANCE) ..
+                    " " .. string.format("%.2F", chance) .. "%" .. FONT_COLOR_CODE_CLOSE;
+                frame.tooltipLines[2] = format(CR_DODGE_TOOLTIP, GetCombatRating(CR_DODGE),
+                    GetCombatRatingBonus(CR_DODGE));
+            end,
+            shouldShow = function()
+                local spec = C_SpecializationInfo.GetSpecialization();
+                if (spec) then
+                    return GetSpecializationRoleEnum(spec) == 0 -- Tank
+                end
+                return false
+            end
+        }, container), -- Dodge
+        self:CreateStat(STAT_PARRY, {
+            update = function(frame)
+                local chance = GetParryChance();
+                frame.StatRating:SetText(string.format("%.2f%%", chance))
+                frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
+                    format(PAPERDOLLFRAME_TOOLTIP_FORMAT, PARRY_CHANCE) ..
+                    " " .. string.format("%.2F", chance) .. "%" .. FONT_COLOR_CODE_CLOSE;
+                frame.tooltipLines[2] = format(CR_PARRY_TOOLTIP, GetCombatRating(CR_PARRY),
+                    GetCombatRatingBonus(CR_PARRY));
+            end,
+            shouldShow = function()
+                local spec = C_SpecializationInfo.GetSpecialization();
+                if (spec) then
+                    return GetSpecializationRoleEnum(spec) == 0 -- Tank
+                end
+                return false
+            end
+        }, container), -- Parry
+        self:CreateStat(STAT_BLOCK, {
+            update = function(frame)
+                local chance = GetBlockChance();
+                frame.StatRating:SetText(string.format("%.2f%%", chance))
+                frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
+                    format(PAPERDOLLFRAME_TOOLTIP_FORMAT, BLOCK_CHANCE) ..
+                    " " .. string.format("%.2F", chance) .. "%" .. FONT_COLOR_CODE_CLOSE;
+
+                local shieldBlockArmor = GetShieldBlock();
+                local blockArmorReduction = PaperDollFrame_GetArmorReduction(shieldBlockArmor,
+                    UnitEffectiveLevel('player'));
+                local blockArmorReductionAgainstTarget = PaperDollFrame_GetArmorReductionAgainstTarget(shieldBlockArmor);
+
+                frame.tooltipLines[2] = CR_BLOCK_TOOLTIP:format(blockArmorReduction);
+                if (blockArmorReductionAgainstTarget) then
+                    frame.tooltipLines[3] = format(STAT_BLOCK_TARGET_TOOLTIP, blockArmorReductionAgainstTarget);
+                else
+                    frame.tooltipLines[3] = nil;
+                end
+            end,
+            shouldShow = function()
+                local spec = C_SpecializationInfo.GetSpecialization();
+                local _, class = UnitClass('player');
+                if (spec) then
+                    return GetSpecializationRoleEnum(spec) == 0 and (class == "WARRIOR" or class == "PALADIN") -- Tank
+                end
+                return false
+            end
+        }, container), -- Block
+        self:CreateStat(STAT_STAGGER, {
+            update = function(frame)
+                local stagger, staggerAgainstTarget = C_PaperDollInfo.GetStaggerPercentage('player');
+                frame.StatRating:SetText(stagger)
+                frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
+                    format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAGGER) ..
+                    " " .. string.format("%.2F%%", stagger) .. FONT_COLOR_CODE_CLOSE;
+                frame.tooltipLines[2] = format(STAT_STAGGER_TOOLTIP, stagger);
+                if (staggerAgainstTarget) then
+                    frame.tooltipLines[3] = format(STAT_STAGGER_TARGET_TOOLTIP, staggerAgainstTarget);
+                else
+                    frame.tooltipLines[3] = nil;
+                end
+            end,
+            shouldShow = function()
+                local spec = C_SpecializationInfo.GetSpecialization();
+                local _, class = UnitClass('player');
+                if (spec) then
+                    return GetSpecializationRoleEnum(spec) == 0 and class == "MONK" -- Monk
+                end
+                return false
+            end
+        }, container), -- Stagger
     }
 
     self:PositionFrames()
@@ -427,16 +552,18 @@ stats.PositionFrames = function(self)
     local prev = nil
     local prevIsHeader = false
     for _, frame in ipairs(self.frames) do
-        local isHeader = frame.isHeader
-        local gap = isHeader and -14 or prevIsHeader and -8 or -2
-        if (prev) then
-            frame:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, gap)
-            frame:SetPoint('TOPRIGHT', prev, 'BOTTOMRIGHT', 0, gap)
-        else
-            frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
-            frame:SetPoint('TOPRIGHT', self.container, 'TOPRIGHT', 0, 0)
+        if (not frame.ShouldShow or frame:ShouldShow()) then
+            local isHeader = frame.isHeader
+            local gap = isHeader and -14 or prevIsHeader and -8 or -2
+            if (prev) then
+                frame:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, gap)
+                frame:SetPoint('TOPRIGHT', prev, 'BOTTOMRIGHT', 0, gap)
+            else
+                frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
+                frame:SetPoint('TOPRIGHT', self.container, 'TOPRIGHT', 0, 0)
+            end
+            prevIsHeader = isHeader
+            prev = frame
         end
-        prevIsHeader = isHeader
-        prev = frame
     end
 end

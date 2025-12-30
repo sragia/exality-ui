@@ -72,7 +72,66 @@ equipmentSlot.GetItemColorAndBorder = function(self, ilvl)
     return result.color, result.border
 end
 
-equipmentSlot.Create = function(self, slotId, side, parent)
+equipmentSlot.replacements = {
+    ['Critical Strike'] = 'Crit',
+    ["Agility"] = 'Agi',
+    ['Stamina'] = 'Stam',
+    ['Strength'] = 'Str',
+    ['Versatility'] = 'Vers',
+    ['Waking Stats'] = 'Stats',
+    ['Armor'] = 'Arm',
+    ['Avoidance'] = 'Avoid',
+    ['Shadowflame Wreathe'] = 'Shadowflame',
+    ['Regenerative Leech'] = 'Leech',
+    ['Authority of the Depths'] = 'Depths',
+    ["Scout's March"] = 'Speed',
+    ['Chant of Winged Grace'] = 'Avoid',
+    ['Crystalline Radiance'] = 'Primary Stat',
+    ['Chant of Leeching Fangs'] = 'Leech'
+}
+
+equipmentSlot.CreateGem = function(self, parent)
+    local gem = CreateFrame('Frame', nil, parent)
+    gem:SetSize(10, 10)
+    gem:SetFrameLevel(parent.OverlayFrame:GetFrameLevel() + 10)
+
+    local icon = gem:CreateTexture(nil, 'BACKGROUND')
+    gem.Icon = icon
+    icon:SetAllPoints()
+    icon:SetTexture(EXUI.const.textures.characterFrame.gem.empty)
+
+    local border = gem:CreateTexture(nil, 'OVERLAY')
+    gem.Border = border
+    border:SetPoint('TOPLEFT', -1, 1)
+    border:SetPoint('BOTTOMRIGHT', 1, -1)
+    border:SetTexture(EXUI.const.textures.characterFrame.gem.border)
+
+
+    gem.SetIcon = function(self, icon)
+        self.Icon:SetTexture(icon)
+    end
+
+    gem:SetScript('OnEnter', function(self)
+        if (self.ItemLink) then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+            GameTooltip:SetHyperlink(self.ItemLink);
+            GameTooltip:Show();
+        end
+    end)
+
+    gem:SetScript('OnLeave', function(self)
+        GameTooltip:Hide();
+    end)
+
+    return gem
+end
+
+---@param self EXUICharacterFrameEquipmentSlot
+---@param slotId number
+---@param side 'LEFT' | 'RIGHT' | 'BOTTOM'
+---@param parent Frame
+---@return Frame
+equipmentSlot.Create = function(self, slotId, side, index, parent)
     local slot = CreateFrame('Button', nil, parent, 'SecureActionButtonTemplate')
     slot:SetSize(36, 36)
     slot:SetID(slotId)
@@ -80,6 +139,8 @@ equipmentSlot.Create = function(self, slotId, side, parent)
     slot:SetAttribute('item', slotId)
     slot:RegisterForDrag('LeftButton')
     slot:RegisterForClicks('LeftButtonUp', 'RightButtonUp', 'RightButtonDown')
+    slot.Side = side
+    slot.Index = index
     slot.slotId = slotId
 
     FrameUtil.RegisterFrameForEvents(slot, EVENTS)
@@ -132,11 +193,64 @@ equipmentSlot.Create = function(self, slotId, side, parent)
     cooldown:SetCountdownFont('ExalityUI_EQUIPMENT_SLOT_CD_Font')
     cooldown:SetSwipeTexture(EXUI.const.textures.frame.bg)
 
-
-
     -- Enchant Text
+    local enchantText = overlayFrame:CreateFontString(nil, 'OVERLAY')
+    slot.EnchantText = enchantText
+    enchantText:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
+    enchantText:SetVertexColor(48 / 255, 1, 0, 1)
+    enchantText:SetText('')
+    enchantText:SetWidth(100)
 
-    -- Gems TODO
+    if (side == 'LEFT') then
+        enchantText:SetPoint('BOTTOMLEFT', overlayFrame, 'BOTTOMRIGHT', 5, 3)
+        enchantText:SetJustifyH('LEFT')
+    elseif (side == 'RIGHT') then
+        enchantText:SetPoint('BOTTOMRIGHT', overlayFrame, 'BOTTOMLEFT', -5, 3)
+        enchantText:SetJustifyH('RIGHT')
+    elseif (side == 'BOTTOM') then -- Weapons
+        if (index == 1) then
+            enchantText:SetPoint('BOTTOMRIGHT', overlayFrame, 'BOTTOMLEFT', -5, 3)
+            enchantText:SetJustifyH('RIGHT')
+        else
+            enchantText:SetPoint('BOTTOMLEFT', overlayFrame, 'BOTTOMRIGHT', 5, 3)
+            enchantText:SetJustifyH('LEFT')
+        end
+    end
+
+    slot.GemFrames = {}
+    slot.AddGems = function(self, itemLink)
+        for _, gem in ipairs_reverse(self.GemFrames) do
+            gem:ClearAllPoints()
+        end
+
+        if (not itemLink) then
+            return
+        end
+
+        local prev = nil
+        local gems = EXUI.utils.GetItemGems(itemLink)
+        local isOnlyOne = #gems == 1
+        for index, gem in ipairs(gems) do
+            if (not self.GemFrames[index]) then
+                self.GemFrames[index] = equipmentSlot:CreateGem(self)
+            end
+            local f = self.GemFrames[index]
+            if (gem.name == 'Empty Slot') then
+                f:SetIcon(EXUI.const.textures.characterFrame.gem.empty)
+            else
+                f:SetIcon(gem.icon)
+            end
+            f.ItemLink = gem.iLink
+            if (isOnlyOne) then
+                f:SetPoint('CENTER', self.OverlayFrame, 'LEFT', 0, 0)
+            elseif (prev) then
+                f:SetPoint('TOP', prev, 'BOTTOM', 0, -4)
+            else
+                f:SetPoint('CENTER', self.OverlayFrame, 'LEFT', 0, 7)
+            end
+            prev = f
+        end
+    end
 
     slot.OnClick = function(self, button)
         if (IsModifiedClick()) then
@@ -226,8 +340,22 @@ equipmentSlot.Create = function(self, slotId, side, parent)
             self.Border:SetTexture(border)
             local start, duration = GetInventoryItemCooldown("player", self:GetID());
             self.Cooldown:SetCooldown(start, duration)
+
+            -- Enchant
+            local enchant = EXUI.utils.GetItemEnchant(itemLink)
+            if (enchant) then
+                for pattern, replacement in pairs(equipmentSlot.replacements) do
+                    enchant = string.gsub(enchant, pattern, replacement)
+                end
+            end
+            self.EnchantText:SetText(enchant and string.gsub(enchant, '|A.-|a', ''))
+            self:AddGems(itemLink)
         else
             self.Icon:SetTexture(self.emptyTexture)
+            self.Border:SetTexture(EXUI.const.textures.characterFrame.border.empty)
+            self.ItemLevel:SetText('')
+            self.EnchantText:SetText('')
+            self:AddGems(nil) -- Clear Gems
         end
     end
 

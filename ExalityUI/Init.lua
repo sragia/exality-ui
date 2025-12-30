@@ -63,6 +63,11 @@ EXUI.const = {
             highlight = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/highlight.png]],
             dot = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/dot.png]],
             toBlizzIcon = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/to-blizz-icon.png]],
+            characterGlow = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/character-glow.png]],
+            gem = {
+                empty = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/gem-empty.png]],
+                border = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-gem.png]],
+            },
             stats = {
                 bars = {
                     stats = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/stats-bar-stats.png]],

@@ -124,7 +124,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
     end
 
     local db = self:GetCDDBByID(currItemID)
-    if (not db) then
+    if (not db or next(db) == nil) then
         return {}
     end
 

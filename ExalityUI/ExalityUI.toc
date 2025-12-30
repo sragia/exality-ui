@@ -86,4 +86,7 @@ Modules/DataBrokers/DataBrokers.xml
 # Custom Windows
 CustomWindows/CustomWindows.xml
 
+# Skins
+Skins/Skins.xml
+
 Cmd.lua

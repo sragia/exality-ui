@@ -91,6 +91,10 @@ core.GetOptions = function(self, currTabID, currItemID)
 
     local currentItem = self:GetDBByDisplayID(currItemID)
 
+    if (not currentItem or next(currentItem) == nil) then
+        return {}
+    end
+
     local options = {
         {
             type = 'toggle',
