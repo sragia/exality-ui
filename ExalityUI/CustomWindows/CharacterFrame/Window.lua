@@ -136,6 +136,18 @@ characterFrame.UpdateHeader = function(self)
     self.window.CharacterGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
 end
 
+characterFrame.UpdateModel = function(self)
+    C_Timer.After(0.2, function() -- For some reason need to add some delay
+        self.window.CharacterModel:RefreshUnit()
+    end)
+end
+
+EXUI:RegisterEventHandler('PLAYER_EQUIPMENT_CHANGED', 'character-frame', function(event, ...)
+    if (characterFrame.window and characterFrame.window:IsShown()) then
+        characterFrame:UpdateModel()
+    end
+end)
+
 characterFrame.CreateToBlizzIcon = function(self, window)
     local toBlizzIcon = CreateFrame("Button", nil, window)
     toBlizzIcon:SetSize(38, 28)
@@ -240,6 +252,7 @@ characterFrame.Create = function(self)
     self.window.CharacterGlow = glow
 
     local characterModel = CreateFrame('PlayerModel', nil, modelFrame)
+    self.window.CharacterModel = characterModel
     characterModel:SetAllPoints()
     characterModel:SetUnit('player')
     characterModel:SetCamDistanceScale(1.2)
@@ -338,11 +351,6 @@ characterFrame.OnShow = function(self)
     end
     self:UpdateHeader()
     self.window:ShowWindow()
-end
-
--- /run REMOVE_SHOW_CHAR_FRAME()
-REMOVE_SHOW_CHAR_FRAME = function()
-    characterFrame:OnShow()
 end
 
 characterFrame.Enable = function(self)
