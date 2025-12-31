@@ -10,6 +10,9 @@ local stagger = EXUI:GetModule('resource-displays-stagger')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 stagger.Create = function(self, frame)
+    frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
+    frame:SetBackdropBorderColor(0, 0, 0, 1)
+    frame:SetBackdropColor(0, 0, 0, 0.5)
     frame.IsActive = function(self) return stagger:IsActive(self) end
     frame.StatusBar = EXUI:GetModule('resource-displays-elements-status-bar'):Create(frame)
     frame.StatusBar.NOCOLOR = true

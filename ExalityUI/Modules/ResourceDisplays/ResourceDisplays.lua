@@ -95,6 +95,55 @@ core.GetOptions = function(self, currTabID, currItemID)
         return {}
     end
 
+    local isSelfControlledSize = self:IsSelfControlledSize(currentItem.resourceType)
+
+    local sizeOptions = function()
+        return function()
+            if (isSelfControlledSize) then
+                return nil
+            end
+            return {
+                {
+                    type = 'range',
+                    label = 'Width',
+                    name = 'width',
+                    min = 1,
+                    max = 1000,
+                    step = 1,
+                    width = 20,
+                    currentValue = function()
+                        return self:GetValueForDisplay(currItemID, 'width')
+                    end,
+                    onChange = function(f, value)
+                        self:UpdateValueForDisplay(currItemID, 'width', value)
+                        self:RefreshDisplayByID(currItemID)
+                    end
+                },
+                {
+                    type = 'range',
+                    label = 'Height',
+                    name = 'height',
+                    min = 1,
+                    max = 100,
+                    step = 1,
+                    width = 20,
+                    currentValue = function()
+                        return self:GetValueForDisplay(currItemID, 'height')
+                    end,
+                    onChange = function(f, value)
+                        self:UpdateValueForDisplay(currItemID, 'height', value)
+                        self:RefreshDisplayByID(currItemID)
+                    end
+                },
+                {
+                    type = 'spacer',
+                    width = 60
+                },
+            }
+        end
+    end
+
+
     local options = {
         {
             type = 'toggle',
@@ -158,46 +207,11 @@ core.GetOptions = function(self, currTabID, currItemID)
         },
         {
             type = 'title',
-            label = 'Size & Position',
+            label = isSelfControlledSize and 'Position' or 'Size & Position',
             size = 14,
             width = 100
         },
-        {
-            type = 'range',
-            label = 'Width',
-            name = 'width',
-            min = 1,
-            max = 1000,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return self:GetValueForDisplay(currItemID, 'width')
-            end,
-            onChange = function(f, value)
-                self:UpdateValueForDisplay(currItemID, 'width', value)
-                self:RefreshDisplayByID(currItemID)
-            end
-        },
-        {
-            type = 'range',
-            label = 'Height',
-            name = 'height',
-            min = 1,
-            max = 100,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return self:GetValueForDisplay(currItemID, 'height')
-            end,
-            onChange = function(f, value)
-                self:UpdateValueForDisplay(currItemID, 'height', value)
-                self:RefreshDisplayByID(currItemID)
-            end
-        },
-        {
-            type = 'spacer',
-            width = 60
-        },
+        sizeOptions(),
         {
             type = 'dropdown',
             label = 'Anchor Point',
@@ -286,6 +300,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             onObserve = function(value)
                 self:UpdateValueForDisplay(currItemID, 'hasLoadConditions', value)
                 self:RefreshDisplayByID(currItemID)
+                optionsFields:RefreshOptions()
             end,
             width = 100
         },
@@ -380,12 +395,8 @@ end
 
 core.Create = function(self, resourceType)
     local frame = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
-    frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    frame:SetBackdropBorderColor(0, 0, 0, 1)
-    frame:SetBackdropColor(0, 0, 0, 0.5)
 
     local control = self:GetPowerTypeControl(resourceType)
-
 
     local elementFrame = CreateFrame('Frame', nil, frame)
     elementFrame:SetAllPoints()
@@ -558,6 +569,15 @@ core.GetPowerTypeControl = function(self, powerTypeName)
     for _, powerType in ipairs(self.powerTypes) do
         if (powerType.name == powerTypeName) then
             return powerType.control
+        end
+    end
+    return nil
+end
+
+core.IsSelfControlledSize = function(self, powerTypeName)
+    for _, powerType in ipairs(self.powerTypes) do
+        if (powerType.name == powerTypeName) then
+            return powerType.selfControlledSize
         end
     end
     return nil

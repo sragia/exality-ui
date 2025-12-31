@@ -206,7 +206,8 @@
         "STAT_BLOCK_TARGET_TOOLTIP",
         "STAT_STAGGER_TOOLTIP",
         "STAGGER",
-        "STAT_STAGGER_TARGET_TOOLTIP"
+        "STAT_STAGGER_TARGET_TOOLTIP",
+        "HOLY_POWER"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

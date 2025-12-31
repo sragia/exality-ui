@@ -201,7 +201,20 @@ optionsFields.RefreshFields = function(self)
 
     local fields = currentModule:GetOptions(self.currTabID, self.currItemID)
     for _, field in ipairs(fields) do
-        if (not field.depends or field.depends()) then
+        if (type(field) == 'function') then
+            local funcFields = field()
+            if (funcFields) then
+                for _, funcField in ipairs(funcFields) do
+                    local fieldFrame = self:GetField(funcField)
+                    self:CreateOrUpdateTooltip(fieldFrame, funcField.tooltip)
+                    if (fieldFrame) then
+                        fieldFrame:SetOptionData(funcField)
+                        fieldFrame:SetParent(self.container)
+                        table.insert(self.fields, fieldFrame)
+                    end
+                end
+            end
+        elseif (not field.depends or field.depends()) then
             local fieldFrame = self:GetField(field)
             self:CreateOrUpdateTooltip(fieldFrame, field.tooltip)
             if (fieldFrame) then
@@ -281,6 +294,7 @@ optionsFields.GetField = function(self, field)
             return f
         end,
         default = function()
+            DevTool:AddData(field)
             EXUI.utils.printOut('Unknown Field Type: ' .. field.type)
         end
     })

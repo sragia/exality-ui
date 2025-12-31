@@ -5,6 +5,7 @@
 	<!-- Power Type Modules -->
 	<Script file="PowerType/GenericPower.lua"/>
 	<Script file="PowerType/Stagger.lua"/>
+	<Script file="PowerType/HolyPower.lua"/>
 
 	<!-- Elements Modules -->
 	<Script file="Elements/StatusBar.lua"/>
