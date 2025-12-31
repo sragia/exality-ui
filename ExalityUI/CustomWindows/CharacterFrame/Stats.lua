@@ -522,7 +522,7 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_STAGGER, {
             update = function(frame)
                 local stagger, staggerAgainstTarget = C_PaperDollInfo.GetStaggerPercentage('player');
-                frame.StatRating:SetText(stagger)
+                frame.StatRating:SetText(string.format('%.2f%%', stagger))
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAGGER) ..
                     " " .. string.format("%.2F%%", stagger) .. FONT_COLOR_CODE_CLOSE;
