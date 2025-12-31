@@ -22,6 +22,11 @@ local isShift = false
 local anchorFrame = nil
 
 local function ShowTooltip(self)
+    local guildName, guildRank = GetGuildInfo('player')
+    if (not guildName) then
+        return
+    end
+
     tooltip = QTip:Acquire('EXUI: Guild Broker', 3, 'LEFT', 'LEFT', 'RIGHT')
     -- Style
     Mixin(tooltip.NineSlice, BackdropTemplateMixin)
@@ -33,7 +38,6 @@ local function ShowTooltip(self)
     tooltip:SetHeaderFont(font)
 
     -- Info
-    local guildName, guildRank = GetGuildInfo('player')
     tooltip:AddLine()
     tooltip:SetCell(1, 1, WrapTextInColorCode(guildName, 'FFFFFFFF'), nil, nil, 3)
     tooltip:AddLine()
