@@ -208,7 +208,9 @@ local function ConfigureFrame(f)
 
     f:Observe('value', function(value)
         f:UpdateDotPosition()
-        if (not value) then return end
+        if (not value or (type(value) ~= 'number' and type(value) ~= 'string')) then
+            return
+        end
         if (value % 1 == 0) then
             f.editBox:SetText(string.format('%.0f', value))
         else
