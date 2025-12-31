@@ -350,7 +350,9 @@ characterFrame.OnShow = function(self)
         characterFrame.isCreated = true
     end
     self:UpdateHeader()
-    self.window:ShowWindow()
+    if (not self.window:IsShown()) then
+        self.window:ShowWindow()
+    end
 end
 
 characterFrame.Enable = function(self)
