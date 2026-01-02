@@ -223,7 +223,8 @@
         "StaticPopup_Hide",
         "ChatFrame_TimeBreakDown",
         "PLAYER_LEVEL_UP",
-        "TIME_PLAYED_MSG"
+        "TIME_PLAYED_MSG",
+        "FlagsUtil"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

@@ -575,6 +575,8 @@ end
 
 xpBar.Update = function(self, event, ...)
     local now = time()
+    local currentXP = UnitXP('player')
+    local maxXP = UnitXPMax('player')
     if (event == 'PLAYER_ENTERING_WORLD') then
         RequestTimePlayed()
     elseif (event == 'UPDATE_EXPANSION_LEVEL') then -- Expansion Launch
@@ -584,6 +586,8 @@ xpBar.Update = function(self, event, ...)
         self.startTime = time() -- Restart start time
         self:HandleVisibility()
     elseif (event == 'PLAYER_LEVEL_UP') then
+        self.timePlayedThisLevelReq = now
+        self.values.timePlayedThisLevel = 0
         self:HandleVisibility() -- Check if we need to hide cause we reached max level
     elseif (event == 'TIME_PLAYED_MSG') then
         local _, timePlayedThisLevel = ...
@@ -593,19 +597,18 @@ xpBar.Update = function(self, event, ...)
         self:GetCompletedQuestXP()
     end
 
-    local currentXP = UnitXP('player')
-    local maxXP = UnitXPMax('player')
+    if (self.values.currentXP > 0) then
+        local gainedXP = currentXP - self.values.currentXP
 
-    local gainedXP = currentXP - self.values.currentXP
-
-    if (gainedXP < 0) then
-        -- Leveled up
-        gainedXP = self.values.maxXP - self.values.currentXP + currentXP
+        if (gainedXP < 0) then
+            -- Leveled up
+            gainedXP = self.values.maxXP - self.values.currentXP + currentXP
+        end
+        self.values.gainedXP = self.values.gainedXP + gainedXP
     end
 
     self.values.currentXP = currentXP
     self.values.maxXP = maxXP
-    self.values.gainedXP = self.values.gainedXP + gainedXP
 
     self:UpdatePerHourXP()
 
