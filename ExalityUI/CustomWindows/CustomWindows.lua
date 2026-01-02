@@ -50,6 +50,11 @@ customWindows.GetOptions = function(self)
                 return customWindows.Data:GetValue('CharacterFrameEnabled')
             end,
             width = 100,
+        },
+        {
+            type = 'description',
+            label = 'Replaces default Blizzard character frame (PaperDollFrame) with fully custom character frame.',
+            width = 100,
         }
     }
 end

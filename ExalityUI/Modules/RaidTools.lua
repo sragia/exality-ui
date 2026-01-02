@@ -20,10 +20,16 @@ local raidToolsModule = EXUI:GetModule('raid-tools-module')
 raidToolsModule.brezzFrame = nil
 raidToolsModule.readyCheckFrame = nil
 raidToolsModule.pullTimerFrame = nil
+raidToolsModule.encounterTimerFrame = nil
 raidToolsModule.showStatus = false
 
 raidToolsModule.useTabs = true
 raidToolsModule.useSplitView = false
+
+local EncounterTimerType = {
+    ENCOUNTER = 'encounter',
+    COMBAT = 'combat',
+}
 
 raidToolsModule.Init = function(self)
     optionsController:RegisterModule(self)
@@ -78,6 +84,18 @@ raidToolsModule.GetDefaults = function(self)
         pullTimerFontSize = 14,
         pullTimerSeconds = 10,
         pullTimerBackgroundColor = { r = 0, g = 0, b = 0, a = 0.8 },
+        encounterTimerEnabled = false,
+        encounterTimerAnchor = 'CENTER',
+        encounterTimerRelativePoint = 'CENTER',
+        encounterTimerXOff = 0,
+        encounterTimerYOff = 0,
+        encounterTimerFont = 'DMSans',
+        encounterTimerFontSize = 14,
+        encounterTimerFontFlag = 'OUTLINE',
+        encounterTimerFontColor = { r = 1, g = 1, b = 1, a = 1 },
+        encounterTimerType = EncounterTimerType.ENCOUNTER, -- encounter, combat
+        encounterTimerBackgroundColor = { r = 0, g = 0, b = 0, a = 0.8 },
+        encounterTimerBorderColor = { r = 0, g = 0, b = 0, a = 1 },
     }
 end
 
@@ -94,6 +112,10 @@ raidToolsModule.GetTabs = function(self)
         {
             ID = 'pullTimer',
             label = 'Pull Timer',
+        },
+        {
+            ID = 'encounterTimer',
+            label = 'Encounter Timer',
         }
     }
 end
@@ -507,6 +529,226 @@ raidToolsModule.GetOptions = function(self, currTabID)
         }
     end
 
+    if (currTabID == 'encounterTimer') then
+        return {
+            {
+                type = 'toggle',
+                name = 'encounterTimerEnabled',
+                label = 'Enable',
+                onObserve = function(value, oldValue)
+                    data:SetDataByKey('encounterTimerEnabled', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerEnabled')
+                end,
+                width = 100,
+            },
+            {
+                type = 'button',
+                name = 'encounterTimerDisplayTest',
+                label = 'Display Test',
+                onClick = function()
+                    self.encounterTimerFrame:DisplayTest()
+                end,
+                color = { 219 / 255, 73 / 255, 0, 1 },
+                width = 20,
+            },
+            {
+                type = 'spacer',
+                width = 80
+            },
+            {
+                type = 'dropdown',
+                name = 'encounterTimerType',
+                label = 'Type',
+                getOptions = function()
+                    return {
+                        [EncounterTimerType.ENCOUNTER] = 'Encounter',
+                        [EncounterTimerType.COMBAT] = 'Combat',
+                    }
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerType')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerType', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 33
+            },
+            {
+                type = 'spacer',
+                width = 67
+            },
+            {
+                type = 'dropdown',
+                name = 'encounterTimerFont',
+                label = 'Font',
+                getOptions = function()
+                    local fonts = LSM:List('font')
+                    local options = {}
+                    for _, font in ipairs(fonts) do
+                        options[font] = font
+                    end
+                    return options
+                end,
+                isFontDropdown = true,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerFont')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerFont', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 25
+            },
+            {
+                type = 'range',
+                name = 'encounterTimerFontSize',
+                label = 'Font Size',
+                min = 10,
+                max = 100,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerFontSize')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('encounterTimerFontSize', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end
+            },
+            {
+                type = 'dropdown',
+                name = 'encounterTimerFontFlag',
+                label = 'Font Flag',
+                getOptions = function()
+                    return EXUI.const.fontFlags
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerFontFlag')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerFontFlag', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 25
+            },
+            {
+                type = 'spacer',
+                width = 34
+            },
+            {
+                type = 'color-picker',
+                name = 'encounterTimerFontColor',
+                label = 'Font Color',
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerFontColor')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerFontColor', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 16
+            },
+            {
+                type = 'color-picker',
+                name = 'encounterTimerBackgroundColor',
+                label = 'Background Color',
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerBackgroundColor')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerBackgroundColor', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 16
+            },
+            {
+                type = 'color-picker',
+                name = 'encounterTimerBorderColor',
+                label = 'Border Color',
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerBorderColor')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerBorderColor', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 16
+            },
+            {
+                type = 'spacer',
+                width = 52
+            },
+            {
+                type = 'dropdown',
+                name = 'encounterTimerAnchor',
+                label = 'Anchor Point',
+                getOptions = function()
+                    return EXUI.const.anchorPoints
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerAnchor')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerAnchor', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 22
+            },
+            {
+                type = 'dropdown',
+                name = 'encounterTimerRelativePoint',
+                label = 'Relative Anchor Point',
+                getOptions = function()
+                    return EXUI.const.anchorPoints
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerRelativePoint')
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('encounterTimerRelativePoint', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end,
+                width = 22
+            },
+            {
+                type = 'range',
+                name = 'encounterTimerXOff',
+                label = 'X Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerXOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('encounterTimerXOff', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end
+            },
+            {
+                type = 'range',
+                name = 'encounterTimerYOff',
+                label = 'Y Offset',
+                min = -1000,
+                max = 1000,
+                step = 1,
+                width = 16,
+                currentValue = function()
+                    return data:GetDataByKey('encounterTimerYOff')
+                end,
+                onChange = function(f, value)
+                    data:SetDataByKey('encounterTimerYOff', value)
+                    self:CreateOrRefreshEncounterTimer()
+                end
+            },
+        }
+    end
+
     return {
     }
 end
@@ -856,8 +1098,120 @@ raidToolsModule.CreateOrRefreshPullTimer = function(self)
     self.pullTimerFrame.text:SetFont(pullFontName, pullFontSize, 'OUTLINE')
 end
 
+raidToolsModule.CreateEncounterTimer = function(self)
+    local frame = CreateFrame('Frame', nil, UIParent, "BackdropTemplate")
+    frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
+    frame:SetBackdropColor(0, 0, 0, 0.4)
+    frame:SetBackdropBorderColor(0, 0, 0, 1)
+
+    local text = frame:CreateFontString(nil, 'OVERLAY')
+    text:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
+    text:SetPoint('LEFT', 12, 0)
+    text:SetJustifyH('LEFT')
+    text:SetText('00:00.00')
+    text:SetVertexColor(1, 1, 1, 1)
+    frame.Text = text
+
+
+    frame.startTime = 0
+    frame.isRunning = false
+    frame.isEnabled = false
+    frame.encounterType = EncounterTimerType.ENCOUNTER
+
+    frame.Update = function(self)
+        if (not self.isRunning or not self.isEnabled) then return end
+        local elapsed = GetTime() - self.startTime
+        local minutes = math.floor(elapsed / 60)
+        local seconds = elapsed % 60
+        local milliseconds = (elapsed - math.floor(elapsed)) * 100
+        self.Text:SetText(string.format('%02d:%02d.%02d', minutes, seconds, milliseconds))
+    end
+
+    frame.Start = function(self)
+        if (not self.isEnabled) then return end
+        self.isRunning = true
+        self.startTime = GetTime()
+        self:Show()
+        self:SetScript('OnUpdate', self.Update)
+    end
+
+    frame.Stop = function(self)
+        self.isRunning = false
+        self:Hide()
+    end
+
+    frame.OnEvent = function(self, event)
+        if (event == 'ENCOUNTER_START' or event == 'PLAYER_REGEN_DISABLED') then
+            self:Start()
+        elseif (event == 'ENCOUNTER_END' or event == 'PLAYER_REGEN_ENABLED') then
+            self:Stop()
+        end
+    end
+
+    frame.RegisterEvents = function(self)
+        self:UnregisterAllEvents()
+        if (self.encounterType == EncounterTimerType.ENCOUNTER) then
+            self:RegisterEvent('ENCOUNTER_START')
+            self:RegisterEvent('ENCOUNTER_END')
+        elseif (self.encounterType == EncounterTimerType.COMBAT) then
+            self:RegisterEvent('PLAYER_REGEN_ENABLED')
+            self:RegisterEvent('PLAYER_REGEN_DISABLED')
+        end
+    end
+
+    frame.DisplayTest = function(self)
+        if (self.isRunning) then
+            self:Stop()
+        else
+            self:Start()
+        end
+    end
+    frame:SetScript('OnEvent', frame.OnEvent)
+
+    editor:RegisterFrameForEditor(frame, 'Encounter Timer', function(frame)
+        local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
+        data:SetDataByKey('encounterTimerAnchor', point)
+        data:SetDataByKey('encounterTimerRelativePoint', relativePoint)
+        data:SetDataByKey('encounterTimerXOff', xOfs)
+        data:SetDataByKey('encounterTimerYOff', yOfs)
+    end, function() frame:DisplayTest() end, function() frame:DisplayTest() end)
+
+    self.encounterTimerFrame = frame
+    frame:Hide()
+end
+
+raidToolsModule.CreateOrRefreshEncounterTimer = function(self)
+    if (not self.encounterTimerFrame) then self:CreateEncounterTimer() end
+
+    local isEnabled = data:GetDataByKey('encounterTimerEnabled')
+    self.encounterTimerFrame.isEnabled = isEnabled
+    self.encounterTimerFrame.encounterType = data:GetDataByKey('encounterTimerType')
+
+    self.encounterTimerFrame:RegisterEvents()
+
+    self.encounterTimerFrame.Text:SetFont(LSM:Fetch('font', data:GetDataByKey('encounterTimerFont')),
+        data:GetDataByKey('encounterTimerFontSize'), data:GetDataByKey('encounterTimerFontFlag'))
+    self.encounterTimerFrame.Text:SetVertexColor(data:GetDataByKey('encounterTimerFontColor').r,
+        data:GetDataByKey('encounterTimerFontColor').g, data:GetDataByKey('encounterTimerFontColor').b,
+        data:GetDataByKey('encounterTimerFontColor').a)
+    self.encounterTimerFrame:SetBackdropColor(data:GetDataByKey('encounterTimerBackgroundColor').r,
+        data:GetDataByKey('encounterTimerBackgroundColor').g, data:GetDataByKey('encounterTimerBackgroundColor').b,
+        data:GetDataByKey('encounterTimerBackgroundColor').a)
+    self.encounterTimerFrame:SetBackdropBorderColor(data:GetDataByKey('encounterTimerBorderColor').r,
+        data:GetDataByKey('encounterTimerBorderColor').g, data:GetDataByKey('encounterTimerBorderColor').b,
+        data:GetDataByKey('encounterTimerBorderColor').a)
+    EXUI:SetPoint(self.encounterTimerFrame, data:GetDataByKey('encounterTimerAnchor'), UIParent,
+        data:GetDataByKey('encounterTimerAnchor'), data:GetDataByKey('encounterTimerXOff'),
+        data:GetDataByKey('encounterTimerYOff'))
+    self.encounterTimerFrame.Text:SetText('00:00.00')
+    local width = self.encounterTimerFrame.Text:GetStringWidth()
+    local height = self.encounterTimerFrame.Text:GetStringHeight()
+    EXUI:SetSize(self.encounterTimerFrame, width + 18, height + 16)
+end
+
 raidToolsModule.CreateOrRefreshAll = function(self)
     self:CreateOrRefreshBrezz()
     self:CreateOrRefreshReadyCheck()
     self:CreateOrRefreshPullTimer()
+    self:CreateOrRefreshEncounterTimer()
 end
