@@ -99,7 +99,7 @@ local configure = function(f)
             item:ClearAllPoints()
         end
         local prev = nil
-        for i, item in EXUI.utils.spairs(items, function(t, a, b) return t[a].label < t[b].label end) do
+        for i, item in ipairs(items) do
             if (not self.items[i]) then
                 self.items[i] = CreateItem(leftPanel)
             end

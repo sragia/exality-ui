@@ -68,7 +68,7 @@ core.GetSplitViewItems = function(self)
     local displayDB = data:GetDataByKey('resource-displays')
     local items = {}
 
-    for displayID, display in pairs(displayDB) do
+    for displayID, display in EXUI.utils.spairs(displayDB, function(t, a, b) return t[a].createdAt < t[b].createdAt end) do
         if (display) then
             table.insert(items, {
                 label = display.name,
@@ -388,6 +388,7 @@ core.CreateNewDisplay = function(self)
         hasLoadConditions = false,
         onlyLoadOnPlayer = '',
         dontLoadOnPlayer = '',
+        createdAt = time(),
     }
 
     self:SetDisplayToDB(display)
@@ -414,6 +415,9 @@ core.InitFrames = function(self)
     local displayDB = data:GetDataByKey('resource-displays')
     for displayID, display in pairs(displayDB) do
         self:UpdateDefaultByPowerType(displayID, display.resourceType)
+        if (not display.createdAt) then
+            self:UpdateValueForDisplay(displayID, 'createdAt', time())
+        end
         if (not self.frames[displayID]) then
             local frame = self:Create(display.resourceType)
             self.frames[displayID] = frame

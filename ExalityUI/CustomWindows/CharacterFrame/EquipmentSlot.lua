@@ -1,6 +1,11 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUICharacterFrameEquipmentPopout
+local equipmentPopout = EXUI:GetModule('character-frame-equipment-popout')
+
+-------------------
+
 ---@class EXUICharacterFrameEquipmentSlot
 local equipmentSlot = EXUI:GetModule('character-frame-equipment-slot')
 
@@ -317,11 +322,20 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             SetCursorHoveredItem(itemLocation)
         end
 
+        if (IsAltKeyDown()) then
+            GameTooltip:Hide()
+            equipmentPopout:Show(self)
+        else
+            equipmentPopout:Hide()
+        end
+
         CursorUpdate(self)
     end)
 
     slot:SetScript('OnLeave', function(self)
-        self:UnregisterEvent("MODIFIER_STATE_CHANGED");
+        if (not IsAltKeyDown()) then
+            self:UnregisterEvent("MODIFIER_STATE_CHANGED");
+        end
         self.Highlight.FadeOut:Play()
         GameTooltip:Hide();
         ClearCursorHoveredItem()
@@ -374,6 +388,16 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
                 self.Highlight:SetAlpha(1)
             else
                 self.Highlight:SetAlpha(0)
+            end
+        elseif (event == 'MODIFIER_STATE_CHANGED') then
+            if (IsAltKeyDown()) then
+                equipmentPopout:Show(self)
+                GameTooltip:Hide()
+            else
+                if (not self:IsMouseOver()) then
+                    self:UnregisterEvent("MODIFIER_STATE_CHANGED");
+                end
+                equipmentPopout:Hide()
             end
         end
     end)

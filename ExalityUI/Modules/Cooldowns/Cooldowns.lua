@@ -108,7 +108,7 @@ cooldowns.GetSplitViewItems = function(self)
     local items = {}
     local db = cooldowns:GetBaseDB()
 
-    for ID, cdDB in pairs(db) do
+    for ID, cdDB in EXUI.utils.spairs(db, function(t, a, b) return t[a].createdAt < t[b].createdAt end) do
         table.insert(items, {
             label = cdDB.name,
             ID = ID
@@ -934,6 +934,9 @@ end
 cooldowns.SetDefaults = function(self, cdID)
     local db = self:GetBaseDB()
     db[cdID] = db[cdID] or {}
+    if (not db[cdID].createdAt) then
+        db[cdID].createdAt = time()
+    end
     for key, value in pairs(self.DEFAULTS) do
         if (db[cdID][key] == nil) then
             db[cdID][key] = value
@@ -947,6 +950,7 @@ cooldowns.DuplicateCD = function(self, cdID)
     local db = self:GetBaseDB()
     db[newID] = EXUI.utils.deepCloneTable(db[cdID])
     db[newID].name = db[newID].name .. ' (Copy)'
+    db[newID].createdAt = time()
     self:SaveBaseDB(db)
     self:Create(newID)
     self:UpdateById(newID)

@@ -618,5 +618,49 @@ EXUI.utils = {
             local ratio = 1 - (width / height)
             return 0 + zoomReduction + ratio / 2, 1 - zoomReduction - ratio / 2, 0 + zoomReduction, 1 - zoomReduction
         end
+    end,
+    formatTime = function(seconds, excludeSeconds)
+        local hours = math.floor(seconds / 3600)
+        local minutes = math.floor((seconds % 3600) / 60)
+        local seconds = seconds % 60
+        if (hours > 0) then
+            if (excludeSeconds) then
+                return string.format('%dh %dm', hours, minutes)
+            else
+                return string.format('%dh %dm %ds', hours, minutes, seconds)
+            end
+        elseif (minutes > 0) then
+            if (excludeSeconds) then
+                return string.format('%dm', minutes)
+            else
+                return string.format('%dm %ds', minutes, seconds)
+            end
+        else
+            -- Ignore excludeseconds as that's all we have left
+            return string.format('%ds', seconds)
+        end
+    end,
+    formatNumber = function(number)
+        if not number then return "0" end
+        local absNum = math.abs(number)
+        if absNum >= 1e9 then
+            return string.format("%.2fB", number / 1e9)
+        elseif absNum >= 1e6 then
+            return string.format("%.2fM", number / 1e6)
+        elseif absNum >= 1e3 then
+            return string.format("%.2fK", number / 1e3)
+        else
+            return tostring(math.floor(number + 0.5))
+        end
+    end,
+    formatNumberWithCommas = function(number)
+        local formatted = number
+        while true do
+            formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+            if (k == 0) then
+                break
+            end
+        end
+        return formatted
     end
 }
