@@ -67,12 +67,16 @@ xpBar.Init = function(self)
         completedQuestBarColor = { r = 1, g = 72 / 255, b = 0, a = 1 }
     })
     optionsController:RegisterModule(self)
+    self.maxLevel = GetMaxLevelForExpansionLevel(GetExpansionLevel())
     if (self.Data:GetValue('enable')) then
         self:Enable()
     else
         self:Disable()
     end
-    self.maxLevel = GetMaxLevelForExpansionLevel(GetExpansionLevel())
+
+    C_Timer.After(1, function()
+        self:Configure()
+    end)
 end
 
 xpBar.GetName = function(self)
@@ -375,6 +379,7 @@ xpBar.CreateFrame = function(self)
     self.frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
     self.frame:SetBackdropBorderColor(0, 0, 0, 1)
     self.frame:SetBackdropColor(0, 0, 0, 0.5)
+
     -- Containers
     local statusBarFrame = CreateFrame('Frame', nil, self.frame)
     EXUI:SetPoint(statusBarFrame, 'TOPLEFT', 1, -0.5)

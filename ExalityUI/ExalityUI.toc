@@ -71,6 +71,9 @@ Modules/ResourceDisplays/ResourceDisplays.xml
 Modules/Cooldowns/Cooldowns.xml
 Modules/XPBar.lua
 
+# WIP maybe some day
+# Modules/CustomMods/CustomMods.xml
+
 # UnitFrames
 Modules/UnitFrames/Core.lua
 

@@ -107,6 +107,16 @@ local configure = function(frame)
         self.onTabChange = callback
     end
 
+    frame.SetActiveTab = function(self, id)
+        self.activeTabID = id
+        for _, tab in ipairs(self.tabs) do
+            tab:SetActive(tab.ID == id)
+        end
+        if (self.onTabChange) then
+            self.onTabChange(id)
+        end
+    end
+
     frame.Destroy = function(self)
         self:ClearAllPoints()
         tabs.pool:Release(self)

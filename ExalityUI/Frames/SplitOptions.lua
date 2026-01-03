@@ -127,6 +127,16 @@ local configure = function(f)
         end
     end
 
+    f.SetActiveItem = function(self, id)
+        self.activeID = id
+        for _, item in ipairs(self.items) do
+            item:SetActive(item.ID == id)
+        end
+        if (self.onItemChange) then
+            self.onItemChange(id)
+        end
+    end
+
     f.SetOnItemChange = function(self, callback)
         self.onItemChange = callback
     end

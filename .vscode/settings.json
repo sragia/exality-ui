@@ -224,7 +224,9 @@
         "ChatFrame_TimeBreakDown",
         "PLAYER_LEVEL_UP",
         "TIME_PLAYED_MSG",
-        "FlagsUtil"
+        "FlagsUtil",
+        "GENERAL",
+        "DISPLAY"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [
