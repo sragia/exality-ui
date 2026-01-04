@@ -99,7 +99,7 @@ core:AddOption({
                     end,
                     onObserve = function(value)
                         ufCore:UpdateValueForUnit('general', 'useCustomBackdropColor', value)
-                        ufCore:UpdateAllFrames()    
+                        ufCore:UpdateAllFrames()
                     end,
                     width = 100
                 },
@@ -115,7 +115,39 @@ core:AddOption({
                         ufCore:UpdateAllFrames()
                     end,
                     width = 20
-                }
+                },
+                {
+                    type = 'title',
+                    label = 'Health Absorbs',
+                    width = 100,
+                    size = 14
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Damage Absorb Color',
+                    name = 'damageAbsorbColor',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'damageAbsorbColor')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'damageAbsorbColor', value)
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Heal Absorb Color',
+                    name = 'healAbsorbColor',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'healAbsorbColor')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'healAbsorbColor', value)
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
             }
         }
     }

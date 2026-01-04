@@ -35,4 +35,6 @@ power.Update = function(self, frame)
     frame:EnableElement('Power')
     powerBar:SetHeight(db.powerHeight)
     powerBar:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.statusBarTexture))
+
+    powerBar:SetFrameLevel(frame.Health:GetFrameLevel() + 5)
 end

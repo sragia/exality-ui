@@ -26,7 +26,10 @@ core.Init = function(self)
         ['useClassColoredBackdrop'] = false,
         ['useCustomBackdropColor'] = false,
         ['customBackdropColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
-        ['statusBarTexture'] = 'ExalityUI Status Bar'
+        ['statusBarTexture'] = 'ExalityUI Status Bar',
+        -- Health Prediction
+        ['healAbsorbColor'] = { r = 100 / 255, g = 100 / 255, b = 100 / 255, a = 0.8 },
+        ['damageAbsorbColor'] = { r = 0, g = 133 / 255, b = 163 / 255, a = 1 },
     })
 end
 

@@ -20,6 +20,7 @@ targettarget.Init = function(self)
         ['positionRelativePoint'] = 'CENTER',
         ['positionXOff'] = 100,
         ['positionYOff'] = -100,
+        -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
@@ -38,6 +39,7 @@ targettarget.Create = function(self, frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
     frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
+    frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'TargetTarget', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

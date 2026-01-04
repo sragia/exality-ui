@@ -163,6 +163,7 @@ target.Create = function(self, frame)
     frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
     frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
+    frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Target', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

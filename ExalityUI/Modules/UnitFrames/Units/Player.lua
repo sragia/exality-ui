@@ -25,7 +25,7 @@ player.Init = function(self)
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
         ['nameFontFlag'] = 'OUTLINE',
-        ['nameFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['nameFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['nameAnchorPoint'] = 'LEFT',
         ['nameTag'] = '[name]',
         ['nameRelativeAnchorPoint'] = 'LEFT',
@@ -37,7 +37,7 @@ player.Init = function(self)
         ['healthFont'] = 'DMSans',
         ['healthFontSize'] = 12,
         ['healthFontFlag'] = 'OUTLINE',
-        ['healthFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['healthAnchorPoint'] = 'RIGHT',
         ['healthRelativeAnchorPoint'] = 'RIGHT',
         ['healthXOffset'] = -5,
@@ -48,7 +48,7 @@ player.Init = function(self)
         ['healthpercFont'] = 'DMSans',
         ['healthpercFontSize'] = 16,
         ['healthpercFontFlag'] = 'OUTLINE',
-        ['healthpercFontColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['healthpercFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['healthpercAnchorPoint'] = 'RIGHT',
         ['healthpercRelativeAnchorPoint'] = 'RIGHT',
         ['healthpercXOffset'] = -5,
@@ -92,10 +92,10 @@ player.Init = function(self)
         ['castbarFont'] = 'DMSans',
         ['castbarFontSize'] = 12,
         ['castbarFontFlag'] = 'OUTLINE',
-        ['castbarFontColor'] = {r = 1, g = 1, b = 1, a = 1},
-        ['castbarBackgroundColor'] = {r = 0, g = 0, b = 0, a = 0.5},
-        ['castbarBackgroundBorderColor'] = {r = 0, g = 0, b = 0, a = 1},
-        ['castbarForegroundColor'] = {r = 1, g = 1, b = 1, a = 1},
+        ['castbarFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['castbarBackgroundColor'] = { r = 0, g = 0, b = 0, a = 0.5 },
+        ['castbarBackgroundBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
+        ['castbarForegroundColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['castbarBarTexture'] = 'ExalityUI Status Bar',
     })
 end
@@ -111,6 +111,7 @@ player.Create = function(self, frame)
     frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
     frame.CombatIndicator = EXUI:GetModule('uf-element-combat-indicator'):Create(frame)
     frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
+    frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Player', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
@@ -119,7 +120,7 @@ player.Create = function(self, frame)
         core:UpdateValueForUnit(self.unit, 'positionXOff', xOfs)
         core:UpdateValueForUnit(self.unit, 'positionYOff', yOfs)
         core:UpdateFrameForUnit(self.unit)
-    end, function(frame) 
+    end, function(frame)
         frame.editor:SetEditorAsMovable()
     end)
 end

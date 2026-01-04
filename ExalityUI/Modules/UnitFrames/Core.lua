@@ -135,6 +135,10 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-health'):Update(frame)
     end
 
+    if (frame.HealthPrediction) then
+        EXUI:GetModule('uf-element-healthprediction'):Update(frame)
+    end
+
     if (frame.RaidTargetIndicator) then
         EXUI:GetModule('uf-element-raid-target-indicator'):Update(frame)
     end
