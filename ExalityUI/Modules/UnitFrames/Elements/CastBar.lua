@@ -14,15 +14,9 @@ castBar.Create = function(self, frame, unit)
     local castBarContainer = CreateFrame('Frame', '$parent_CastBar', frame)
     local castBar = CreateFrame('StatusBar', nil, castBarContainer)
     castBar.container = castBarContainer
-    local backdrop = CreateFrame('Frame', nil, castBar, 'BackdropTemplate')
-    castBar.backdrop = backdrop
     castBar:SetSize(200, 20)
     castBar:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
-    EXUI:SetPoint(backdrop, 'TOPLEFT', castBar, 'TOPLEFT', -1, 1)
-    EXUI:SetPoint(backdrop, 'BOTTOMRIGHT', castBar, 'BOTTOMRIGHT', 1, 0)
-    backdrop:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    backdrop:SetBackdropBorderColor(0, 0, 0, 1)
-    backdrop:SetBackdropColor(0, 0, 0, 0) -- Hide backdrop background. Use oUF one
+    castBar.PPBorder = EXUI:AddPixelPerfectBorder(castBar)
 
     -- Background
     local background = castBar:CreateTexture(nil, 'BACKGROUND')
@@ -58,6 +52,7 @@ castBar.Create = function(self, frame, unit)
     local icon = castBar:CreateTexture(nil, 'OVERLAY')
     icon:SetSize(20, 20)
     icon:SetPoint('TOPLEFT', castBarContainer, 'TOPLEFT', 0, 0)
+    icon:SetTexCoord(EXUI.utils.getTexCoords(1, 1, 30))
     castBar.Icon = icon
 
 
@@ -78,8 +73,8 @@ castBar.Create = function(self, frame, unit)
             frame.db.castbarYOffUIParent
         )
     end
-    castBar:SetPoint('BOTTOMLEFT', icon, 'BOTTOMRIGHT', 0, 1)
-    castBar:SetPoint('TOPRIGHT', castBarContainer, 'TOPRIGHT', -1, -1)
+    castBar:SetPoint('BOTTOMLEFT', icon, 'BOTTOMRIGHT', 0, 0)
+    castBar:SetPoint('TOPRIGHT')
 
     return castBar
 end
@@ -97,7 +92,7 @@ castBar.Update = function(self, frame)
 
     frame:EnableElement('Castbar')
 
-    local iconSize = db.castbarHeight + 2
+    local iconSize = db.castbarHeight
     if (db.castbarMatchFrameWidth) then
         local frameWidth = db.sizeWidth
         EXUI:SetSize(container, frameWidth, db.castbarHeight)
@@ -117,7 +112,7 @@ castBar.Update = function(self, frame)
 
     castBar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b,
         db.castbarBackgroundColor.a)
-    castBar.backdrop:SetBackdropBorderColor(
+    castBar.PPBorder:SetBorderColor(
         db.castbarBackgroundBorderColor.r,
         db.castbarBackgroundBorderColor.g,
         db.castbarBackgroundBorderColor.b,
@@ -148,6 +143,9 @@ castBar.Update = function(self, frame)
             db.castbarYOffUIParent
         )
     end
+
+    print('icon Height', castBar.Icon:GetHeight())
+    print('castBar Height', castBar:GetHeight())
 
     self:UpdateMover(frame)
 end

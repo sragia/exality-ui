@@ -23,6 +23,7 @@ end
 
 local configure = function(frame)
     frame:SetSize(500, 500)
+    frame.windowId = EXUI.utils.generateRandomString(10)
     frame:SetPoint("CENTER")
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
@@ -67,7 +68,7 @@ local configure = function(frame)
             self.onClose()
         end
         self:SetScript('OnUpdate', nil)
-        EXUI:Callback('windowClose')
+        EXUI:Callback('windowClose', self.windowId)
     end
 
     if (not frame.Texture) then
