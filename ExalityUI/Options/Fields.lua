@@ -294,7 +294,6 @@ optionsFields.GetField = function(self, field)
             return f
         end,
         default = function()
-            DevTool:AddData(field)
             EXUI.utils.printOut('Unknown Field Type: ' .. field.type)
         end
     })

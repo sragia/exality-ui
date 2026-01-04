@@ -144,9 +144,6 @@ castBar.Update = function(self, frame)
         )
     end
 
-    print('icon Height', castBar.Icon:GetHeight())
-    print('castBar Height', castBar:GetHeight())
-
     self:UpdateMover(frame)
 end
 
