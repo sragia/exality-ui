@@ -64,7 +64,9 @@ holyPower.Create = function(self, frame)
     end)
 
     C_Timer.After(0.5, function()
-        frame:Update()
+        if (frame:IsActive() and frame.Update) then
+            frame:Update()
+        end
     end)
 end
 
