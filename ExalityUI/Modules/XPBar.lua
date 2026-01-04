@@ -376,14 +376,18 @@ end
 xpBar.CreateFrame = function(self)
     self.frame = CreateFrame('Frame', 'ExalityUI_XPBar', UIParent, 'BackdropTemplate')
 
-    self.frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    self.frame:SetBackdropBorderColor(0, 0, 0, 1)
-    self.frame:SetBackdropColor(0, 0, 0, 0.5)
+    local background = self.frame:CreateTexture(nil, 'BACKGROUND')
+    background:SetAllPoints()
+    background:SetTexture(EXUI.const.textures.frame.solidBg)
+    background:SetColorTexture(0, 0, 0, 0.5)
+    self.frame.Background = background
+
+    self.frame.PPBorder = EXUI:AddPixelPerfectBorder(self.frame, 1)
+    self.frame.PPBorder:SetBorderColor(0, 0, 0, 1)
 
     -- Containers
     local statusBarFrame = CreateFrame('Frame', nil, self.frame)
-    EXUI:SetPoint(statusBarFrame, 'TOPLEFT', 1, -0.5)
-    EXUI:SetPoint(statusBarFrame, 'BOTTOMRIGHT', -1, 1)
+    statusBarFrame:SetAllPoints()
     statusBarFrame:SetClipsChildren(true)
     self.frame.StatusBarContainer = statusBarFrame
 
