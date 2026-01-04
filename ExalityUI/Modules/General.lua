@@ -952,7 +952,8 @@ generalModule.fonts = {
 }
 
 generalModule.Refresh = function(self)
-    if (data:GetDataByKey('bottomVignette')) then
+    local showBottomVignette = data:GetDataByKey('bottomVignette')
+    if (showBottomVignette) then
         if (not self.bottomVignette) then
             self.bottomVignette = CreateFrame('Frame', nil, UIParent)
             self.bottomVignette:SetFrameStrata('BACKGROUND')

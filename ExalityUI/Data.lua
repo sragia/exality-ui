@@ -86,7 +86,12 @@ end
 
 data.GetDataByKey = function(self, key)
     self.data.profiles[self.currentProfile] = self.data.profiles[self.currentProfile] or {}
-    return self.data.profiles[self.currentProfile][key] or {};
+    local data = self.data.profiles[self.currentProfile][key]
+    if (data == nil) then
+        return {}
+    end
+
+    return data;
 end
 
 data.AddDataToKey = function(self, key, data)

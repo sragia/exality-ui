@@ -37,9 +37,15 @@ holyPower.Create = function(self, frame)
     frame.ActiveFrames = {}
 
     frame:RegisterUnitEvent('UNIT_POWER_UPDATE', 'player')
+    frame:RegisterEvent('PLAYER_ENTERING_WORLD')
 
     frame.OnEvent = function(self, event, unit, powerType)
         if (unit == 'player' and powerType == 'HOLY_POWER') then
+            local maxHolyPower = UnitPowerMax('player', Enum.PowerType.HolyPower)
+            if (maxHolyPower ~= #self.ActiveFrames) then
+                self:Update()
+                return;
+            end
             local hpCount = UnitPower('player', Enum.PowerType.HolyPower)
             local i = 0
             for _, powerFrame in ipairs_reverse(frame.ActiveFrames) do
@@ -55,6 +61,10 @@ holyPower.Create = function(self, frame)
     end
     frame:SetScript('OnEvent', function(self, event, unit, powerType)
         self:OnEvent(event, unit, powerType)
+    end)
+
+    C_Timer.After(0.5, function()
+        frame:Update()
     end)
 end
 
