@@ -110,3 +110,25 @@ EXUI.handler:SetScript('OnEvent', function(self, event, ...)
         end
     end
 end)
+
+
+--- Callbacks
+--[[
+    {
+        events = { 'event1', 'event2' },
+        func = function(event, ...)
+    }
+]]
+EXUI.callbacks = {}
+
+EXUI.RegisterCallback = function(self, config)
+    table.insert(EXUI.callbacks, config)
+end
+
+EXUI.Callback = function(self, event, ...)
+    for _, callback in ipairs(self.callbacks) do
+        if (FindInTable(callback.events, event)) then
+            callback.func(event, ...)
+        end
+    end
+end

@@ -67,6 +67,7 @@ local configure = function(frame)
             self.onClose()
         end
         self:SetScript('OnUpdate', nil)
+        EXUI:Callback('windowClose')
     end
 
     if (not frame.Texture) then

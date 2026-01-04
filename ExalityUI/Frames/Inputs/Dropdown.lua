@@ -54,6 +54,7 @@ local function CreateOption(f, frameOptions)
         end
     end
     option:SetScript('OnMouseDown', function(self)
+        EXUI:Callback('dropdownSelect', self.dropdownId, self.value)
         f:SetInputValue(self.value)
         f:SetValue('isOpen', false)
     end)
@@ -71,7 +72,7 @@ local function CreateOption(f, frameOptions)
         option.animDur = 0.15
         option.onHover = EXUI.utils.animation.fade(hoverContainer, option.animDur, 0, 1)
         option.onHoverLeave = EXUI.utils.animation.fade(hoverContainer, option.animDur, 1, 0)
-        hoverBorder:SetVertexColor(252/255, 102/255, 3/255, 1)
+        hoverBorder:SetVertexColor(252 / 255, 102 / 255, 3 / 255, 1)
     end
 
     option:SetScript('OnEnter', function(self)
@@ -106,6 +107,7 @@ end
 
 local function ConfigureFrame(f, options)
     EXUI.utils.addObserver(f)
+    f.dropdownId = EXUI.utils.generateRandomString(10)
     f:SetSize(options.width or 200, options.height or 40)
     f:SetFrameStrata('TOOLTIP')
     f.isOpen = false
@@ -133,7 +135,9 @@ local function ConfigureFrame(f, options)
         end
 
         f:SetScript('OnMouseDown', function()
-            f:SetValue('isOpen', not f.isOpen)
+            local isOpen = not f.isOpen
+            EXUI:Callback(isOpen and 'dropdownOpen' or 'dropdownClose', f.dropdownId)
+            f:SetValue('isOpen', isOpen)
         end)
 
         local tex = f:CreateTexture(nil, 'BACKGROUND')
@@ -240,6 +244,22 @@ local function ConfigureFrame(f, options)
         self.frameOptions.width = width
         self:SetWidth(width)
     end
+
+    local handleDropdownEvent = function(event, id)
+        if (event == 'dropdownOpen') then
+            if (id ~= f.dropdownId and f.isOpen) then
+                f:SetValue('isOpen', false) -- Close dropdown if other has closed it
+            end
+        end
+        if (event == 'windowClose') then
+            f:SetValue('isOpen', false) -- Close Dropdown if window is closed
+        end
+    end
+
+    EXUI:RegisterCallback({
+        events = { 'dropdownOpen', 'windowClose' },
+        func = handleDropdownEvent
+    })
 end
 
 
