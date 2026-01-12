@@ -226,7 +226,8 @@
         "TIME_PLAYED_MSG",
         "FlagsUtil",
         "GENERAL",
-        "DISPLAY"
+        "DISPLAY",
+        "CountTable"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

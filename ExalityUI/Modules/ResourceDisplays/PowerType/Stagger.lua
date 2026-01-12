@@ -87,7 +87,7 @@ stagger.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'hideWhenZero')
             end,
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'hideWhenZero', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
@@ -100,7 +100,7 @@ stagger.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'lightStaggerColor')
             end,
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'lightStaggerColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,

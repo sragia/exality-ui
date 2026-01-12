@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class ExalityFrames
+local EXFrames = EXUI.EXFrames
+
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
@@ -33,12 +36,12 @@ profiles.CreateImportInput = function(self, container)
 end
 
 profiles.SetupWindow = function(self)
-    local window = EXUI:GetModule('window-frame'):Create({
-        size = {500, 630},
+    local window = EXFrames:GetFrame('window-frame'):Create({
+        size = { 500, 630 },
         title = 'Profiles'
     })
 
-    local currentContainer = EXUI:GetModule('panel-frame'):Create()
+    local currentContainer = EXFrames:GetFrame('panel-frame'):Create()
     currentContainer:SetParent(window.container)
     currentContainer:SetPoint('TOPLEFT')
     currentContainer:SetPoint('BOTTOMRIGHT', window.container, 'TOPRIGHT', 0, -30)
@@ -48,7 +51,7 @@ profiles.SetupWindow = function(self)
     currentText:SetPoint('LEFT', 10, 0)
     currentText:SetText(string.format('Current Profile: |cfff96109%s|r', data:GetCurrentProfile()))
 
-    local createContainer = EXUI:GetModule('panel-frame'):Create()
+    local createContainer = EXFrames:GetFrame('panel-frame'):Create()
     createContainer:SetParent(window.container)
     createContainer:SetPoint('TOPLEFT', currentContainer, 'BOTTOMLEFT', 0, -10)
     createContainer:SetPoint('BOTTOMRIGHT', currentContainer, 'BOTTOMRIGHT', 0, -140)
@@ -58,7 +61,7 @@ profiles.SetupWindow = function(self)
     createLabel:SetPoint('TOPLEFT', createContainer, 'TOPLEFT', 10, -10)
     createLabel:SetText('Create New Profile')
 
-    local createInput = EXUI:GetModule('edit-box-input'):Create({
+    local createInput = EXFrames:GetFrame('edit-box-input'):Create({
         label = 'Profile Name',
         onChange = function(_, value)
             self.newProfileName = value
@@ -69,7 +72,7 @@ profiles.SetupWindow = function(self)
     createInput:SetPoint('TOPLEFT', createLabel, 'BOTTOMLEFT', 0, -10)
     createInput:SetPoint('RIGHT', createContainer, 'CENTER', 60, 0);
 
-    local createButton = EXUI:GetModule('button'):Create({
+    local createButton = EXFrames:GetFrame('button'):Create({
         text = 'Create',
         onClick = function()
             if (self.newProfileName and self.newProfileName ~= '') then
@@ -78,14 +81,14 @@ profiles.SetupWindow = function(self)
                 ReloadUI()
             end
         end,
-        color = {0, 130/255, 9/255, 1},
-        size = {60, 27}
+        color = { 0, 130 / 255, 9 / 255, 1 },
+        size = { 60, 27 }
     })
     createButton:SetParent(createContainer)
     createButton:SetPoint('BOTTOMLEFT', createInput, 'BOTTOMRIGHT', 10, 0)
     createButton:SetPoint('RIGHT', createContainer, 'RIGHT', -10, 0);
 
-    local shouldCopyToggle = EXUI:GetModule('toggle'):Create({
+    local shouldCopyToggle = EXFrames:GetFrame('toggle'):Create({
         text = 'Duplicate from current profile',
         value = false
     })
@@ -95,7 +98,7 @@ profiles.SetupWindow = function(self)
     shouldCopyToggle:SetParent(createContainer)
     shouldCopyToggle:SetPoint('TOPLEFT', createInput, 'BOTTOMLEFT', 0, -15)
 
-    local importContainer = EXUI:GetModule('panel-frame'):Create()
+    local importContainer = EXFrames:GetFrame('panel-frame'):Create()
     importContainer:SetParent(window.container)
     importContainer:SetPoint('TOPLEFT', createContainer, 'BOTTOMLEFT', 0, -10)
     importContainer:SetPoint('BOTTOMRIGHT', createContainer, 'BOTTOMRIGHT', 0, -200)
@@ -111,19 +114,19 @@ profiles.SetupWindow = function(self)
     importInput:SetPoint('BOTTOM', importContainer, 'BOTTOM', 0, 40);
     self.importInput = importInput
 
-    local importButton = EXUI:GetModule('button'):Create({
+    local importButton = EXFrames:GetFrame('button'):Create({
         text = 'Import',
         onClick = function()
             self:OnImport()
         end,
-        color = {0, 130/255, 9/255, 1},
-        size = {60, 27}
+        color = { 0, 130 / 255, 9 / 255, 1 },
+        size = { 60, 27 }
     })
     importButton:SetParent(importContainer)
     importButton:SetPoint('TOPLEFT', importInput, 'BOTTOMLEFT', 0, -5)
     importButton:SetPoint('TOPRIGHT', importInput, 'BOTTOMRIGHT', 0, -5);
 
-    local exportContainer = EXUI:GetModule('panel-frame'):Create()
+    local exportContainer = EXFrames:GetFrame('panel-frame'):Create()
     exportContainer:SetParent(window.container)
     exportContainer:SetPoint('TOPLEFT', importContainer, 'BOTTOMLEFT', 0, -10)
     exportContainer:SetPoint('BOTTOMRIGHT', importContainer, 'BOTTOMRIGHT', 0, -200)
@@ -139,13 +142,13 @@ profiles.SetupWindow = function(self)
     exportInput:SetPoint('BOTTOM', exportContainer, 'BOTTOM', 0, 40);
     self.exportInput = exportInput
 
-    local exportButton = EXUI:GetModule('button'):Create({
+    local exportButton = EXFrames:GetFrame('button'):Create({
         text = 'Export',
         onClick = function()
             self:GenerateExportString()
         end,
-        color = {237/255, 138/255, 0, 1},
-        size = {60, 27}
+        color = { 237 / 255, 138 / 255, 0, 1 },
+        size = { 60, 27 }
     })
     exportButton:SetParent(exportContainer)
     exportButton:SetPoint('TOPLEFT', exportInput, 'BOTTOMLEFT', 0, -5)
@@ -190,7 +193,7 @@ profiles.OnImport = function(self)
     end
 
     if (data:HasProfile(profileData.name)) then
-        local dialog = EXUI:GetModule('dialog-frame'):Create()
+        local dialog = EXFrames:GetFrame('dialog-frame'):Create()
         dialog:SetText('Profile already exists. Overwrite?')
         dialog:SetButtons({
             {
@@ -200,7 +203,7 @@ profiles.OnImport = function(self)
                     data:SetCurrentProfile(profileData.name)
                     ReloadUI()
                 end,
-                color = {235/255, 162/255, 52/255, 1}
+                color = { 235 / 255, 162 / 255, 52 / 255, 1 }
             },
             {
                 text = 'Duplicate',
@@ -210,7 +213,7 @@ profiles.OnImport = function(self)
                     data:SetCurrentProfile(newName)
                     ReloadUI()
                 end,
-                color = {235/255, 162/255, 52/255, 1}
+                color = { 235 / 255, 162 / 255, 52 / 255, 1 }
             },
             {
                 text = 'Cancel',
@@ -218,7 +221,7 @@ profiles.OnImport = function(self)
                     dialog:HideDialog()
                     return
                 end,
-                color = {235/255, 52/255, 52/255, 1}
+                color = { 235 / 255, 52 / 255, 52 / 255, 1 }
             }
         })
 

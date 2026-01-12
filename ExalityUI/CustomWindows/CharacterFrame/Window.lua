@@ -1,8 +1,11 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
----@class EXUIWindowFrame
-local windowConstruct = EXUI:GetModule('window-frame')
+---@class ExalityFrames
+local EXFrames = EXUI.EXFrames
+
+---@class ExalityFramesWindowFrame
+local windowConstruct = EXFrames:GetFrame('window-frame')
 
 ---@class EXUICharacterFrameEquipmentSlot
 local equipmentSlot = EXUI:GetModule('character-frame-equipment-slot')
@@ -13,8 +16,8 @@ local customWindows = EXUI:GetModule('custom-windows')
 ---@class EXUICharacterFrameStats
 local stats = EXUI:GetModule('character-frame-stats')
 
----@class EXUITooltipInput
-local tooltip = EXUI:GetModule('frame-input-tooltip')
+---@class ExalityFramesTooltipInput
+local tooltip = EXFrames:GetFrame('tooltip')
 
 -------------------------
 

@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class ExalityFrames
+local EXFrames = EXUI.EXFrames
+
 ---@class EXUIUnitFramesCore
 local ufCore = EXUI:GetModule('uf-core')
 
@@ -42,12 +45,12 @@ core.GetOrder = function(self)
 end
 
 core.SetupTabs = function(self, container)
-    local tabs = EXUI:GetModule('tabs-frame'):Create()
+    local tabs = EXFrames:GetFrame('tabs-frame'):Create()
     tabs:SetParent(container)
     tabs:SetPoint('TOPLEFT', 5, 0)
     tabs:SetPoint('BOTTOMRIGHT', -5, 5)
 
-    local tabOptions = EXUI:GetModule('split-options-frame'):Create()
+    local tabOptions = EXFrames:GetFrame('split-options-frame'):Create()
     tabOptions:SetParent(tabs.container)
     tabOptions:SetPoint('TOPLEFT', tabs.container, 'TOPLEFT', 5, -5)
     tabOptions:SetPoint('BOTTOMRIGHT', tabs.container, 'BOTTOMRIGHT', -5, 5)

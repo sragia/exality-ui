@@ -15,7 +15,7 @@ genericEnable.GetOptions = function(self, unit, prefix)
             type = 'toggle',
             label = 'Enable',
             name = prefix .. 'Enable',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'Enable', value)
                 core:UpdateFrameForUnit(unit)
             end,

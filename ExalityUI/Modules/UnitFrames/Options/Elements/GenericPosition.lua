@@ -57,7 +57,7 @@ genericPosition.GetOptions = function(self, unit, prefix)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'XOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'XOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -73,7 +73,7 @@ genericPosition.GetOptions = function(self, unit, prefix)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'YOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'YOff', value)
                 core:UpdateFrameForUnit(unit)
             end,

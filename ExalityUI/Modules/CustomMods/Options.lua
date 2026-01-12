@@ -110,7 +110,7 @@ options.GetGeneralOptions = function(self, itemId)
             type = 'toggle',
             label = 'Enabled',
             name = 'enabled',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 customData.Data:SetValueForId(itemId, 'enabled', value)
             end,
             currentValue = function()
@@ -125,7 +125,7 @@ options.GetGeneralOptions = function(self, itemId)
             currentValue = function()
                 return customData.Data:GetValueForId(itemId, 'name')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 customData.Data:SetValueForId(itemId, 'name', value)
                 self:RefreshItems()
             end,

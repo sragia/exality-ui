@@ -16,7 +16,7 @@ core:AddOption({
             name = 'Size & Position',
             id = 'sizeposition',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-size-and-position'):GetOptions('target')
                 end
             }
@@ -25,7 +25,7 @@ core:AddOption({
             name = 'Name',
             id = 'name',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'name')
                 end,
                 {
@@ -38,15 +38,15 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('target', 'nameMaxWidth')
                     end,
-                    onChange = function(f,value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('target', 'nameMaxWidth', value)
                         ufCore:UpdateFrameForUnit('target')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('target', 'name')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('target', 'name')
                 end
             }
@@ -55,13 +55,13 @@ core:AddOption({
             name = 'Health',
             id = 'health',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'health')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('target', 'health')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('target', 'health')
                 end
             }
@@ -70,13 +70,13 @@ core:AddOption({
             name = 'Health %',
             id = 'healthperc',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'healthperc')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('target', 'healthperc')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('target', 'healthperc')
                 end
             }
@@ -85,7 +85,7 @@ core:AddOption({
             name = 'Power',
             id = 'power',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'power')
                 end,
                 {
@@ -95,7 +95,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('target', 'powerHeight')
                     end,
-                    onChange = function(self, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('target', 'powerHeight', value)
                         ufCore:UpdateFrameForUnit('target')
                     end,
@@ -107,10 +107,10 @@ core:AddOption({
             name = 'Cast Bar',
             id = 'castbar',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'castbar')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-cast-bar'):GetOptions('target')
                 end
             }
@@ -119,7 +119,7 @@ core:AddOption({
             name = 'Buffs',
             id = 'buffs',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('target', 'buffs', true)
                 end
             }
@@ -128,7 +128,7 @@ core:AddOption({
             name = 'Debuffs',
             id = 'debuffs',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('target', 'debuffs', false)
                 end
             }
@@ -137,7 +137,7 @@ core:AddOption({
             name = 'Marker Icon',
             id = 'markericon',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'raidTargetIndicator')
                 end,
                 {
@@ -150,12 +150,12 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('target', 'raidTargetIndicatorScale')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('target', 'raidTargetIndicatorScale', value)
                         ufCore:UpdateFrameForUnit('target')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('target', 'raidTargetIndicator')
                 end,
             }
@@ -164,7 +164,7 @@ core:AddOption({
             name = 'Raid Role Icons',
             id = 'raidroles',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'raidRoles')
                 end,
                 {
@@ -177,12 +177,12 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('target', 'raidRolesScale')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('target', 'raidRolesScale', value)
                         ufCore:UpdateFrameForUnit('target')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('target', 'raidRoles')
                 end,
             }
@@ -191,7 +191,7 @@ core:AddOption({
             name = 'Combat Icon',
             id = 'combatindicator',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'combatIndicator')
                 end,
                 {
@@ -204,12 +204,12 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('target', 'combatIndicatorScale')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('target', 'combatIndicatorScale', value)
                         ufCore:UpdateFrameForUnit('target')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('target', 'combatIndicator')
                 end
             }

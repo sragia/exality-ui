@@ -114,7 +114,7 @@ core.GetOptions = function(self, currTabID, currItemID)
                     currentValue = function()
                         return self:GetValueForDisplay(currItemID, 'width')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         self:UpdateValueForDisplay(currItemID, 'width', value)
                         self:RefreshDisplayByID(currItemID)
                     end
@@ -130,7 +130,7 @@ core.GetOptions = function(self, currTabID, currItemID)
                     currentValue = function()
                         return self:GetValueForDisplay(currItemID, 'height')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         self:UpdateValueForDisplay(currItemID, 'height', value)
                         self:RefreshDisplayByID(currItemID)
                     end
@@ -149,7 +149,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
-            onObserve = function(value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'enable', value)
                 self:RefreshDisplayByID(currItemID)
             end,
@@ -165,7 +165,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'name')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'name', value)
                 self:RefreshDisplayByID(currItemID)
             end,
@@ -196,7 +196,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             type = 'toggle',
             label = 'Show Always when Available',
             name = 'showOverride',
-            onObserve = function(value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'showOverride', value)
                 self:RefreshDisplayByID(currItemID)
             end,
@@ -254,7 +254,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'XOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'XOff', value)
                 self:RefreshDisplayByID(currItemID)
             end,
@@ -270,7 +270,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'YOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'YOff', value)
                 self:RefreshDisplayByID(currItemID)
             end,
@@ -297,7 +297,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'hasLoadConditions')
             end,
-            onObserve = function(value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'hasLoadConditions', value)
                 self:RefreshDisplayByID(currItemID)
                 optionsFields:RefreshOptions()
@@ -317,7 +317,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'onlyLoadOnPlayer')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'onlyLoadOnPlayer', value)
                 self:RefreshDisplayByID(currItemID)
             end,
@@ -340,7 +340,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'dontLoadOnPlayer')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'dontLoadOnPlayer', value)
                 self:RefreshDisplayByID(currItemID)
             end,

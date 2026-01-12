@@ -22,7 +22,7 @@ tag.GetOptions = function(self, unit, prefix)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'Tag')
             end,
-            onChange = function(self, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'Tag', value)
                 core:UpdateFrameForUnit(unit)
             end,

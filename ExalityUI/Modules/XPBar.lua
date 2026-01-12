@@ -97,7 +97,7 @@ xpBar.GetOptions = function(self)
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
-            onObserve = function(value)
+            onChange = function(value)
                 self.Data:SetValue('enable', value)
                 optionsFields:RefreshOptions()
                 if (value) then
@@ -115,7 +115,7 @@ xpBar.GetOptions = function(self)
             type = 'toggle',
             label = 'Show At Max Level',
             name = 'showAtMaxLevel',
-            onObserve = function(value)
+            onChange = function(value)
                 self.Data:SetValue('showAtMaxLevel', value)
                 self:HandleVisibility()
             end,
@@ -137,7 +137,7 @@ xpBar.GetOptions = function(self)
             currentValue = function()
                 return self.Data:GetValue('width')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self.Data:SetValue('width', value)
                 self:Configure()
             end,
@@ -156,7 +156,7 @@ xpBar.GetOptions = function(self)
             currentValue = function()
                 return self.Data:GetValue('height')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self.Data:SetValue('height', value)
                 self:Configure()
             end,
@@ -220,7 +220,7 @@ xpBar.GetOptions = function(self)
             currentValue = function()
                 return self.Data:GetValue('xOffset')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self.Data:SetValue('xOffset', value)
                 self:Configure()
             end,
@@ -239,7 +239,7 @@ xpBar.GetOptions = function(self)
             currentValue = function()
                 return self.Data:GetValue('yOffset')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self.Data:SetValue('yOffset', value)
                 self:Configure()
             end,
@@ -290,7 +290,7 @@ xpBar.GetOptions = function(self)
             currentValue = function()
                 return self.Data:GetValue('fontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self.Data:SetValue('fontSize', value)
                 self:Configure()
             end,

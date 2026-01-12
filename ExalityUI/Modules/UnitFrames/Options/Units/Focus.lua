@@ -50,7 +50,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('focus', 'powerHeight')
                     end,
-                    onChange = function(self, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('focus', 'powerHeight', value)
                         ufCore:UpdateFrameForUnit('focus')
                     end,
@@ -75,7 +75,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('focus', 'raidTargetIndicatorScale')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('focus', 'raidTargetIndicatorScale', value)
                         ufCore:UpdateFrameForUnit('focus')
                     end,

@@ -15,7 +15,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             type = 'toggle',
             label = 'Enable',
             name = prefix .. 'Enable',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'Enable', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -33,7 +33,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             type = 'toggle',
             label = isBuffs and 'Anchor To Debuffs' or 'Anchor To Buffs',
             name = prefix .. 'AnchorTo' .. (isBuffs and 'Debuffs' or 'Buffs'),
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'AnchorTo' .. (isBuffs and 'Debuffs' or 'Buffs'), value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -49,7 +49,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             min = 5,
             max = 100,
             step = 1,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'IconWidth', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -65,7 +65,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             min = 5,
             max = 100,
             step = 1,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'IconHeight', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -78,7 +78,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             type = 'range',
             label = 'Spacing',
             name = prefix .. 'Spacing',
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'Spacing', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -133,7 +133,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'XOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'XOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -149,7 +149,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'YOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'YOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -167,7 +167,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             min = 1,
             max = 100,
             step = 1,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'Num', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -183,7 +183,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             min = 1,
             max = 100,
             step = 1,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'ColNum', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -200,7 +200,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             type = 'toggle',
             label = 'Only Show Player Auras',
             name = prefix .. 'OnlyShowPlayer',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'OnlyShowPlayer', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -275,7 +275,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'CountFontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'CountFontSize', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -342,7 +342,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'CountXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'CountXOff', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -358,7 +358,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'CountYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'CountYOff', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -417,7 +417,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'DurationFontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'DurationFontSize', value)
                 core:UpdateFrameForUnit(unit)
             end

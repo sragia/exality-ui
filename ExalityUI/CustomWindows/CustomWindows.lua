@@ -38,7 +38,7 @@ customWindows.GetOptions = function(self)
             label = 'Character Frame',
             name = 'paperDollEnabled',
             type = 'toggle',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 customWindows.Data:SetValue('CharacterFrameEnabled', value)
                 if (value) then
                     characterFrame:Enable()

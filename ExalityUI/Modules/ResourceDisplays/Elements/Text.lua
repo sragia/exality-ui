@@ -54,7 +54,7 @@ textElement.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'showText')
             end,
-            onObserve = function(value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'showText', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
@@ -108,7 +108,7 @@ textElement.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'fontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'fontSize', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -172,7 +172,7 @@ textElement.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'textXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'textXOff', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
@@ -188,7 +188,7 @@ textElement.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'textYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'textYOff', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,

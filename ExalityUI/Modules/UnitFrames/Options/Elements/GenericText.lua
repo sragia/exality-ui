@@ -66,7 +66,7 @@ genericText.GetOptions = function(self, unit, prefix)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'FontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'FontSize', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -133,7 +133,7 @@ genericText.GetOptions = function(self, unit, prefix)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'XOffset')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'XOffset', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -149,7 +149,7 @@ genericText.GetOptions = function(self, unit, prefix)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'YOffset')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'YOffset', value)
                 core:UpdateFrameForUnit(unit)
             end

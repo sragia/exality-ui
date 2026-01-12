@@ -58,7 +58,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'useCustomHealthColor')
                     end,
-                    onObserve = function(value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('general', 'useCustomHealthColor', value)
                         ufCore:UpdateAllFrames()
                     end,
@@ -84,7 +84,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'useClassColoredBackdrop')
                     end,
-                    onObserve = function(value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('general', 'useClassColoredBackdrop', value)
                         ufCore:UpdateAllFrames()
                     end,
@@ -97,7 +97,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'useCustomBackdropColor')
                     end,
-                    onObserve = function(value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('general', 'useCustomBackdropColor', value)
                         ufCore:UpdateAllFrames()
                     end,

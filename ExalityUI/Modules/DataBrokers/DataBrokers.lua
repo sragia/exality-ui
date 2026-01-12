@@ -86,7 +86,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
-            onObserve = function(value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'enable', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
@@ -133,7 +133,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'width')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'width', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end
@@ -149,7 +149,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'height')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'height', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end
@@ -200,7 +200,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'XOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'XOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
@@ -216,7 +216,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'YOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'YOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
@@ -281,7 +281,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'fontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'fontSize', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end
@@ -332,7 +332,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'fontXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'fontXOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
@@ -348,7 +348,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'fontYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'fontYOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,

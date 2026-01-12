@@ -27,7 +27,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarMatchFrameWidth')
             end,
-            onObserve = function(value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarMatchFrameWidth', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -44,7 +44,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarWidth')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarWidth', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -60,7 +60,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarHeight')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarHeight', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -72,7 +72,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarAnchorToFrame')
             end,
-            onObserve = function(value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarAnchorToFrame', value)
                 core:UpdateFrameForUnit(unit)
                 optionsCore:RefreshCurrentView()
@@ -131,7 +131,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarXOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -150,7 +150,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarYOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -209,7 +209,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarXOffUIParent')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarXOffUIParent', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -228,7 +228,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarYOffUIParent')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarYOffUIParent', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -265,7 +265,7 @@ castBar.GetOptions = function(self, unit)
             end,
             width = 23
         },
-        
+
         {
             type = 'dropdown',
             label = 'Font Flag',
@@ -293,7 +293,7 @@ castBar.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarFontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarFontSize', value)
                 core:UpdateFrameForUnit(unit)
             end

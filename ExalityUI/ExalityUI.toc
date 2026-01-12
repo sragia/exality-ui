@@ -14,6 +14,8 @@ Libs/oUF/oUF.xml
 Libs/libdatabroker-1-1/LibDataBroker-1.1.lua
 Libs/LibQTip-1.0/lib.xml
 
+ExalityFrames/ExalityFrames.xml
+
 # Core Functionality
 Util.lua 
 Init.lua
@@ -25,31 +27,6 @@ Masque/Masque.xml
 PixelPerfect.lua
 
 Media.lua
-
-# Frame Components
-Frames/Inputs/Tooltip.lua
-Frames/Inputs/EditBox.lua
-Frames/Inputs/Range.lua
-Frames/Inputs/Toggle.lua
-Frames/Inputs/Button.lua
-Frames/Inputs/ToggleButton.lua
-Frames/Inputs/LuaEditor.lua
-Frames/Inputs/Keybind.lua
-Frames/Inputs/Dropdown.lua
-Frames/Inputs/Spacer.lua
-Frames/Inputs/Title.lua
-Frames/Inputs/Description.lua
-Frames/Inputs/ColorPicker.lua
-Frames/Inputs/SlimDropdown.lua
-Frames/OptionFrames/ModuleItem.lua
-Frames/Dialog.lua
-Frames/SplitOptions.lua
-Frames/Tabs.lua
-Frames/WindowManager.lua
-Frames/Window.lua
-Frames/Panel.lua
-Frames/ScrollFrame.lua
-Frames/InputGroup.lua
 
 Profiles.lua
 

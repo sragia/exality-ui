@@ -26,7 +26,7 @@ sizeAndPosition.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'sizeWidth')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'sizeWidth', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -42,7 +42,7 @@ sizeAndPosition.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'sizeHeight')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'sizeHeight', value)
                 core:UpdateFrameForUnit(unit)
             end
@@ -95,7 +95,7 @@ sizeAndPosition.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'positionXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'positionXOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
@@ -111,7 +111,7 @@ sizeAndPosition.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'positionYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 core:UpdateValueForUnit(unit, 'positionYOff', value)
                 core:UpdateFrameForUnit(unit)
             end,

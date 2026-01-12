@@ -138,7 +138,7 @@ holyPower.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'hpWidth')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'hpWidth', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -154,7 +154,7 @@ holyPower.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'hpHeight')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'hpHeight', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -170,7 +170,7 @@ holyPower.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'hpSpacing')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'hpSpacing', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -225,7 +225,7 @@ holyPower.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'fillAnimation')
             end,
-            onObserve = function(value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'fillAnimation', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,

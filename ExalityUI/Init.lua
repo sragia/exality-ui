@@ -1,6 +1,14 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class ExalityFrames
+local EXFrames = EXUI.EXFrames
+
+EXFrames:Configure({
+    logoPath = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
+    defaultFontPath = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
+})
+
 EXUI.const = {
     textures = {
         frame = {

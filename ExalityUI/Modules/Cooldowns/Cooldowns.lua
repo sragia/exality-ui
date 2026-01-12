@@ -133,7 +133,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
-            onObserve = function(value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'enable', value)
                 self:UpdateById(currItemID)
             end,
@@ -149,7 +149,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'name')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'name', value)
                 self:UpdateById(currItemID)
                 optionsFields:RefreshItemList()
@@ -189,7 +189,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             type = 'toggle',
             label = 'Show Stacks',
             name = 'showStacks',
-            onObserve = function(value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'showStacks', value)
                 self:UpdateById(currItemID)
                 optionsFields:RefreshOptions()
@@ -209,7 +209,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'itemID')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'itemID', value)
                 self:UpdateById(currItemID)
             end,
@@ -225,7 +225,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'spellID')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'spellID', value)
                 self:UpdateById(currItemID)
             end,
@@ -248,7 +248,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'width')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'width', value)
                 self:UpdateById(currItemID)
             end
@@ -264,7 +264,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'height')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'height', value)
                 self:UpdateById(currItemID)
             end
@@ -315,7 +315,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'XOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'XOff', value)
                 self:UpdateById(currItemID)
             end,
@@ -331,7 +331,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'YOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'YOff', value)
                 self:UpdateById(currItemID)
             end,
@@ -368,7 +368,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'frameLevel')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'frameLevel', value)
                 self:UpdateById(currItemID)
             end
@@ -390,7 +390,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'zoom')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'zoom', value)
                 self:UpdateById(currItemID)
             end
@@ -457,7 +457,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'fontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'fontSize', value)
                 self:UpdateById(currItemID)
             end
@@ -509,7 +509,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'fontXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'fontXOff', value)
                 self:UpdateById(currItemID)
             end
@@ -525,7 +525,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'fontYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'fontYOff', value)
                 self:UpdateById(currItemID)
             end
@@ -599,7 +599,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'chargeFontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'chargeFontSize', value)
                 self:UpdateById(currItemID)
             end
@@ -663,7 +663,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'chargeFontXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'chargeFontXOff', value)
                 self:UpdateById(currItemID)
             end
@@ -682,7 +682,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'chargeFontYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'chargeFontYOff', value)
                 self:UpdateById(currItemID)
             end
@@ -700,7 +700,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'hasLoadConditions')
             end,
-            onObserve = function(value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'hasLoadConditions', value)
                 self:UpdateById(currItemID)
                 optionsFields:RefreshOptions()
@@ -720,7 +720,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'onlyLoadOnPlayer')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'onlyLoadOnPlayer', value)
                 self:UpdateById(currItemID)
             end,
@@ -743,7 +743,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'dontLoadOnPlayer')
             end,
-            onChange = function(_, value)
+            onChange = function(value)
                 self:UpdateValueForCD(currItemID, 'dontLoadOnPlayer', value)
                 self:UpdateById(currItemID)
             end,

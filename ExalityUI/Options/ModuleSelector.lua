@@ -1,11 +1,14 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class ExalityFrames
+local EXFrames = EXUI.EXFrames
+
 ---@class EXUIOptionsController
 local optionsController = EXUI:GetModule('options-controller')
 
----@class EXUIModuleItem
-local moduleItem = EXUI:GetModule('module-item')
+---@class ExalityFramesModuleItem
+local moduleItem = EXFrames:GetFrame('module-item')
 
 ----------------
 

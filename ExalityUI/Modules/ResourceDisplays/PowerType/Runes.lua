@@ -173,7 +173,7 @@ runes.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeWidth')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'runeWidth', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -189,7 +189,7 @@ runes.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeHeight')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'runeHeight', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -205,7 +205,7 @@ runes.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeSpacing')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'runeSpacing', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -279,7 +279,7 @@ runes.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeShowText')
             end,
-            onObserve = function(value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'runeShowText', value)
                 RDCore:RefreshDisplayByID(displayID)
                 optionsFields:RefreshOptions()
@@ -343,7 +343,7 @@ runes.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeFontSize')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'runeFontSize', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
@@ -405,7 +405,7 @@ runes.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeTextXOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'runeTextXOff', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
@@ -424,7 +424,7 @@ runes.GetOptions = function(self, displayID)
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeTextYOff')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'runeTextYOff', value)
                 RDCore:RefreshDisplayByID(displayID)
             end

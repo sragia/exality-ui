@@ -59,7 +59,7 @@ generalModule.GetOptions = function(self)
             currentValue = function()
                 return data:GetDataByKey('uiScale')
             end,
-            onChange = function(f, value)
+            onChange = function(value)
                 data:SetDataByKey('uiScale', value)
                 -- EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end
@@ -81,7 +81,7 @@ generalModule.GetOptions = function(self)
             label = 'Paper Doll Improvements',
             name = 'paperDollEnabled',
             type = 'toggle',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 data:SetDataByKey('paperDollEnabled', value)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end,
@@ -94,7 +94,7 @@ generalModule.GetOptions = function(self)
             label = 'Replace All Fonts',
             name = 'replaceFonts',
             type = 'toggle',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 data:SetDataByKey('replaceFonts', value)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end,
@@ -107,7 +107,7 @@ generalModule.GetOptions = function(self)
             label = 'Add Bottom Vignette',
             name = 'bottomVignette',
             type = 'toggle',
-            onObserve = function(value, oldValue)
+            onChange = function(value)
                 data:SetDataByKey('bottomVignette', value)
                 generalModule:Refresh()
             end,

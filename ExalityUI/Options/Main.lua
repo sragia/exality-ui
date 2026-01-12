@@ -1,17 +1,20 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class ExalityFrames
+local EXFrames = EXUI.EXFrames
+
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
----@class EXUIPanelFrame
-local panel = EXUI:GetModule('panel-frame')
+---@class ExalityFramesPanelFrame
+local panel = EXFrames:GetFrame('panel-frame')
 
----@class EXUISlimDropdownInput
-local slimDropdown = EXUI:GetModule('slim-dropdown-input')
+---@class ExalityFramesSlimDropdownInput
+local slimDropdown = EXFrames:GetFrame('slim-dropdown-input')
 
----@class EXUIButton
-local button = EXUI:GetModule('button')
+---@class ExalityFramesButton
+local button = EXFrames:GetFrame('button')
 
 ---@class EXUIOptionsModuleSelector
 local optionsModuleSelector = EXUI:GetModule('options-module-selector')
@@ -35,8 +38,8 @@ optionsMain.profileSwitcher = nil
 optionsMain.editModeDialog = nil
 
 optionsMain.CreateWindow = function(self)
-    local window = EXUI:GetModule('window-frame'):Create({
-        size = {1300, 900},
+    local window = EXFrames:GetFrame('window-frame'):Create({
+        size = { 1300, 900 },
         title = 'ExalityUI',
         onClose = function()
             EXUI:GetModule('uf-core'):UnforceAll()
@@ -44,7 +47,7 @@ optionsMain.CreateWindow = function(self)
     })
 
     -- Profile Selector
-    local profilePanel = EXUI:GetModule('panel-frame'):Create()
+    local profilePanel = panel:Create()
     profilePanel:SetWidth(236)
     profilePanel:SetParent(window)
     profilePanel:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
@@ -75,8 +78,8 @@ optionsMain.CreateWindow = function(self)
         onClick = function()
             profiles:Show()
         end,
-        color = {0.19, 0.19, 0.19, 1},
-        size = {25, 25},
+        color = { 0.19, 0.19, 0.19, 1 },
+        size = { 25, 25 },
         icon = {
             texture = EXUI.const.textures.frame.settingsIcon,
             width = 18,
@@ -85,7 +88,7 @@ optionsMain.CreateWindow = function(self)
     }, profilePanel)
     profileSettingsButton:SetPoint('LEFT', profileSelector, 'RIGHT', 5, 0)
 
-    local modulesPanel = EXUI:GetModule('panel-frame'):Create()
+    local modulesPanel = panel:Create()
     modulesPanel:SetParent(window.container)
     modulesPanel:SetPoint('TOPLEFT')
     modulesPanel:SetPoint('BOTTOMRIGHT', window.container, 'BOTTOMLEFT', 200, 0)
@@ -93,15 +96,16 @@ optionsMain.CreateWindow = function(self)
 
     optionsModuleSelector:Create(modulesPanel)
 
-    local configPanel = EXUI:GetModule('panel-frame'):Create()
+    local configPanel = panel:Create()
     configPanel:SetParent(window.container)
     configPanel:SetPoint('TOPLEFT', modulesPanel, 'TOPRIGHT', 10, 0)
     configPanel:SetPoint('BOTTOMRIGHT')
     configPanel:Show()
     optionsFields:Create(configPanel)
 
-    self.editModeDialog = EXUI:GetModule('dialog-frame'):Create()
-    self.editModeDialog:SetText('You are now in edit mode. You can now edit the UI by dragging and dropping elements. Exit edit mode to save your changes.')
+    self.editModeDialog = EXFrames:GetFrame('dialog-frame'):Create()
+    self.editModeDialog:SetText(
+    'You are now in edit mode. You can now edit the UI by dragging and dropping elements. Exit edit mode to save your changes.')
     self.editModeDialog:SetButtons({
         {
             text = 'Exit Edit Mode',
@@ -112,10 +116,10 @@ optionsMain.CreateWindow = function(self)
                 local optionsController = EXUI:GetModule('options-controller')
                 optionsController:SetSelectedModule(optionsController:GetSelectedModuleName())
             end,
-            color = {158/255, 0, 32/255, 1}
+            color = { 158 / 255, 0, 32 / 255, 1 }
         }
     })
-    
+
     local editModeBtn = button:Create({
         text = 'Edit Mode',
         onClick = function()
@@ -123,11 +127,11 @@ optionsMain.CreateWindow = function(self)
             self.editModeDialog:ShowDialog()
             self.window:HideWindow()
         end,
-        size = {100, 25},
-        color = {219/255, 73/255, 0 , 1}
+        size = { 100, 25 },
+        color = { 219 / 255, 73 / 255, 0, 1 }
     }, configPanel)
     editModeBtn:SetPoint('RIGHT', profilePanel, 'LEFT', -5, 0)
-    
+
     return window
 end
 

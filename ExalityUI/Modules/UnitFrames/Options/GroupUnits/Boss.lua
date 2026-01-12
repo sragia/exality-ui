@@ -29,7 +29,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('boss', 'spacing')
                     end,
-                    onChange = function(_, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('boss', 'spacing', value)
                         ufCore:UpdateFrameForUnit('boss')
                     end,
@@ -54,7 +54,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('boss', 'nameMaxWidth')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('boss', 'nameMaxWidth', value)
                         ufCore:UpdateFrameForUnit('boss')
                     end,
@@ -111,7 +111,7 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('boss', 'powerHeight')
                     end,
-                    onChange = function(self, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('boss', 'powerHeight', value)
                         ufCore:UpdateFrameForUnit('boss')
                     end,

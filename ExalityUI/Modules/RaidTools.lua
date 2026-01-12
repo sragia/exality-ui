@@ -128,7 +128,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 type = 'toggle',
                 name = 'brezzEnabled',
                 label = 'Enable',
-                onObserve = function(value, oldValue)
+                onChange = function(value)
                     data:SetDataByKey('brezzEnabled', value)
                     self:CreateOrRefreshBrezz()
                 end,
@@ -148,7 +148,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('brezzSize')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('brezzSize', value)
                     self:CreateOrRefreshBrezz()
                 end
@@ -168,7 +168,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('brezzXOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('brezzXOff', value)
                     self:CreateOrRefreshBrezz()
                 end
@@ -184,7 +184,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('brezzYOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('brezzYOff', value)
                     self:CreateOrRefreshBrezz()
                 end
@@ -226,7 +226,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('brezzFontSize')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('brezzFontSize', value)
                     self:CreateOrRefreshBrezz()
                 end
@@ -239,7 +239,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 type = 'toggle',
                 name = 'readyCheckEnabled',
                 label = 'Enable',
-                onObserve = function(value, oldValue)
+                onChange = function(value)
                     data:SetDataByKey('readyCheckEnabled', value)
                     self:CreateOrRefreshReadyCheck()
                 end,
@@ -259,7 +259,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('readyCheckWidth')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('readyCheckWidth', value)
                     self:CreateOrRefreshReadyCheck()
                 end
@@ -275,7 +275,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('readyCheckHeight')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('readyCheckHeight', value)
                     self:CreateOrRefreshReadyCheck()
                 end
@@ -330,7 +330,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('readyCheckFontSize')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('readyCheckFontSize', value)
                     self:CreateOrRefreshReadyCheck()
                 end
@@ -350,7 +350,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('readyCheckXOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('readyCheckXOff', value)
                     self:CreateOrRefreshReadyCheck()
                 end
@@ -366,7 +366,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('readyCheckYOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('readyCheckYOff', value)
                     self:CreateOrRefreshReadyCheck()
                 end
@@ -379,7 +379,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 type = 'toggle',
                 name = 'pullTimerEnabled',
                 label = 'Enable',
-                onObserve = function(value, oldValue)
+                onChange = function(value)
                     data:SetDataByKey('pullTimerEnabled', value)
                     self:CreateOrRefreshPullTimer()
                 end,
@@ -399,7 +399,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('pullTimerWidth')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('pullTimerWidth', value)
                     self:CreateOrRefreshPullTimer()
                 end
@@ -415,7 +415,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('pullTimerHeight')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('pullTimerHeight', value)
                     self:CreateOrRefreshPullTimer()
                 end
@@ -444,7 +444,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('pullTimerSeconds')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('pullTimerSeconds', value)
                 end
             },
@@ -485,7 +485,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('pullTimerFontSize')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('pullTimerFontSize', value)
                     self:CreateOrRefreshPullTimer()
                 end
@@ -505,7 +505,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('pullTimerXOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('pullTimerXOff', value)
                     self:CreateOrRefreshPullTimer()
                 end
@@ -521,7 +521,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('pullTimerYOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('pullTimerYOff', value)
                     self:CreateOrRefreshPullTimer()
                 end
@@ -535,7 +535,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 type = 'toggle',
                 name = 'encounterTimerEnabled',
                 label = 'Enable',
-                onObserve = function(value, oldValue)
+                onChange = function(value)
                     data:SetDataByKey('encounterTimerEnabled', value)
                     self:CreateOrRefreshEncounterTimer()
                 end,
@@ -614,7 +614,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('encounterTimerFontSize')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('encounterTimerFontSize', value)
                     self:CreateOrRefreshEncounterTimer()
                 end
@@ -725,7 +725,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('encounterTimerXOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('encounterTimerXOff', value)
                     self:CreateOrRefreshEncounterTimer()
                 end
@@ -741,7 +741,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 currentValue = function()
                     return data:GetDataByKey('encounterTimerYOff')
                 end,
-                onChange = function(f, value)
+                onChange = function(value)
                     data:SetDataByKey('encounterTimerYOff', value)
                     self:CreateOrRefreshEncounterTimer()
                 end

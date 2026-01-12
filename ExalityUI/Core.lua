@@ -6,8 +6,6 @@ local EXUI = select(2, ...)
 local initIndx = 0
 
 EXUI.modules = {}
-EXUI.elements = {}
-EXUI.dataProviders = {}
 
 ---Get and Initialize a module
 ---@param self ExalityUI
@@ -30,32 +28,6 @@ EXUI.InitModules = function(self)
             module:Init()
         end
     end
-end
-
-EXUI.RegisterElementType = function(self, id, elementData)
-    self.elements[id] = elementData
-end
-
-EXUI.RegisterDataProviderType = function(self, id, dataProviderData)
-    self.dataProviders[id] = dataProviderData
-end
-
-EXUI.GetElementTypeById = function(self, id)
-    if (self.elements[id]) then
-        return self.elements[id]
-    end
-    return nil
-end
-
-EXUI.GetAllElementTypes = function(self)
-    return self.elements
-end
-
-EXUI.GetDataProviderTypeById = function(self, id)
-    if (self.dataProviders[id]) then
-        return self.dataProviders[id]
-    end
-    return nil
 end
 
 EXUI.handler = CreateFrame('Frame')

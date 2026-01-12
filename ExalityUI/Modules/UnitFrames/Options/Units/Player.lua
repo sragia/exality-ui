@@ -15,7 +15,7 @@ core:AddOption({
             name = 'Size & Position',
             id = 'sizeposition',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-size-and-position'):GetOptions('player')
                 end
             }
@@ -24,7 +24,7 @@ core:AddOption({
             name = 'Name',
             id = 'name',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'name')
                 end,
                 {
@@ -37,15 +37,15 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('player', 'nameMaxWidth')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('player', 'nameMaxWidth', value)
                         ufCore:UpdateFrameForUnit('player')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('player', 'name')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('player', 'name')
                 end,
             }
@@ -54,13 +54,13 @@ core:AddOption({
             name = 'Health',
             id = 'health',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'health')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('player', 'health')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('player', 'health')
                 end
             }
@@ -69,13 +69,13 @@ core:AddOption({
             name = 'Health %',
             id = 'healthperc',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'healthperc')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('player', 'healthperc')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('player', 'healthperc')
                 end
             }
@@ -84,10 +84,10 @@ core:AddOption({
             name = 'Cast Bar',
             id = 'castbar',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'castbar')
                 end,
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-cast-bar'):GetOptions('player')
                 end
             }
@@ -96,7 +96,7 @@ core:AddOption({
             name = 'Marker Icon',
             id = 'markericon',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'raidTargetIndicator')
                 end,
                 {
@@ -109,12 +109,12 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('player', 'raidTargetIndicatorScale')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('player', 'raidTargetIndicatorScale', value)
                         ufCore:UpdateFrameForUnit('player')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'raidTargetIndicator')
                 end,
             }
@@ -123,7 +123,7 @@ core:AddOption({
             name = 'Raid Role Icons',
             id = 'raidroles',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'raidRoles')
                 end,
                 {
@@ -136,12 +136,12 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('player', 'raidRolesScale')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('player', 'raidRolesScale', value)
                         ufCore:UpdateFrameForUnit('player')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'raidRoles')
                 end,
             }
@@ -150,7 +150,7 @@ core:AddOption({
             name = 'Combat Icon',
             id = 'combatindicator',
             options = {
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'combatIndicator')
                 end,
                 {
@@ -163,12 +163,12 @@ core:AddOption({
                     currentValue = function()
                         return ufCore:GetValueForUnit('player', 'combatIndicatorScale')
                     end,
-                    onChange = function(f, value)
+                    onChange = function(value)
                         ufCore:UpdateValueForUnit('player', 'combatIndicatorScale', value)
                         ufCore:UpdateFrameForUnit('player')
                     end,
                 },
-                function() 
+                function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'combatIndicator')
                 end,
             }
