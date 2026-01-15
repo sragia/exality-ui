@@ -1,0 +1,22 @@
+package-as: ExalityUI
+
+externals:
+  ExalityUI/Libs/LibStub:
+    url: https://repos.curseforge.com/wow/libstub/trunk
+  ExalityUI/Libs/CallbackHandler-1.0:
+    url: https://repos.curseforge.com/wow/callbackhandler/trunk/CallbackHandler-1.0
+  ExalityUI/Libs/LibQTip-1.0: https://repos.wowace.com/wow/libqtip-1-0
+  ExalityUI/Libs/libdatabroker-1-1: https://github.com/tekkub/libdatabroker-1-1
+  ExalityUI/Libs/LibSharedMedia-3.0:
+    url: https://repos.curseforge.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
+  ExalityUI/Libs/oUF:
+    url: https://github.com/oUF-wow/oUF
+    branch: midnight
+  ExalityUI/ExalityFrames:
+    url: https://github.com/sragia/ExalityFrames
+    tag: 1.0.1
+
+enable-nolib-creation: no
+
+move-folders:
+  ExalityUI/ExalityUI: ExalityUI

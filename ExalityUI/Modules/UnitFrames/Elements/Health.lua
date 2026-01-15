@@ -23,7 +23,7 @@ health.Create = function(self, frame)
     return health
 end
 
-health.PostUpdateColor = function(self, unit, r, g, b)
+health.PostUpdateColor = function(self, unit, color)
     local baseFrame = self:GetParent()
     local generalDB = baseFrame.generalDB
     if (generalDB.useCustomHealthColor) then
@@ -35,7 +35,7 @@ health.PostUpdateColor = function(self, unit, r, g, b)
         self.bg:SetVertexColor(generalDB.customBackdropColor.r, generalDB.customBackdropColor.g,
             generalDB.customBackdropColor.b)
     elseif (generalDB.useClassColoredBackdrop) then
-        self.bg:SetVertexColor(r, g, b)
+        self.bg:SetVertexColor(color:GetRGB())
     end
 end
 
