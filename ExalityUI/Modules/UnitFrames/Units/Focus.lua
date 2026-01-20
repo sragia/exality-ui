@@ -125,10 +125,6 @@ focus.Update = function(self, frame)
     frame:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     frame:SetSize(db.sizeWidth, db.sizeHeight)
 
-    frame.Power:SetPoint('BOTTOMLEFT')
-    frame.Power:SetPoint('BOTTOMRIGHT')
-    frame.Power:SetFrameLevel(frame.Health:GetFrameLevel() + 1)
-
     core:UpdateFrame(frame)
 end
 

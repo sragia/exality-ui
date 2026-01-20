@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
+
 local debuffs = EXUI:GetModule('uf-element-debuffs')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
@@ -9,7 +12,7 @@ debuffs.CountdownFontName = 'ExalityUI_Debuffs_CountdownFont'
 debuffs.CountdownFont = CreateFont(debuffs.CountdownFontName)
 
 debuffs.Create = function(self, frame)
-    local Debuffs = CreateFrame('Frame', nil, frame)
+    local Debuffs = CreateFrame('Frame', nil, frame.ElementFrame)
     Debuffs.PostCreateButton = debuffs.PostCreateButton
 
     return Debuffs
@@ -20,7 +23,7 @@ debuffs.Update = function(self, frame)
     local Debuffs = frame.Debuffs
 
     if (not db.debuffsEnable and not db.buffsEnable) then
-        frame:DisableElement('Auras')
+        core:DisableElementForFrame(frame, 'Auras')
         return
     end
     if (not db.debuffsEnable) then
@@ -28,7 +31,7 @@ debuffs.Update = function(self, frame)
         Debuffs:ForceUpdate()
         return
     end
-    frame:EnableElement('Auras')
+    core:EnableElementForFrame(frame, 'Auras')
 
     Debuffs.width = db.debuffsIconWidth
     Debuffs.height = db.debuffsIconHeight
@@ -38,8 +41,8 @@ debuffs.Update = function(self, frame)
     local growthX = string.find(db.debuffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.debuffsAnchorPoint, 'TOP') and 'DOWN' or 'UP'
 
-    Debuffs['growth-x'] = growthX
-    Debuffs['growth-y'] = growthY
+    Debuffs.growthX = growthX
+    Debuffs.growthY = growthY
     if (growthX == 'LEFT' and growthY == 'UP') then
         Debuffs.initialAnchor = 'BOTTOMRIGHT'
     elseif (growthX == 'RIGHT' and growthY == 'UP') then
@@ -55,7 +58,7 @@ debuffs.Update = function(self, frame)
     local width = (db.debuffsIconWidth + db.debuffsSpacing) * col - db.debuffsSpacing
     local height = (db.debuffsIconHeight + db.debuffsSpacing) * (math.ceil(db.debuffsNum / db.debuffsColNum))
     Debuffs:SetSize(width, height)
-    local anchorFrame = frame
+    local anchorFrame = frame.ElementFrame
     if (db.debuffsAnchorToBuffs and frame.Buffs and db.buffsEnable) then
         anchorFrame = frame.Buffs
     end
@@ -63,7 +66,9 @@ debuffs.Update = function(self, frame)
     self:UpdateAspectRatio(Debuffs, db.debuffsIconWidth, db.debuffsIconHeight)
     self:UpdateAllTexts(Debuffs)
     self:UpdateCountdownFont(db)
-    Debuffs:ForceUpdate()
+    if (Debuffs.ForceUpdate) then
+        Debuffs:ForceUpdate()
+    end
 end
 
 debuffs.PostCreateButton = function(Debuffs, button)
@@ -83,6 +88,7 @@ debuffs.UpdateAspectRatio = function(self, Debuffs, width, height)
 end
 
 debuffs.UpdateAllTexts = function(self, Debuffs)
+    if (not Debuffs.__owner) then return end
     local db = Debuffs.__owner.db
     for _, button in ipairs(Debuffs) do
         self:UpdateCountText(button, db)

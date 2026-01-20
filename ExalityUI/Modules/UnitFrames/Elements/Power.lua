@@ -3,7 +3,6 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
-
 local power = EXUI:GetModule('uf-element-power')
 
 power.Create = function(self, frame)
@@ -28,11 +27,15 @@ power.Update = function(self, frame)
     local db = frame.db
     local generalDB = frame.generalDB
     local powerBar = frame.Power
-    if (not db.powerEnable) then
-        frame:DisableElement('Power')
-        return
+    if (frame.unit ~= 'party') then
+        if (not db.powerEnable) then
+            frame:DisableElement('Power')
+            return
+        end
+        frame:EnableElement('Power')
     end
-    frame:EnableElement('Power')
+    powerBar:SetPoint('BOTTOMLEFT')
+    powerBar:SetPoint('BOTTOMRIGHT')
     powerBar:SetHeight(db.powerHeight)
     powerBar:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.statusBarTexture))
 

@@ -11,7 +11,7 @@ externals:
     url: https://repos.curseforge.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
   ExalityUI/Libs/oUF:
     url: https://github.com/oUF-wow/oUF
-    branch: midnight
+    branch: master
   ExalityUI/ExalityFrames:
     url: https://github.com/sragia/ExalityFrames
     tag: 1.0.1

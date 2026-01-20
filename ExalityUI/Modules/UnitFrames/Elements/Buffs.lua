@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
+
 local buffs = EXUI:GetModule('uf-element-buffs')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
@@ -8,9 +11,12 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 buffs.CountdownFontName = 'ExalityUI_Buffs_CountdownFont'
 buffs.CountdownFont = CreateFont(buffs.CountdownFontName)
 
-buffs.Create = function(self, frame)
-    local Buffs = CreateFrame('Frame', nil, frame)
+buffs.Create = function(self, frame, filters)
+    local Buffs = CreateFrame('Frame', nil, frame.ElementFrame)
     Buffs.PostCreateButton = buffs.PostCreateButton
+    if (filters) then
+        Buffs.filter = filters
+    end
     return Buffs
 end
 
@@ -19,7 +25,7 @@ buffs.Update = function(self, frame)
     local Buffs = frame.Buffs
 
     if (not db.debuffsEnable and not db.buffsEnable) then
-        frame:DisableElement('Auras')
+        core:DisableElementForFrame(frame, 'Auras')
         return
     end
     if (not db.buffsEnable) then
@@ -27,7 +33,7 @@ buffs.Update = function(self, frame)
         Buffs:ForceUpdate()
         return
     end
-    frame:EnableElement('Auras')
+    core:EnableElementForFrame(frame, 'Auras')
 
     Buffs.width = db.buffsIconWidth
     Buffs.height = db.buffsIconHeight
@@ -36,8 +42,8 @@ buffs.Update = function(self, frame)
 
     local growthX = string.find(db.buffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.buffsAnchorPoint, 'TOP') and 'DOWN' or 'UP'
-    Buffs['growth-x'] = growthX
-    Buffs['growth-y'] = growthY
+    Buffs.growthX = growthX
+    Buffs.growthY = growthY
     if (growthX == 'LEFT' and growthY == 'UP') then
         Buffs.initialAnchor = 'BOTTOMRIGHT'
     elseif (growthX == 'RIGHT' and growthY == 'UP') then
@@ -53,7 +59,7 @@ buffs.Update = function(self, frame)
     local width = (db.buffsIconWidth + db.buffsSpacing) * col - db.buffsSpacing
     local height = (db.buffsIconHeight + db.buffsSpacing) * (math.ceil(db.buffsNum / db.buffsColNum))
     Buffs:SetSize(width, height)
-    local anchorFrame = frame
+    local anchorFrame = frame.ElementFrame
     if (db.buffsAnchorToDebuffs and not db.debuffsAnchorToBuffs and frame.Debuffs and db.debuffsEnable) then
         anchorFrame = frame.Debuffs
     end
@@ -61,7 +67,9 @@ buffs.Update = function(self, frame)
     self:UpdateAspectRatio(Buffs, db.buffsIconWidth, db.buffsIconHeight)
     self:UpdateAllTexts(Buffs)
     self:UpdateCountdownFont(db)
-    Buffs:ForceUpdate()
+    if (Buffs.ForceUpdate) then
+        Buffs:ForceUpdate()
+    end
 end
 
 buffs.PostCreateButton = function(Buffs, button)
@@ -81,6 +89,7 @@ buffs.UpdateAspectRatio = function(self, Buffs, width, height)
 end
 
 buffs.UpdateAllTexts = function(self, Buffs)
+    if (not Buffs.__owner) then return end
     local db = Buffs.__owner.db
     for _, button in ipairs(Buffs) do
         self:UpdateCountText(button, db)

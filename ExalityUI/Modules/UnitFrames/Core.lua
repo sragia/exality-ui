@@ -7,6 +7,9 @@ local optionsController = EXUI:GetModule('options-controller')
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
+---@class EXUIOptionsEditor
+local editor = EXUI:GetModule('editor')
+
 ----------------
 
 ---@class EXUIUnitFramesCore
@@ -16,7 +19,10 @@ core.units = {}
 core.groupUnits = {}
 core.groupUnitMap = {}
 core.frames = {}
+core.headers = {}
+core.partyFrames = {}
 core.forcedFrames = {}
+core.playerGroupUnits = {}
 
 core.Init = function(self)
     self:AddTags()
@@ -35,12 +41,24 @@ core.RegisterUnit = function(self, unit, isGroup, numUnits)
     end
 end
 
+core.RegisterPlayerGroupUnit = function(self, unit, visibility, attributes)
+    self.playerGroupUnits[unit] = {
+        unit = unit,
+        visibility = visibility,
+        attributes = attributes,
+    }
+end
+
 core.SharedStyle = function(frame, unit)
     local frameFactory = nil
     if (not core.groupUnitMap[unit]) then
         frameFactory = EXUI:GetModule('uf-unit-' .. unit)
-    else
+    else -- Boss
         frameFactory = EXUI:GetModule('uf-unit-' .. core.groupUnitMap[unit])
+    end
+
+    if (unit == 'party') then
+        table.insert(core.partyFrames, frame)
     end
 
     if (frameFactory and frameFactory.Create) then
@@ -57,6 +75,10 @@ core.Factory = function(oUF)
 
     for group, numUnits in pairs(core.groupUnits) do
         core:CreateOrUpdateGroup(oUF, group, numUnits)
+    end
+
+    for unit, data in pairs(core.playerGroupUnits) do
+        core:CreateOrUpdatePlayerGroup(oUF, unit, data)
     end
 end
 
@@ -92,6 +114,33 @@ core.CreateOrUpdateGroup = function(self, oUF, group, numUnits)
     end
 end
 
+core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
+    local header = core.headers[unit]
+    if (not header) then
+        header = oUF:SpawnHeader(nil, nil, data.attributes)
+        if (data.visibility) then
+            header:SetVisibility(data.visibility)
+        end
+        core.headers[unit] = header
+    end
+
+    header:SetPoint('CENTER', -500, 0)
+    header:Show()
+    -- TODO: Something more?
+
+    self:UpdateHeader(unit)
+    editor:RegisterFrameForEditor(header, unit .. ' Frames', function(frame)
+        local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
+        self:UpdateValueForUnit(unit, 'positionAnchorPoint', point)
+        self:UpdateValueForUnit(unit, 'positionRelativePoint', relativePoint)
+        self:UpdateValueForUnit(unit, 'positionXOff', xOfs)
+        self:UpdateValueForUnit(unit, 'positionYOff', yOfs)
+        self:UpdateHeader(unit)
+    end, function(frame)
+        frame.editor:SetEditorAsMovable()
+    end)
+end
+
 core.Base = function(self, frame)
     local elementFrame = CreateFrame('Frame', '$parent_ElementFrame', frame, 'BackdropTemplate')
     elementFrame:SetAllPoints()
@@ -108,6 +157,8 @@ core.Base = function(self, frame)
     else
         frame.db = self:GetDBForUnit(self.groupUnitMap[frame.unit])
     end
+
+    frame.generalDB = self:GetDBForUnit('general')
 
     self:AddTooltip(frame)
 
@@ -163,6 +214,10 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-debuffs'):Update(frame)
     end
 
+    if (frame.Offline) then
+        EXUI:GetModule('uf-element-offline'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
 end
@@ -186,7 +241,15 @@ core.AddTooltip = function(self, frame)
 end
 
 core.UpdateFrameForUnit = function(self, unit)
-    if (not self.groupUnits[unit]) then
+    if (unit == 'party') then
+        -- Party Frames
+        for _, frame in ipairs(core.partyFrames) do
+            if (frame) then
+                frame:Update()
+            end
+        end
+        self:UpdateHeader(unit)
+    elseif (not self.groupUnits[unit]) then
         local frame = core.frames[unit]
         if (frame) then
             frame:Update()
@@ -205,6 +268,23 @@ core.UpdateAllFrames = function(self)
     for _, unit in ipairs(self.units) do
         self:UpdateFrameForUnit(unit)
     end
+    -- Boss Frames
+    self:UpdateFrameForUnit('boss')
+    -- Party Frames
+    self:UpdateFrameForUnit('party')
+end
+
+core.UpdateHeader = function(self, unit)
+    local header = core.headers[unit]
+    if (not header) then return end
+
+    local db = self:GetDBForUnit(unit)
+    if (not db) then return end
+
+    header:ClearAllPoints()
+    EXUI:SetPoint(header, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+
+    header:SetAttribute('yOffset', -db.spacing)
 end
 
 core.AddTags = function(self)
@@ -252,6 +332,16 @@ end
 core.GetValueForUnit = function(self, unit, key)
     local db = self:GetDBForUnit(unit)
     return db[key]
+end
+
+core.EnableElementForFrame = function(self, frame, element)
+    if (frame.unit == 'party') then return end
+    frame:EnableElement(element)
+end
+
+core.DisableElementForFrame = function(self, frame, element)
+    if (frame.unit == 'party') then return end
+    frame:DisableElement(element)
 end
 
 -- For Options. Force Show frames for editting

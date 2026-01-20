@@ -8,6 +8,7 @@ local healthText = EXUI:GetModule('uf-element-health-text')
 
 healthText.Create = function(self, frame)
     local healthText = frame.ElementFrame:CreateFontString(nil, 'OVERLAY')
+    healthText:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
 
     return healthText
 end
@@ -23,7 +24,8 @@ healthText.Update = function(self, frame)
     healthText:Show()
     healthText:SetFont(LSM:Fetch('font', db.healthFont), db.healthFontSize, db.healthFontFlag)
     healthText:ClearAllPoints()
-    healthText:SetPoint(db.healthAnchorPoint, frame.ElementFrame, db.healthRelativeAnchorPoint, db.healthXOffset, db.healthYOffset)
+    healthText:SetPoint(db.healthAnchorPoint, frame.ElementFrame, db.healthRelativeAnchorPoint, db.healthXOffset,
+        db.healthYOffset)
     healthText:SetVertexColor(db.healthFontColor.r, db.healthFontColor.g, db.healthFontColor.b, db.healthFontColor.a)
     local ok, err = pcall(function()
         frame:Tag(healthText, db.healthTag)

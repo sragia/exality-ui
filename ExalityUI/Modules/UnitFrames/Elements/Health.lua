@@ -27,14 +27,18 @@ health.PostUpdateColor = function(self, unit, color)
     local baseFrame = self:GetParent()
     local generalDB = baseFrame.generalDB
     if (generalDB.useCustomHealthColor) then
-        self:SetStatusBarColor(generalDB.customHealthColor.r, generalDB.customHealthColor.g,
-            generalDB.customHealthColor.b)
+        if (UnitIsConnected(unit)) then
+            self:SetStatusBarColor(generalDB.customHealthColor.r, generalDB.customHealthColor.g,
+                generalDB.customHealthColor.b)
+        else
+            self:SetStatusBarColor(color:GetRGB())
+        end
     end
 
     if (generalDB.useCustomBackdropColor) then
         self.bg:SetVertexColor(generalDB.customBackdropColor.r, generalDB.customBackdropColor.g,
             generalDB.customBackdropColor.b)
-    elseif (generalDB.useClassColoredBackdrop) then
+    elseif (generalDB.useClassColoredBackdrop and color) then
         self.bg:SetVertexColor(color:GetRGB())
     end
 end

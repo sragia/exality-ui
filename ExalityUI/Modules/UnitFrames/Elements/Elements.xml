@@ -11,4 +11,7 @@
 	<Script file="CastBar.lua"/>
 	<Script file="Debuffs.lua"/>
 	<Script file="Buffs.lua"/>
+	<Script file="Range.lua"/>
+	<Script file="PhaseIndicator.lua"/>
+	<Script file="Offline.lua"/>
 </Ui>

@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
+
 local raidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator')
 
 raidTargetIndicator.Create = function(self, frame)
@@ -15,17 +18,17 @@ raidTargetIndicator.Update = function(self, frame)
     local db = frame.db
     local raidTargetIndicator = frame.RaidTargetIndicator
     if (not db.raidTargetIndicatorEnable) then
-        frame:DisableElement('RaidTargetIndicator')
+        core:DisableElementForFrame(frame, 'RaidTargetIndicator')
         return
     end
 
-    frame:EnableElement('RaidTargetIndicator')
+    core:EnableElementForFrame(frame, 'RaidTargetIndicator')
     local size = (db.raidTargetIndicatorScale or 1) * 16
     raidTargetIndicator:SetPoint(
-        db.raidTargetIndicatorAnchorPoint, 
-        frame.ElementFrame, 
-        db.raidTargetIndicatorRelativeAnchorPoint, 
-        db.raidTargetIndicatorXOff, 
+        db.raidTargetIndicatorAnchorPoint,
+        frame.ElementFrame,
+        db.raidTargetIndicatorRelativeAnchorPoint,
+        db.raidTargetIndicatorXOff,
         db.raidTargetIndicatorYOff
     )
     raidTargetIndicator:SetSize(size, size)
