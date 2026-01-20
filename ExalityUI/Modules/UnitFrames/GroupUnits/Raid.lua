@@ -7,14 +7,14 @@ local core = EXUI:GetModule('uf-core')
 ---@class EXUIOptionsEditor
 local editor = EXUI:GetModule('editor')
 
----@class EXUIUnitFramesParty
-local party = EXUI:GetModule('uf-unit-party')
+---@class EXUIUnitFramesRaid
+local raid = EXUI:GetModule('uf-unit-raid')
 
-party.unit = 'party'
-party.container = nil
-party.frames = {}
+raid.unit = 'raid'
+raid.container = nil
+raid.frames = {}
 
-party.Init = function(self)
+raid.Init = function(self)
     core:SetDefaultsForUnit(self.unit, {
         -- Header Specific
         ['sizeWidth'] = 80,
@@ -23,7 +23,9 @@ party.Init = function(self)
         ['positionRelativePoint'] = 'CENTER',
         ['positionXOff'] = 0,
         ['positionYOff'] = 0,
-        ['spacing'] = 1,
+        ['spacingY'] = 1,
+        ['spacingX'] = 1,
+        ['groupDirection'] = 'RIGHT',
         -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',
@@ -58,9 +60,6 @@ party.Init = function(self)
         ['healthpercXOffset'] = -5,
         ['healthpercYOffset'] = 3,
         ['healthpercTag'] = '[perhp]%',
-        -- Power
-        ['powerEnable'] = true,
-        ['powerHeight'] = 5,
         -- Debuffs
         ['debuffsEnable'] = true,
         ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
@@ -135,9 +134,54 @@ party.Init = function(self)
         ['offlineYOffset'] = -2,
         ['offlineTag'] = '[offline]',
     })
+
+    self:DisableBlizzard()
 end
 
-party.Create = function(self, frame, unit)
+-- Basically stolen from ElvUI, hope they dont mind.
+raid.DisableBlizzard = function(self)
+    local frame = _G.CompactRaidFrameContainer
+    frame:UnregisterAllEvents()
+    pcall(frame.Hide, frame)
+
+    local disableElements = {
+        frame.healthBar or frame.healthbar or frame.HealthBar or nil,
+        frame.manabar or frame.ManaBar or nil,
+        frame.castBar or frame.spellbar or nil,
+        frame.petFrame or frame.PetFrame or nil,
+        frame.powerBarAlt or frame.PowerBarAlt or nil,
+        frame.CastingBarFrame or nil,
+        frame.CcRemoverFrame or nil,
+        frame.classPowerBar or nil,
+        frame.DebuffFrame or nil,
+        frame.BuffFrame or nil,
+        frame.totFrame or nil
+    }
+
+    for _, element in ipairs(disableElements) do
+        if (element) then
+            element:UnregisterAllEvents()
+        end
+    end
+
+    hooksecurefunc(frame, 'Show', frame.Hide)
+    hooksecurefunc(frame, 'SetShown', function(self, shown)
+        if (shown) then
+            self:Hide()
+        end
+    end)
+
+
+    if (_G.CompactRaidFrameManager) then
+        _G.CompactRaidFrameManager:UnregisterAllEvents()
+        _G.CompactRaidFrameManager:Hide()
+    end
+    if CompactRaidFrameManager_SetSetting then
+        CompactRaidFrameManager_SetSetting('IsShown', '0')
+    end
+end
+
+raid.Create = function(self, frame, unit)
     core:Base(frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
@@ -145,7 +189,6 @@ party.Create = function(self, frame, unit)
     frame.Range = EXUI:GetModule('uf-element-range'):Create(frame)
     frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
     frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
-    frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
     frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame, 'HELPFUL|RAID')
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame, 'HARMFUL|RAID')
     frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
@@ -154,22 +197,20 @@ party.Create = function(self, frame, unit)
     frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
 
-    frame.Update = function(self) party:Update(self) end
+    frame.Update = function(self) raid:Update(self) end
 
     self:Update(frame)
 end
 
-party.Update = function(self, frame)
+raid.Update = function(self, frame)
     local db = frame.db
     EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
-
     core:UpdateFrame(frame)
 end
 
-core:RegisterPlayerGroupUnit('party', 'party', {
+core:RegisterPlayerGroupUnit('raid', 'raid', {
     showParty = true,
     showPlayer = true,
     showSolo = true,
-    showRaid = false,
-    yOffset = 1
+    showRaid = true,
 })

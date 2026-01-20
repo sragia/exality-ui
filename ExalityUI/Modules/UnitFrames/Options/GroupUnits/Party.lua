@@ -138,6 +138,60 @@ core:AddOption({
             }
         },
         {
+            name = 'Marker Icon',
+            id = 'markericon',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'raidTargetIndicator')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'raidTargetIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'raidTargetIndicatorScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'raidTargetIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('party', 'raidTargetIndicator')
+                end,
+            }
+        },
+        {
+            name = 'Raid Role Icons',
+            id = 'raidroles',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'raidRoles')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'raidRolesScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'raidRolesScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'raidRolesScale', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('party', 'raidRoles')
+                end,
+            }
+        },
+        {
             name = 'Offline Text',
             id = 'offline',
             options = {

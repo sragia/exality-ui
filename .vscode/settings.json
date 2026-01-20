@@ -227,7 +227,9 @@
         "FlagsUtil",
         "GENERAL",
         "DISPLAY",
-        "CountTable"
+        "CountTable",
+        "CompactRaidFrameManager_SetSetting",
+        "class"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

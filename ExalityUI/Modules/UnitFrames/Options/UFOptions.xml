@@ -16,4 +16,5 @@
 	<Script file="Units/Focus.lua"/>
 	<Script file="GroupUnits/Boss.lua"/>
 	<Script file="GroupUnits/Party.lua"/>
+	<Script file="GroupUnits/Raid.lua"/>
 </Ui>

@@ -21,8 +21,11 @@ core.groupUnitMap = {}
 core.frames = {}
 core.headers = {}
 core.partyFrames = {}
+core.raidFrames = {}
 core.forcedFrames = {}
 core.playerGroupUnits = {}
+
+local MAX_GROUPS = 8
 
 core.Init = function(self)
     self:AddTags()
@@ -59,6 +62,9 @@ core.SharedStyle = function(frame, unit)
 
     if (unit == 'party') then
         table.insert(core.partyFrames, frame)
+    end
+    if (unit == 'raid') then
+        table.insert(core.raidFrames, frame)
     end
 
     if (frameFactory and frameFactory.Create) then
@@ -115,18 +121,40 @@ core.CreateOrUpdateGroup = function(self, oUF, group, numUnits)
 end
 
 core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
-    local header = core.headers[unit]
-    if (not header) then
-        header = oUF:SpawnHeader(nil, nil, data.attributes)
-        if (data.visibility) then
-            header:SetVisibility(data.visibility)
+    local header
+    if (unit == 'party') then
+        header = core.headers[unit]
+        if (not header) then
+            header = oUF:SpawnHeader(nil, nil, data.attributes)
+            if (data.visibility) then
+                header:SetVisibility(data.visibility)
+            end
+            core.headers[unit] = header
         end
-        core.headers[unit] = header
+    elseif (unit == 'raid') then
+        header = core.headers[unit]
+        if (not header) then
+            header = CreateFrame('Frame', 'ExalityUI_RaidContainer', UIParent, 'SecureHandlerStateTemplate')
+            header.groupHeaders = {}
+
+            -- Spawnheader for each raid group
+            for i = 1, 8 do
+                local groupHeader = oUF:SpawnHeader(nil, nil, {
+                    groupFilter = i,
+                    showRaid = true,
+                    showPlayer = true,
+                    showParty = false
+                })
+                table.insert(header.groupHeaders, groupHeader)
+                groupHeader:SetPoint('TOPLEFT', header, 'TOPLEFT', 0, 0) --  Adjust later
+                groupHeader:SetVisibility(data.visibility)
+            end
+            core.headers[unit] = header
+        end
     end
 
     header:SetPoint('CENTER', -500, 0)
     header:Show()
-    -- TODO: Something more?
 
     self:UpdateHeader(unit)
     editor:RegisterFrameForEditor(header, unit .. ' Frames', function(frame)
@@ -249,6 +277,14 @@ core.UpdateFrameForUnit = function(self, unit)
             end
         end
         self:UpdateHeader(unit)
+    elseif (unit == 'raid') then
+        -- Raid Frames
+        for _, frame in ipairs(core.raidFrames) do
+            if (frame) then
+                frame:Update()
+            end
+        end
+        self:UpdateHeader(unit)
     elseif (not self.groupUnits[unit]) then
         local frame = core.frames[unit]
         if (frame) then
@@ -272,6 +308,8 @@ core.UpdateAllFrames = function(self)
     self:UpdateFrameForUnit('boss')
     -- Party Frames
     self:UpdateFrameForUnit('party')
+    -- Raid Frames
+    self:UpdateFrameForUnit('raid')
 end
 
 core.UpdateHeader = function(self, unit)
@@ -284,8 +322,100 @@ core.UpdateHeader = function(self, unit)
     header:ClearAllPoints()
     EXUI:SetPoint(header, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
 
-    header:SetAttribute('yOffset', -db.spacing)
+    if (header.groupHeaders) then
+        -- Raid
+        self:UpdateRaidLayout(header)
+    else
+        -- Party
+        header:SetAttribute('yOffset', -db.spacing)
+    end
 end
+
+core.UpdateRaidLayout = function(self, container)
+    if (not container) then return end
+    local unitWidth = self:GetValueForUnit('raid', 'sizeWidth')
+    local unitHeight = self:GetValueForUnit('raid', 'sizeHeight')
+    local spacingX = self:GetValueForUnit('raid', 'spacingX')
+    local spacingY = self:GetValueForUnit('raid', 'spacingY')
+    local numGroups = #container.groupHeaders
+    local totalHeight = unitHeight * numGroups + spacingY * (numGroups - 1)
+    EXUI:SetSize(container, unitWidth * 8 + spacingX * 7, totalHeight)
+    EXUI:SetPoint(container, 'CENTER', 0, 0)
+
+    local groupDirection = self:GetValueForUnit('raid', 'groupDirection') -- LEFT / RIGHT
+    local maxGroups = MAX_GROUPS
+    for i = 1, #container.groupHeaders do
+        container.groupHeaders[i]:SetAttribute('yOffset', -spacingY)
+        container.groupHeaders[i]:ClearAllPoints()
+    end
+    local prev = nil
+    for i = 1, #container.groupHeaders do
+        local groupHeader = container.groupHeaders[i]
+        if (i <= maxGroups) then
+            groupHeader:SetAttribute('showRaid', true)
+            groupHeader:SetAttribute('showPlayer', true)
+            groupHeader:SetAttribute('showSolo', true)
+            groupHeader:SetAttribute('showParty', true)
+            groupHeader:SetAttribute('groupFilter', i)
+            groupHeader:SetAttribute('yOffset', -spacingY)
+            groupHeader:Show()
+            if (prev) then
+                EXUI:SetPoint(
+                    groupHeader,
+                    groupDirection == 'RIGHT' and 'TOPLEFT' or 'TOPRIGHT',
+                    prev,
+                    groupDirection == 'RIGHT' and 'TOPRIGHT' or 'TOPLEFT',
+                    groupDirection == 'RIGHT' and spacingX or -spacingX,
+                    0
+                )
+            else
+                -- 1st group
+                EXUI:SetPoint(
+                    groupHeader,
+                    groupDirection == 'RIGHT' and 'TOPLEFT' or 'TOPRIGHT',
+                    container,
+                    groupDirection == 'RIGHT' and 'TOPLEFT' or 'TOPRIGHT',
+                    0,
+                    0
+                )
+            end
+            prev = groupHeader
+        else
+            -- Hide
+            groupHeader:SetAttribute('showPlayer', true)
+            groupHeader:SetAttribute('showSolo', true)
+            groupHeader:SetAttribute('showParty', true)
+            groupHeader:SetAttribute('showRaid', true)
+            groupHeader:SetAttribute('groupFilter', nil)
+            groupHeader:SetAttribute('yOffset', nil)
+            groupHeader:Hide()
+        end
+    end
+end
+
+core.CheckRaidDificulty = function(self)
+    if (InCombatLockdown()) then return end
+    local _, instanceType, difficulty = GetInstanceInfo()
+    local raidHeader = core.headers['raid']
+    if (not raidHeader) then return end
+    if (instanceType == 'raid') then
+        if (difficulty == 16) then
+            -- Mythic
+            MAX_GROUPS = 4
+        else
+            -- Flex
+            MAX_GROUPS = 8
+        end
+    end
+
+    self:UpdateRaidLayout(raidHeader)
+end
+
+EXUI:RegisterEventHandler(
+    { 'PLAYER_ENTERING_WORLD', 'ZONE_CHANGED_NEW_AREA' },
+    'raid-check-difficulty',
+    function() core:CheckRaidDificulty() end
+)
 
 core.AddTags = function(self)
     -- currHP Formatted
@@ -296,6 +426,18 @@ core.AddTags = function(self)
     end
 
     EXUI.oUF.Tags.Events['curhp:formatted'] = 'UNIT_HEALTH UNIT_MAXHEALTH'
+
+    -- Colored Name
+    EXUI.oUF.Tags.Methods['classcolor:name'] = function(unit)
+        local _, class = UnitClass(unit)
+        if (class) then
+            local classColor = C_ClassColor.GetClassColor(class)
+            return classColor:WrapTextInColorCode(UnitName(unit))
+        end
+        return UnitName(unit)
+    end
+
+    EXUI.oUF.Tags.Events['classcolor:name'] = 'UNIT_NAME_UPDATE'
 end
 
 -- DB Data
@@ -335,12 +477,12 @@ core.GetValueForUnit = function(self, unit, key)
 end
 
 core.EnableElementForFrame = function(self, frame, element)
-    if (frame.unit == 'party') then return end
+    if (frame.unit == 'party' or frame.unit == 'raid') then return end
     frame:EnableElement(element)
 end
 
 core.DisableElementForFrame = function(self, frame, element)
-    if (frame.unit == 'party') then return end
+    if (frame.unit == 'party' or frame.unit == 'raid') then return end
     frame:DisableElement(element)
 end
 
