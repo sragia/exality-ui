@@ -11,6 +11,7 @@ genericPower.Types = {
     ['Mana'] = Enum.PowerType.Mana,
     ['Rage'] = Enum.PowerType.Rage,
     ['Focus'] = Enum.PowerType.Focus,
+    ['Runic Power'] = Enum.PowerType.RunicPower,
 }
 
 genericPower.Create = function(self, frame)
@@ -103,5 +104,9 @@ core:RegisterPowerType({
 })
 core:RegisterPowerType({
     name = 'Focus',
+    control = genericPower
+})
+core:RegisterPowerType({
+    name = 'Runic Power',
     control = genericPower
 })

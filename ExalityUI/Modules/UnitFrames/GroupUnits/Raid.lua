@@ -206,7 +206,9 @@ end
 
 raid.Update = function(self, frame)
     local db = frame.db
-    EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
+    if (not frame:IsProtected()) then
+        EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
+    end
     core:UpdateFrame(frame)
 end
 

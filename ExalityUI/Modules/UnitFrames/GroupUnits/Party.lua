@@ -17,11 +17,11 @@ party.frames = {}
 party.Init = function(self)
     core:SetDefaultsForUnit(self.unit, {
         -- Header Specific
-        ['sizeWidth'] = 80,
-        ['sizeHeight'] = 20,
+        ['sizeWidth'] = 160,
+        ['sizeHeight'] = 50,
         ['positionAnchorPoint'] = 'CENTER',
         ['positionRelativePoint'] = 'CENTER',
-        ['positionXOff'] = 0,
+        ['positionXOff'] = -300,
         ['positionYOff'] = 0,
         ['spacing'] = 1,
         -- Name
@@ -35,7 +35,7 @@ party.Init = function(self)
         ['nameTag'] = '[name]',
         ['nameXOffset'] = 0,
         ['nameYOffset'] = 0,
-        ['nameMaxWidth'] = 100,
+        ['nameMaxWidth'] = 60,
         -- Health Text
         ['healthEnable'] = true,
         ['healthFont'] = 'DMSans',

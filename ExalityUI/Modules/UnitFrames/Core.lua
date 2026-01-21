@@ -345,6 +345,10 @@ core.UpdateHeader = function(self, unit)
     else
         -- Party
         header:SetAttribute('yOffset', -db.spacing)
+        local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
+        local unitHeight = self:GetValueForUnit('party', 'sizeHeight')
+        header:SetAttribute('oUF-initialConfigFunction',
+            string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight))
     end
 end
 
@@ -368,6 +372,8 @@ core.UpdateRaidLayout = function(self, container)
     local prev = nil
     for i = 1, #container.groupHeaders do
         local groupHeader = container.groupHeaders[i]
+        groupHeader:SetAttribute('oUF-initialConfigFunction',
+            string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight))
         if (i <= maxGroups) then
             groupHeader:SetAttribute('showRaid', true)
             groupHeader:SetAttribute('showPlayer', true)
