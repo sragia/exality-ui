@@ -6,6 +6,8 @@
 ## SavedVariablesPerCharacter: ExalityUICharData
 ## Version: @project-version@
 ## IconTexture: Interface\AddOns\ExalityUI\Assets\Images\logo_icon.png
+## X-Curse-Project-ID: 1430657
+## X-Wago-ID: 96d22qGO
 
 
 # Libs
