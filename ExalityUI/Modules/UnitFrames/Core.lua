@@ -24,6 +24,17 @@ core.partyFrames = {}
 core.raidFrames = {}
 core.forcedFrames = {}
 core.playerGroupUnits = {}
+core.framesToUpdate = {}
+
+core.POWER_COLORS = {
+    Enum.PowerType.Mana,
+    Enum.PowerType.Rage,
+    Enum.PowerType.Focus,
+    Enum.PowerType.Energy,
+    Enum.PowerType.Fury,
+    Enum.PowerType.Pain,
+    Enum.PowerType.RunicPower,
+}
 
 local MAX_GROUPS = 8
 
@@ -31,6 +42,7 @@ core.Init = function(self)
     self:AddTags()
     EXUI.oUF:RegisterStyle("ExalityUI", self.SharedStyle)
     EXUI.oUF:Factory(self.Factory)
+    self:UpdatePowerColors()
 end
 
 core.RegisterUnit = function(self, unit, isGroup, numUnits)
@@ -190,7 +202,12 @@ core.Base = function(self, frame)
 
     self:AddTooltip(frame)
 
-    frame:RegisterForClicks('AnyUp')
+    if (not InCombatLockdown()) then
+        frame:RegisterForClicks('AnyUp')
+    else
+        -- TODO, register once out of combat
+        table.insert(core.framesToUpdate, frame)
+    end
 end
 
 core.UpdateFrame = function(self, frame)
@@ -411,10 +428,34 @@ core.CheckRaidDificulty = function(self)
     self:UpdateRaidLayout(raidHeader)
 end
 
+core.UpdatePowerColors = function(self)
+    local generalDB = self:GetDBForUnit('general')
+    if (not generalDB) then return end
+    for _, powerType in ipairs(core.POWER_COLORS) do
+        local powerColor = generalDB[string.format('powerColor%s', powerType)]
+        if (powerColor) then
+            EXUI.oUF.colors.power[powerType]:SetRGBA(powerColor.r, powerColor.g, powerColor.b, powerColor.a)
+        end
+    end
+end
+
 EXUI:RegisterEventHandler(
     { 'PLAYER_ENTERING_WORLD', 'ZONE_CHANGED_NEW_AREA' },
     'raid-check-difficulty',
     function() core:CheckRaidDificulty() end
+)
+
+core.ReconfigureFrames = function(self)
+    for _, frame in ipairs(core.framesToUpdate) do
+        frame:RegisterForClicks('AnyUp')
+    end
+    core.framesToUpdate = {}
+end
+
+EXUI:RegisterEventHandler(
+    { 'PLAYER_REGEN_ENABLED' },
+    'uf-update-frames',
+    function() core:ReconfigureFrames() end
 )
 
 core.AddTags = function(self)

@@ -5,6 +5,8 @@
 ## SavedVariables: ExalityUIData
 ## SavedVariablesPerCharacter: ExalityUICharData
 ## Version: @project-version@
+## IconTexture: Interface\AddOns\ExalityUI\Assets\Images\logo_icon.png
+
 
 # Libs
 Libs/LibStub/LibStub.lua

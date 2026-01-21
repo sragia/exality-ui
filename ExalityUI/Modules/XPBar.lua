@@ -498,8 +498,10 @@ end
 
 xpBar.HandleVisibility = function(self)
     if (self.maxLevel > UnitLevel('player') or self.Data:GetValue('showAtMaxLevel')) then
+        FrameUtil.RegisterFrameForEvents(self.frame, self.EVENTS)
         self.frame:Show()
     else
+        self.frame:UnregisterAllEvents()
         self.frame:Hide()
     end
 end

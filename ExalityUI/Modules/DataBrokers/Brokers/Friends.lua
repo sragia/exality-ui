@@ -25,6 +25,16 @@ local GetText = function()
     return 'Friends: ' .. online
 end
 
+local toClassFileName = function(class)
+    if (class == 'Demon Hunter') then
+        return 'DEMONHUNTER'
+    elseif (class == 'Death Knight') then
+        return 'DEATHKNIGHT'
+    end
+
+    return class
+end
+
 local tooltip = nil
 
 local font = CreateFont('EXUI_GuildBroker_Tooltip')
@@ -59,7 +69,6 @@ local function ShowTooltip(self)
     -- Add WoW Friends
     for _, friend in ipairs(wowFriends) do
         tooltip:AddLine(
-        -- WrapTextInColorCode(friend.name, C_ColorUtil.GenerateTextColorCode(GetQuestDifficultyColor(friend.level))),
             'WoW',
             friend.level,
             C_ClassColor.GetClassColor(friend.class):WrapTextInColorCode(friend.name),
@@ -71,8 +80,8 @@ local function ShowTooltip(self)
     for _, friend in ipairs(bnetFriends) do
         local friendName = friend.inGame and friend.name or
             WrapTextInColorCode(string.format('%s', friend.bnetName), 'FF0085FA')
-        if (friend.game == 'WoW') then
-            friendName = C_ClassColor.GetClassColor(friend.class):WrapTextInColorCode(friendName)
+        if (friend.game == 'WoW' and friend.class) then
+            friendName = C_ClassColor.GetClassColor(toClassFileName(friend.class)):WrapTextInColorCode(friendName)
         end
 
         if (friend.wowProjectID and PROJECT_NAMES[friend.wowProjectID]) then

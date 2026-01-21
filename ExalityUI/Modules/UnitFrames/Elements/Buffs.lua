@@ -30,7 +30,9 @@ buffs.Update = function(self, frame)
     end
     if (not db.buffsEnable) then
         Buffs.num = 0
-        Buffs:ForceUpdate()
+        if (Buffs.ForceUpdate) then
+            Buffs:ForceUpdate()
+        end
         return
     end
     core:EnableElementForFrame(frame, 'Auras')

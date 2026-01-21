@@ -140,6 +140,7 @@ end
 
 -- Basically stolen from ElvUI, hope they dont mind.
 raid.DisableBlizzard = function(self)
+    UIParent:UnregisterEvent('GROUP_ROSTER_UPDATE')
     local frame = _G.CompactRaidFrameContainer
     frame:UnregisterAllEvents()
     pcall(frame.Hide, frame)
@@ -196,6 +197,7 @@ raid.Create = function(self, frame, unit)
     frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
     frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
+    frame.ReadyCheckIndicator = EXUI:GetModule('uf-element-ready-check-indicator'):Create(frame)
 
     frame.Update = function(self) raid:Update(self) end
 

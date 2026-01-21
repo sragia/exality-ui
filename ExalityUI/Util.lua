@@ -653,10 +653,14 @@ EXUI.utils = {
             return tostring(math.floor(number + 0.5))
         end
     end,
-    formatNumberWithCommas = function(number)
-        local formatted = number
+    formatNumberWithCommas = function(value)
+        if (not value) then
+            return 0
+        end
+        local k
+        local formatted = value
         while true do
-            formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+            formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
             if (k == 0) then
                 break
             end

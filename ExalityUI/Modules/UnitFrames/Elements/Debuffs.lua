@@ -28,7 +28,9 @@ debuffs.Update = function(self, frame)
     end
     if (not db.debuffsEnable) then
         Debuffs.num = 0
-        Debuffs:ForceUpdate()
+        if (Debuffs.ForceUpdate) then
+            Debuffs:ForceUpdate()
+        end
         return
     end
     core:EnableElementForFrame(frame, 'Auras')
@@ -36,6 +38,7 @@ debuffs.Update = function(self, frame)
     Debuffs.width = db.debuffsIconWidth
     Debuffs.height = db.debuffsIconHeight
     Debuffs.spacing = db.debuffsSpacing
+    Debuffs.showDebuffType = true
     Debuffs.num = db.debuffsNum
 
     local growthX = string.find(db.debuffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'

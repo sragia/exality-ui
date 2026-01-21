@@ -23,7 +23,7 @@ core.fields = {}
 
 core.Init = function(self)
     optionsController:RegisterModule(self, self.OptionHandler)
-    ufCore:SetDefaultsForUnit('general', {
+    local defaults = {
         ['useCustomHealthColor'] = false,
         ['customHealthColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
         ['useClassColoredBackdrop'] = false,
@@ -33,7 +33,14 @@ core.Init = function(self)
         -- Health Prediction
         ['healAbsorbColor'] = { r = 100 / 255, g = 100 / 255, b = 100 / 255, a = 0.8 },
         ['damageAbsorbColor'] = { r = 0, g = 133 / 255, b = 163 / 255, a = 1 },
-    })
+    }
+
+    for _, powerType in ipairs(ufCore.POWER_COLORS) do
+        local r, g, b, a = EXUI.oUF.colors.power[powerType]:GetRGBA()
+        defaults[string.format('powerColor%s', powerType)] = { r = r, g = g, b = b, a = a }
+    end
+
+    ufCore:SetDefaultsForUnit('general', defaults)
 end
 
 core.GetName = function(self)

@@ -148,6 +148,110 @@ core:AddOption({
                     end,
                     width = 20
                 },
+                {
+                    type = 'title',
+                    label = 'Power',
+                    width = 100,
+                    size = 14
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Mana',
+                    name = 'powerColorMana',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.Mana)
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.Mana, value)
+                        ufCore:UpdatePowerColors()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Rage',
+                    name = 'powerColorRage',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.Rage)
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.Rage, value)
+                        ufCore:UpdatePowerColors()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Focus',
+                    name = 'powerColorFocus',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.Focus)
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.Focus, value)
+                        ufCore:UpdatePowerColors()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Energy',
+                    name = 'powerColorEnergy',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.Energy)
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.Energy, value)
+                        ufCore:UpdatePowerColors()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Fury',
+                    name = 'powerColorFury',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.Fury)
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.Fury, value)
+                        ufCore:UpdatePowerColors()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Pain',
+                    name = 'powerColorPain',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.Pain)
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.Pain, value)
+                        ufCore:UpdatePowerColors()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Runic Power',
+                    name = 'powerColorRunicPower',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.RunicPower)
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.RunicPower, value)
+                        ufCore:UpdatePowerColors()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                }
             }
         }
     }

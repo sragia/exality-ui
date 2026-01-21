@@ -364,6 +364,13 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             end
             self.EnchantText:SetText(enchant and string.gsub(enchant, '|A.-|a', ''))
             self:AddGems(itemLink)
+
+            local currDurability, maxDurability = GetInventoryItemDurability(self:GetID())
+            if (currDurability == 0) then
+                self.Icon:SetVertexColor(1, 0, 0, 1)
+            else
+                self.Icon:SetVertexColor(1, 1, 1, 1)
+            end
         else
             self.Icon:SetTexture(self.emptyTexture)
             self.Border:SetTexture(EXUI.const.textures.characterFrame.border.empty)

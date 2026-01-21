@@ -50,6 +50,9 @@ local function ShowTooltip(self)
     local myZone = GetSubZoneText()
     for i = 1, GetNumGuildMembers() do
         local name, rankName, _, level, _, zone, publicNote, _, isOnline, _, class = GetGuildRosterInfo(i)
+        if name and name:find("-") then
+            name = name:match("([^%-]+)")
+        end
 
         if (isOnline) then
             local classColor = C_ClassColor.GetClassColor(class)

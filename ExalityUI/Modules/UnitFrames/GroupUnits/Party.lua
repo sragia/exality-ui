@@ -153,6 +153,7 @@ party.Create = function(self, frame, unit)
     frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
     frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
+    frame.ReadyCheckIndicator = EXUI:GetModule('uf-element-ready-check-indicator'):Create(frame)
 
     frame.Update = function(self) party:Update(self) end
 

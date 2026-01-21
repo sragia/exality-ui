@@ -6,7 +6,7 @@ local LDB = LibStub:GetLibrary('LibDataBroker-1.1')
 local getGold = function()
     local money = GetMoney()
     local gold = math.floor(money / 10000)
-    return string.format('%d|cffed9a00g|r', gold)
+    return string.format('%s|cffed9a00g|r', EXUI.utils.formatNumberWithCommas(gold))
 end
 
 local data = {
