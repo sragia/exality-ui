@@ -226,20 +226,6 @@ core:AddOption({
                 },
                 {
                     type = 'color-picker',
-                    label = 'Pain',
-                    name = 'powerColorPain',
-                    currentValue = function()
-                        return ufCore:GetValueForUnit('general', 'powerColor' .. Enum.PowerType.Pain)
-                    end,
-                    onChange = function(value)
-                        ufCore:UpdateValueForUnit('general', 'powerColor' .. Enum.PowerType.Pain, value)
-                        ufCore:UpdatePowerColors()
-                        ufCore:UpdateAllFrames()
-                    end,
-                    width = 20
-                },
-                {
-                    type = 'color-picker',
                     label = 'Runic Power',
                     name = 'powerColorRunicPower',
                     currentValue = function()
