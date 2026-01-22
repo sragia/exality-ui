@@ -137,6 +137,10 @@ core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
     if (unit == 'party') then
         header = core.headers[unit]
         if (not header) then
+            local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
+            local unitHeight = self:GetValueForUnit('party', 'sizeHeight')
+            data.attributes['oUF-initialConfigFunction'] =
+                string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight)
             header = oUF:SpawnHeader(nil, nil, data.attributes)
             if (data.visibility) then
                 header:SetVisibility(data.visibility)
@@ -345,10 +349,6 @@ core.UpdateHeader = function(self, unit)
     else
         -- Party
         header:SetAttribute('yOffset', -db.spacing)
-        local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
-        local unitHeight = self:GetValueForUnit('party', 'sizeHeight')
-        header:SetAttribute('oUF-initialConfigFunction',
-            string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight))
     end
 end
 

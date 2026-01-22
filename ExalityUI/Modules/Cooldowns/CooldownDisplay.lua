@@ -50,9 +50,17 @@ cooldownDisplay.Create = function(self, frame)
         if (event == 'ITEM_DATA_LOAD_RESULT') then
             local itemID = ...
             if (itemID == db.itemID) then
-                self.Texture:SetTexture(cooldownDisplay:GetTexture(db))
+                local texture, isCorrect = cooldownDisplay:GetTexture(db)
+                self.invalidTexture = isCorrect
+                self.Texture:SetTexture(texture)
             end
         else
+            if (not self.invalidTexture) then
+                -- Try to set texture again
+                local texture, isCorrect = cooldownDisplay:GetTexture(db)
+                self.invalidTexture = isCorrect
+                self.Texture:SetTexture(texture)
+            end
             if (db.isItem and db.itemID ~= '') then
                 -- Item
                 local start, duration, count = cooldownDisplay:GetItemData(db.itemID)
@@ -134,16 +142,16 @@ cooldownDisplay.GetTexture = function(self, db)
         -- We might not be able to get info about this item
         -- TODO: We might get it with a event callback?
         if (itemTexture) then
-            return itemTexture
+            return itemTexture, true
         else
             C_Item.RequestLoadItemDataByID(db.itemID)
         end
     elseif (db.spellID ~= '') then
         -- Spell
-        return C_Spell.GetSpellTexture(db.spellID)
+        return C_Spell.GetSpellTexture(db.spellID), true
     end
 
-    return 'Interface\\Icons\\INV_Misc_QuestionMark'
+    return 'Interface\\Icons\\INV_Misc_QuestionMark', false
 end
 
 cooldownDisplay.Update = function(self, frame)
@@ -176,7 +184,9 @@ cooldownDisplay.Update = function(self, frame)
     frame.Cooldown:SetPoint(db.fontAnchorPoint, frame, db.fontRelativePoint, db.fontXOff, db.fontYOff)
     frame.CooldownFont:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)
 
-    frame.Texture:SetTexture(self:GetTexture(db))
+    local texture, isCorrect = self:GetTexture(db)
+    frame.Texture:SetTexture(texture)
+    frame.invalidTexture = isCorrect
 
     local zoomReduction = (db.zoom / 100) / 2
     if (db.width > db.height) then

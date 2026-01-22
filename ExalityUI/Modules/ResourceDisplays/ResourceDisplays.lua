@@ -168,6 +168,7 @@ core.GetOptions = function(self, currTabID, currItemID)
             onChange = function(value)
                 self:UpdateValueForDisplay(currItemID, 'name', value)
                 self:RefreshDisplayByID(currItemID)
+                optionsFields:RefreshItemList()
             end,
             width = 50
         },
@@ -359,6 +360,16 @@ core.GetOptions = function(self, currTabID, currItemID)
             end,
             width = 16,
             color = { 171 / 255, 0, 20 / 255, 1 }
+        },
+        {
+            type = 'button',
+            label = 'Duplicate',
+            onClick = function()
+                self:DuplicateDisplay(currItemID)
+                optionsFields:Refresh()
+            end,
+            width = 16,
+            color = { 2 / 255, 145 / 255, 227 / 255, 1 }
         }
     })
 
@@ -636,8 +647,26 @@ core.DeleteDisplay = function(self, displayID)
     local displayDB = data:GetDataByKey('resource-displays')
     displayDB[displayID] = nil
     data:SetDataByKey('resource-displays', displayDB)
-    self:ClearFrame(self.frames[displayID])
-    self.frames[displayID] = nil
+    if (self.frames[displayID]) then
+        self:ClearFrame(self.frames[displayID])
+        self.frames[displayID] = nil
+    end
+end
+
+core.DuplicateDisplay = function(self, displayID)
+    local newID = EXUI.utils.generateRandomString(10)
+    local db = data:GetDataByKey('resource-displays')
+    db[newID] = EXUI.utils.deepCloneTable(db[displayID])
+    db[newID].ID = newID
+    db[newID].name = db[newID].name .. ' (Copy)'
+    db[newID].createdAt = time()
+    data:SetDataByKey('resource-displays', db)
+    local display = db[newID]
+    local frame = self:Create(display.resourceType)
+    self.frames[newID] = frame
+    frame.displayID = newID
+    frame.db = display
+    self:RefreshDisplayByID(newID)
 end
 
 ----------------------------
