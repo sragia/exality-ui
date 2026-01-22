@@ -41,7 +41,6 @@ debuffs.Update = function(self, frame)
     Debuffs.width = db.debuffsIconWidth
     Debuffs.height = db.debuffsIconHeight
     Debuffs.spacing = db.debuffsSpacing
-    Debuffs.showDebuffType = true
     if (frame.isFake) then
         Debuffs.filter = 'HELPFUL'
         Debuffs.num = 3
