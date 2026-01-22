@@ -10,7 +10,7 @@ local ufCore = EXUI:GetModule('uf-core')
 core:AddOption({
     name = 'Party',
     id = 'party',
-    allowPreview = false,
+    allowPreview = true,
     menu = {
         {
             name = 'Size & Position',

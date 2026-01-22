@@ -10,7 +10,7 @@ local ufCore = EXUI:GetModule('uf-core')
 core:AddOption({
     name = 'Raid',
     id = 'raid',
-    allowPreview = false,
+    allowPreview = true,
     menu = {
         {
             name = 'Size & Position',

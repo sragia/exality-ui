@@ -11,9 +11,12 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 debuffs.CountdownFontName = 'ExalityUI_Debuffs_CountdownFont'
 debuffs.CountdownFont = CreateFont(debuffs.CountdownFontName)
 
-debuffs.Create = function(self, frame)
+debuffs.Create = function(self, frame, filters)
     local Debuffs = CreateFrame('Frame', nil, frame.ElementFrame)
     Debuffs.PostCreateButton = debuffs.PostCreateButton
+
+    Debuffs.filter = filters
+    Debuffs.originalFilter = filters
 
     return Debuffs
 end
@@ -39,7 +42,13 @@ debuffs.Update = function(self, frame)
     Debuffs.height = db.debuffsIconHeight
     Debuffs.spacing = db.debuffsSpacing
     Debuffs.showDebuffType = true
-    Debuffs.num = db.debuffsNum
+    if (frame.isFake) then
+        Debuffs.filter = 'HELPFUL'
+        Debuffs.num = 3
+    else
+        Debuffs.num = db.debuffsNum
+        Debuffs.filter = Debuffs.originalFilter
+    end
 
     local growthX = string.find(db.debuffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.debuffsAnchorPoint, 'TOP') and 'DOWN' or 'UP'

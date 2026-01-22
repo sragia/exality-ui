@@ -23,6 +23,7 @@ core.headers = {}
 core.partyFrames = {}
 core.raidFrames = {}
 core.forcedFrames = {}
+core.forcedHeaders = {}
 core.playerGroupUnits = {}
 core.framesToUpdate = {}
 
@@ -143,6 +144,7 @@ core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
                 string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight)
             header = oUF:SpawnHeader(nil, nil, data.attributes)
             if (data.visibility) then
+                header.originalVisibility = data.visibility
                 header:SetVisibility(data.visibility)
             end
             core.headers[unit] = header
@@ -162,7 +164,9 @@ core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
                     showParty = false
                 })
                 table.insert(header.groupHeaders, groupHeader)
+                groupHeader.group = i
                 groupHeader:SetPoint('TOPLEFT', header, 'TOPLEFT', 0, 0) --  Adjust later
+                groupHeader.originalVisibility = data.visibility
                 groupHeader:SetVisibility(data.visibility)
             end
             core.headers[unit] = header
@@ -536,8 +540,37 @@ end
 -- For Options. Force Show frames for editting
 core.ForceShow = function(self, unit)
     if (InCombatLockdown()) then return end
-
-    if (self.groupUnits[unit]) then
+    if (unit == 'party') then
+        if (IsInGroup() and not IsInRaid()) then return end
+        local header = core.headers[unit]
+        if (not header) then return end
+        header:SetVisibility('solo')
+        header.isFake = true
+        self.forcedHeaders[unit] = header
+        for _, frame in ipairs(core.partyFrames) do
+            if (frame) then
+                self.forcedFrames[frame.unit] = frame
+                self:ForceFrame(frame)
+            end
+        end
+    elseif (unit == 'raid') then
+        if (IsInRaid()) then return end
+        local header = core.headers[unit]
+        if (not header) then return end
+        for _, groupHeader in ipairs(header.groupHeaders) do
+            if (groupHeader) then
+                groupHeader:SetVisibility('solo')
+                groupHeader.isFake = true
+                self.forcedHeaders[unit .. groupHeader.group] = groupHeader
+            end
+        end
+        for _, frame in ipairs(core.raidFrames) do
+            if (frame) then
+                self.forcedFrames[frame.unit] = frame
+                self:ForceFrame(frame)
+            end
+        end
+    elseif (self.groupUnits[unit]) then
         for i = 1, self.groupUnits[unit] do
             local frame = self.frames[unit .. i]
             if (frame) then
@@ -571,10 +604,38 @@ core.ForceFrame = function(self, frame)
     end
 end
 
-
 core.Unforce = function(self, unit)
     if (InCombatLockdown()) then return end
 
+    if (unit == 'party') then
+        local header = core.headers[unit]
+        if (not header) then return end
+        header.isFake = false
+        header:SetVisibility(header.originalVisibility)
+        self.forcedHeaders[unit] = nil
+        for _, frame in ipairs(core.partyFrames) do
+            if (frame) then
+                self.forcedFrames[frame.unit] = nil
+                self:UnforceFrame(frame)
+            end
+        end
+    elseif (unit == 'raid') then
+        local header = core.headers[unit]
+        if (not header) then return end
+        for _, groupHeader in ipairs(header.groupHeaders) do
+            if (groupHeader) then
+                groupHeader:SetVisibility(groupHeader.originalVisibility)
+                groupHeader.isFake = false
+                self.forcedHeaders[unit .. groupHeader.group] = nil
+            end
+        end
+        for _, frame in ipairs(core.raidFrames) do
+            if (frame) then
+                self.forcedFrames[frame.unit] = nil
+                self:UnforceFrame(frame)
+            end
+        end
+    end
     if (self.groupUnits[unit]) then
         for i = 1, self.groupUnits[unit] do
             local frame = self.frames[unit .. i]
@@ -596,7 +657,11 @@ core.UnforceFrame = function(self, frame)
     if (not frame.isFake) then return end
     frame.unit = frame.originalUnit
     frame:EnableMouse(true)
+
     frame.isFake = false
+    if (frame.Update) then
+        frame:Update()
+    end
 
     UnregisterUnitWatch(frame)
     RegisterUnitWatch(frame)
@@ -608,5 +673,12 @@ core.UnforceAll = function(self)
             self:UnforceFrame(frame)
         end
     end
+    for _, header in pairs(self.forcedHeaders) do
+        if (header) then
+            header:SetVisibility(header.originalVisibility)
+            header.isFake = false
+        end
+    end
     self.forcedFrames = {}
+    self.forcedHeaders = {}
 end

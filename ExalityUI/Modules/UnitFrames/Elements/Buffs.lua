@@ -14,9 +14,9 @@ buffs.CountdownFont = CreateFont(buffs.CountdownFontName)
 buffs.Create = function(self, frame, filters)
     local Buffs = CreateFrame('Frame', nil, frame.ElementFrame)
     Buffs.PostCreateButton = buffs.PostCreateButton
-    if (filters) then
-        Buffs.filter = filters
-    end
+
+    Buffs.filter = filters
+    Buffs.originalFilter = filters
     return Buffs
 end
 
@@ -40,7 +40,14 @@ buffs.Update = function(self, frame)
     Buffs.width = db.buffsIconWidth
     Buffs.height = db.buffsIconHeight
     Buffs.spacing = db.buffsSpacing
-    Buffs.num = db.buffsNum
+    if (frame.isFake) then
+        Buffs.filter = 'HELPFUL'
+        Buffs.num = 3
+    else
+        local filter = Buffs.originalFilter
+        Buffs.num = db.buffsNum
+        Buffs.filter = filter
+    end
 
     local growthX = string.find(db.buffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.buffsAnchorPoint, 'TOP') and 'DOWN' or 'UP'
