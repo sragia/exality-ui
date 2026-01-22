@@ -14,7 +14,7 @@ local data = {
     text = getGold(),
 }
 
-EXUI:RegisterEventHandler('PLAYER_MONEY', 'gold-broker', function()
+EXUI:RegisterEventHandler({ 'PLAYER_MONEY', 'PLAYER_ENTERING_WORLD' }, 'gold-broker', function()
     data.text = getGold()
 end)
 
