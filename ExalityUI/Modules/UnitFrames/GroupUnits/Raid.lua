@@ -190,6 +190,12 @@ raid.DisableBlizzard = function(self)
     if (_G.CompactRaidFrameManager) then
         _G.CompactRaidFrameManager:UnregisterAllEvents()
         _G.CompactRaidFrameManager:Hide()
+        hooksecurefunc(_G.CompactRaidFrameManager, 'Show', _G.CompactRaidFrameManager.Hide)
+        hooksecurefunc(_G.CompactRaidFrameManager, 'SetShown', function(self, shown)
+            if (shown) then
+                self:Hide()
+            end
+        end)
     end
     if CompactRaidFrameManager_SetSetting then
         CompactRaidFrameManager_SetSetting('IsShown', '0')
