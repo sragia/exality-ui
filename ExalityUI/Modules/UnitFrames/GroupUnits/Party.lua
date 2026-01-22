@@ -134,6 +134,20 @@ party.Init = function(self)
         ['offlineXOffset'] = 0,
         ['offlineYOffset'] = -2,
         ['offlineTag'] = '[offline]',
+        -- Resurrect Indicator
+        ['ressurectEnable'] = true,
+        ['ressurectAnchorPoint'] = 'CENTER',
+        ['ressurectRelativeAnchorPoint'] = 'TOP',
+        ['ressurectXOff'] = 0,
+        ['ressurectYOff'] = 0,
+        ['ressurectScale'] = 1,
+        -- Summon Indicator
+        ['summonEnable'] = true,
+        ['summonAnchorPoint'] = 'CENTER',
+        ['summonRelativeAnchorPoint'] = 'TOP',
+        ['summonXOff'] = 0,
+        ['summonYOff'] = 0,
+        ['summonScale'] = 1,
     })
 end
 
@@ -154,6 +168,8 @@ party.Create = function(self, frame, unit)
     frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
     frame.ReadyCheckIndicator = EXUI:GetModule('uf-element-ready-check-indicator'):Create(frame)
+    frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
+    frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
 
     frame.Update = function(self) party:Update(self) end
 

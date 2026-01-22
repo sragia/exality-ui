@@ -206,5 +206,59 @@ core:AddOption({
                 end
             }
         },
+        {
+            name = 'Resurrect Indicator',
+            id = 'resurrectindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'ressurect')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'ressurectScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'ressurectScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'ressurectScale', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('party', 'ressurect')
+                end,
+            }
+        },
+        {
+            name = 'Summon Indicator',
+            id = 'summonindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'summon')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'summonScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'summonScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'summonScale', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('party', 'summon')
+                end,
+            }
+        }
     }
 })

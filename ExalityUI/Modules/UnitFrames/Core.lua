@@ -271,6 +271,14 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-offline'):Update(frame)
     end
 
+    if (frame.ResurrectIndicator) then
+        EXUI:GetModule('uf-element-ressurect-indicator'):Update(frame)
+    end
+
+    if (frame.SummonIndicator) then
+        EXUI:GetModule('uf-element-summon-indicator'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
 end

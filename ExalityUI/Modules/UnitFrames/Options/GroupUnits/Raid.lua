@@ -223,5 +223,59 @@ core:AddOption({
                 end
             }
         },
+        {
+            name = 'Resurrect Indicator',
+            id = 'resurrectindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('raid', 'ressurect')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'ressurectScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('raid', 'ressurectScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('raid', 'ressurectScale', value)
+                        ufCore:UpdateFrameForUnit('raid')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('raid', 'ressurect')
+                end,
+            }
+        },
+        {
+            name = 'Summon Indicator',
+            id = 'summonindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('raid', 'summon')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'summonScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('raid', 'summonScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('raid', 'summonScale', value)
+                        ufCore:UpdateFrameForUnit('raid')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('raid', 'summon')
+                end,
+            }
+        }
     }
 })
