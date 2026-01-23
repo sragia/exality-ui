@@ -16,10 +16,10 @@ player.Init = function(self)
     core:SetDefaultsForUnit(self.unit, {
         ['sizeWidth'] = 200,
         ['sizeHeight'] = 40,
-        ['positionAnchorPoint'] = 'TOPRIGHT',
+        ['positionAnchorPoint'] = 'CENTER',
         ['positionRelativePoint'] = 'CENTER',
-        ['positionXOff'] = -100,
-        ['positionYOff'] = -100,
+        ['positionXOff'] = -200,
+        ['positionYOff'] = -205,
         -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',
