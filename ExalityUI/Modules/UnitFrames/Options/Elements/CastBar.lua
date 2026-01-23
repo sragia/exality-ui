@@ -30,6 +30,7 @@ castBar.GetOptions = function(self, unit)
             onChange = function(value)
                 core:UpdateValueForUnit(unit, 'castbarMatchFrameWidth', value)
                 core:UpdateFrameForUnit(unit)
+                optionsCore:RefreshCurrentView()
             end,
             width = 100,
         },
@@ -41,6 +42,9 @@ castBar.GetOptions = function(self, unit)
             max = 1000,
             step = 1,
             width = 20,
+            depends = function()
+                return not core:GetValueForUnit(unit, 'castbarMatchFrameWidth')
+            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarWidth')
             end,
