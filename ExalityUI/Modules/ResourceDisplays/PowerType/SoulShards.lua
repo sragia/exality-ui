@@ -268,7 +268,7 @@ soulShards.UpdateDefault = function(self, displayID)
     core:UpdateDefaultValuesForDisplay(displayID, {
         ssWidth = 30,
         ssHeight = 16,
-        ssSpacing = 2,
+        ssSpacing = -1,
         ssColor = { r = 140 / 255, g = 3 / 255, b = 252 / 255, a = 1 },
         ssPartialColor = { r = 83 / 255, g = 0, b = 150 / 255, a = 1 },
         ssBackgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
