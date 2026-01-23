@@ -47,7 +47,6 @@ holyPower.Create = function(self, frame)
                 return;
             end
             local hpCount = UnitPower('player', Enum.PowerType.HolyPower)
-            local i = 0
             for _, powerFrame in ipairs_reverse(frame.ActiveFrames) do
                 local value = powerFrame.index <= hpCount and 1 or 0
                 local isChanging = powerFrame.StatusBar:GetValue() ~= value
@@ -132,7 +131,7 @@ holyPower.GetOptions = function(self, displayID)
             label = 'Width',
             name = 'hpWidth',
             min = 1,
-            max = 1000,
+            max = 300,
             step = 1,
             width = 20,
             currentValue = function()
