@@ -37,6 +37,15 @@ core:AddOption({
             }
         },
         {
+            name = 'Absorbs',
+            id = 'absorbs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-absorbs'):GetOptions('focus')
+                end
+            }
+        },
+        {
             name = 'Power',
             id = 'power',
             options = {

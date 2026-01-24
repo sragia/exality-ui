@@ -107,7 +107,7 @@ core:AddOption({
             }
         },
         {
-            name = 'Health',
+            name = 'Health Text',
             id = 'health',
             options = {
                 function()
@@ -133,6 +133,15 @@ core:AddOption({
                 end,
                 function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('raid', 'healthperc')
+                end
+            }
+        },
+        {
+            name = 'Absorbs',
+            id = 'absorbs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-absorbs'):GetOptions('raid')
                 end
             }
         },

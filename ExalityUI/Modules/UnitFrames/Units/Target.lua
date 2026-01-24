@@ -146,6 +146,12 @@ target.Init = function(self)
         ['buffsDurationFont'] = 'DMSans',
         ['buffsDurationFontSize'] = 12,
         ['buffsDurationFontFlag'] = 'OUTLINE',
+        -- Absorbs
+        ['damageAbsorbEnable'] = true,
+        ['damageAbsorbShowOverIndicator'] = true,
+        ['damageAbsorbShowAt'] = 'AS_EXTENSION',
+        ['healAbsorbEnable'] = true,
+        ['healAbsorbShowOverIndicator'] = true,
     })
 end
 

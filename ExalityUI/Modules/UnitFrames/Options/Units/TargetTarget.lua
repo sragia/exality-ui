@@ -36,5 +36,14 @@ core:AddOption({
                 end
             }
         },
+        {
+            name = 'Absorbs',
+            id = 'absorbs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-absorbs'):GetOptions('targettarget')
+                end
+            }
+        },
     }
 })

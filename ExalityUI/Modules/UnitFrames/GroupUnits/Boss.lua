@@ -128,6 +128,12 @@ boss.Init = function(self)
         ['buffsDurationFont'] = 'DMSans',
         ['buffsDurationFontSize'] = 12,
         ['buffsDurationFontFlag'] = 'OUTLINE',
+        -- Absorbs
+        ['damageAbsorbEnable'] = true,
+        ['damageAbsorbShowOverIndicator'] = true,
+        ['damageAbsorbShowAt'] = 'AS_EXTENSION',
+        ['healAbsorbEnable'] = true,
+        ['healAbsorbShowOverIndicator'] = true,
     })
     self.container:SetPoint(
         core:GetValueForUnit('boss', 'positionAnchorPoint'),
@@ -160,6 +166,7 @@ boss.Create = function(self, frame)
     frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
     frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
+    frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
 
     frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
 end

@@ -31,6 +31,12 @@ targettarget.Init = function(self)
         ['nameTag'] = '[name]',
         ['nameXOffset'] = 0,
         ['nameYOffset'] = 0,
+        -- Absorbs
+        ['damageAbsorbEnable'] = true,
+        ['damageAbsorbShowOverIndicator'] = true,
+        ['damageAbsorbShowAt'] = 'AS_EXTENSION',
+        ['healAbsorbEnable'] = true,
+        ['healAbsorbShowOverIndicator'] = true,
     })
 end
 

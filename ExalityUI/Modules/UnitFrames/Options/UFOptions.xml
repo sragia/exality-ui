@@ -9,6 +9,7 @@
 	<Script file="Elements/GenericAuras.lua"/>
 	<Script file="Elements/GenericShowPreview.lua"/>
 	<Script file="Elements/PrivateAuras.lua"/>
+	<Script file="Elements/Absorbs.lua"/>
 
 	<Script file="GeneralOptions.lua"/>
 	<Script file="Units/Player.lua"/>

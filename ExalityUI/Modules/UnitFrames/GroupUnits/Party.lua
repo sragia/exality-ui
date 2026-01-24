@@ -159,6 +159,12 @@ party.Init = function(self)
         ['privateAurasRelativeAnchorPoint'] = 'CENTER',
         ['privateAurasXOff'] = 0,
         ['privateAurasYOff'] = 0,
+        -- Absorbs
+        ['damageAbsorbEnable'] = true,
+        ['damageAbsorbShowOverIndicator'] = true,
+        ['damageAbsorbShowAt'] = 'AS_EXTENSION',
+        ['healAbsorbEnable'] = true,
+        ['healAbsorbShowOverIndicator'] = true,
     })
 end
 

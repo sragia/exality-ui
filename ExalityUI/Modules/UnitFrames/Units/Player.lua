@@ -97,6 +97,12 @@ player.Init = function(self)
         ['castbarBackgroundBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
         ['castbarForegroundColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['castbarBarTexture'] = 'ExalityUI Status Bar',
+        -- Absorbs
+        ['damageAbsorbEnable'] = true,
+        ['damageAbsorbShowOverIndicator'] = true,
+        ['damageAbsorbShowAt'] = 'AS_EXTENSION',
+        ['healAbsorbEnable'] = true,
+        ['healAbsorbShowOverIndicator'] = true,
     })
 end
 

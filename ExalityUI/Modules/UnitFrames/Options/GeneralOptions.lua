@@ -39,7 +39,57 @@ core:AddOption({
                         ufCore:UpdateAllFrames()
                     end,
                     width = 50
-                }
+                },
+                {
+                    type = 'spacer',
+                    width = 50
+                },
+                {
+                    type = 'dropdown',
+                    name = 'damageAbsorbTexture',
+                    label = 'Damage Absorb Texture',
+                    getOptions = function()
+                        local list = LSM:List('statusbar')
+                        local options = {}
+                        for _, texture in pairs(list) do
+                            options[texture] = texture
+                        end
+                        return options
+                    end,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'damageAbsorbTexture')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'damageAbsorbTexture', value)
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 50
+                },
+                {
+                    type = 'spacer',
+                    width = 50
+                },
+                {
+                    type = 'dropdown',
+                    name = 'healAbsorbTexture',
+                    label = 'Heal Absorb Texture',
+                    getOptions = function()
+                        local list = LSM:List('statusbar')
+                        local options = {}
+                        for _, texture in pairs(list) do
+                            options[texture] = texture
+                        end
+                        return options
+                    end,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'healAbsorbTexture')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'healAbsorbTexture', value)
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 50
+                },
             }
         },
         {
