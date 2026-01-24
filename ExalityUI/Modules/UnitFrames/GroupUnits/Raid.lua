@@ -148,7 +148,7 @@ raid.Init = function(self)
         ['summonYOff'] = 0,
         ['summonScale'] = 1,
         -- Private Auras
-        ['privateAurasEnable'] = true,
+        ['privateAurasEnable'] = false,
         ['privateAurasMaxNum'] = 5,
         ['privateAurasIconWidth'] = 20,
         ['privateAurasIconHeight'] = 20,
