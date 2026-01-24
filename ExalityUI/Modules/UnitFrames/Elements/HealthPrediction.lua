@@ -115,7 +115,7 @@ healthPrediction.Update = function(self, frame)
 
     -- Damage Absorb
     if (dmgAbsorbEnable) then
-        HealthPrediction.damageAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.statusBarTexture))
+        HealthPrediction.damageAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.damageAbsorbTexture))
         HealthPrediction.damageAbsorb:SetWidth(db.sizeWidth)
         HealthPrediction.damageAbsorb:SetStatusBarColor(
             generalDB.damageAbsorbColor.r,
@@ -140,12 +140,14 @@ healthPrediction.Update = function(self, frame)
             HealthPrediction.damageAbsorbClampMode = Enum.UnitDamageAbsorbClampMode.MaximumHealth
         end
 
-        HealthPrediction.values:SetDamageAbsorbClampMode(HealthPrediction.damageAbsorbClampMode)
+        if (HealthPrediction.values) then
+            HealthPrediction.values:SetDamageAbsorbClampMode(HealthPrediction.damageAbsorbClampMode)
+        end
     end
 
     -- Heal Absorb
     if (healAbsorbEnable) then
-        HealthPrediction.healAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.statusBarTexture))
+        HealthPrediction.healAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.healAbsorbTexture))
         HealthPrediction.healAbsorb:SetWidth(db.sizeWidth)
         HealthPrediction.healAbsorb:SetStatusBarColor(
             generalDB.healAbsorbColor.r,

@@ -31,6 +31,7 @@ core:AddOption({
                         end
                         return options
                     end,
+                    isTextureDropdown = true,
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'statusBarTexture')
                     end,
@@ -56,6 +57,7 @@ core:AddOption({
                         end
                         return options
                     end,
+                    isTextureDropdown = true,
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'damageAbsorbTexture')
                     end,
@@ -81,6 +83,7 @@ core:AddOption({
                         end
                         return options
                     end,
+                    isTextureDropdown = true,
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'healAbsorbTexture')
                     end,
