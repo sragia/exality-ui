@@ -279,6 +279,10 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-summon-indicator'):Update(frame)
     end
 
+    if (frame.PrivateAuras) then
+        EXUI:GetModule('uf-element-private-auras'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
 end

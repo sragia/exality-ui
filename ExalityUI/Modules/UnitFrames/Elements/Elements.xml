@@ -17,4 +17,5 @@
 	<Script file="ReadyCheckIndicator.lua"/>
 	<Script file="RessurectIndicator.lua"/>
 	<Script file="SummonIndicator.lua"/>
+	<Script file="PrivateAuras.lua"/>
 </Ui>

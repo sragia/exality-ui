@@ -276,6 +276,18 @@ core:AddOption({
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('raid', 'summon')
                 end,
             }
+        },
+        {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('raid', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('raid')
+                end
+            }
         }
     }
 })

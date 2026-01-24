@@ -259,6 +259,18 @@ core:AddOption({
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('party', 'summon')
                 end,
             }
+        },
+        {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('party')
+                end
+            }
         }
     }
 })

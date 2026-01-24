@@ -147,6 +147,17 @@ raid.Init = function(self)
         ['summonXOff'] = 0,
         ['summonYOff'] = 0,
         ['summonScale'] = 1,
+        -- Private Auras
+        ['privateAurasEnable'] = true,
+        ['privateAurasMaxNum'] = 5,
+        ['privateAurasIconWidth'] = 20,
+        ['privateAurasIconHeight'] = 20,
+        ['privateAurasSpacing'] = 1,
+        ['privateAurasGrowthX'] = 'LEFT',
+        ['privateAurasAnchorPoint'] = 'CENTER',
+        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
+        ['privateAurasXOff'] = 0,
+        ['privateAurasYOff'] = 0,
     })
 
     self:DisableBlizzard()
@@ -220,6 +231,7 @@ raid.Create = function(self, frame, unit)
     frame.ReadyCheckIndicator = EXUI:GetModule('uf-element-ready-check-indicator'):Create(frame)
     frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
+    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
 
     frame.Update = function(self) raid:Update(self) end
 

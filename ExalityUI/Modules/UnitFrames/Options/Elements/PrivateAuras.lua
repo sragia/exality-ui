@@ -1,0 +1,179 @@
+---@class ExalityUI
+local EXUI = select(2, ...)
+
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
+
+---@class EXUIUnitFramesOptionsPrivateAuras
+local privateAuras = EXUI:GetModule('uf-options-private-auras')
+
+privateAuras.GetOptions = function(self, unit)
+    return {
+        {
+            type = 'title',
+            width = 100,
+            label = 'Aura Configuration',
+        },
+        {
+            type = 'range',
+            label = 'Maximum Auras',
+            name = 'privateAurasMaxNum',
+            min = 1,
+            max = 10,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasMaxNum')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasMaxNum', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'spacer',
+            width = 80
+        },
+        {
+            type = 'range',
+            label = 'Icon Width',
+            name = 'privateAurasIconWidth',
+            min = 1,
+            max = 100,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasIconWidth')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasIconWidth', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'range',
+            label = 'Icon Height',
+            name = 'privateAurasIconHeight',
+            min = 1,
+            max = 100,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasIconHeight')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasIconHeight', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
+            type = 'range',
+            label = 'Spacing',
+            name = 'privateAurasSpacing',
+            min = 0,
+            max = 100,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasSpacing')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasSpacing', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'dropdown',
+            label = 'Growth Direction',
+            name = 'privateAurasGrowthX',
+            getOptions = function()
+                return {
+                    ['RIGHT'] = 'Right',
+                    ['LEFT'] = 'Left',
+                }
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasGrowthX')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasGrowthX', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'title',
+            width = 100,
+            label = 'Position',
+            size = 18
+        },
+        {
+            type = 'dropdown',
+            label = 'Anchor Point',
+            name = 'privateAurasAnchorPoint',
+            getOptions = function()
+                return EXUI.const.anchorPoints
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasAnchorPoint')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasAnchorPoint', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 22
+        },
+        {
+            type = 'dropdown',
+            label = 'Relative Anchor Point',
+            name = 'privateAurasRelativeAnchorPoint',
+            getOptions = function()
+                return EXUI.const.anchorPoints
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasRelativeAnchorPoint')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasRelativeAnchorPoint', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 22
+        },
+        {
+            type = 'range',
+            label = 'X Offset',
+            name = 'privateAurasXOff',
+            min = -1000,
+            max = 1000,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasXOff')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasXOff', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'range',
+            label = 'Y Offset',
+            name = 'privateAurasYOff',
+            min = -1000,
+            max = 1000,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasYOff')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasYOff', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        }
+    }
+end

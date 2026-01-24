@@ -5,13 +5,11 @@ local EXUI = select(2, ...)
 local pixelPerfect = EXUI:GetModule('pixel-perfect')
 
 pixelPerfect.UIScale = 1
-pixelPerfect.Mult = 1
 
 pixelPerfect.Initialize = function(self)
     local _, screenHeight = GetPhysicalScreenSize()
     local perfect = 768 / screenHeight
     self.UIScale = UIParent:GetScale()
-    self.Mult = perfect / self.UIScale
 end
 
 EXUI.ScalePixel = function(self, value)
