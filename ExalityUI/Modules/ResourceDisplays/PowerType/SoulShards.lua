@@ -9,6 +9,8 @@ local soulShards = EXUI:GetModule('resource-displays-soul-shards')
 ---@class EXUIResourceDisplaysCore
 local RDCore = EXUI:GetModule('resource-displays-core')
 
+local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+
 soulShards.CreateSinglePower = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
@@ -104,6 +106,7 @@ soulShards.Update = function(frame)
         powerFrame:Show()
         EXUI:SetSize(powerFrame, db.ssWidth, db.ssHeight)
         powerFrame.StatusBar:SetStatusBarColor(db.ssColor.r, db.ssColor.g, db.ssColor.b, db.ssColor.a)
+        powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.ssBarTexture))
         powerFrame:SetBackdropColor(db.ssBackgroundColor.r, db.ssBackgroundColor.g, db.ssBackgroundColor.b,
             db.ssBackgroundColor.a)
         powerFrame:SetBackdropBorderColor(db.ssBorderColor.r, db.ssBorderColor.g, db.ssBorderColor.b, db.ssBorderColor.a)
@@ -189,6 +192,36 @@ soulShards.GetOptions = function(self, displayID)
             end
         },
         {
+            type = 'spacer',
+            width = 40
+        },
+        {
+            type = 'dropdown',
+            label = 'Bar Texture',
+            name = 'ssBarTexture',
+            getOptions = function()
+                local list = LSM:List('statusbar')
+                local options = {}
+                for _, texture in pairs(list) do
+                    options[texture] = texture
+                end
+                return options
+            end,
+            isTextureDropdown = true,
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, 'ssBarTexture')
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, 'ssBarTexture', value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 40
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
             type = 'color-picker',
             label = 'Color (Full)',
             name = 'ssColor',
@@ -214,10 +247,6 @@ soulShards.GetOptions = function(self, displayID)
                 RDCore:RefreshDisplayByID(displayID)
             end,
             width = 16
-        },
-        {
-            type = 'spacer',
-            width = 24
         },
         {
             type = 'color-picker',
@@ -283,6 +312,7 @@ soulShards.UpdateDefault = function(self, displayID)
         font = 'DMSans',
         fontSize = 12,
         fontFlag = 'OUTLINE',
+        ssBarTexture = 'ExalityUI Status Bar'
     })
 end
 

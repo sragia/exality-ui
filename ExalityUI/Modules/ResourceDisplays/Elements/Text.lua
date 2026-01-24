@@ -72,6 +72,7 @@ textElement.GetOptions = function(self, displayID)
                 end
                 return options
             end,
+            isFontDropdown = true,
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'font')
             end,

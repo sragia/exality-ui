@@ -115,6 +115,7 @@ runes.Update = function(frame)
         frame.RuneColor = db.runeColor
         frame.RuneOnCDColor = db.runeOnCDColor
         EXUI:SetSize(runeFrame, db.runeWidth, db.runeHeight)
+        runeFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.runeBarTexture))
         runeFrame.StatusBar:SetStatusBarColor(db.runeColor.r, db.runeColor.g, db.runeColor.b, db.runeColor.a)
         runeFrame:SetBackdropColor(db.runeBackgroundColor.r, db.runeBackgroundColor.g, db.runeBackgroundColor.b,
             db.runeBackgroundColor.a)
@@ -211,6 +212,36 @@ runes.GetOptions = function(self, displayID)
             end
         },
         {
+            type = 'spacer',
+            width = 40
+        },
+        {
+            type = 'dropdown',
+            label = 'Bar Texture',
+            name = 'runeBarTexture',
+            getOptions = function()
+                local list = LSM:List('statusbar')
+                local options = {}
+                for _, texture in pairs(list) do
+                    options[texture] = texture
+                end
+                return options
+            end,
+            isTextureDropdown = true,
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, 'runeBarTexture')
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, 'runeBarTexture', value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 40
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
             type = 'color-picker',
             label = 'Color',
             name = 'runeColor',
@@ -235,10 +266,6 @@ runes.GetOptions = function(self, displayID)
                 RDCore:RefreshDisplayByID(displayID)
             end,
             width = 16
-        },
-        {
-            type = 'spacer',
-            width = 12
         },
         {
             type = 'color-picker',
@@ -468,6 +495,7 @@ runes.UpdateDefault = function(self, displayID)
         runeTextYOff = 0,
         runeTextColor = { r = 1, g = 1, b = 1, a = 1 },
         runeShowText = false,
+        runeBarTexture = 'ExalityUI Status Bar'
     })
 end
 

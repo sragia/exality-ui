@@ -54,6 +54,7 @@ statusBar.GetOptions = function(self, displayID)
                 end
                 return options
             end,
+            isTextureDropdown = true,
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'barTexture')
             end,

@@ -9,6 +9,8 @@ local holyPower = EXUI:GetModule('resource-displays-holy-power')
 ---@class EXUIResourceDisplaysCore
 local RDCore = EXUI:GetModule('resource-displays-core')
 
+local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+
 holyPower.CreateSinglePower = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
@@ -90,6 +92,7 @@ holyPower.Update = function(frame)
         powerFrame:Show()
         EXUI:SetSize(powerFrame, db.hpWidth, db.hpHeight)
         powerFrame.StatusBar:SetStatusBarColor(db.hpColor.r, db.hpColor.g, db.hpColor.b, db.hpColor.a)
+        powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.hpBarTexture))
         powerFrame:SetBackdropColor(db.hpBackgroundColor.r, db.hpBackgroundColor.g, db.hpBackgroundColor.b,
             db.hpBackgroundColor.a)
         powerFrame:SetBackdropBorderColor(db.hpBorderColor.r, db.hpBorderColor.g, db.hpBorderColor.b, db.hpBorderColor.a)
@@ -175,6 +178,36 @@ holyPower.GetOptions = function(self, displayID)
             end
         },
         {
+            type = 'spacer',
+            width = 40
+        },
+        {
+            type = 'dropdown',
+            label = 'Bar Texture',
+            name = 'hpBarTexture',
+            getOptions = function()
+                local list = LSM:List('statusbar')
+                local options = {}
+                for _, texture in pairs(list) do
+                    options[texture] = texture
+                end
+                return options
+            end,
+            isTextureDropdown = true,
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, 'hpBarTexture')
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, 'hpBarTexture', value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 40
+        },
+        {
+            type = 'spacer',
+            width = 60
+        },
+        {
             type = 'color-picker',
             label = 'Color',
             name = 'hpColor',
@@ -185,11 +218,7 @@ holyPower.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'hpColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
-        },
-        {
-            type = 'spacer',
-            width = 24
+            width = 10
         },
         {
             type = 'color-picker',
@@ -243,7 +272,8 @@ holyPower.UpdateDefault = function(self, displayID)
         hpColor = { r = 1, g = 204 / 255, b = 0, a = 1 },
         hpBackgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
         hpBorderColor = { r = 0, g = 0, b = 0, a = 1 },
-        fillAnimation = false
+        fillAnimation = false,
+        hpBarTexture = 'ExalityUI Status Bar'
     })
 end
 
