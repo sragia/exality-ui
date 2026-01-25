@@ -1,0 +1,70 @@
+name: Bug report
+description: Report something that isn't working correctly
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill out the sections below.
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      description: A clear description of what the bug is.
+      placeholder: What goes wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Do '...'
+        3. See error
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+    validations:
+      required: false
+  - type: dropdown
+    id: wow-version
+    attributes:
+      label: WoW version
+      description: Which game client?
+      options:
+        - Retail
+        - Classic (SoD / Era)
+        - Wrath Classic
+        - Cataclysm Classic
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: exality-version
+    attributes:
+      label: ExalityUI version
+      description: Addon version if known.
+      placeholder: e.g. 1.0.0
+    validations:
+      required: false
+  - type: textarea
+    id: other-addons
+    attributes:
+      label: Other addons
+      description: List any that might interact, or "none".
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, error messages from ChatFrame, or anything else that helps.
+    validations:
+      required: false

@@ -1,0 +1,22 @@
+name: Other
+description: General question, discussion, or something else
+title: "[Other]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for questions, discussions, or anything that doesn't fit bug reports or feature requests.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe your issue or question.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other details that might help.
+    validations:
+      required: false
