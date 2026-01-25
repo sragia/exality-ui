@@ -472,6 +472,10 @@ core.RefreshAllFrames = function(self)
     end
 end
 
+EXUI:RegisterEventHandler({ 'PLAYER_SPECIALIZATION_CHANGED' }, 'resource-displays-core', function(event)
+    core:RefreshAllFrames()
+end)
+
 core.UpdateFrame = function(self, frame)
     if (frame.StatusBar) then
         EXUI:GetModule('resource-displays-elements-status-bar'):Update(frame)

@@ -46,7 +46,9 @@ chi.Create = function(self, frame)
         if ((unit == 'player' and powerType == 'CHI') or event == 'TRAIT_CONFIG_UPDATED') then
             local maxChi = UnitPowerMax('player', Enum.PowerType.Chi)
             if (maxChi ~= #self.ActiveFrames) then
-                self:Update()
+                if (self.Update) then
+                    self:Update()
+                end
                 return;
             end
             local chiCount = UnitPower('player', Enum.PowerType.Chi)
@@ -122,7 +124,11 @@ end
 chi.IsActive = function(self, frame)
     local db = frame.db
     local enabled = db.enable
-    return enabled and UnitPowerMax('player', Enum.PowerType.Chi) > 0
+
+    local specIndex = C_SpecializationInfo.GetSpecialization()
+    local specId = C_SpecializationInfo.GetSpecializationInfo(specIndex)
+    local isWW = specId == 269
+    return enabled and UnitPowerMax('player', Enum.PowerType.Chi) > 0 and isWW
 end
 
 chi.GetOptions = function(self, displayID)
