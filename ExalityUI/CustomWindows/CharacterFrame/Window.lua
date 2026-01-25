@@ -230,6 +230,13 @@ characterFrame.Create = function(self)
 
     local container = window.container
 
+    window:SetScript('OnKeyDown', function(self, key)
+        if (key == 'ESCAPE') then
+            self:HideWindow()
+            return
+        end
+    end)
+    window:SetPropagateKeyboardInput(true)
     -- Header --
     local headerFrame = CreateFrame('Frame', nil, container)
     headerFrame:SetHeight(30)
@@ -330,8 +337,6 @@ characterFrame.Create = function(self)
             StopRotation(self)
         end
     end)
-
-
 
     local rightSlots = CreateFrame('Frame', nil, container)
     rightSlots:SetSize(38, 350)
