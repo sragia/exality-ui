@@ -82,6 +82,7 @@ local function ShowTooltip(self)
             WrapTextInColorCode(string.format('%s', friend.bnetName), 'FF0085FA')
         if (friend.game == 'WoW' and friend.class) then
             friendName = C_ClassColor.GetClassColor(toClassFileName(friend.class)):WrapTextInColorCode(friendName)
+            friendName = string.format('%s |cFF0085FA(%s)|r', friendName, friend.bnetName)
         end
 
         if (friend.wowProjectID and PROJECT_NAMES[friend.wowProjectID]) then
@@ -98,8 +99,6 @@ local function ShowTooltip(self)
             friend.zone
         )
     end
-
-
 
     -- Anchor And Show
     anchorFrame = self
