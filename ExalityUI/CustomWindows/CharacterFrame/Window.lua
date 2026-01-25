@@ -230,13 +230,6 @@ characterFrame.Create = function(self)
 
     local container = window.container
 
-    window:SetScript('OnKeyDown', function(self, key)
-        if (key == 'ESCAPE') then
-            self:HideWindow()
-            return
-        end
-    end)
-    window:SetPropagateKeyboardInput(true)
     -- Header --
     local headerFrame = CreateFrame('Frame', nil, container)
     headerFrame:SetHeight(30)
