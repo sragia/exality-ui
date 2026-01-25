@@ -346,9 +346,10 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
         local textureName = GetInventoryItemTexture('player', self:GetID())
         local hasItem = textureName ~= nil
         if (hasItem) then
+            local itemLocation = ItemLocation:CreateFromEquipmentSlot(self:GetID());
             local itemLink = GetInventoryItemLink("player", self:GetID())
             self.Icon:SetTexture(textureName)
-            local ilvl = C_Item.GetDetailedItemLevelInfo(itemLink)
+            local ilvl = C_Item.GetCurrentItemLevel(itemLocation)
             local color, border = equipmentSlot:GetItemColorAndBorder(ilvl)
             self.ItemLevel:SetText(WrapTextInColorCode(ilvl, color))
             self.Border:SetTexture(border)
