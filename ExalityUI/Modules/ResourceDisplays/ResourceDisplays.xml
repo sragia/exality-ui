@@ -9,6 +9,7 @@
 	<Script file="PowerType/ComboPoints.lua"/>
 	<Script file="PowerType/Runes.lua"/>
 	<Script file="PowerType/SoulShards.lua"/>
+	<Script file="PowerType/Chi.lua"/>
 
 	<!-- Elements Modules -->
 	<Script file="Elements/StatusBar.lua"/>
