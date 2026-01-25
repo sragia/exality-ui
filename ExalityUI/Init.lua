@@ -49,6 +49,9 @@ EXUI.const = {
                 inactive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/tabs/inactive.png]],
             },
             solidBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/white.png]],
+            icons = {
+                info = [[Interface/Addons/ExalityUI/Assets/Images/Frames/info_icon.png]],
+            }
         },
         paperDoll = {
             charBg = [[Interface/Addons/ExalityUI/Assets/Images/PaperDoll/charBg.png]],

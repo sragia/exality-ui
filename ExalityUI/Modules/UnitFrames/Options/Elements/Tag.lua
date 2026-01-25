@@ -29,8 +29,24 @@ tag.GetOptions = function(self, unit, prefix)
             width = 25
         },
         {
+            type = 'button',
+            icon = {
+                file = EXUI.const.textures.frame.icons.info,
+                width = 16,
+                height = 16,
+            },
+            onClick = function()
+                EXUI:GetModule('uf-options-tags-info'):Show()
+            end,
+            tooltip = {
+                text = 'Available tags'
+            },
+            color = { 3 / 255, 140 / 255, 252 / 255, 1 },
+            width = 8
+        },
+        {
             type = 'spacer',
-            width = 75
+            width = 67
         }
     }
 end
