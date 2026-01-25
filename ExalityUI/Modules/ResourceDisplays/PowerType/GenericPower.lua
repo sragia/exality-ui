@@ -26,11 +26,12 @@ genericPower.Create = function(self, frame)
 
     frame:RegisterUnitEvent('UNIT_POWER_FREQUENT', 'player')
     frame:RegisterEvent('PLAYER_ENTERING_WORLD')
+    frame:RegisterEvent('TRAIT_CONFIG_UPDATED')
     frame.OnChange = function(self, event)
         if (self.powerType == '') then
             self.powerType = nil
         end
-        if (event == 'UNIT_POWER_FREQUENT') then
+        if (event == 'UNIT_POWER_FREQUENT' or event == 'TRAIT_CONFIG_UPDATED') then
             local power = UnitPower('player', self.powerType)
             self.StatusBar:SetValue(power, Enum.StatusBarInterpolation.ExponentialEaseOut)
             self.StatusBar:SetMinMaxValues(0, UnitPowerMax('player', self.powerType))

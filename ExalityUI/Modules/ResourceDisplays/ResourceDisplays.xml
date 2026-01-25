@@ -6,6 +6,7 @@
 	<Script file="PowerType/GenericPower.lua"/>
 	<Script file="PowerType/Stagger.lua"/>
 	<Script file="PowerType/HolyPower.lua"/>
+	<Script file="PowerType/ComboPoints.lua"/>
 	<Script file="PowerType/Runes.lua"/>
 	<Script file="PowerType/SoulShards.lua"/>
 

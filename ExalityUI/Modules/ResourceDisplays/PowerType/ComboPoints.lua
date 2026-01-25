@@ -4,14 +4,14 @@ local EXUI = select(2, ...)
 ---@class EXUIResourceDisplaysCore
 local core = EXUI:GetModule('resource-displays-core')
 
-local holyPower = EXUI:GetModule('resource-displays-holy-power')
+local comboPoints = EXUI:GetModule('resource-displays-combo-points')
 
 ---@class EXUIResourceDisplaysCore
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
-holyPower.CreateSinglePower = function(self, parent)
+comboPoints.CreateSinglePower = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
 
@@ -32,26 +32,26 @@ holyPower.CreateSinglePower = function(self, parent)
     return frame
 end
 
-holyPower.Create = function(self, frame)
-    frame.IsActive = function(self) return holyPower:IsActive(self) end
+comboPoints.Create = function(self, frame)
+    frame.IsActive = function(self) return comboPoints:IsActive(self) end
 
-    frame.HolyPowerFrames = {}
+    frame.ComboPointsFrames = {}
     frame.ActiveFrames = {}
 
     frame:RegisterUnitEvent('UNIT_POWER_UPDATE', 'player')
-    frame:RegisterEvent('PLAYER_ENTERING_WORLD')
     frame:RegisterEvent('TRAIT_CONFIG_UPDATED')
+    frame:RegisterEvent('PLAYER_ENTERING_WORLD')
 
     frame.OnEvent = function(self, event, unit, powerType)
-        if ((unit == 'player' and powerType == 'HOLY_POWER') or event == 'TRAIT_CONFIG_UPDATED') then
-            local maxHolyPower = UnitPowerMax('player', Enum.PowerType.HolyPower)
-            if (maxHolyPower ~= #self.ActiveFrames) then
+        if ((unit == 'player' and powerType == 'COMBO_POINTS') or event == 'TRAIT_CONFIG_UPDATED') then
+            local maxComboPoints = UnitPowerMax('player', Enum.PowerType.ComboPoints)
+            if (maxComboPoints ~= #self.ActiveFrames) then
                 self:Update()
                 return;
             end
-            local hpCount = UnitPower('player', Enum.PowerType.HolyPower)
+            local comboPointsCount = UnitPower('player', Enum.PowerType.ComboPoints)
             for _, powerFrame in ipairs_reverse(frame.ActiveFrames) do
-                local value = powerFrame.index <= hpCount and 1 or 0
+                local value = powerFrame.index <= comboPointsCount and 1 or 0
                 local isChanging = powerFrame.StatusBar:GetValue() ~= value
                 if (isChanging) then
                     powerFrame.StatusBar:SetValue(value,
@@ -72,31 +72,34 @@ holyPower.Create = function(self, frame)
     end)
 end
 
-holyPower.Update = function(frame)
-    local maxHolyPower = UnitPowerMax('player', Enum.PowerType.HolyPower)
+comboPoints.Update = function(frame)
+    local maxComboPoints = UnitPowerMax('player', Enum.PowerType.ComboPoints)
     local db = frame.db
 
-    for _, holyPowerFrame in pairs(frame.HolyPowerFrames) do
-        holyPowerFrame:Hide()
+    for _, comboPointsFrame in pairs(frame.ComboPointsFrames) do
+        comboPointsFrame:Hide()
     end
 
     wipe(frame.ActiveFrames)
-    for i = 1, maxHolyPower do
-        local powerFrame = frame.HolyPowerFrames[i]
+    for i = 1, maxComboPoints do
+        local powerFrame = frame.ComboPointsFrames[i]
         -- Create frames
         if (not powerFrame) then
-            powerFrame = holyPower:CreateSinglePower(frame)
-            frame.HolyPowerFrames[i] = powerFrame
+            powerFrame = comboPoints:CreateSinglePower(frame)
+            frame.ComboPointsFrames[i] = powerFrame
         end
         powerFrame.index = i
         table.insert(frame.ActiveFrames, powerFrame)
         powerFrame:Show()
-        EXUI:SetSize(powerFrame, db.hpWidth, db.hpHeight)
-        powerFrame.StatusBar:SetStatusBarColor(db.hpColor.r, db.hpColor.g, db.hpColor.b, db.hpColor.a)
-        powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.hpBarTexture))
-        powerFrame:SetBackdropColor(db.hpBackgroundColor.r, db.hpBackgroundColor.g, db.hpBackgroundColor.b,
-            db.hpBackgroundColor.a)
-        powerFrame:SetBackdropBorderColor(db.hpBorderColor.r, db.hpBorderColor.g, db.hpBorderColor.b, db.hpBorderColor.a)
+        EXUI:SetSize(powerFrame, db.comboPointsWidth, db.comboPointsHeight)
+        powerFrame.StatusBar:SetStatusBarColor(db.comboPointsColor.r, db.comboPointsColor.g, db.comboPointsColor.b,
+            db.comboPointsColor.a)
+        powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.comboPointsBarTexture))
+        powerFrame:SetBackdropColor(db.comboPointsBackgroundColor.r, db.comboPointsBackgroundColor.g,
+            db.comboPointsBackgroundColor.b,
+            db.comboPointsBackgroundColor.a)
+        powerFrame:SetBackdropBorderColor(db.comboPointsBorderColor.r, db.comboPointsBorderColor.g,
+            db.comboPointsBorderColor.b, db.comboPointsBorderColor.a)
         powerFrame.FillAnimation = db.fillAnimation
     end
 
@@ -104,77 +107,77 @@ holyPower.Update = function(frame)
     for _, activeFrame in ipairs(frame.ActiveFrames) do
         activeFrame:ClearAllPoints()
         if (prev) then
-            EXUI:SetPoint(activeFrame, 'LEFT', prev, 'RIGHT', db.hpSpacing, 0)
+            EXUI:SetPoint(activeFrame, 'LEFT', prev, 'RIGHT', db.comboPointsSpacing, 0)
         else
             EXUI:SetPoint(activeFrame, 'LEFT', frame, 'LEFT', 0, 0)
         end
         prev = activeFrame
     end
 
-    frame:SetSize(db.hpWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.hpHeight)
+    frame:SetSize(db.comboPointsWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.comboPointsHeight)
 
-    frame:OnEvent('UNIT_POWER_UPDATE', 'player', 'HOLY_POWER') -- Trigger Update
+    frame:OnEvent('UNIT_POWER_UPDATE', 'player', 'COMBO_POINTS') -- Trigger Update
 end
 
-holyPower.IsActive = function(self, frame)
+comboPoints.IsActive = function(self, frame)
     local db = frame.db
     local enabled = db.enable
-    return enabled and UnitPowerMax('player', Enum.PowerType.HolyPower) > 0
+    return enabled and UnitPowerMax('player', Enum.PowerType.ComboPoints) > 0
 end
 
-holyPower.GetOptions = function(self, displayID)
+comboPoints.GetOptions = function(self, displayID)
     local options = {
         {
             type = 'title',
             size = 14,
             width = 100,
-            label = 'Holy Power'
+            label = 'Combo Points'
         },
         {
             type = 'range',
             label = 'Width',
-            name = 'hpWidth',
+            name = 'comboPointsWidth',
             min = 1,
             max = 300,
             step = 1,
             width = 20,
             currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpWidth')
+                return RDCore:GetValueForDisplay(displayID, 'comboPointsWidth')
             end,
             onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpWidth', value)
+                RDCore:UpdateValueForDisplay(displayID, 'comboPointsWidth', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
         },
         {
             type = 'range',
             label = 'Height',
-            name = 'hpHeight',
+            name = 'comboPointsHeight',
             min = 1,
             max = 100,
             step = 1,
             width = 20,
             currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpHeight')
+                return RDCore:GetValueForDisplay(displayID, 'comboPointsHeight')
             end,
             onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpHeight', value)
+                RDCore:UpdateValueForDisplay(displayID, 'comboPointsHeight', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
         },
         {
             type = 'range',
             label = 'Spacing',
-            name = 'hpSpacing',
+            name = 'comboPointsSpacing',
             min = -3,
             max = 100,
             step = 1,
             width = 20,
             currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpSpacing')
+                return RDCore:GetValueForDisplay(displayID, 'comboPointsSpacing')
             end,
             onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpSpacing', value)
+                RDCore:UpdateValueForDisplay(displayID, 'comboPointsSpacing', value)
                 RDCore:RefreshDisplayByID(displayID)
             end
         },
@@ -185,7 +188,7 @@ holyPower.GetOptions = function(self, displayID)
         {
             type = 'dropdown',
             label = 'Bar Texture',
-            name = 'hpBarTexture',
+            name = 'comboPointsBarTexture',
             getOptions = function()
                 local list = LSM:List('statusbar')
                 local options = {}
@@ -196,10 +199,10 @@ holyPower.GetOptions = function(self, displayID)
             end,
             isTextureDropdown = true,
             currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpBarTexture')
+                return RDCore:GetValueForDisplay(displayID, 'comboPointsBarTexture')
             end,
             onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpBarTexture', value)
+                RDCore:UpdateValueForDisplay(displayID, 'comboPointsBarTexture', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
             width = 40
@@ -211,12 +214,12 @@ holyPower.GetOptions = function(self, displayID)
         {
             type = 'color-picker',
             label = 'Color',
-            name = 'hpColor',
+            name = 'comboPointsColor',
             currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpColor')
+                return RDCore:GetValueForDisplay(displayID, 'comboPointsColor')
             end,
             onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpColor', value)
+                RDCore:UpdateValueForDisplay(displayID, 'comboPointsColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
             width = 10
@@ -224,12 +227,12 @@ holyPower.GetOptions = function(self, displayID)
         {
             type = 'color-picker',
             label = 'Background Color',
-            name = 'hpBackgroundColor',
+            name = 'comboPointsBackgroundColor',
             currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpBackgroundColor')
+                return RDCore:GetValueForDisplay(displayID, 'comboPointsBackgroundColor')
             end,
             onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpBackgroundColor', value)
+                RDCore:UpdateValueForDisplay(displayID, 'comboPointsBackgroundColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
             width = 16
@@ -237,12 +240,12 @@ holyPower.GetOptions = function(self, displayID)
         {
             type = 'color-picker',
             label = 'Border Color',
-            name = 'hpBorderColor',
+            name = 'comboPointsBorderColor',
             currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpBorderColor')
+                return RDCore:GetValueForDisplay(displayID, 'comboPointsBorderColor')
             end,
             onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpBorderColor', value)
+                RDCore:UpdateValueForDisplay(displayID, 'comboPointsBorderColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
             width = 16
@@ -265,21 +268,21 @@ holyPower.GetOptions = function(self, displayID)
     return options
 end
 
-holyPower.UpdateDefault = function(self, displayID)
+comboPoints.UpdateDefault = function(self, displayID)
     core:UpdateDefaultValuesForDisplay(displayID, {
-        hpWidth = 30,
-        hpHeight = 16,
-        hpSpacing = 2,
-        hpColor = { r = 1, g = 204 / 255, b = 0, a = 1 },
-        hpBackgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
-        hpBorderColor = { r = 0, g = 0, b = 0, a = 1 },
+        comboPointsWidth = 30,
+        comboPointsHeight = 16,
+        comboPointsSpacing = 2,
+        comboPointsColor = { r = 1, g = 204 / 255, b = 0, a = 1 },
+        comboPointsBackgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
+        comboPointsBorderColor = { r = 0, g = 0, b = 0, a = 1 },
         fillAnimation = false,
-        hpBarTexture = 'ExalityUI Status Bar'
+        comboPointsBarTexture = 'ExalityUI Status Bar'
     })
 end
 
 core:RegisterPowerType({
-    name = 'Holy Power',
-    control = holyPower,
+    name = 'Combo Points',
+    control = comboPoints,
     selfControlledSize = true
 })

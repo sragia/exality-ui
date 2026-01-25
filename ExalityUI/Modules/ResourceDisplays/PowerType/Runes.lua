@@ -61,6 +61,7 @@ runes.Create = function(self, frame)
     frame.ActiveFrames = {}
 
     frame:RegisterEvent('RUNE_POWER_UPDATE')
+    frame:RegisterEvent('TRAIT_CONFIG_UPDATED')
 
     frame.OnEvent = function(self)
         for runeIndex = 1, 6 do

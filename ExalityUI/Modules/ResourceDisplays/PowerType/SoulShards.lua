@@ -40,11 +40,12 @@ soulShards.Create = function(self, frame)
 
     frame:RegisterUnitEvent('UNIT_POWER_UPDATE', 'player')
     frame:RegisterEvent('PLAYER_ENTERING_WORLD')
+    frame:RegisterEvent('TRAIT_CONFIG_UPDATED')
 
     frame.Text = EXUI:GetModule('resource-displays-elements-text'):Create(frame)
 
     frame.OnEvent = function(self, event, unit, powerType)
-        if (unit == 'player' and powerType == 'SOUL_SHARDS') then
+        if ((unit == 'player' and powerType == 'SOUL_SHARDS') or event == 'TRAIT_CONFIG_UPDATED') then
             local maxSoulShards = UnitPowerMax('player', Enum.PowerType.SoulShards, true)
             if (maxSoulShards / 10 ~= #self.ActiveFrames) then
                 self:Update()
