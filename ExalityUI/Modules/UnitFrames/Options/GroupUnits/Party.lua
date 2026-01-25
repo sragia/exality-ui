@@ -147,6 +147,18 @@ core:AddOption({
             }
         },
         {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('party')
+                end
+            }
+        },
+        {
             name = 'Marker Icon',
             id = 'markericon',
             options = {
@@ -270,16 +282,31 @@ core:AddOption({
             }
         },
         {
-            name = 'Private Auras',
-            id = 'privateauras',
+            name = 'Phase Indicator',
+            id = 'phaseindicator',
             options = {
                 function()
-                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'privateAuras')
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'phaseIndicator')
                 end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'phaseIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'phaseIndicatorScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'phaseIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                },
                 function()
-                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('party')
-                end
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('party', 'phaseIndicator')
+                end,
             }
-        }
+        },
     }
 })

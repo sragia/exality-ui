@@ -28,11 +28,56 @@ core:AddOption({
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'name')
                 end,
+                {
+                    type = 'range',
+                    label = 'Name Max Width %',
+                    name = 'nameMaxWidth',
+                    min = 0,
+                    max = 100,
+                    step = 1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('focus', 'nameMaxWidth')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('focus', 'nameMaxWidth', value)
+                        ufCore:UpdateFrameForUnit('focus')
+                    end,
+                },
                 function()
                     return EXUI:GetModule('uf-options-generic-text'):GetOptions('focus', 'name')
                 end,
                 function()
                     return EXUI:GetModule('uf-options-tag'):GetOptions('focus', 'name')
+                end
+            }
+        },
+        {
+            name = 'Health Text',
+            id = 'health',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'health')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-generic-text'):GetOptions('focus', 'health')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-tag'):GetOptions('focus', 'health')
+                end
+            }
+        },
+        {
+            name = 'Health %',
+            id = 'healthperc',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'healthperc')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-generic-text'):GetOptions('focus', 'healthperc')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-tag'):GetOptions('focus', 'healthperc')
                 end
             }
         },
@@ -68,6 +113,36 @@ core:AddOption({
             },
         },
         {
+            name = 'Buffs',
+            id = 'buffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('focus', 'buffs', true)
+                end
+            }
+        },
+        {
+            name = 'Debuffs',
+            id = 'debuffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('focus', 'debuffs', false)
+                end
+            }
+        },
+        {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('focus')
+                end
+            }
+        },
+        {
             name = 'Marker Icon',
             id = 'markericon',
             options = {
@@ -94,22 +169,128 @@ core:AddOption({
                 end,
             }
         },
+
         {
-            name = 'Buffs',
-            id = 'buffs',
+            name = 'Raid Role Icons',
+            id = 'raidroles',
             options = {
                 function()
-                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('focus', 'buffs', true)
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'raidRoles')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'raidRolesScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('focus', 'raidRolesScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('focus', 'raidRolesScale', value)
+                        ufCore:UpdateFrameForUnit('focus')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('focus', 'raidRoles')
+                end,
+            }
+        },
+        {
+            name = 'Offline Text',
+            id = 'offline',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'offline')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-generic-text'):GetOptions('focus', 'offline')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-tag'):GetOptions('focus', 'offline')
                 end
             }
         },
         {
-            name = 'Debuffs',
-            id = 'debuffs',
+            name = 'Resurrect Indicator',
+            id = 'resurrectindicator',
             options = {
                 function()
-                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('focus', 'debuffs', false)
-                end
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'ressurect')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'ressurectScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('focus', 'ressurectScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('focus', 'ressurectScale', value)
+                        ufCore:UpdateFrameForUnit('focus')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('focus', 'ressurect')
+                end,
+            }
+        },
+        {
+            name = 'Summon Indicator',
+            id = 'summonindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'summon')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'summonScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('focus', 'summonScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('focus', 'summonScale', value)
+                        ufCore:UpdateFrameForUnit('focus')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('focus', 'summon')
+                end,
+            }
+        },
+        {
+            name = 'Phase Indicator',
+            id = 'phaseindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('focus', 'phaseIndicator')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'phaseIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('focus', 'phaseIndicatorScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('focus', 'phaseIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('focus')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('focus', 'phaseIndicator')
+                end,
             }
         },
     }

@@ -103,6 +103,68 @@ player.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Debuffs
+        ['debuffsEnable'] = false,
+        ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['debuffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['debuffsXOff'] = 0,
+        ['debuffsYOff'] = 2,
+        ['debuffsIconWidth'] = 20,
+        ['debuffsIconHeight'] = 20,
+        ['debuffsOnlyShowPlayer'] = false,
+        ['debuffsSpacing'] = 2,
+        ['debuffsNum'] = 32,
+        ['debuffsColNum'] = 6,
+        ['debuffsAnchorToBuffs'] = true,
+        ['debuffsCountFont'] = 'DMSans',
+        ['debuffsCountFontSize'] = 12,
+        ['debuffsCountFontFlag'] = 'OUTLINE',
+        ['debuffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['debuffsCountAnchorPoint'] = 'CENTER',
+        ['debuffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['debuffsCountXOff'] = 0,
+        ['debuffsCountYOff'] = 0,
+        ['debuffsDurationFont'] = 'DMSans',
+        ['debuffsDurationFontSize'] = 12,
+        ['debuffsDurationFontFlag'] = 'OUTLINE',
+        -- Buffs
+        ['buffsEnable'] = false,
+        ['buffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['buffsXOff'] = 0,
+        ['buffsYOff'] = 2,
+        ['buffsIconWidth'] = 20,
+        ['buffsIconHeight'] = 20,
+        ['buffsOnlyShowPlayer'] = false,
+        ['buffsSpacing'] = 2,
+        ['buffsNum'] = 32,
+        ['buffsColNum'] = 6,
+        ['buffsAnchorToDebuffs'] = false,
+        ['buffsCountFont'] = 'DMSans',
+        ['buffsCountFontSize'] = 12,
+        ['buffsCountFontFlag'] = 'OUTLINE',
+        ['buffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['buffsCountAnchorPoint'] = 'CENTER',
+        ['buffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['buffsCountXOff'] = 0,
+        ['buffsCountYOff'] = 0,
+        ['buffsDurationFont'] = 'DMSans',
+        ['buffsDurationFontSize'] = 12,
+        ['buffsDurationFontFlag'] = 'OUTLINE',
+        -- Power
+        ['powerEnable'] = false,
+        ['powerHeight'] = 5,
+        -- Private Auras
+        ['privateAurasEnable'] = false,
+        ['privateAurasMaxNum'] = 5,
+        ['privateAurasIconWidth'] = 20,
+        ['privateAurasIconHeight'] = 20,
+        ['privateAurasSpacing'] = 1,
+        ['privateAurasGrowthX'] = 'LEFT',
+        ['privateAurasAnchorPoint'] = 'CENTER',
+        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
+        ['privateAurasXOff'] = 0,
+        ['privateAurasYOff'] = 0,
     })
 end
 
@@ -118,6 +180,10 @@ player.Create = function(self, frame)
     frame.CombatIndicator = EXUI:GetModule('uf-element-combat-indicator'):Create(frame)
     frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
+    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
+    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
+    frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
+    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Player', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

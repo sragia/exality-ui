@@ -37,6 +37,129 @@ targettarget.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Health Text
+        ['healthEnable'] = false,
+        ['healthFont'] = 'DMSans',
+        ['healthFontSize'] = 12,
+        ['healthFontFlag'] = 'OUTLINE',
+        ['healthFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['healthAnchorPoint'] = 'RIGHT',
+        ['healthRelativeAnchorPoint'] = 'RIGHT',
+        ['healthXOffset'] = -5,
+        ['healthYOffset'] = -10,
+        ['healthTag'] = '[curhp:formatted]',
+        -- Health Percentage
+        ['healthpercEnable'] = false,
+        ['healthpercFont'] = 'DMSans',
+        ['healthpercFontSize'] = 16,
+        ['healthpercFontFlag'] = 'OUTLINE',
+        ['healthpercFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['healthpercAnchorPoint'] = 'RIGHT',
+        ['healthpercRelativeAnchorPoint'] = 'RIGHT',
+        ['healthpercXOffset'] = -5,
+        ['healthpercYOffset'] = 3,
+        ['healthpercTag'] = '[perhp]%',
+        -- Power
+        ['powerEnable'] = false,
+        ['powerHeight'] = 5,
+        -- Raid Target Indicator
+        ['raidTargetIndicatorEnable'] = false,
+        ['raidTargetIndicatorScale'] = 1,
+        ['raidTargetIndicatorAnchorPoint'] = 'CENTER',
+        ['raidTargetIndicatorRelativeAnchorPoint'] = 'TOP',
+        ['raidTargetIndicatorXOff'] = 0,
+        ['raidTargetIndicatorYOff'] = 0,
+        -- Raid Roles
+        ['raidRolesEnable'] = false,
+        ['raidRolesAnchorPoint'] = 'RIGHT',
+        ['raidRolesRelativeAnchorPoint'] = 'TOPRIGHT',
+        ['raidRolesXOff'] = 0,
+        ['raidRolesYOff'] = 0,
+        ['raidRolesScale'] = 1,
+        -- Debuffs
+        ['debuffsEnable'] = false,
+        ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['debuffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['debuffsXOff'] = 0,
+        ['debuffsYOff'] = 2,
+        ['debuffsIconWidth'] = 20,
+        ['debuffsIconHeight'] = 20,
+        ['debuffsOnlyShowPlayer'] = false,
+        ['debuffsSpacing'] = 2,
+        ['debuffsNum'] = 32,
+        ['debuffsColNum'] = 6,
+        ['debuffsAnchorToBuffs'] = true,
+        ['debuffsCountFont'] = 'DMSans',
+        ['debuffsCountFontSize'] = 12,
+        ['debuffsCountFontFlag'] = 'OUTLINE',
+        ['debuffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['debuffsCountAnchorPoint'] = 'CENTER',
+        ['debuffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['debuffsCountXOff'] = 0,
+        ['debuffsCountYOff'] = 0,
+        ['debuffsDurationFont'] = 'DMSans',
+        ['debuffsDurationFontSize'] = 12,
+        ['debuffsDurationFontFlag'] = 'OUTLINE',
+        -- Buffs
+        ['buffsEnable'] = false,
+        ['buffsAnchorPoint'] = 'BOTTOMLEFT',
+        ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
+        ['buffsXOff'] = 0,
+        ['buffsYOff'] = 2,
+        ['buffsIconWidth'] = 20,
+        ['buffsIconHeight'] = 20,
+        ['buffsOnlyShowPlayer'] = false,
+        ['buffsSpacing'] = 2,
+        ['buffsNum'] = 32,
+        ['buffsColNum'] = 6,
+        ['buffsAnchorToDebuffs'] = false,
+        ['buffsCountFont'] = 'DMSans',
+        ['buffsCountFontSize'] = 12,
+        ['buffsCountFontFlag'] = 'OUTLINE',
+        ['buffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['buffsCountAnchorPoint'] = 'CENTER',
+        ['buffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['buffsCountXOff'] = 0,
+        ['buffsCountYOff'] = 0,
+        ['buffsDurationFont'] = 'DMSans',
+        ['buffsDurationFontSize'] = 12,
+        ['buffsDurationFontFlag'] = 'OUTLINE',
+        -- Private Auras
+        ['privateAurasEnable'] = false,
+        ['privateAurasMaxNum'] = 5,
+        ['privateAurasIconWidth'] = 20,
+        ['privateAurasIconHeight'] = 20,
+        ['privateAurasSpacing'] = 1,
+        ['privateAurasGrowthX'] = 'LEFT',
+        ['privateAurasAnchorPoint'] = 'CENTER',
+        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
+        ['privateAurasXOff'] = 0,
+        ['privateAurasYOff'] = 0,
+        -- Offline Text
+        ['offlineEnable'] = false,
+        ['offlineFont'] = 'DMSans',
+        ['offlineFontSize'] = 10,
+        ['offlineFontFlag'] = 'OUTLINE',
+        ['offlineFontColor'] = { r = 171 / 255, g = 0, b = 0, a = 1 },
+        ['offlineAnchorPoint'] = 'TOP',
+        ['offlineRelativeAnchorPoint'] = 'TOP',
+        ['offlineXOffset'] = 0,
+        ['offlineYOffset'] = -2,
+        ['offlineTag'] = '[offline]',
+        -- Phase Indicator
+        ['phaseIndicatorEnable'] = false,
+        ['phaseIndicatorAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorRelativeAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorXOff'] = 0,
+        ['phaseIndicatorYOff'] = 0,
+        ['phaseIndicatorScale'] = 1,
+        -- Summon Indicator
+        ['summonEnable'] = false,
+        ['summonAnchorPoint'] = 'TOP',
+        ['summonRelativeAnchorPoint'] = 'TOP',
+        ['summonXOff'] = 0,
+        ['summonYOff'] = 0,
+        ['summonScale'] = 1,
     })
 end
 
@@ -45,7 +168,18 @@ targettarget.Create = function(self, frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
     frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
+    frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
+    frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
+    frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
+    frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
+    frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
+    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
+    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
+    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
+    frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
+    frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
+    frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'TargetTarget', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

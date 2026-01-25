@@ -64,6 +64,7 @@ target.Init = function(self)
         ['raidTargetIndicatorRelativeAnchorPoint'] = 'TOP',
         ['raidTargetIndicatorXOff'] = 0,
         ['raidTargetIndicatorYOff'] = 0,
+        -- Raid Roles
         ['raidRolesEnable'] = true,
         ['raidRolesAnchorPoint'] = 'RIGHT',
         ['raidRolesRelativeAnchorPoint'] = 'TOPRIGHT',
@@ -152,6 +153,42 @@ target.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Offline Text
+        ['offlineEnable'] = false,
+        ['offlineFont'] = 'DMSans',
+        ['offlineFontSize'] = 10,
+        ['offlineFontFlag'] = 'OUTLINE',
+        ['offlineFontColor'] = { r = 171 / 255, g = 0, b = 0, a = 1 },
+        ['offlineAnchorPoint'] = 'TOP',
+        ['offlineRelativeAnchorPoint'] = 'TOP',
+        ['offlineXOffset'] = 0,
+        ['offlineYOffset'] = -2,
+        ['offlineTag'] = '[offline]',
+        -- Phase Indicator
+        ['phaseIndicatorEnable'] = false,
+        ['phaseIndicatorAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorRelativeAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorXOff'] = 0,
+        ['phaseIndicatorYOff'] = 0,
+        ['phaseIndicatorScale'] = 1,
+        -- Private Auras
+        ['privateAurasEnable'] = false,
+        ['privateAurasMaxNum'] = 5,
+        ['privateAurasIconWidth'] = 20,
+        ['privateAurasIconHeight'] = 20,
+        ['privateAurasSpacing'] = 1,
+        ['privateAurasGrowthX'] = 'LEFT',
+        ['privateAurasAnchorPoint'] = 'CENTER',
+        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
+        ['privateAurasXOff'] = 0,
+        ['privateAurasYOff'] = 0,
+        -- Summon Indicator
+        ['summonEnable'] = false,
+        ['summonAnchorPoint'] = 'TOP',
+        ['summonRelativeAnchorPoint'] = 'TOP',
+        ['summonXOff'] = 0,
+        ['summonYOff'] = 0,
+        ['summonScale'] = 1,
     })
 end
 
@@ -170,6 +207,10 @@ target.Create = function(self, frame)
     frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
+    frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
+    frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
+    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
+    frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Target', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

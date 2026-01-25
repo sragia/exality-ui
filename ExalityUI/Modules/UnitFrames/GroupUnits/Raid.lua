@@ -164,6 +164,16 @@ raid.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Phase Indicator
+        ['phaseIndicatorEnable'] = true,
+        ['phaseIndicatorAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorRelativeAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorXOff'] = 0,
+        ['phaseIndicatorYOff'] = 0,
+        ['phaseIndicatorScale'] = 1,
+        -- Power
+        ['powerEnable'] = false,
+        ['powerHeight'] = 3,
     })
 
     self:DisableBlizzard()
@@ -238,6 +248,7 @@ raid.Create = function(self, frame, unit)
     frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
+    frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
 
     frame.Update = function(self) raid:Update(self) end
 

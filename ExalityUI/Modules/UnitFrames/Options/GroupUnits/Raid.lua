@@ -146,6 +146,28 @@ core:AddOption({
             }
         },
         {
+            name = 'Power',
+            id = 'power',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('raid', 'power')
+                end,
+                {
+                    type = 'range',
+                    name = 'powerHeight',
+                    label = 'Height',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('raid', 'powerHeight')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('raid', 'powerHeight', value)
+                        ufCore:UpdateFrameForUnit('raid')
+                    end,
+                    width = 25
+                }
+            }
+        },
+        {
             name = 'Buffs',
             id = 'buffs',
             options = {
@@ -160,6 +182,18 @@ core:AddOption({
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('raid', 'debuffs', false)
+                end
+            }
+        },
+        {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('raid', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('raid')
                 end
             }
         },
@@ -287,16 +321,31 @@ core:AddOption({
             }
         },
         {
-            name = 'Private Auras',
-            id = 'privateauras',
+            name = 'Phase Indicator',
+            id = 'phaseindicator',
             options = {
                 function()
-                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('raid', 'privateAuras')
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('raid', 'phaseIndicator')
                 end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'phaseIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('raid', 'phaseIndicatorScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('raid', 'phaseIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('raid')
+                    end,
+                },
                 function()
-                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('raid')
-                end
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('raid', 'phaseIndicator')
+                end,
             }
-        }
+        },
     }
 })

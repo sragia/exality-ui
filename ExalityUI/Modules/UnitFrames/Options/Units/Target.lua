@@ -143,6 +143,18 @@ core:AddOption({
             }
         },
         {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('target')
+                end
+            }
+        },
+        {
             name = 'Marker Icon',
             id = 'markericon',
             options = {
@@ -222,6 +234,75 @@ core:AddOption({
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('target', 'combatIndicator')
                 end
             }
-        }
+        },
+        {
+            name = 'Offline Text',
+            id = 'offline',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'offline')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-generic-text'):GetOptions('target', 'offline')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-tag'):GetOptions('target', 'offline')
+                end
+            }
+        },
+        {
+            name = 'Summon Indicator',
+            id = 'summonindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'summon')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'summonScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('target', 'summonScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('target', 'summonScale', value)
+                        ufCore:UpdateFrameForUnit('target')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('target', 'summon')
+                end,
+            }
+        },
+        {
+            name = 'Phase Indicator',
+            id = 'phaseindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'phaseIndicator')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'phaseIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('target', 'phaseIndicatorScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('target', 'phaseIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('target')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('target', 'phaseIndicator')
+                end,
+            }
+        },
     }
 })

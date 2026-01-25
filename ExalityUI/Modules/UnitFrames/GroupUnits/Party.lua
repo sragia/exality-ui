@@ -123,7 +123,7 @@ party.Init = function(self)
         ['raidTargetIndicatorXOff'] = 0,
         ['raidTargetIndicatorYOff'] = 0,
         ['raidTargetIndicatorScale'] = 1,
-        -- Health Percentage
+        -- Offline Text
         ['offlineEnable'] = true,
         ['offlineFont'] = 'DMSans',
         ['offlineFontSize'] = 10,
@@ -143,7 +143,7 @@ party.Init = function(self)
         ['ressurectScale'] = 1,
         -- Summon Indicator
         ['summonEnable'] = true,
-        ['summonAnchorPoint'] = 'CENTER',
+        ['summonAnchorPoint'] = 'TOP',
         ['summonRelativeAnchorPoint'] = 'TOP',
         ['summonXOff'] = 0,
         ['summonYOff'] = 0,
@@ -165,6 +165,13 @@ party.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Phase Indicator
+        ['phaseIndicatorEnable'] = true,
+        ['phaseIndicatorAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorRelativeAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorXOff'] = 0,
+        ['phaseIndicatorYOff'] = 0,
+        ['phaseIndicatorScale'] = 1,
     })
 end
 

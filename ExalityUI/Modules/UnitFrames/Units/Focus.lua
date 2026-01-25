@@ -31,8 +31,31 @@ focus.Init = function(self)
         ['nameTag'] = '[name]',
         ['nameXOffset'] = 0,
         ['nameYOffset'] = 0,
+        ['nameMaxWidth'] = 100,
+        -- Health Text
+        ['healthEnable'] = false,
+        ['healthFont'] = 'DMSans',
+        ['healthFontSize'] = 12,
+        ['healthFontFlag'] = 'OUTLINE',
+        ['healthFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['healthAnchorPoint'] = 'RIGHT',
+        ['healthRelativeAnchorPoint'] = 'RIGHT',
+        ['healthXOffset'] = -5,
+        ['healthYOffset'] = -10,
+        ['healthTag'] = '[curhp:formatted]',
+        -- Health Percentage
+        ['healthpercEnable'] = false,
+        ['healthpercFont'] = 'DMSans',
+        ['healthpercFontSize'] = 16,
+        ['healthpercFontFlag'] = 'OUTLINE',
+        ['healthpercFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['healthpercAnchorPoint'] = 'RIGHT',
+        ['healthpercRelativeAnchorPoint'] = 'RIGHT',
+        ['healthpercXOffset'] = -5,
+        ['healthpercYOffset'] = 3,
+        ['healthpercTag'] = '[perhp]%',
         -- Power
-        ['powerEnable'] = true,
+        ['powerEnable'] = false,
         ['powerHeight'] = 5,
         -- Raid Target Indicator
         ['raidTargetIndicatorEnable'] = true,
@@ -42,7 +65,7 @@ focus.Init = function(self)
         ['raidTargetIndicatorYOff'] = 0,
         ['raidTargetIndicatorScale'] = 0.8,
         -- Debuffs
-        ['debuffsEnable'] = true,
+        ['debuffsEnable'] = false,
         ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
         ['debuffsRelativeAnchorPoint'] = 'TOPLEFT',
         ['debuffsXOff'] = 0,
@@ -66,7 +89,7 @@ focus.Init = function(self)
         ['debuffsDurationFontSize'] = 12,
         ['debuffsDurationFontFlag'] = 'OUTLINE',
         -- Buffs
-        ['buffsEnable'] = true,
+        ['buffsEnable'] = false,
         ['buffsAnchorPoint'] = 'BOTTOMLEFT',
         ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
         ['buffsXOff'] = 0,
@@ -95,6 +118,56 @@ focus.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Raid Roles
+        ['raidRolesEnable'] = false,
+        ['raidRolesAnchorPoint'] = 'RIGHT',
+        ['raidRolesRelativeAnchorPoint'] = 'TOPRIGHT',
+        ['raidRolesXOff'] = 0,
+        ['raidRolesYOff'] = 0,
+        ['raidRolesScale'] = 1,
+        -- Private Auras
+        ['privateAurasEnable'] = false,
+        ['privateAurasMaxNum'] = 5,
+        ['privateAurasIconWidth'] = 20,
+        ['privateAurasIconHeight'] = 20,
+        ['privateAurasSpacing'] = 1,
+        ['privateAurasGrowthX'] = 'LEFT',
+        ['privateAurasAnchorPoint'] = 'CENTER',
+        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
+        ['privateAurasXOff'] = 0,
+        ['privateAurasYOff'] = 0,
+        -- Phase Indicator
+        ['phaseIndicatorEnable'] = false,
+        ['phaseIndicatorAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorRelativeAnchorPoint'] = 'CENTER',
+        ['phaseIndicatorXOff'] = 0,
+        ['phaseIndicatorYOff'] = 0,
+        ['phaseIndicatorScale'] = 1,
+        -- Offline Text
+        ['offlineEnable'] = false,
+        ['offlineFont'] = 'DMSans',
+        ['offlineFontSize'] = 10,
+        ['offlineFontFlag'] = 'OUTLINE',
+        ['offlineFontColor'] = { r = 171 / 255, g = 0, b = 0, a = 1 },
+        ['offlineAnchorPoint'] = 'TOP',
+        ['offlineRelativeAnchorPoint'] = 'TOP',
+        ['offlineXOffset'] = 0,
+        ['offlineYOffset'] = -2,
+        ['offlineTag'] = '[offline]',
+        -- Summon Indicator
+        ['summonEnable'] = false,
+        ['summonAnchorPoint'] = 'TOP',
+        ['summonRelativeAnchorPoint'] = 'TOP',
+        ['summonXOff'] = 0,
+        ['summonYOff'] = 0,
+        ['summonScale'] = 1,
+        -- Resurrect Indicator
+        ['ressurectEnable'] = false,
+        ['ressurectAnchorPoint'] = 'CENTER',
+        ['ressurectRelativeAnchorPoint'] = 'TOP',
+        ['ressurectXOff'] = 0,
+        ['ressurectYOff'] = 0,
+        ['ressurectScale'] = 1,
     })
 end
 
@@ -103,11 +176,19 @@ focus.Create = function(self, frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
     frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
+    frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
+    frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
     frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
+    frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
     frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
+    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
+    frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
+    frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
+    frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
+    frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Focus', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

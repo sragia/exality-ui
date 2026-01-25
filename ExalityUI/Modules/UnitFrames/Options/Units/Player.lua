@@ -90,6 +90,28 @@ core:AddOption({
             }
         },
         {
+            name = 'Power',
+            id = 'power',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'power')
+                end,
+                {
+                    type = 'range',
+                    name = 'powerHeight',
+                    label = 'Height',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('player', 'powerHeight')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('player', 'powerHeight', value)
+                        ufCore:UpdateFrameForUnit('player')
+                    end,
+                    width = 25
+                }
+            }
+        },
+        {
             name = 'Cast Bar',
             id = 'castbar',
             options = {
@@ -98,6 +120,24 @@ core:AddOption({
                 end,
                 function()
                     return EXUI:GetModule('uf-options-cast-bar'):GetOptions('player')
+                end
+            }
+        },
+        {
+            name = 'Buffs',
+            id = 'buffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('player', 'buffs', true)
+                end
+            }
+        },
+        {
+            name = 'Debuffs',
+            id = 'debuffs',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('player', 'debuffs', false)
                 end
             }
         },
@@ -180,6 +220,18 @@ core:AddOption({
                 function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'combatIndicator')
                 end,
+            }
+        },
+        {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('player')
+                end
             }
         }
     }

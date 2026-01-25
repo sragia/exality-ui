@@ -80,6 +80,27 @@ boss.Init = function(self)
         ['raidRolesXOff'] = 0,
         ['raidRolesYOff'] = 0,
         ['raidRolesScale'] = 1,
+        -- Cast Bar
+        ['castbarEnable'] = false,
+        ['castbarAnchorToFrame'] = true,
+        ['castbarAnchorPoint'] = 'TOP',
+        ['castbarRelativeAnchorPoint'] = 'BOTTOM',
+        ['castbarXOff'] = 0,
+        ['castbarYOff'] = 0,
+        ['castbarAnchorPointUIParent'] = 'CENTER',
+        ['castbarRelativeAnchorPointUIParent'] = 'CENTER',
+        ['castbarXOffUIParent'] = 100,
+        ['castbarYOffUIParent'] = -100,
+        ['castbarMatchFrameWidth'] = true,
+        ['castbarWidth'] = 200,
+        ['castbarHeight'] = 20,
+        ['castbarFont'] = 'DMSans',
+        ['castbarFontSize'] = 12,
+        ['castbarFontFlag'] = 'OUTLINE',
+        ['castbarFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['castbarBackgroundColor'] = { r = 0, g = 0, b = 0, a = 0.5 },
+        ['castbarBackgroundBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
+        ['castbarForegroundColor'] = { r = 1, g = 1, b = 1, a = 1 },
         -- Debuffs
         ['debuffsEnable'] = true,
         ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
@@ -134,7 +155,19 @@ boss.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Private Auras
+        ['privateAurasEnable'] = false,
+        ['privateAurasMaxNum'] = 5,
+        ['privateAurasIconWidth'] = 20,
+        ['privateAurasIconHeight'] = 20,
+        ['privateAurasSpacing'] = 1,
+        ['privateAurasGrowthX'] = 'LEFT',
+        ['privateAurasAnchorPoint'] = 'CENTER',
+        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
+        ['privateAurasXOff'] = 0,
+        ['privateAurasYOff'] = 0,
     })
+
     self.container:SetPoint(
         core:GetValueForUnit('boss', 'positionAnchorPoint'),
         UIParent,
@@ -167,6 +200,8 @@ boss.Create = function(self, frame)
     frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame)
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
+    frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
+    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
 
     frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
 end

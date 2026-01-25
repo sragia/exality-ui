@@ -129,6 +129,18 @@ core:AddOption({
             }
         },
         {
+            name = 'Cast Bar',
+            id = 'castbar',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('boss', 'castbar')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-cast-bar'):GetOptions('boss')
+                end
+            }
+        },
+        {
             name = 'Buffs',
             id = 'buffs',
             options = {
@@ -143,6 +155,18 @@ core:AddOption({
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('boss', 'debuffs', false)
+                end
+            }
+        },
+        {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('boss', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('boss')
                 end
             }
         },
