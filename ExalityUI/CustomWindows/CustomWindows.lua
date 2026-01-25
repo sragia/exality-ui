@@ -53,7 +53,8 @@ customWindows.GetOptions = function(self)
         },
         {
             type = 'description',
-            label = 'Replaces default Blizzard character frame (PaperDollFrame) with fully custom character frame.',
+            label =
+            "Replaces default Blizzard character frame (PaperDollFrame) with fully custom character frame. Unfortunately, this can't be used in combat and will be hidden on entering combat.",
             width = 100,
         }
     }

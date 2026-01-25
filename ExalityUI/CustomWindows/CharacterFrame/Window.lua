@@ -79,7 +79,7 @@ characterFrame.ReplaceBlizzFunc = function(self)
     if (not blizzFunc) then
         blizzFunc = ToggleCharacter
         ToggleCharacter = function(frameName)
-            if (not CharacterFrame:IsShown() and frameName == 'PaperDollFrame') then
+            if (not CharacterFrame:IsShown() and frameName == 'PaperDollFrame' and not InCombatLockdown()) then
                 self:OnShow()
             else
                 blizzFunc(frameName)
@@ -229,6 +229,21 @@ characterFrame.Create = function(self)
     self.window = window
 
     local container = window.container
+    local escapeHandler = CreateFrame('Button', nil, container)
+    escapeHandler:EnableKeyboard(true)
+    escapeHandler:SetPropagateKeyboardInput(true)
+    escapeHandler:SetScript('OnKeyDown', function(self, key)
+        if (key == 'ESCAPE') then
+            if (not InCombatLockdown()) then
+                self:SetPropagateKeyboardInput(false)
+            end
+            window:HideWindow()
+            return
+        end
+        if (not InCombatLockdown()) then
+            self:SetPropagateKeyboardInput(true)
+        end
+    end)
 
     -- Header --
     local headerFrame = CreateFrame('Frame', nil, container)
@@ -387,3 +402,9 @@ end
 characterFrame.Disable = function(self)
     self:RestoreBlizzFunc()
 end
+
+EXUI:RegisterEventHandler('PLAYER_REGEN_DISABLED', 'character-frame-hide', function()
+    if (characterFrame.window and characterFrame.window:IsShown()) then
+        characterFrame.window:HideWindowImmediate()
+    end
+end)
