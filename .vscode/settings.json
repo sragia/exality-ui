@@ -229,7 +229,8 @@
         "DISPLAY",
         "CountTable",
         "CompactRaidFrameManager_SetSetting",
-        "class"
+        "class",
+        "ItemUpgradeFrame"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

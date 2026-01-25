@@ -39,6 +39,17 @@ local BOTTOM_SLOTS = {
 
 local blizzFunc = nil
 
+local function MoveFrameNextToWindow(frame)
+    if (characterFrame.window and characterFrame.window:IsShown()) then
+        local window = characterFrame.window
+        local left, bottom, width, height = window:GetRect()
+        frame:ClearAllPoints()
+        local x = left + width + 10
+        local y = bottom + height
+        frame:SetPoint('TOPLEFT', UIParent, 'BOTTOMLEFT', x, y)
+    end
+end
+
 characterFrame.ReplaceItemSocketingFrameOnShow = function(self)
     if (ItemSocketingFrame) then
         local isfOnShow = ItemSocketingFrame:GetScript('OnShow')
@@ -46,17 +57,23 @@ characterFrame.ReplaceItemSocketingFrameOnShow = function(self)
             if (isfOnShow) then
                 isfOnShow(self)
             end
-            if (characterFrame.window and characterFrame.window:IsShown()) then
-                local window = characterFrame.window
-                local left, bottom, width, height = window:GetRect()
-                self:ClearAllPoints()
-                local x = left + width + 10
-                local y = bottom + height
-                self:SetPoint('TOPLEFT', UIParent, 'BOTTOMLEFT', x, y)
-            end
+            MoveFrameNextToWindow(self)
         end)
     end
 end
+
+characterFrame.ReplaceItemUpgradeFrameOnShow = function(self)
+    if (ItemUpgradeFrame) then
+        local isfOnShow = ItemUpgradeFrame:GetScript('OnShow')
+        ItemUpgradeFrame:SetScript('OnShow', function(self)
+            if (isfOnShow) then
+                isfOnShow(self)
+            end
+            MoveFrameNextToWindow(self)
+        end)
+    end
+end
+
 
 characterFrame.ReplaceBlizzFunc = function(self)
     if (not blizzFunc) then
@@ -70,14 +87,18 @@ characterFrame.ReplaceBlizzFunc = function(self)
         end
         if (ItemSocketingFrame) then
             self:ReplaceItemSocketingFrameOnShow()
-        else
-            -- Addon not Loaded wait for event
-            EXUI:RegisterEventHandler('ADDON_LOADED', 'character-frame', function(event, addonName)
-                if (addonName == 'Blizzard_ItemSocketingUI') then
-                    self:ReplaceItemSocketingFrameOnShow()
-                end
-            end)
         end
+        if (ItemUpgradeFrame) then
+            self:ReplaceItemUpgradeFrameOnShow()
+        end
+        -- Addon not Loaded wait for event
+        EXUI:RegisterEventHandler('ADDON_LOADED', 'character-frame', function(event, addonName)
+            if (addonName == 'Blizzard_ItemSocketingUI') then
+                self:ReplaceItemSocketingFrameOnShow()
+            elseif (addonName == 'Blizzard_ItemUpgradeUI') then
+                self:ReplaceItemUpgradeFrameOnShow()
+            end
+        end)
     end
 end
 
@@ -355,6 +376,9 @@ characterFrame.OnShow = function(self)
     self:UpdateHeader()
     if (not self.window:IsShown()) then
         self.window:ShowWindow()
+        if (ItemUpgradeFrame and ItemUpgradeFrame:IsShown()) then
+            MoveFrameNextToWindow(ItemUpgradeFrame)
+        end
     end
 end
 

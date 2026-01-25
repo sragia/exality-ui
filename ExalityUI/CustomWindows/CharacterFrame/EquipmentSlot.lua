@@ -295,6 +295,9 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
         end
     end
 
+    slot:SetScript('OnDragStart', function(self)
+        self:OnClick('LeftButton')
+    end)
     slot:SetScript('PostClick', slot.OnClick)
     slot:SetScript('OnReceiveDrag', function(self)
         self:OnClick('LeftButton')
