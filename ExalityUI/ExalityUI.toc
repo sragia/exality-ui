@@ -17,6 +17,7 @@ Libs/LibSharedMedia-3.0/lib.xml
 Libs/oUF/oUF.xml
 Libs/libdatabroker-1-1/LibDataBroker-1.1.lua
 Libs/LibQTip-1.0/lib.xml
+Libs/LibActionButton-1.0/LibActionButton-1.0.lua
 
 Modules/UnitFrames/oUF/oUF-Plugins.xml
 
@@ -56,6 +57,9 @@ Modules/XPBar.lua
 
 # WIP maybe some day
 # Modules/CustomMods/CustomMods.xml
+
+# Action Bars
+Modules/ActionBars/ActionBars.xml
 
 # UnitFrames
 Modules/UnitFrames/Core.lua

@@ -56,8 +56,7 @@ end
 core.SetupTabs = function(self, container)
     local tabs = EXFrames:GetFrame('tabs-frame'):Create()
     tabs:SetParent(container)
-    tabs:SetPoint('TOPLEFT', 5, 0)
-    tabs:SetPoint('BOTTOMRIGHT', -5, 5)
+    tabs:SetAllPoints()
 
     local tabOptions = EXFrames:GetFrame('split-options-frame'):Create()
     tabOptions:SetParent(tabs.container)

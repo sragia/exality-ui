@@ -38,11 +38,33 @@ optionsFields.Create = function(self, container)
     self:Refresh()
 end
 
+optionsFields.SetActiveItem = function(self, itemID)
+    if (not self.splitView) then
+        return
+    end
+    if (itemID) then
+        self.splitView:SetActiveItem(itemID)
+    else
+        local found = false
+        for _, item in ipairs(self.splitView.items) do
+            if (item.ID == self.currItemID) then
+                self.splitView:SetActiveItem(item.ID)
+                found = true
+                break
+            end
+        end
+        if (not found) then
+            self.splitView:SetActiveItem(self.splitView.items[1].ID)
+        end
+    end
+end
+
 optionsFields.AddSplitView = function(self, module)
     self.splitView = EXFrames:GetFrame('split-options-frame'):Create()
     if (self.tabs) then
         self.splitView:SetParent(self.tabs.container)
-        self.splitView:SetAllPoints()
+        self.splitView:SetPoint('TOPLEFT', self.tabs.container, 'TOPLEFT', 5, -5)
+        self.splitView:SetPoint('BOTTOMRIGHT', self.tabs.container, 'BOTTOMRIGHT', -5, 5)
     else
         self.splitView:SetParent(self.baseContainer)
         self.splitView:SetAllPoints()
@@ -54,27 +76,38 @@ optionsFields.AddSplitView = function(self, module)
     else
         self.splitView:DisableExtraButton()
     end
-    local items = module.GetSplitViewItems()
+    local items = module.GetSplitViewItems(self.currTabID)
     self.splitView:AddItems(items)
     self.splitView:SetOnItemChange(function(id)
         self.currItemID = id
         self:RefreshFields()
     end)
     if (#items > 0) then
+        self:SetActiveItem()
+    end
+
+    self.container = self.splitView.container
+end
+
+optionsFields.SetActiveTab = function(self, tabID)
+    if (not self.tabs) then
+        return
+    end
+    if (tabID) then
+        self.tabs:SetActiveTab(tabID)
+    else
         local found = false
-        for _, item in ipairs(items) do
-            if (item.ID == self.currItemID) then
-                self.splitView:onItemClick(item.ID)
+        for _, tab in ipairs(self.tabs.tabs) do
+            if (tab.ID == self.currTabID) then
+                self.tabs:SetActiveTab(tab.ID)
                 found = true
                 break
             end
         end
         if (not found) then
-            self.splitView:onItemClick(items[1].ID)
+            self.tabs:SetActiveTab(self.tabs.tabs[1].ID)
         end
     end
-
-    self.container = self.splitView.container
 end
 
 optionsFields.AddTabs = function(self, module)
@@ -86,24 +119,14 @@ optionsFields.AddTabs = function(self, module)
     local tabs = module:GetTabs()
     self.tabs:AddTabs(tabs)
 
-
     self.tabs:SetOnTabChange(function(id)
         self.currTabID = id
+        self:RefreshItemList()
         self:RefreshFields()
     end)
 
     if (#tabs > 0) then
-        local found = false
-        for _, tab in ipairs(tabs) do
-            if (tab.ID == self.currTabID) then
-                self.tabs:onTabClick(tab.ID)
-                found = true
-                break
-            end
-        end
-        if (not found) then
-            self.tabs:onTabClick(tabs[1].ID)
-        end
+        self:SetActiveTab()
     end
 end
 
@@ -232,8 +255,11 @@ optionsFields.RefreshFields = function(self)
 end
 
 optionsFields.RefreshItemList = function(self)
+    if (not self.splitView) then
+        return
+    end
     local module = optionsController:GetSelectedModule()
-    local items = module.module:GetSplitViewItems()
+    local items = module.module:GetSplitViewItems(self.currTabID)
     self.splitView:AddItems(items)
 end
 
