@@ -759,7 +759,6 @@ raidToolsModule.HandleChecks = function(self, recheck)
     local assist = UnitIsGroupAssistant('player')
     local shouldShow = assist or leader
 
-
     if (recheck and not combat and shouldShow) then
         self.showStatus = true
         self:CreateOrRefreshReadyCheck()
@@ -811,20 +810,21 @@ raidToolsModule.CreateBrezz = function(self)
     text:SetVertexColor(1, 1, 1, 1)
     self.brezzFrame.text = text
     self.brezzFrame.timer = 0
+    self.brezzFrame.timer = nil
 
-    self.brezzFrame.onUpdate = function(self, elapsed)
-        self.timer = self.timer + elapsed
-        if (self.timer >= 1) then
-            self.timer = 0
-            local charges = C_Spell.GetSpellCharges(20484)
-            if (not charges) then
-                self:Hide()
-                return;
-            end
-            self.cooldown:SetCooldown(charges.cooldownStartTime, charges.cooldownDuration)
-            self.text:SetText(charges.currentCharges)
-            self:Show()
+    self.brezzFrame.Update = function(self)
+        local charges = C_Spell.GetSpellCharges(20484)
+        if (not charges) then
+            self:Hide()
+            return;
         end
+        if (self.timer) then
+            self.timer:Cancel()
+        end
+        self.timer = C_Timer.NewTimer(charges.cooldownDuration, function() self:Update() end)
+        self.cooldown:SetCooldown(charges.cooldownStartTime, charges.cooldownDuration)
+        self.text:SetText(charges.currentCharges)
+        self:Show()
     end
 
     self.brezzFrame:RegisterEvent('ENCOUNTER_START')
@@ -832,11 +832,11 @@ raidToolsModule.CreateBrezz = function(self)
     self.brezzFrame:RegisterEvent('CHALLENGE_MODE_START')
     self.brezzFrame:RegisterEvent('CHALLENGE_MODE_COMPLETED')
     self.brezzFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
+
     self.brezzFrame.CheckVisibility = function(self)
         local isInMPlus = C_ChallengeMode.IsChallengeModeActive()
         local isInEncounter = self.inEncounter
-        local isInCombat = InCombatLockdown()
-        return isInMPlus or (isInEncounter and isInCombat)
+        return isInMPlus or isInEncounter
     end
     self.brezzFrame:SetScript('OnEvent', function(self, event, ...)
         if (event == 'ENCOUNTER_START') then
@@ -846,11 +846,14 @@ raidToolsModule.CreateBrezz = function(self)
         end
 
         if (self:CheckVisibility()) then
+            if (not self:IsShown()) then
+                self:RegisterEvent('UNIT_FLAGS') -- To try to detect player resurrection
+            end
+            self:Update()
             self:Show()
-            self:SetScript('OnUpdate', self.onUpdate)
         else
+            self:UnregisterEvent('UNIT_FLAGS')
             self:Hide()
-            self:SetScript('OnUpdate', nil)
         end
     end)
 
