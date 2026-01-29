@@ -88,7 +88,7 @@ privateAuras.Update = function(self, frame)
 
     PrivateAuras:ClearAllPoints()
 
-    EXUI:SetSize(PrivateAuras, db.privateAurasWidth, db.privateAurasHeight)
+    EXUI:SetSize(PrivateAuras, db.privateAurasIconWidth, db.privateAurasIconHeight)
 
     EXUI:SetPoint(
         PrivateAuras,
