@@ -18,13 +18,13 @@ Libs/oUF/oUF.xml
 Libs/libdatabroker-1-1/LibDataBroker-1.1.lua
 Libs/LibQTip-1.0/lib.xml
 
-Modules/UnitFrames/oUF/oUF-Plugins.xml
 
 ExalityFrames/ExalityFrames.xml
 
 # Core Functionality
 Util.lua 
 Init.lua
+Modules/UnitFrames/oUF/oUF-Plugins.xml
 Core.lua
 Data.lua
 
@@ -54,11 +54,9 @@ Modules/ResourceDisplays/ResourceDisplays.xml
 Modules/Cooldowns/Cooldowns.xml
 Modules/XPBar.lua
 
-# WIP maybe some day
-# Modules/CustomMods/CustomMods.xml
-
 # UnitFrames
 Modules/UnitFrames/Core.lua
+Modules/UnitFrames/CustomTexts.lua
 
 # UF Elements
 Modules/UnitFrames/Elements/Elements.xml

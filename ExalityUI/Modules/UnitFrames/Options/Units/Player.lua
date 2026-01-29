@@ -233,6 +233,15 @@ core:AddOption({
                     return EXUI:GetModule('uf-options-private-auras'):GetOptions('player')
                 end
             }
+        },
+        {
+            name = 'Custom Texts',
+            id = 'customtexts',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-custom-texts'):GetOptions('player')
+                end
+            }
         }
     }
 })

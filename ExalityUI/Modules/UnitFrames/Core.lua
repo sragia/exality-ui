@@ -283,6 +283,10 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-private-auras'):Update(frame)
     end
 
+    if (frame.CustomTexts) then
+        EXUI:GetModule('uf-element-custom-texts'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
 end

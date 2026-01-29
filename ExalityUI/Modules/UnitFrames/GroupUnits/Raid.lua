@@ -255,6 +255,7 @@ raid.Create = function(self, frame, unit)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
+    frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
 
     frame.Update = function(self) raid:Update(self) end
 

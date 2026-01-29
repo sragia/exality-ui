@@ -217,6 +217,7 @@ target.Create = function(self, frame)
     frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
+    frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Target', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

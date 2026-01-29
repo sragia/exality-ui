@@ -201,6 +201,7 @@ party.Create = function(self, frame, unit)
     frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
+    frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
 
     frame.Update = function(self) party:Update(self) end
 

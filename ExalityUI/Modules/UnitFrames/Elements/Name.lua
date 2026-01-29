@@ -18,7 +18,7 @@ name.Update = function(self, frame)
     local db = frame.db
     if (not db.nameEnable) then
         name:Hide()
-        frame:Tag(name, '')
+        frame:Untag(name)
         return
     end
     name:Show()

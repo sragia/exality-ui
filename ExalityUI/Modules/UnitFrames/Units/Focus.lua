@@ -195,6 +195,7 @@ focus.Create = function(self, frame)
     frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
     frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
+    frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Focus', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

@@ -190,6 +190,7 @@ player.Create = function(self, frame)
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
+    frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Player', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

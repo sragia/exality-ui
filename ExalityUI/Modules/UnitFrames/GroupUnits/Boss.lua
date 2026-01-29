@@ -208,6 +208,7 @@ boss.Create = function(self, frame)
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
     frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
+    frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
 
     frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
 end

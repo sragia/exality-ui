@@ -53,6 +53,9 @@ tagsInfo.descriptions = {
     ['classcolor:name'] = 'Name colored by their class',
 }
 
+-- Expose tag descriptions to allow for custom tags descriptions to be added
+ExalityUI.oUF.TagDescriptions = tagsInfo.descriptions
+
 local function CreateItem(tagName, parent)
     local item = CreateFrame('Frame', nil, parent)
     item:SetHeight(20)

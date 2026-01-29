@@ -1,6 +1,8 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+ExalityUI = {}
+
 ---@class ExalityFrames
 local EXFrames = EXUI.EXFrames
 
@@ -153,5 +155,9 @@ EXUI.const = {
         MONOCHROME = 'MONOCHROME',
         [""] = 'NONE',
     },
-    colWidth = 150
+    colWidth = 150,
+    colors = {
+        red = { 158 / 255, 0, 32 / 255, 1 },
+        gray = { 122 / 255, 122 / 255, 122 / 255, 1 },
+    }
 }

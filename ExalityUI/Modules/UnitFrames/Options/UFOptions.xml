@@ -1,5 +1,8 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 	<Script file="TagsInfo.lua"/>
+
+	<Script file="CustomTexts/ListItem.lua"/>
+	<Script file="CustomTexts/Editor.lua"/>
 	
 	<Script file="Core.lua"/>
 	<Script file="Elements/SizeAndPosition.lua"/>
@@ -12,6 +15,7 @@
 	<Script file="Elements/GenericShowPreview.lua"/>
 	<Script file="Elements/PrivateAuras.lua"/>
 	<Script file="Elements/Absorbs.lua"/>
+	<Script file="Elements/CustomTexts.lua"/>
 
 	<Script file="GeneralOptions.lua"/>
 	<Script file="Units/Player.lua"/>

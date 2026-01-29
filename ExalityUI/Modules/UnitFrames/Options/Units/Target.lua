@@ -304,5 +304,14 @@ core:AddOption({
                 end,
             }
         },
+        {
+            name = 'Custom Texts',
+            id = 'customtexts',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-custom-texts'):GetOptions('target')
+                end
+            }
+        }
     }
 })

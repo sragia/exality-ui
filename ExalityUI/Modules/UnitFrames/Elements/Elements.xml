@@ -18,4 +18,5 @@
 	<Script file="RessurectIndicator.lua"/>
 	<Script file="SummonIndicator.lua"/>
 	<Script file="PrivateAuras.lua"/>
+	<Script file="CustomTexts.lua"/>
 </Ui>
