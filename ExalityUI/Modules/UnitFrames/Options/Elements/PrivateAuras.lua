@@ -4,6 +4,9 @@ local EXUI = select(2, ...)
 ---@class EXUIUnitFramesCore
 local core = EXUI:GetModule('uf-core')
 
+---@class EXUIUnitFramesOptionsCore
+local optionsCore = EXUI:GetModule('uf-options-core')
+
 ---@class EXUIUnitFramesOptionsPrivateAuras
 local privateAuras = EXUI:GetModule('uf-options-private-auras')
 
@@ -31,8 +34,27 @@ privateAuras.GetOptions = function(self, unit)
             width = 20
         },
         {
+            type = 'range',
+            label = 'Maximum Columns',
+            name = 'privateAurasMaxCols',
+            tooltip = {
+                text = 'Maximum number of private aura columns before wrapping to a new row'
+            },
+            min = 1,
+            max = 10,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasMaxCols')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasMaxCols', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
             type = 'spacer',
-            width = 80
+            width = 60
         },
         {
             type = 'range',
@@ -67,28 +89,60 @@ privateAuras.GetOptions = function(self, unit)
             width = 20
         },
         {
+            type = 'range',
+            label = 'Border Scale',
+            name = 'privateAurasBorderScale',
+            min = 0,
+            max = 2,
+            step = 0.1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasBorderScale')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasBorderScale', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
             type = 'spacer',
-            width = 60
+            width = 40
         },
         {
             type = 'range',
-            label = 'Spacing',
-            name = 'privateAurasSpacing',
+            label = 'Spacing X',
+            name = 'privateAurasSpacingX',
             min = 0,
             max = 100,
             step = 1,
             currentValue = function()
-                return core:GetValueForUnit(unit, 'privateAurasSpacing')
+                return core:GetValueForUnit(unit, 'privateAurasSpacingX')
             end,
             onChange = function(value)
-                core:UpdateValueForUnit(unit, 'privateAurasSpacing', value)
+                core:UpdateValueForUnit(unit, 'privateAurasSpacingX', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'range',
+            label = 'Spacing Y',
+            name = 'privateAurasSpacingY',
+            min = 0,
+            max = 100,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasSpacingY')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasSpacingY', value)
                 core:UpdateFrameForUnit(unit)
             end,
             width = 20
         },
         {
             type = 'dropdown',
-            label = 'Growth Direction',
+            label = 'X Growth Direction',
             name = 'privateAurasGrowthX',
             getOptions = function()
                 return {
@@ -104,6 +158,60 @@ privateAuras.GetOptions = function(self, unit)
                 core:UpdateFrameForUnit(unit)
             end,
             width = 20
+        },
+
+        {
+            type = 'dropdown',
+            label = 'Y Growth Direction',
+            name = 'privateAurasGrowthY',
+            getOptions = function()
+                return {
+                    ['UP'] = 'Up',
+                    ['DOWN'] = 'Down',
+                }
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasGrowthY')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasGrowthY', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'spacer',
+            width = 20
+        },
+        {
+            type = 'toggle',
+            label = 'Disable Cooldown Spiral',
+            name = 'privateAurasDisableCooldownSpiral',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasDisableCooldownSpiral')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasDisableCooldownSpiral', value)
+                core:UpdateFrameForUnit(unit)
+                optionsCore:RefreshCurrentView()
+            end,
+            width = 100
+        },
+        {
+            type = 'toggle',
+            label = 'Disable Cooldown Text',
+            name = 'privateAurasDisableCooldownText',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasDisableCooldownText')
+            end,
+            depends = function()
+                return not core:GetValueForUnit(unit, 'privateAurasDisableCooldownSpiral')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasDisableCooldownText', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 100
         },
         {
             type = 'title',

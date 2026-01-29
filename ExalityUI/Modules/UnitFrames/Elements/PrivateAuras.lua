@@ -7,7 +7,7 @@ local privateAuras = EXUI:GetModule('uf-element-private-auras')
 
 privateAuras.Create = function(self, frame)
     local PrivateAuras = CreateFrame('Frame', '$parent_PrivateAuras', frame.ElementFrame)
-    PrivateAuras:SetSize(1, 1)
+    PrivateAuras:SetSize(16, 16)
 
     PrivateAuras:Show()
     return PrivateAuras
@@ -64,13 +64,31 @@ privateAuras.Update = function(self, frame)
         core:DisableElementForFrame(frame, 'PrivateAuras')
     end
 
-    PrivateAuras.maxNum = db.privateAurasMaxNum
-    PrivateAuras.iconWidth = db.privateAurasIconWidth
-    PrivateAuras.iconHeight = db.privateAurasIconHeight
-    PrivateAuras.spacing = db.privateAurasSpacing
+    PrivateAuras.num = db.privateAurasMaxNum
+    PrivateAuras.width = db.privateAurasIconWidth
+    PrivateAuras.height = db.privateAurasIconHeight
+    PrivateAuras.spacingX = db.privateAurasSpacingX
+    PrivateAuras.spacingY = db.privateAurasSpacingY
     PrivateAuras.growthX = db.privateAurasGrowthX
+    PrivateAuras.growthY = db.privateAurasGrowthY
+    PrivateAuras.borderScale = db.privateAurasBorderScale
+    PrivateAuras.disableCooldown = db.privateAurasDisableCooldownSpiral
+    PrivateAuras.disableCooldownText = db.privateAurasDisableCooldownText
+    PrivateAuras.maxCols = db.privateAurasMaxCols
+
+    if (db.privateAurasGrowthX == 'RIGHT' and db.privateAurasGrowthY == 'UP') then
+        PrivateAuras.initialAnchor = 'BOTTOMLEFT'
+    elseif (db.privateAurasGrowthX == 'RIGHT' and db.privateAurasGrowthY == 'DOWN') then
+        PrivateAuras.initialAnchor = 'TOPLEFT'
+    elseif (db.privateAurasGrowthX == 'LEFT' and db.privateAurasGrowthY == 'UP') then
+        PrivateAuras.initialAnchor = 'BOTTOMRIGHT'
+    elseif (db.privateAurasGrowthX == 'LEFT' and db.privateAurasGrowthY == 'DOWN') then
+        PrivateAuras.initialAnchor = 'TOPRIGHT'
+    end
 
     PrivateAuras:ClearAllPoints()
+
+    EXUI:SetSize(PrivateAuras, db.privateAurasWidth, db.privateAurasHeight)
 
     EXUI:SetPoint(
         PrivateAuras,

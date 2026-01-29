@@ -7,7 +7,6 @@ local core = EXUI:GetModule('uf-core')
 ---@class EXUIUnitFramesOptionsCore
 local optionsCore = EXUI:GetModule('uf-options-core')
 
-
 ---@class EXUIUnitFramesOptionsAbsorbs
 local absorbs = EXUI:GetModule('uf-options-absorbs')
 
