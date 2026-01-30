@@ -142,6 +142,18 @@ core:AddOption({
             }
         },
         {
+            name = 'Private Auras',
+            id = 'privateauras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'privateAuras')
+                end,
+                function()
+                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('player')
+                end
+            }
+        },
+        {
             name = 'Marker Icon',
             id = 'markericon',
             options = {
@@ -220,18 +232,6 @@ core:AddOption({
                 function()
                     return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'combatIndicator')
                 end,
-            }
-        },
-        {
-            name = 'Private Auras',
-            id = 'privateauras',
-            options = {
-                function()
-                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'privateAuras')
-                end,
-                function()
-                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('player')
-                end
             }
         },
         {

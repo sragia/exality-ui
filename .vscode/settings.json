@@ -230,7 +230,10 @@
         "CountTable",
         "CompactRaidFrameManager_SetSetting",
         "class",
-        "ItemUpgradeFrame"
+        "ItemUpgradeFrame",
+        "MerchantFrame",
+        "MerchantFrame_ConfirmExtendedItemCost",
+        "MerchantFrame_SetRefundItem"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

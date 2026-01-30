@@ -274,23 +274,31 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
         else
             -- Nothing attached to cursor basically
             if (button == 'LeftButton') then
-                local hasItem = CursorHasItem()
+                local type = GetCursorInfo()
+                if (type == 'merchant' and MerchantFrame.extendedCost) then
+                    MerchantFrame_ConfirmExtendedItemCost(MerchantFrame.extendedCost)
+                else
+                    local hasItem = CursorHasItem()
 
-                local canPickupInventoryItem = not hasItem
-                if (hasItem) then
-                    for _, slotId in ipairs(autoEquipSlotIds) do
-                        if (C_PaperDollInfo.CanCursorCanGoInSlot(slotId)) then
-                            canPickupInventoryItem = true
-                            break
+                    local canPickupInventoryItem = not hasItem
+                    if (hasItem) then
+                        for _, slotId in ipairs(autoEquipSlotIds) do
+                            if (C_PaperDollInfo.CanCursorCanGoInSlot(slotId)) then
+                                canPickupInventoryItem = true
+                                break
+                            end
                         end
                     end
-                end
 
-                if (canPickupInventoryItem) then
-                    PickupInventoryItem(self:GetID())
+                    if (canPickupInventoryItem) then
+                        PickupInventoryItem(self:GetID())
+                    end
+
+                    if (CursorHasItem()) then
+                        MerchantFrame_SetRefundItem(self, 1);
+                    end
                 end
             else -- Right Button
-                -- UseInventoryItem(self:GetID())
             end
         end
     end

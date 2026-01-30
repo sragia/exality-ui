@@ -89,30 +89,36 @@ privateAuras.GetOptions = function(self, unit)
             width = 20
         },
         {
-            type = 'range',
-            label = 'Border Scale',
-            name = 'privateAurasBorderScale',
-            min = 0,
-            max = 2,
-            step = 0.1,
+            type = 'toggle',
+            label = 'Disable Border',
+            name = 'privateAurasDisableBorder',
             currentValue = function()
-                return core:GetValueForUnit(unit, 'privateAurasBorderScale')
+                return core:GetValueForUnit(unit, 'privateAurasDisableBorder')
             end,
             onChange = function(value)
-                core:UpdateValueForUnit(unit, 'privateAurasBorderScale', value)
+                core:UpdateValueForUnit(unit, 'privateAurasDisableBorder', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 100
         },
         {
-            type = 'spacer',
-            width = 40
+            type = 'toggle',
+            label = 'Disable Tooltip',
+            name = 'privateAurasDisableTooltip',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'privateAurasDisableTooltip')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'privateAurasDisableTooltip', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 100
         },
         {
             type = 'range',
             label = 'Spacing X',
             name = 'privateAurasSpacingX',
-            min = 0,
+            min = -3,
             max = 100,
             step = 1,
             currentValue = function()
@@ -128,7 +134,7 @@ privateAuras.GetOptions = function(self, unit)
             type = 'range',
             label = 'Spacing Y',
             name = 'privateAurasSpacingY',
-            min = 0,
+            min = -3,
             max = 100,
             step = 1,
             currentValue = function()

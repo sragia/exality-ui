@@ -9,6 +9,17 @@ privateAuras.Create = function(self, frame)
     local PrivateAuras = CreateFrame('Frame', '$parent_PrivateAuras', frame.ElementFrame)
     PrivateAuras:SetSize(16, 16)
 
+    PrivateAuras.PostUpdate = function(self)
+        local width = self.disableTooltip and 0.1 or self.width
+        local height = self.disableTooltip and 0.1 or self.height
+        for i = 1, self.num do
+            local aura = self[i]
+            if (aura) then
+                aura:SetSize(width, height) -- Hacky way to disable tooltip. Credit to Reloe for the way
+            end
+        end
+    end
+
     PrivateAuras:Show()
     return PrivateAuras
 end
@@ -63,6 +74,10 @@ privateAuras.Update = function(self, frame)
     else
         core:DisableElementForFrame(frame, 'PrivateAuras')
     end
+    local borderScale = db.privateAurasIconWidth / 16
+    if (db.privateAurasDisableBorder) then
+        borderScale = -100
+    end
 
     PrivateAuras.num = db.privateAurasMaxNum
     PrivateAuras.width = db.privateAurasIconWidth
@@ -71,20 +86,13 @@ privateAuras.Update = function(self, frame)
     PrivateAuras.spacingY = db.privateAurasSpacingY
     PrivateAuras.growthX = db.privateAurasGrowthX
     PrivateAuras.growthY = db.privateAurasGrowthY
-    PrivateAuras.borderScale = db.privateAurasBorderScale
+    PrivateAuras.borderScale = borderScale
     PrivateAuras.disableCooldown = db.privateAurasDisableCooldownSpiral
     PrivateAuras.disableCooldownText = db.privateAurasDisableCooldownText
     PrivateAuras.maxCols = db.privateAurasMaxCols
+    PrivateAuras.disableTooltip = db.privateAurasDisableTooltip
 
-    if (db.privateAurasGrowthX == 'RIGHT' and db.privateAurasGrowthY == 'UP') then
-        PrivateAuras.initialAnchor = 'BOTTOMLEFT'
-    elseif (db.privateAurasGrowthX == 'RIGHT' and db.privateAurasGrowthY == 'DOWN') then
-        PrivateAuras.initialAnchor = 'TOPLEFT'
-    elseif (db.privateAurasGrowthX == 'LEFT' and db.privateAurasGrowthY == 'UP') then
-        PrivateAuras.initialAnchor = 'BOTTOMRIGHT'
-    elseif (db.privateAurasGrowthX == 'LEFT' and db.privateAurasGrowthY == 'DOWN') then
-        PrivateAuras.initialAnchor = 'TOPRIGHT'
-    end
+    PrivateAuras.initialAnchor = 'CENTER'
 
     PrivateAuras:ClearAllPoints()
 
@@ -104,4 +112,6 @@ privateAuras.Update = function(self, frame)
     else
         self:HidePreview(PrivateAuras)
     end
+
+    PrivateAuras:PostUpdate()
 end
