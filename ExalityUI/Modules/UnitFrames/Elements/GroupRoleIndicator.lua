@@ -15,6 +15,7 @@ local function GetTexCoordsForRoleSmallCircle(role)
     elseif (role == 'DAMAGER') then
         return 0, 18 / 64, 0, 18 / 32
     end
+    return 0, 0, 0, 0
 end
 
 groupRoleIndicator.Create = function(self, frame)
@@ -24,6 +25,7 @@ groupRoleIndicator.Create = function(self, frame)
     groupRoleIndicator:SetPoint('CENTER')
 
     groupRoleIndicator.PostUpdate = function(self, role)
+        if (not role) then return end
         self:SetTexCoord(GetTexCoordsForRoleSmallCircle(role))
         if (self.hideTank and role == 'TANK') then
             self:Hide()
