@@ -3,4 +3,7 @@
 	<Script file="Target.lua"/>
 	<Script file="TargetTarget.lua"/>
 	<Script file="Focus.lua"/>
+	<Script file="Boss.lua"/>
+	<Script file="Party.lua"/>
+	<Script file="Raid.lua"/>
 </Ui>

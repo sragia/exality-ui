@@ -309,6 +309,72 @@ core:AddOption({
             }
         },
         {
+            name = 'Group Role Indicator',
+            id = 'grouproleindicator',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'groupRoleIndicator')
+                end,
+                {
+                    type = 'toggle',
+                    label = 'Hide Tank',
+                    name = 'groupRoleIndicatorHideTank',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'groupRoleIndicatorHideTank')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'groupRoleIndicatorHideTank', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                    width = 100
+                },
+                {
+                    type = 'toggle',
+                    label = 'Hide Healer',
+                    name = 'groupRoleIndicatorHideHealer',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'groupRoleIndicatorHideHealer')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'groupRoleIndicatorHideHealer', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                    width = 100
+                },
+                {
+                    type = 'toggle',
+                    label = 'Hide DPS',
+                    name = 'groupRoleIndicatorHideDamager',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'groupRoleIndicatorHideDamager')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'groupRoleIndicatorHideDamager', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                    width = 100
+                },
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'groupRoleIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('party', 'groupRoleIndicatorScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('party', 'groupRoleIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('party')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('party', 'groupRoleIndicator')
+                end,
+            }
+        },
+        {
             name = 'Custom Texts',
             id = 'customtexts',
             options = {

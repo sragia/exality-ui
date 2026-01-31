@@ -7,39 +7,37 @@ local core = EXUI:GetModule('uf-core')
 ---@class EXUIOptionsEditor
 local editor = EXUI:GetModule('editor')
 
----@class EXUIUnitFramesRaid
-local raid = EXUI:GetModule('uf-unit-raid')
+---@class EXUIUnitFramesParty
+local party = EXUI:GetModule('uf-unit-party')
 
-raid.unit = 'raid'
-raid.container = nil
-raid.frames = {}
+party.unit = 'party'
+party.container = nil
+party.frames = {}
 
-raid.Init = function(self)
+party.Init = function(self)
     core:SetDefaultsForUnit(self.unit, {
         -- Header Specific
-        ['sizeWidth'] = 80,
-        ['sizeHeight'] = 20,
-        ['positionAnchorPoint'] = 'CENTER',
+        ['sizeWidth'] = 160,
+        ['sizeHeight'] = 50,
+        ['positionAnchorPoint'] = 'TOPRIGHT',
         ['positionRelativePoint'] = 'CENTER',
-        ['positionXOff'] = 0,
-        ['positionYOff'] = 0,
-        ['spacingY'] = 1,
-        ['spacingX'] = 1,
-        ['groupDirection'] = 'RIGHT',
+        ['positionXOff'] = -331,
+        ['positionYOff'] = 226,
+        ['spacing'] = 1,
         -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',
         ['nameFontSize'] = 12,
         ['nameFontFlag'] = 'OUTLINE',
         ['nameFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['nameAnchorPoint'] = 'CENTER',
-        ['nameRelativeAnchorPoint'] = 'CENTER',
+        ['nameAnchorPoint'] = 'BOTTOMLEFT',
+        ['nameRelativeAnchorPoint'] = 'BOTTOMLEFT',
         ['nameTag'] = '[name]',
-        ['nameXOffset'] = 0,
-        ['nameYOffset'] = 0,
-        ['nameMaxWidth'] = 100,
+        ['nameXOffset'] = 3,
+        ['nameYOffset'] = 6,
+        ['nameMaxWidth'] = 60,
         -- Health Text
-        ['healthEnable'] = true,
+        ['healthEnable'] = false,
         ['healthFont'] = 'DMSans',
         ['healthFontSize'] = 12,
         ['healthFontFlag'] = 'OUTLINE',
@@ -52,40 +50,43 @@ raid.Init = function(self)
         -- Health Percentage
         ['healthpercEnable'] = true,
         ['healthpercFont'] = 'DMSans',
-        ['healthpercFontSize'] = 16,
+        ['healthpercFontSize'] = 13,
         ['healthpercFontFlag'] = 'OUTLINE',
         ['healthpercFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['healthpercAnchorPoint'] = 'RIGHT',
-        ['healthpercRelativeAnchorPoint'] = 'RIGHT',
-        ['healthpercXOffset'] = -5,
-        ['healthpercYOffset'] = 3,
+        ['healthpercAnchorPoint'] = 'BOTTOMRIGHT',
+        ['healthpercRelativeAnchorPoint'] = 'BOTTOMRIGHT',
+        ['healthpercXOffset'] = -3,
+        ['healthpercYOffset'] = 9,
         ['healthpercTag'] = '[perhp]%',
+        -- Power
+        ['powerEnable'] = true,
+        ['powerHeight'] = 3,
         -- Debuffs
         ['debuffsEnable'] = true,
-        ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
-        ['debuffsRelativeAnchorPoint'] = 'TOPLEFT',
-        ['debuffsXOff'] = 0,
-        ['debuffsYOff'] = 2,
-        ['debuffsIconWidth'] = 20,
-        ['debuffsIconHeight'] = 20,
+        ['debuffsAnchorPoint'] = 'TOPRIGHT',
+        ['debuffsRelativeAnchorPoint'] = 'RIGHT',
+        ['debuffsXOff'] = -2,
+        ['debuffsYOff'] = 20,
+        ['debuffsIconWidth'] = 27,
+        ['debuffsIconHeight'] = 19,
         ['debuffsOnlyShowPlayer'] = false,
         ['debuffsSpacing'] = 2,
-        ['debuffsNum'] = 32,
+        ['debuffsNum'] = 4,
         ['debuffsColNum'] = 6,
-        ['debuffsAnchorToBuffs'] = true,
+        ['debuffsAnchorToBuffs'] = false,
         ['debuffsCountFont'] = 'DMSans',
-        ['debuffsCountFontSize'] = 12,
+        ['debuffsCountFontSize'] = 15,
         ['debuffsCountFontFlag'] = 'OUTLINE',
         ['debuffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['debuffsCountAnchorPoint'] = 'CENTER',
-        ['debuffsCountRelativeAnchorPoint'] = 'CENTER',
+        ['debuffsCountRelativeAnchorPoint'] = 'TOPRIGHT',
         ['debuffsCountXOff'] = 0,
         ['debuffsCountYOff'] = 0,
         ['debuffsDurationFont'] = 'DMSans',
-        ['debuffsDurationFontSize'] = 12,
+        ['debuffsDurationFontSize'] = 10,
         ['debuffsDurationFontFlag'] = 'OUTLINE',
         -- Buffs
-        ['buffsEnable'] = true,
+        ['buffsEnable'] = false,
         ['buffsAnchorPoint'] = 'BOTTOMLEFT',
         ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
         ['buffsXOff'] = 0,
@@ -122,7 +123,7 @@ raid.Init = function(self)
         ['raidTargetIndicatorXOff'] = 0,
         ['raidTargetIndicatorYOff'] = 0,
         ['raidTargetIndicatorScale'] = 1,
-        -- Health Percentage
+        -- Offline Text
         ['offlineEnable'] = true,
         ['offlineFont'] = 'DMSans',
         ['offlineFontSize'] = 10,
@@ -142,7 +143,7 @@ raid.Init = function(self)
         ['ressurectScale'] = 1,
         -- Summon Indicator
         ['summonEnable'] = true,
-        ['summonAnchorPoint'] = 'CENTER',
+        ['summonAnchorPoint'] = 'TOP',
         ['summonRelativeAnchorPoint'] = 'TOP',
         ['summonXOff'] = 0,
         ['summonYOff'] = 0,
@@ -179,65 +180,20 @@ raid.Init = function(self)
         ['phaseIndicatorXOff'] = 0,
         ['phaseIndicatorYOff'] = 0,
         ['phaseIndicatorScale'] = 1,
-        -- Power
-        ['powerEnable'] = false,
-        ['powerHeight'] = 3,
+        -- Group Role Indicator
+        ['groupRoleIndicatorEnable'] = false,
+        ['groupRoleIndicatorAnchorPoint'] = 'TOPLEFT',
+        ['groupRoleIndicatorRelativeAnchorPoint'] = 'TOPLEFT',
+        ['groupRoleIndicatorXOff'] = 0,
+        ['groupRoleIndicatorYOff'] = 0,
+        ['groupRoleIndicatorScale'] = 1,
+        ['groupRoleIndicatorHideTank'] = false,
+        ['groupRoleIndicatorHideHealer'] = false,
+        ['groupRoleIndicatorHideDamager'] = false,
     })
-
-    self:DisableBlizzard()
 end
 
--- Basically stolen from ElvUI, hope they dont mind.
-raid.DisableBlizzard = function(self)
-    UIParent:UnregisterEvent('GROUP_ROSTER_UPDATE')
-    local frame = _G.CompactRaidFrameContainer
-    frame:UnregisterAllEvents()
-    pcall(frame.Hide, frame)
-
-    local disableElements = {
-        frame.healthBar or frame.healthbar or frame.HealthBar or nil,
-        frame.manabar or frame.ManaBar or nil,
-        frame.castBar or frame.spellbar or nil,
-        frame.petFrame or frame.PetFrame or nil,
-        frame.powerBarAlt or frame.PowerBarAlt or nil,
-        frame.CastingBarFrame or nil,
-        frame.CcRemoverFrame or nil,
-        frame.classPowerBar or nil,
-        frame.DebuffFrame or nil,
-        frame.BuffFrame or nil,
-        frame.totFrame or nil
-    }
-
-    for _, element in ipairs(disableElements) do
-        if (element) then
-            element:UnregisterAllEvents()
-        end
-    end
-
-    hooksecurefunc(frame, 'Show', frame.Hide)
-    hooksecurefunc(frame, 'SetShown', function(self, shown)
-        if (shown) then
-            self:Hide()
-        end
-    end)
-
-
-    if (_G.CompactRaidFrameManager) then
-        _G.CompactRaidFrameManager:UnregisterAllEvents()
-        _G.CompactRaidFrameManager:Hide()
-        hooksecurefunc(_G.CompactRaidFrameManager, 'Show', _G.CompactRaidFrameManager.Hide)
-        hooksecurefunc(_G.CompactRaidFrameManager, 'SetShown', function(self, shown)
-            if (shown) then
-                self:Hide()
-            end
-        end)
-    end
-    if CompactRaidFrameManager_SetSetting then
-        CompactRaidFrameManager_SetSetting('IsShown', '0')
-    end
-end
-
-raid.Create = function(self, frame, unit)
+party.Create = function(self, frame, unit)
     core:Base(frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
@@ -245,6 +201,7 @@ raid.Create = function(self, frame, unit)
     frame.Range = EXUI:GetModule('uf-element-range'):Create(frame)
     frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
     frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
+    frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
     frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame, 'HELPFUL|RAID')
     frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame, 'HARMFUL|RAID')
     frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
@@ -256,25 +213,27 @@ raid.Create = function(self, frame, unit)
     frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
-    frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
+    frame.GroupRoleIndicator = EXUI:GetModule('uf-element-group-role-indicator'):Create(frame)
 
-    frame.Update = function(self) raid:Update(self) end
+    frame.Update = function(self) party:Update(self) end
 
     self:Update(frame)
 end
 
-raid.Update = function(self, frame)
+party.Update = function(self, frame)
     local db = frame.db
     if (not InCombatLockdown()) then
         EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
     end
+
     core:UpdateFrame(frame)
 end
 
-core:RegisterPlayerGroupUnit('raid', 'raid', {
+core:RegisterPlayerGroupUnit('party', 'party', {
     showParty = true,
     showPlayer = true,
     showSolo = true,
-    showRaid = true,
+    showRaid = false,
+    yOffset = 1
 })

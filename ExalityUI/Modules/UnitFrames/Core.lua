@@ -287,6 +287,10 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-custom-texts'):Update(frame)
     end
 
+    if (frame.GroupRoleIndicator) then
+        EXUI:GetModule('uf-element-group-role-indicator'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
 end

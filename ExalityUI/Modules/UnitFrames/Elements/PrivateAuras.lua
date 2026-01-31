@@ -31,7 +31,7 @@ privateAuras.DisplayPreview = function(self, PrivateAuras)
             preview:Hide()
         end
     end
-    for i = 1, PrivateAuras.maxNum do
+    for i = 1, PrivateAuras.num do
         local preview = PrivateAuras.previews[i]
         if (not preview) then
             preview = CreateFrame('Frame', nil, PrivateAuras)
@@ -48,10 +48,10 @@ privateAuras.DisplayPreview = function(self, PrivateAuras)
             'CENTER',
             PrivateAuras,
             'CENTER',
-            (i - 1) * direction * (PrivateAuras.iconWidth + PrivateAuras.spacing),
+            (i - 1) * direction * (PrivateAuras.width + PrivateAuras.spacing),
             0
         )
-        preview:SetSize(PrivateAuras.iconWidth, PrivateAuras.iconHeight)
+        preview:SetSize(PrivateAuras.width, PrivateAuras.height)
         preview:Show()
     end
 end

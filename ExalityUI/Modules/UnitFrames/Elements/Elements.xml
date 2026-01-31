@@ -19,4 +19,5 @@
 	<Script file="SummonIndicator.lua"/>
 	<Script file="PrivateAuras.lua"/>
 	<Script file="CustomTexts.lua"/>
+	<Script file="GroupRoleIndicator.lua"/>
 </Ui>
