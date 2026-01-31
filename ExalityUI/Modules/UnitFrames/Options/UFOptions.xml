@@ -25,6 +25,7 @@
 	<Script file="Units/Focus.lua"/>
 	<Script file="Units/Pet.lua"/>
 	<Script file="Units/Boss.lua"/>
+	<Script file="Units/Arena.lua"/>
 	<Script file="Units/Party.lua"/>
 	<Script file="Units/Raid.lua"/>
 </Ui>

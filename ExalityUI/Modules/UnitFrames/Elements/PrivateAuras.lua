@@ -48,7 +48,7 @@ privateAuras.DisplayPreview = function(self, PrivateAuras)
             'CENTER',
             PrivateAuras,
             'CENTER',
-            (i - 1) * direction * (PrivateAuras.width + PrivateAuras.spacing),
+            (i - 1) * direction * (PrivateAuras.width + PrivateAuras.spacingX),
             0
         )
         preview:SetSize(PrivateAuras.width, PrivateAuras.height)

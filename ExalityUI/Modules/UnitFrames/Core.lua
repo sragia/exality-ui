@@ -69,7 +69,7 @@ core.SharedStyle = function(frame, unit)
     local frameFactory = nil
     if (not core.groupUnitMap[unit]) then
         frameFactory = EXUI:GetModule('uf-unit-' .. unit)
-    else -- Boss
+    elseif (core.groupUnitMap[unit]) then -- Boss/Arena
         frameFactory = EXUI:GetModule('uf-unit-' .. core.groupUnitMap[unit])
     end
 
