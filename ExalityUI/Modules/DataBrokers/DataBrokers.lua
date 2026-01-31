@@ -517,7 +517,7 @@ dataBrokers.Data = {
     end,
     GetById = function(self, id)
         local db = self:GetBaseDB()
-        return db[id] or {}
+        return db[id]
     end,
     UpdateValueForBroker = function(self, id, key, value)
         local db = self:GetBaseDB()

@@ -1131,7 +1131,7 @@ raidToolsModule.CreateEncounterTimer = function(self)
     end
 
     frame.Start = function(self)
-        if (not self.isEnabled) then return end
+        if (not self.isEnabled and not self.isPreview) then return end
         self.isRunning = true
         self.startTime = GetTime()
         self:Show()
@@ -1164,8 +1164,10 @@ raidToolsModule.CreateEncounterTimer = function(self)
 
     frame.DisplayTest = function(self)
         if (self.isRunning) then
+            self.isPreview = false
             self:Stop()
         else
+            self.isPreview = true
             self:Start()
         end
     end
