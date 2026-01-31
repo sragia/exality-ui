@@ -76,6 +76,18 @@ castBar.Create = function(self, frame, unit)
     castBar:SetPoint('BOTTOMLEFT', icon, 'BOTTOMRIGHT', 0, 0)
     castBar:SetPoint('TOPRIGHT')
 
+    castBar.CreatePip = function(self)
+        local pip = CreateFrame('Frame', nil, self)
+        pip:SetWidth(1)
+        local line = pip:CreateTexture(nil, 'OVERLAY')
+        line:SetAllPoints()
+        line:SetBlendMode('ADD')
+        line:SetTexture(EXUI.const.textures.frame.solidBg)
+        line:SetVertexColor(.8, .8, .8, 1)
+
+        return pip
+    end
+
     return castBar
 end
 
