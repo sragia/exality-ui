@@ -63,7 +63,7 @@ profiles.SetupWindow = function(self)
 
     local createInput = EXFrames:GetFrame('edit-box-input'):Create({
         label = 'Profile Name',
-        onChange = function(_, value)
+        onChange = function(value)
             self.newProfileName = value
         end
     })
