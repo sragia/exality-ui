@@ -124,7 +124,11 @@ castBar.Update = function(self, frame)
         db.castbarForegroundColor.b,
         db.castbarForegroundColor.a
     )
-    castBar:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.statusBarTexture))
+
+    local statusBarTexture = db.overrideStatusBarTexture ~= '' and db.overrideStatusBarTexture or
+        generalDB.statusBarTexture
+
+    castBar:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
 
     container:ClearAllPoints()
     if (db.castbarAnchorToFrame) then

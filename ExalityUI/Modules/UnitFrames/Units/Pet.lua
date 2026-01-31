@@ -14,6 +14,22 @@ pet.unit = 'pet'
 
 pet.Init = function(self)
     core:SetDefaultsForUnit(self.unit, {
+        -- General
+        ['enable'] = true,
+        ['showBlizzardFrame'] = false,
+        ['overrideStatusBarTexture'] = '',
+        ['overrideDamageAbsorbTexture'] = '',
+        ['overrideHealAbsorbTexture'] = '',
+        ['overrideHealthColor'] = false,
+        ['useCustomHealthColor'] = false,
+        ['customHealthColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
+        ['useClassColoredBackdrop'] = false,
+        ['useCustomBackdropColor'] = false,
+        ['customBackdropColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
+        ['useCustomHealthAbsorbsColor'] = false,
+        ['healAbsorbColor'] = { r = 100 / 255, g = 100 / 255, b = 100 / 255, a = 0.8 },
+        ['damageAbsorbColor'] = { r = 0, g = 133 / 255, b = 163 / 255, a = 1 },
+        -- Size & Position
         ['sizeWidth'] = 120,
         ['sizeHeight'] = 30,
         ['positionAnchorPoint'] = 'TOPLEFT',
@@ -149,6 +165,11 @@ end
 
 pet.Update = function(self, frame)
     local db = core:GetDBForUnit(self.unit)
+    if (not db.enable) then
+        frame:Disable()
+        return;
+    end
+    frame:Enable()
     local generalDB = core:GetDBForUnit('general')
     frame.db = db
     frame.generalDB = generalDB

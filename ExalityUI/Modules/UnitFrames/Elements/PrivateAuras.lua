@@ -12,7 +12,7 @@ privateAuras.Create = function(self, frame)
     PrivateAuras.PostUpdate = function(self)
         local width = self.disableTooltip and 0.1 or self.width
         local height = self.disableTooltip and 0.1 or self.height
-        for i = 1, self.num do
+        for i = 1, (self.num or 0) do
             local aura = self[i]
             if (aura) then
                 aura:SetSize(width, height) -- Hacky way to disable tooltip. Credit to Reloe for the way

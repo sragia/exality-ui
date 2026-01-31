@@ -13,6 +13,15 @@ core:AddOption({
     allowPreview = true,
     menu = {
         {
+            name = 'General',
+            id = 'general',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-general-frame'):GetOptions('pet')
+                end
+            }
+        },
+        {
             name = 'Size & Position',
             id = 'sizeposition',
             options = {

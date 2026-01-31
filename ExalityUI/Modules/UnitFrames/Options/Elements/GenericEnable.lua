@@ -4,8 +4,6 @@ local EXUI = select(2, ...)
 ---@class EXUIUnitFramesCore
 local core = EXUI:GetModule('uf-core')
 
-local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
-
 ---@class EXUIUnitFramesOptionsGenericEnable
 local genericEnable = EXUI:GetModule('uf-options-generic-enable')
 

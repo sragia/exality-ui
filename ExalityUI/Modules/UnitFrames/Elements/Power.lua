@@ -40,7 +40,9 @@ power.Update = function(self, frame)
     powerBar:SetPoint('BOTTOMLEFT')
     powerBar:SetPoint('BOTTOMRIGHT')
     powerBar:SetHeight(db.powerHeight)
-    powerBar:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.statusBarTexture))
+    local statusBarTexture = db.overrideStatusBarTexture ~= '' and db.overrideStatusBarTexture or
+        generalDB.statusBarTexture
+    powerBar:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
 
     powerBar:SetFrameLevel(frame.Health:GetFrameLevel() + 5)
 end

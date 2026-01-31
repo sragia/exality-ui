@@ -233,7 +233,8 @@
         "ItemUpgradeFrame",
         "MerchantFrame",
         "MerchantFrame_ConfirmExtendedItemCost",
-        "MerchantFrame_SetRefundItem"
+        "MerchantFrame_SetRefundItem",
+        "TYPE"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

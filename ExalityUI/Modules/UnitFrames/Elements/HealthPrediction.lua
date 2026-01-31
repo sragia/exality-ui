@@ -115,14 +115,25 @@ healthPrediction.Update = function(self, frame)
 
     -- Damage Absorb
     if (dmgAbsorbEnable) then
-        HealthPrediction.damageAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.damageAbsorbTexture))
+        local damageAbsorbTexture = db.overrideDamageAbsorbTexture ~= '' and db.overrideDamageAbsorbTexture or
+            generalDB.damageAbsorbTexture
+        HealthPrediction.damageAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', damageAbsorbTexture))
         HealthPrediction.damageAbsorb:SetWidth(db.sizeWidth)
-        HealthPrediction.damageAbsorb:SetStatusBarColor(
-            generalDB.damageAbsorbColor.r,
-            generalDB.damageAbsorbColor.g,
-            generalDB.damageAbsorbColor.b,
-            generalDB.damageAbsorbColor.a
-        )
+        if (db.useCustomHealthAbsorbsColor) then
+            HealthPrediction.damageAbsorb:SetStatusBarColor(
+                db.damageAbsorbColor.r,
+                db.damageAbsorbColor.g,
+                db.damageAbsorbColor.b,
+                db.damageAbsorbColor.a
+            )
+        else
+            HealthPrediction.damageAbsorb:SetStatusBarColor(
+                generalDB.damageAbsorbColor.r,
+                generalDB.damageAbsorbColor.g,
+                generalDB.damageAbsorbColor.b,
+                generalDB.damageAbsorbColor.a
+            )
+        end
 
         HealthPrediction.damageAbsorb:ClearAllPoints()
         HealthPrediction.damageAbsorb:SetPoint('TOP')
@@ -147,13 +158,24 @@ healthPrediction.Update = function(self, frame)
 
     -- Heal Absorb
     if (healAbsorbEnable) then
-        HealthPrediction.healAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', generalDB.healAbsorbTexture))
+        local healAbsorbTexture = db.overrideHealAbsorbTexture ~= '' and db.overrideHealAbsorbTexture or
+            generalDB.healAbsorbTexture
+        HealthPrediction.healAbsorb:SetStatusBarTexture(LSM:Fetch('statusbar', healAbsorbTexture))
         HealthPrediction.healAbsorb:SetWidth(db.sizeWidth)
-        HealthPrediction.healAbsorb:SetStatusBarColor(
-            generalDB.healAbsorbColor.r,
-            generalDB.healAbsorbColor.g,
-            generalDB.healAbsorbColor.b,
-            generalDB.healAbsorbColor.a
-        )
+        if (db.useCustomHealthAbsorbsColor) then
+            HealthPrediction.healAbsorb:SetStatusBarColor(
+                db.healAbsorbColor.r,
+                db.healAbsorbColor.g,
+                db.healAbsorbColor.b,
+                db.healAbsorbColor.a
+            )
+        else
+            HealthPrediction.healAbsorb:SetStatusBarColor(
+                generalDB.healAbsorbColor.r,
+                generalDB.healAbsorbColor.g,
+                generalDB.healAbsorbColor.b,
+                generalDB.healAbsorbColor.a
+            )
+        end
     end
 end

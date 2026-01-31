@@ -102,6 +102,11 @@ core.Factory = function(oUF)
 end
 
 core.CreateOrUpdate = function(self, oUF, unit)
+    local shouldShowBlizzardFrame = self:GetValueForUnit(unit, 'showBlizzardFrame') and
+        not self:GetValueForUnit(unit, 'enable')
+    if (shouldShowBlizzardFrame) then
+        return;
+    end
     local frame = core.frames[unit]
     if (not frame) then
         frame = oUF:Spawn(unit, 'ExalityUI_' .. unit, 'SecureUnitButtonTemplate, PingableUnitFrameTemplate')
@@ -116,6 +121,11 @@ core.CreateOrUpdate = function(self, oUF, unit)
 end
 
 core.CreateOrUpdateGroup = function(self, oUF, group, numUnits)
+    local shouldShowBlizzardFrame = self:GetValueForUnit(group, 'showBlizzardFrame') and
+        not self:GetValueForUnit(group, 'enable')
+    if (shouldShowBlizzardFrame) then
+        return;
+    end
     for i = 1, numUnits do
         local unit = group .. i
         local frame = core.frames[unit]
@@ -136,6 +146,11 @@ end
 core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
     local header
     if (unit == 'party') then
+        local shouldShowBlizzardFrame = self:GetValueForUnit('party', 'showBlizzardFrame') and
+            not self:GetValueForUnit('party', 'enable')
+        if (shouldShowBlizzardFrame) then
+            return;
+        end
         header = core.headers[unit]
         if (not header) then
             local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
@@ -150,6 +165,11 @@ core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
             core.headers[unit] = header
         end
     elseif (unit == 'raid') then
+        local shouldShowBlizzardFrame = self:GetValueForUnit('raid', 'showBlizzardFrame') and
+            not self:GetValueForUnit('raid', 'enable')
+        if (shouldShowBlizzardFrame) then
+            return;
+        end
         header = core.headers[unit]
         if (not header) then
             header = CreateFrame('Frame', 'ExalityUI_RaidContainer', UIParent, 'SecureHandlerStateTemplate')
@@ -357,12 +377,50 @@ core.UpdateAllFrames = function(self)
     self:UpdateFrameForUnit('raid')
 end
 
+core.DisableHeader = function(self, header)
+    header:SetVisibility('custom [@player] hide')
+    header:SetAttribute('showPlayer', true)
+    header:SetAttribute('showSolo', true)
+    header:SetAttribute('showParty', true)
+    header:SetAttribute('showRaid', true)
+    header:SetAttribute('groupFilter', nil)
+    header:SetAttribute('yOffset', nil)
+    header:Hide()
+end
+
 core.UpdateHeader = function(self, unit)
     local header = core.headers[unit]
     if (not header) then return end
 
     local db = self:GetDBForUnit(unit)
     if (not db) then return end
+
+    if (not db.enable) then
+        header.isDisabled = true
+        if (header.groupHeaders) then
+            -- Raid
+            for _, groupHeader in ipairs(header.groupHeaders) do
+                self:DisableHeader(groupHeader)
+            end
+        else
+            -- Party
+            self:DisableHeader(header)
+        end
+        return
+    end
+    if (header.isDisabled) then
+        -- Re-enable header
+        if (not header.groupHeaders) then
+            -- Party, raid is going to be re-enabled in UpdateRaidLayout
+            header:SetAttribute('showPlayer', true)
+            header:SetAttribute('showSolo', true)
+            header:SetAttribute('showParty', true)
+            header:SetAttribute('showRaid', false)
+            header:SetVisibility(header.originalVisibility)
+            header:Show()
+        end
+    end
+    header.isDisabled = false
 
     header:ClearAllPoints()
     EXUI:SetPoint(header, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
@@ -399,6 +457,7 @@ core.UpdateRaidLayout = function(self, container)
         groupHeader:SetAttribute('oUF-initialConfigFunction',
             string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight))
         if (i <= maxGroups) then
+            groupHeader:SetVisibility(groupHeader.originalVisibility)
             groupHeader:SetAttribute('showRaid', true)
             groupHeader:SetAttribute('showPlayer', true)
             groupHeader:SetAttribute('showSolo', true)
