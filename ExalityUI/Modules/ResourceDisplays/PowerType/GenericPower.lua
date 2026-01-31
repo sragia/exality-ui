@@ -15,6 +15,7 @@ genericPower.Types = {
     ['Fury'] = Enum.PowerType.Fury,
     ['Insanity'] = Enum.PowerType.Insanity,
     ['Astral Power'] = Enum.PowerType.LunarPower,
+    ['Arcane Charges'] = Enum.PowerType.ArcaneCharges,
 }
 
 genericPower.Create = function(self, frame)
@@ -64,7 +65,7 @@ genericPower.IsActive = function(self, frame)
         return false
     end
     local unitPowerType = UnitPowerType('player')
-    local isPrimaryResource = unitPowerType == powerType
+    local isPrimaryResource = unitPowerType == powerType or powerType == Enum.PowerType.ArcaneCharges
 
     local maxPower = UnitPowerMax('player', powerType)
     return enabled and maxPower > 0 and (isPrimaryResource or db.showOverride)
@@ -124,5 +125,9 @@ core:RegisterPowerType({
 })
 core:RegisterPowerType({
     name = 'Astral Power',
+    control = genericPower
+})
+core:RegisterPowerType({
+    name = 'Arcane Charges',
     control = genericPower
 })
