@@ -98,8 +98,10 @@ equipmentPopout.SetLogic = function(self, f)
 
         local itemInfos = {}
         for itemLocation, itemLink in pairs(items) do
-            if ((itemLocation - slot:GetID()) ~= ITEM_INVENTORY_LOCATION_PLAYER) then
-                local ilvl = C_Item.GetDetailedItemLevelInfo(itemLink)
+            local locationData = EquipmentManager_GetLocationData(itemLocation)
+            if ((itemLocation - slot:GetID()) ~= ITEM_INVENTORY_LOCATION_PLAYER and locationData.isBags) then
+                local location = ItemLocation:CreateFromBagAndSlot(locationData.bag, locationData.slot)
+                local ilvl = C_Item.GetCurrentItemLevel(location)
                 local icon = select(10, C_Item.GetItemInfo(itemLink))
                 table.insert(itemInfos, { itemLocation = itemLocation, itemLink = itemLink, ilvl = ilvl, icon = icon })
             end

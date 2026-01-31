@@ -279,7 +279,7 @@ characterFrame.Create = function(self)
     leftSlots:SetPoint('TOPLEFT', headerFrame, 'BOTTOMLEFT', 0, -10)
 
     local modelFrame = CreateFrame('Frame', nil, container)
-    modelFrame:SetSize(380, 350)
+    modelFrame:SetSize(380, 334)
     modelFrame:SetPoint('TOPLEFT', leftSlots, 'TOPRIGHT', 10, 0)
 
     local glow = modelFrame:CreateTexture(nil, "OVERLAY")
@@ -352,7 +352,7 @@ characterFrame.Create = function(self)
 
     local bottomSlots = CreateFrame('Frame', nil, container)
     bottomSlots:SetSize(82, 38)
-    bottomSlots:SetPoint('CENTER', modelFrame, 'BOTTOM', 0, 0)
+    bottomSlots:SetPoint('TOP', modelFrame, 'BOTTOM', 0, 0)
 
     self:AddSlots(LEFT_SLOTS, leftSlots, 'LEFT')
     self:AddSlots(RIGHT_SLOTS, rightSlots, 'RIGHT')
