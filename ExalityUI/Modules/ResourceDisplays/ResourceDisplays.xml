@@ -12,6 +12,7 @@
 	<Script file="PowerType/Chi.lua"/>
 	<Script file="PowerType/SoulFragments.lua"/>
 	<Script file="PowerType/Maelstrom.lua"/>
+	<Script file="PowerType/Essence.lua"/>
 
 	<!-- Elements Modules -->
 	<Script file="Elements/StatusBar.lua"/>
