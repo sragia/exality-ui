@@ -494,7 +494,14 @@ core.RefreshDisplayByID = function(self, displayID)
 
     if (not frame.IsActive or not frame:IsActive() or not self:CheckLoadConditions(displayID)) then
         frame:Hide()
+        if (frame.Disable) then
+            frame:Disable()
+        end
         return;
+    end
+
+    if (frame.Enable) then
+        frame:Enable()
     end
 
     if (not editor:IsFrameRegistered(frame)) then

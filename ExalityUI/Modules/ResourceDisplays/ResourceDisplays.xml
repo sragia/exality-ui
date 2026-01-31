@@ -10,6 +10,7 @@
 	<Script file="PowerType/Runes.lua"/>
 	<Script file="PowerType/SoulShards.lua"/>
 	<Script file="PowerType/Chi.lua"/>
+	<Script file="PowerType/SoulFragments.lua"/>
 
 	<!-- Elements Modules -->
 	<Script file="Elements/StatusBar.lua"/>
