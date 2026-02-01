@@ -24,9 +24,9 @@ core.fields = {}
 core.Init = function(self)
     optionsController:RegisterModule(self, self.OptionHandler)
     local defaults = {
-        ['useCustomHealthColor'] = false,
-        ['customHealthColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
-        ['useClassColoredBackdrop'] = false,
+        ['useCustomHealthColor'] = true,
+        ['customHealthColor'] = { r = 0.125490203499794, g = 0.125490203499794, b = 0.125490203499794, a = 1 },
+        ['useClassColoredBackdrop'] = true,
         ['useCustomBackdropColor'] = false,
         ['customBackdropColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
         ['statusBarTexture'] = 'ExalityUI Status Bar',

@@ -32,10 +32,10 @@ pet.Init = function(self)
         -- Size & Position
         ['sizeWidth'] = 120,
         ['sizeHeight'] = 30,
-        ['positionAnchorPoint'] = 'TOPLEFT',
-        ['positionRelativePoint'] = 'CENTER',
-        ['positionXOff'] = 100,
-        ['positionYOff'] = -100,
+        ['positionAnchorPoint'] = 'BOTTOMLEFT',
+        ['positionRelativePoint'] = 'BOTTOMLEFT',
+        ['positionXOff'] = 509,
+        ['positionYOff'] = 140,
         -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',

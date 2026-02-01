@@ -61,7 +61,7 @@ generalModule.GetOptions = function(self)
             end,
             onChange = function(value)
                 data:SetDataByKey('uiScale', value)
-                -- EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end
         },
         {

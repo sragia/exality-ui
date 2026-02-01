@@ -52,12 +52,12 @@ xpBar.values = {
 xpBar.Init = function(self)
     self.Data:UpdateDefaults({
         enable = false,
-        width = 400,
-        height = 30,
-        anchorPoint = 'CENTER',
-        relativeAnchor = 'CENTER',
+        width = 600,
+        height = 40,
+        anchorPoint = 'TOP',
+        relativeAnchor = 'TOP',
         xOffset = 0,
-        yOffset = 0,
+        yOffset = -60,
         font = 'DMSans',
         fontSize = 12,
         fontFlag = 'OUTLINE',

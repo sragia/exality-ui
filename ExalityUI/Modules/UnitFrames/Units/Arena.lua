@@ -37,10 +37,10 @@ arena.Init = function(self)
         ['healAbsorbColor'] = { r = 100 / 255, g = 100 / 255, b = 100 / 255, a = 0.8 },
         ['damageAbsorbColor'] = { r = 0, g = 133 / 255, b = 163 / 255, a = 1 },
         -- Container
-        ['positionAnchorPoint'] = 'TOPLEFT',
-        ['positionRelativePoint'] = 'CENTER',
-        ['positionXOff'] = 100,
-        ['positionYOff'] = -100,
+        ['positionAnchorPoint'] = 'RIGHT',
+        ['positionRelativePoint'] = 'RIGHT',
+        ['positionXOff'] = -467,
+        ['positionYOff'] = 103,
         ['spacing'] = 5,
         -- Individual Unit
         ['sizeWidth'] = 200,

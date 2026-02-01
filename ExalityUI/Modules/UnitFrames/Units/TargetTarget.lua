@@ -30,12 +30,12 @@ targettarget.Init = function(self)
         ['healAbsorbColor'] = { r = 100 / 255, g = 100 / 255, b = 100 / 255, a = 0.8 },
         ['damageAbsorbColor'] = { r = 0, g = 133 / 255, b = 163 / 255, a = 1 },
         -- Size & Position
-        ['sizeWidth'] = 80,
+        ['sizeWidth'] = 200,
         ['sizeHeight'] = 20,
-        ['positionAnchorPoint'] = 'TOPLEFT',
+        ['positionAnchorPoint'] = 'CENTER',
         ['positionRelativePoint'] = 'CENTER',
-        ['positionXOff'] = 100,
-        ['positionYOff'] = -100,
+        ['positionXOff'] = 201,
+        ['positionYOff'] = -229,
         -- Name
         ['nameEnable'] = true,
         ['nameFont'] = 'DMSans',
