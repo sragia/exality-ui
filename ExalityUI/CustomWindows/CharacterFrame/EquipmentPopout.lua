@@ -92,6 +92,7 @@ end
 equipmentPopout.SetLogic = function(self, f)
     f.Update = function(self)
         local slot = self.Slot
+        if (not slot) then return end
 
         local items = GetInventoryItemsForSlot(slot:GetID(), {})
         equipmentPopout.pool:ReleaseAll()

@@ -24,8 +24,10 @@ local tooltip = EXFrames:GetFrame('tooltip')
 ---@class EXUICharacterFrameWindow
 local characterFrame = EXUI:GetModule('character-frame-window')
 
+characterFrame.enabled = false
 characterFrame.isCreated = false
 characterFrame.window = nil
+characterFrame.override = false
 
 local LEFT_SLOTS = {
     1, 2, 3, 15, 5, 4, 19, 9
@@ -36,8 +38,6 @@ local RIGHT_SLOTS = {
 local BOTTOM_SLOTS = {
     16, 17
 }
-
-local blizzFunc = nil
 
 local function MoveFrameNextToWindow(frame)
     if (characterFrame.window and characterFrame.window:IsShown()) then
@@ -74,42 +74,15 @@ characterFrame.ReplaceItemUpgradeFrameOnShow = function(self)
     end
 end
 
-
-characterFrame.ReplaceBlizzFunc = function(self)
-    if (not blizzFunc) then
-        blizzFunc = ToggleCharacter
-        ToggleCharacter = function(frameName)
-            if (not CharacterFrame:IsShown() and frameName == 'PaperDollFrame' and not InCombatLockdown()) then
-                self:OnShow()
-            else
-                blizzFunc(frameName)
-            end
-        end
-        if (ItemSocketingFrame) then
-            self:ReplaceItemSocketingFrameOnShow()
-        end
-        if (ItemUpgradeFrame) then
-            self:ReplaceItemUpgradeFrameOnShow()
-        end
-        -- Addon not Loaded wait for event
-        EXUI:RegisterEventHandler('ADDON_LOADED', 'character-frame', function(event, addonName)
-            if (addonName == 'Blizzard_ItemSocketingUI') then
-                self:ReplaceItemSocketingFrameOnShow()
-            elseif (addonName == 'Blizzard_ItemUpgradeUI') then
-                self:ReplaceItemUpgradeFrameOnShow()
-            end
-        end)
-    end
-end
-
-characterFrame.RestoreBlizzFunc = function(self)
-    if (blizzFunc) then
-        ToggleCharacter = blizzFunc
-        blizzFunc = nil
-    end
-end
-
 characterFrame.Init = function(self)
+    hooksecurefunc("ToggleCharacter", function(frameName)
+        if (InCombatLockdown() or not characterFrame.enabled or characterFrame.override or frameName ~= 'PaperDollFrame') then return end
+        if (CharacterFrame and CharacterFrame:IsShown()) then
+            ToggleCharacter('PaperDollFrame')
+            characterFrame:OnShow()
+        end
+    end)
+
     if (customWindows.Data:GetValue('CharacterFrameEnabled')) then
         self:Enable()
     end
@@ -195,9 +168,9 @@ characterFrame.CreateToBlizzIcon = function(self, window)
     toBlizzIcon:SetScript("OnClick", function()
         if (window:IsShown()) then
             window:HideWindow()
-            if (blizzFunc) then
-                blizzFunc('PaperDollFrame')
-            end
+            characterFrame.override = true
+            ToggleCharacter('PaperDollFrame')
+            characterFrame.override = false
         end
     end)
 
@@ -396,11 +369,26 @@ characterFrame.OnShow = function(self)
 end
 
 characterFrame.Enable = function(self)
-    self:ReplaceBlizzFunc()
+    self.enabled = true
+
+    if (ItemSocketingFrame) then
+        self:ReplaceItemSocketingFrameOnShow()
+    end
+    if (ItemUpgradeFrame) then
+        self:ReplaceItemUpgradeFrameOnShow()
+    end
+    -- Addon not Loaded wait for event
+    EXUI:RegisterEventHandler('ADDON_LOADED', 'character-frame', function(event, addonName)
+        if (addonName == 'Blizzard_ItemSocketingUI') then
+            self:ReplaceItemSocketingFrameOnShow()
+        elseif (addonName == 'Blizzard_ItemUpgradeUI') then
+            self:ReplaceItemUpgradeFrameOnShow()
+        end
+    end)
 end
 
 characterFrame.Disable = function(self)
-    self:RestoreBlizzFunc()
+    self.enabled = false
 end
 
 EXUI:RegisterEventHandler('PLAYER_REGEN_DISABLED', 'character-frame-hide', function()
