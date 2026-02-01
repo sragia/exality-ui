@@ -60,6 +60,7 @@ generalModule.GetOptions = function(self)
                 return data:GetDataByKey('uiScale')
             end,
             onChange = function(value)
+                if (value == data:GetDataByKey('uiScale')) then return end
                 data:SetDataByKey('uiScale', value)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end

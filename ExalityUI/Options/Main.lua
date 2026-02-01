@@ -91,8 +91,35 @@ optionsMain.CreateWindow = function(self)
     local modulesPanel = panel:Create()
     modulesPanel:SetParent(window.container)
     modulesPanel:SetPoint('TOPLEFT')
-    modulesPanel:SetPoint('BOTTOMRIGHT', window.container, 'BOTTOMLEFT', 200, 0)
+    modulesPanel:SetPoint('BOTTOMRIGHT', window.container, 'BOTTOMLEFT', 200, 80)
     modulesPanel:Show()
+
+    local infoPanel = panel:Create()
+    infoPanel:SetParent(window.container)
+    infoPanel:SetPoint('TOPLEFT', modulesPanel, 'BOTTOMLEFT', 0, -5)
+    infoPanel:SetPoint('BOTTOMRIGHT', modulesPanel, 'BOTTOMRIGHT', 0, 0)
+    infoPanel:SetPoint('BOTTOM')
+    infoPanel:Show()
+
+    local discordInput = EXFrames:GetFrame('edit-box-input'):Create({
+        label = 'Discord',
+        initial = 'discord.gg/F8bhZUvQfz',
+        onChange = function() end
+    }, infoPanel)
+    discordInput:SetPoint('TOPLEFT', 5, -5)
+    discordInput:SetPoint('TOPRIGHT', -5, -5)
+    discordInput:SetHeight(35)
+
+    local changelogBtn = button:Create({
+        text = 'Changelog',
+        onClick = function()
+            EXUI:GetModule('changelog'):Show()
+        end,
+        color = { 0.2, 0.2, 0.2, 1 }
+    }, infoPanel)
+    changelogBtn:SetPoint('TOPLEFT', discordInput, 'BOTTOMLEFT', 0, -5)
+    changelogBtn:SetPoint('BOTTOMRIGHT', infoPanel, 'BOTTOMRIGHT', -5, 5)
+
 
     optionsModuleSelector:Create(modulesPanel)
 
@@ -105,7 +132,7 @@ optionsMain.CreateWindow = function(self)
 
     self.editModeDialog = EXFrames:GetFrame('dialog-frame'):Create()
     self.editModeDialog:SetText(
-    'You are now in edit mode. You can now edit the UI by dragging and dropping elements. Exit edit mode to save your changes.')
+        'You are now in edit mode. You can now edit the UI by dragging and dropping elements. Exit edit mode to save your changes.')
     self.editModeDialog:SetButtons({
         {
             text = 'Exit Edit Mode',

@@ -37,6 +37,8 @@ Media.lua
 Profiles.lua
 
 # Options
+Options/ChangelogData.lua
+Options/Changelog.lua
 Options/ReloadDialog.lua
 Options/Controller.lua
 Options/Editor.lua
