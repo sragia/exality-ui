@@ -432,7 +432,8 @@ generalModule.paperDoll = {
 
             local iLink = GetInventoryItemLink("player", gearSlot.slotId)
             if iLink then
-                local ilvl = C_Item.GetDetailedItemLevelInfo(iLink)
+                local itemLocation = ItemLocation:CreateFromEquipmentSlot(gearSlot.slotId);
+                local ilvl = C_Item.GetCurrentItemLevel(itemLocation)
                 gearSlot.frame:SetIlvlText(ilvl)
                 local enchant = EXUI.utils.GetItemEnchant(iLink)
                 if (enchant) then

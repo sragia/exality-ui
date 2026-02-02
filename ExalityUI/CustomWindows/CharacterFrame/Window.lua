@@ -120,7 +120,7 @@ characterFrame.UpdateHeader = function(self)
     self.window.Header.ClassSpecText:SetText(string.format('%s %s', specName,
         classColor:WrapTextInColorCode(class)))
 
-    local avgIlvlString = WrapTextInColorCode(string.format('%.2f', avgEquipped), EXUI.utils.getIlvlColor(avgEquipped))
+    local avgIlvlString = WrapTextInColorCode(string.format('%.2f', avgIlvl), EXUI.utils.getIlvlColor(avgIlvl))
     local avgEquippedString = WrapTextInColorCode(string.format('%.2f', avgEquipped),
         EXUI.utils.getIlvlColor(avgEquipped))
     if (avgIlvl ~= avgEquipped) then
