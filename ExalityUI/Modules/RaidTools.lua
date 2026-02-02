@@ -848,10 +848,19 @@ raidToolsModule.CreateBrezz = function(self)
         if (self:CheckVisibility()) then
             if (not self:IsShown()) then
                 self:RegisterEvent('UNIT_FLAGS') -- To try to detect player resurrection
+                if (self.timer) then
+                    self.timer:Cancel()
+                end
+                self.timer = C_Timer.NewTicker(1, function()
+                    self:Update()
+                end) -- Update the timer every second
             end
             self:Update()
             self:Show()
         else
+            if (self.timer) then
+                self.timer:Cancel()
+            end
             self:UnregisterEvent('UNIT_FLAGS')
             self:Hide()
         end
