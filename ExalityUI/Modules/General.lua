@@ -4,6 +4,9 @@ local EXUI = select(2, ...)
 ---@class EXUIOptionsController
 local optionsController = EXUI:GetModule('options-controller')
 
+---@class EXUIOptionsFields
+local optionsFields = EXUI:GetModule('options-fields')
+
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
@@ -92,19 +95,6 @@ generalModule.GetOptions = function(self)
             width = 100,
         },
         {
-            label = 'Replace All Fonts',
-            name = 'replaceFonts',
-            type = 'toggle',
-            onChange = function(value)
-                data:SetDataByKey('replaceFonts', value)
-                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('replaceFonts')
-            end,
-            width = 100,
-        },
-        {
             label = 'Add Bottom Vignette',
             name = 'bottomVignette',
             type = 'toggle',
@@ -114,6 +104,20 @@ generalModule.GetOptions = function(self)
             end,
             currentValue = function()
                 return data:GetDataByKey('bottomVignette')
+            end,
+            width = 100,
+        },
+        {
+            label = 'Replace All Fonts',
+            name = 'replaceFonts',
+            type = 'toggle',
+            onChange = function(value)
+                data:SetDataByKey('replaceFonts', value)
+                EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                optionsFields:RefreshOptions()
+            end,
+            currentValue = function()
+                return data:GetDataByKey('replaceFonts')
             end,
             width = 100,
         },
@@ -129,6 +133,9 @@ generalModule.GetOptions = function(self)
                     options[font] = font
                 end
                 return options
+            end,
+            depends = function()
+                return data:GetDataByKey('replaceFonts')
             end,
             isFontDropdown = true,
             onChange = function(value)
