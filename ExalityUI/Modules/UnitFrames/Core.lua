@@ -10,6 +10,9 @@ local data = EXUI:GetModule('data')
 ---@class EXUIOptionsEditor
 local editor = EXUI:GetModule('editor')
 
+---@class EXUIoUFTags
+local tags = EXUI:GetModule('oUF-Tags')
+
 ----------------
 
 ---@class EXUIUnitFramesCore
@@ -40,7 +43,7 @@ core.POWER_COLORS = {
 local MAX_GROUPS = 8
 
 core.Init = function(self)
-    self:AddTags()
+    tags:RegisterCustomTags()
     EXUI.oUF:RegisterStyle("ExalityUI", self.SharedStyle)
     EXUI.oUF:Factory(self.Factory)
     self:UpdatePowerColors()
@@ -546,29 +549,6 @@ EXUI:RegisterEventHandler(
     'uf-update-frames',
     function() core:ReconfigureFrames() end
 )
-
-core.AddTags = function(self)
-    -- currHP Formatted
-    EXUI.oUF.Tags.Methods['curhp:formatted'] = function(unit)
-        local currHP = UnitHealth(unit)
-
-        return AbbreviateNumbers(currHP)
-    end
-
-    EXUI.oUF.Tags.Events['curhp:formatted'] = 'UNIT_HEALTH UNIT_MAXHEALTH'
-
-    -- Colored Name
-    EXUI.oUF.Tags.Methods['classcolor:name'] = function(unit)
-        local _, class = UnitClass(unit)
-        if (class) then
-            local classColor = C_ClassColor.GetClassColor(class)
-            return classColor:WrapTextInColorCode(UnitName(unit))
-        end
-        return UnitName(unit)
-    end
-
-    EXUI.oUF.Tags.Events['classcolor:name'] = 'UNIT_NAME_UPDATE'
-end
 
 -- DB Data
 core.SetDefaultsForUnit = function(self, unit, defaults)

@@ -35,8 +35,5 @@ name.Update = function(self, frame)
     name:ClearAllPoints()
     name:SetPoint(db.nameAnchorPoint, frame.ElementFrame, db.nameRelativeAnchorPoint, db.nameXOffset, db.nameYOffset)
     name:SetVertexColor(db.nameFontColor.r, db.nameFontColor.g, db.nameFontColor.b, db.nameFontColor.a)
-    local ok, err = pcall(function()
-        frame:Tag(name, db.nameTag)
-    end)
-    if (not ok) then EXUI.utils.printOut(err) end
+    frame:Tag(name, db.nameTag)
 end
