@@ -77,13 +77,16 @@ castBar.Create = function(self, frame, unit)
     castBar:SetPoint('TOPRIGHT')
 
     castBar.CreatePip = function(self)
+        local db = self.__owner.db
         local pip = CreateFrame('Frame', nil, self)
-        pip:SetWidth(1)
+        pip:SetWidth(db.castbarEmpoweredStageWidth or 1)
         local line = pip:CreateTexture(nil, 'OVERLAY')
         line:SetAllPoints()
         line:SetBlendMode('ADD')
         line:SetTexture(EXUI.const.textures.frame.solidBg)
-        line:SetVertexColor(.8, .8, .8, 1)
+        line:SetVertexColor(db.castbarEmpoweredStageColor.r or 1, db.castbarEmpoweredStageColor.g or 1,
+            db.castbarEmpoweredStageColor.b or 1, db.castbarEmpoweredStageColor.a or 1)
+        pip.line = line
 
         return pip
     end
@@ -120,6 +123,16 @@ castBar.Update = function(self, frame)
         db.castbarFontColor.a)
     castBar.Text:SetWidth(container:GetWidth() - 50)
     castBar.Text:SetHeight(db.castbarHeight)
+
+    for _, pip in pairs(castBar.Pips or {}) do
+        pip:SetWidth(db.castbarEmpoweredStageWidth or 1)
+        pip.line:SetVertexColor(db.castbarEmpoweredStageColor.r or 1, db.castbarEmpoweredStageColor.g or 1,
+            db.castbarEmpoweredStageColor.b or 1, db.castbarEmpoweredStageColor.a or 1)
+    end
+
+    castBar.Spark:SetVertexColor(db.castbarSparkColor.r or 1, db.castbarSparkColor.g or 1,
+        db.castbarSparkColor.b or 1, db.castbarSparkColor.a or 1)
+    EXUI:SetWidth(castBar.Spark, db.castbarSparkWidth or 1)
     EXUI:SetHeight(castBar.Spark, db.castbarHeight)
 
     castBar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b,

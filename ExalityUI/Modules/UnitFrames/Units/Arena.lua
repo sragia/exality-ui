@@ -116,6 +116,10 @@ arena.Init = function(self)
         ['castbarBackgroundColor'] = { r = 0, g = 0, b = 0, a = 0.5 },
         ['castbarBackgroundBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
         ['castbarForegroundColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['castbarEmpoweredStageWidth'] = 1,
+        ['castbarEmpoweredStageColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['castbarSparkWidth'] = 1,
+        ['castbarSparkColor'] = { r = 1, g = 1, b = 1, a = 1 },
         -- Debuffs
         ['debuffsEnable'] = true,
         ['debuffsAnchorPoint'] = 'BOTTOMLEFT',

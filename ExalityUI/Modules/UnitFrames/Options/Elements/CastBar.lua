@@ -363,5 +363,80 @@ castBar.GetOptions = function(self, unit)
             end,
             width = 20
         },
+        {
+            type = 'color-picker',
+            label = 'Spark Color',
+            name = 'castbarSparkColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'castbarSparkColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'castbarSparkColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'spacer',
+            width = 20
+        },
+        {
+            type = 'range',
+            label = 'Empowered Stage Width',
+            name = 'castbarEmpoweredStageWidth',
+            min = 1,
+            max = 20,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'castbarEmpoweredStageWidth')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'castbarEmpoweredStageWidth', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'color-picker',
+            label = 'Empowered Stage Color',
+            name = 'castbarEmpoweredStageColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'castbarEmpoweredStageColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'castbarEmpoweredStageColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'range',
+            label = 'Spark Width',
+            name = 'castbarSparkWidth',
+            min = 1,
+            max = 20,
+            step = 1,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'castbarSparkWidth')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'castbarSparkWidth', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+        {
+            type = 'color-picker',
+            label = 'Spark Color',
+            name = 'castbarSparkColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'castbarSparkColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'castbarSparkColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
     }
 end

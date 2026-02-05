@@ -9,7 +9,7 @@ EXUI.changelog = [[
 - Update battle ress display more often to detect charge changes more reliably.
 - Small option improvements.
 - Add filter options to buffs/debuffs elements. Note: Either Buffs or Debuffs always need to be enabled to see any auras. You can use other filters to filter them down further. Also some filter options only work on 12.0.1 patch.
-
+- Add options to customize castbar's spark and empowered stage width and color.
 
 # |cffdb49000.1.2|r
 
