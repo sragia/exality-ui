@@ -20,9 +20,24 @@ buffs.Create = function(self, frame, filters)
     return Buffs
 end
 
+local function GetFilter(filters)
+    local filter = ''
+    for filterName, value in pairs(filters) do
+        if (value) then
+            filter = filter .. '|' .. filterName
+        end
+    end
+
+    return filter
+end
+
 buffs.Update = function(self, frame)
     local db = frame.db
     local Buffs = frame.Buffs
+
+    local filters = GetFilter(db.buffsFilters)
+    Buffs.filter = filters or Buffs.filter
+    Buffs.originalFilter = Buffs.filter
 
     if (not db.debuffsEnable and not db.buffsEnable) then
         core:DisableElementForFrame(frame, 'Auras')

@@ -99,6 +99,18 @@ raid.Init = function(self)
         ['debuffsDurationFont'] = 'DMSans',
         ['debuffsDurationFontSize'] = 12,
         ['debuffsDurationFontFlag'] = 'OUTLINE',
+        ['debuffsFilters'] = {
+            HELPFUL = false,
+            HARMFUL = true,
+            RAID = false,
+            PLAYER = false,
+            INCLUDE_NAME_PLATE_ONLY = false,
+            CROWD_CONTROL = false,
+            BIG_DEFENSIVE = false,
+            RAID_PLAYER_DISPELLABLE = false,
+            RAID_IN_COMBAT = true,
+            IMPORTANT = false
+        },
         -- Buffs
         ['buffsEnable'] = true,
         ['buffsAnchorPoint'] = 'BOTTOMLEFT',
@@ -123,6 +135,18 @@ raid.Init = function(self)
         ['buffsDurationFont'] = 'DMSans',
         ['buffsDurationFontSize'] = 12,
         ['buffsDurationFontFlag'] = 'OUTLINE',
+        ['buffsFilters'] = {
+            HELPFUL = true,
+            HARMFUL = false,
+            RAID = false,
+            PLAYER = false,
+            INCLUDE_NAME_PLATE_ONLY = false,
+            CROWD_CONTROL = false,
+            BIG_DEFENSIVE = false,
+            RAID_PLAYER_DISPELLABLE = false,
+            RAID_IN_COMBAT = true,
+            IMPORTANT = false
+        },
         -- Raid Roles
         ['raidRolesEnable'] = true,
         ['raidRolesAnchorPoint'] = 'LEFT',

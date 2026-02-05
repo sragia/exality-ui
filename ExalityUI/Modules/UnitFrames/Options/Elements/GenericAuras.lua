@@ -197,17 +197,210 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             width = 60
         },
         {
-            type = 'toggle',
-            label = 'Only Show Player Auras',
-            name = prefix .. 'OnlyShowPlayer',
+            type = 'title',
+            label = 'Filters',
+            width = 100
+        },
+        {
+            type = 'description',
+            width = 100,
+            label = 'Filters to apply to the auras. These will only show auras that match the filters selected.'
+        },
+        {
+            type = 'checkbox',
+            label = 'Buffs',
+            name = prefix .. 'Filters.HELPFUL',
+            tooltip = {
+                text = 'Show buffs. Mandatory to have if you wish to see buffs.'
+            },
             onChange = function(value)
-                core:UpdateValueForUnit(unit, prefix .. 'OnlyShowPlayer', value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.HELPFUL = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
                 core:UpdateFrameForUnit(unit)
             end,
             currentValue = function()
-                return core:GetValueForUnit(unit, prefix .. 'OnlyShowPlayer')
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.HELPFUL
             end,
-            width = 100
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Debuffs',
+            name = prefix .. 'Filters.HARMFUL',
+            tooltip = {
+                text = 'Show debuffs. Mandatory to have if you wish to see debuffs.'
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.HARMFUL = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.HARMFUL
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Raid',
+            name = prefix .. 'Filters.RAID',
+            tooltip = {
+                text =
+                [[Buffs filtered by the player's class, e.g. for Priests it will only return Power Word: Fortitude or Renew.
+Certain debuffs that only show up on raid frames, e.g. most debuffs that are relevant in a raid context.
+Works outside of the raid
+                ]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.RAID = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.RAID
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'My Own Only',
+            name = prefix .. 'Filters.PLAYER',
+            tooltip = {
+                text = [[Shows auras that have been applied by you]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.PLAYER = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.PLAYER
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Nameplate Like',
+            name = prefix .. 'Filters.INCLUDE_NAME_PLATE_ONLY',
+            tooltip = {
+                text = [[Auras that should be shown on nameplates]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.INCLUDE_NAME_PLATE_ONLY = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.INCLUDE_NAME_PLATE_ONLY
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Crowd Control',
+            name = prefix .. 'Filters.CROWD_CONTROL',
+            tooltip = {
+                text = [[Shows crowd control auras]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.CROWD_CONTROL = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.CROWD_CONTROL
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Big Defensive',
+            name = prefix .. 'Filters.BIG_DEFENSIVE',
+            tooltip = {
+                text = [[Shows Big Defensive auras]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.BIG_DEFENSIVE = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.BIG_DEFENSIVE
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Dispellable',
+            name = prefix .. 'Filters.HELPFUL',
+            tooltip = {
+                text = [[Shows auras that player can dispell]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.RAID_PLAYER_DISPELLABLE = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.RAID_PLAYER_DISPELLABLE
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Raid In Combat',
+            name = prefix .. 'Filters.RAID_IN_COMBAT',
+            tooltip = {
+                text = [[Shows auras that are flagged to show on raid frames in combat
+Can be useful for healers in combination of Buffs and My Own Only to show HoTs
+                ]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.RAID_IN_COMBAT = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.RAID_IN_COMBAT
+            end,
+            width = 20
+        },
+        {
+            type = 'checkbox',
+            label = 'Important',
+            name = prefix .. 'Filters.IMPORTANT',
+            tooltip = {
+                text = [[Shows auras that are marked as important by Blizzard]]
+            },
+            onChange = function(value)
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                filters.IMPORTANT = value
+                core:UpdateValueForUnit(unit, prefix .. 'Filters', filters)
+                core:UpdateFrameForUnit(unit)
+            end,
+            currentValue = function()
+                local filters = core:GetValueForUnit(unit, prefix .. 'Filters')
+                return filters.IMPORTANT or false
+            end,
+            width = 20
         },
         {
             type = 'title',

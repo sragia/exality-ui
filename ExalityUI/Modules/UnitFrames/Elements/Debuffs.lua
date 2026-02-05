@@ -21,9 +21,25 @@ debuffs.Create = function(self, frame, filters)
     return Debuffs
 end
 
+local function GetFilter(filters)
+    local filter = ''
+    for filterName, value in pairs(filters) do
+        if (value) then
+            filter = filter .. '|' .. filterName
+        end
+    end
+
+    return filter
+end
+
+
 debuffs.Update = function(self, frame)
     local db = frame.db
     local Debuffs = frame.Debuffs
+
+    local filters = GetFilter(db.debuffsFilters)
+    Debuffs.filter = filters or Debuffs.filter
+    Debuffs.originalFilter = Debuffs.filter
 
     if (not db.debuffsEnable and not db.buffsEnable) then
         core:DisableElementForFrame(frame, 'Auras')

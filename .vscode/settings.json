@@ -235,7 +235,9 @@
         "MerchantFrame_ConfirmExtendedItemCost",
         "MerchantFrame_SetRefundItem",
         "TYPE",
-        "EquipmentManager_GetLocationData"
+        "EquipmentManager_GetLocationData",
+        "RAID",
+        "PLAYER"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [
