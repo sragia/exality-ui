@@ -2,6 +2,11 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.1.4|r
+
+- Add support for NSRT nicknames via custom tag [nsrt-name]
+- Fix duplicate friends showing up in friends broker.
+
 # |cffdb49000.1.3|r
 
 - Fix ilvl for default character frame Improvements.

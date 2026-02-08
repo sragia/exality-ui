@@ -154,6 +154,7 @@ local function FetchBNetFriends()
                                     end
                                 end)
                         end
+                        break;
                     end
                 end
             else
