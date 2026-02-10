@@ -6,6 +6,7 @@ EXUI.changelog = [[
 
 - Add support for NSRT nicknames via custom tag [nsrt-name]
 - Fix duplicate friends showing up in friends broker.
+- Update oUF for 12.0.1 compatibility.
 
 # |cffdb49000.1.3|r
 
