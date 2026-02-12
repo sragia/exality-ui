@@ -9,7 +9,7 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 ---@class EXUIUnitFramesOptionsGenericAuras
 local genericAuras = EXUI:GetModule('uf-options-generic-auras')
 
-genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
+genericAuras.GetOptions = function(self, unit, prefix, isBuffs, hideAnchorTo)
     return {
         {
             type = 'toggle',
@@ -36,6 +36,9 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs)
             onChange = function(value)
                 core:UpdateValueForUnit(unit, prefix .. 'AnchorTo' .. (isBuffs and 'Debuffs' or 'Buffs'), value)
                 core:UpdateFrameForUnit(unit)
+            end,
+            depends = function()
+                return not hideAnchorTo
             end,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'AnchorTo' .. (isBuffs and 'Debuffs' or 'Buffs'))

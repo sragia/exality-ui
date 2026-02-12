@@ -125,6 +125,15 @@ core:AddOption({
             }
         },
         {
+            name = 'Custom Auras',
+            id = 'auras',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('targettarget', 'auras', false, true)
+                end
+            }
+        },
+        {
             name = 'Private Auras',
             id = 'privateauras',
             options = {

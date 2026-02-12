@@ -290,6 +290,10 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-debuffs'):Update(frame)
     end
 
+    if (frame.Auras) then
+        EXUI:GetModule('uf-element-auras'):Update(frame)
+    end
+
     if (frame.Offline) then
         EXUI:GetModule('uf-element-offline'):Update(frame)
     end

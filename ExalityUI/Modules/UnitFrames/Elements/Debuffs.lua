@@ -8,12 +8,20 @@ local debuffs = EXUI:GetModule('uf-element-debuffs')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
-debuffs.CountdownFontName = 'ExalityUI_Debuffs_CountdownFont'
-debuffs.CountdownFont = CreateFont(debuffs.CountdownFontName)
+debuffs.GetFont = function(self, unit)
+    local fontName = 'ExalityUI_Debuffs_CD_' .. unit
+    local font = _G[fontName]
+    if (not font) then
+        font = CreateFont(fontName)
+    end
 
-debuffs.Create = function(self, frame, filters)
+    return font, fontName
+end
+
+debuffs.Create = function(self, frame, filters, unit)
     local Debuffs = CreateFrame('Frame', nil, frame.ElementFrame)
     Debuffs.PostCreateButton = debuffs.PostCreateButton
+    Debuffs.baseUnit = unit
 
     Debuffs.filter = filters
     Debuffs.originalFilter = filters
@@ -41,18 +49,22 @@ debuffs.Update = function(self, frame)
     Debuffs.filter = filters or Debuffs.filter
     Debuffs.originalFilter = Debuffs.filter
 
-    if (not db.debuffsEnable and not db.buffsEnable) then
+    if (not db.debuffsEnable and not db.buffsEnable and not db.aurasEnable) then
         core:DisableElementForFrame(frame, 'Auras')
         return
+    elseif (not frame:IsEventRegistered('UNIT_AURA')) then
+        core:EnableElementForFrame(frame, 'Auras')
     end
     if (not db.debuffsEnable) then
         Debuffs.num = 0
+        Debuffs.filter = 'NONE'
         if (Debuffs.ForceUpdate) then
             Debuffs:ForceUpdate()
         end
+        Debuffs:Hide()
         return
     end
-    core:EnableElementForFrame(frame, 'Auras')
+    Debuffs:Show()
 
     Debuffs.width = db.debuffsIconWidth
     Debuffs.height = db.debuffsIconHeight
@@ -79,7 +91,6 @@ debuffs.Update = function(self, frame)
     elseif (growthX == 'RIGHT' and growthY == 'DOWN') then
         Debuffs.initialAnchor = 'TOPLEFT'
     end
-    Debuffs.onlyShowPlayer = db.debuffsOnlyShowPlayer
 
     local col = db.debuffsColNum or 6
     local width = (db.debuffsIconWidth + db.debuffsSpacing) * col - db.debuffsSpacing
@@ -89,10 +100,11 @@ debuffs.Update = function(self, frame)
     if (db.debuffsAnchorToBuffs and frame.Buffs and db.buffsEnable) then
         anchorFrame = frame.Buffs
     end
+    Debuffs:ClearAllPoints()
     Debuffs:SetPoint(db.debuffsAnchorPoint, anchorFrame, db.debuffsRelativeAnchorPoint, db.debuffsXOff, db.debuffsYOff)
     self:UpdateAspectRatio(Debuffs, db.debuffsIconWidth, db.debuffsIconHeight)
     self:UpdateAllTexts(Debuffs)
-    self:UpdateCountdownFont(db)
+    self:UpdateCountdownFont(Debuffs.baseUnit, db)
     if (Debuffs.ForceUpdate) then
         Debuffs:ForceUpdate()
     end
@@ -103,7 +115,7 @@ debuffs.PostCreateButton = function(Debuffs, button)
     local db = Debuffs.__owner.db
     icon:SetTexCoord(EXUI.utils.getTexCoords(db.debuffsIconWidth, db.debuffsIconHeight, 5))
     debuffs:UpdateCountText(button, db)
-    debuffs:UpdateDurationText(button)
+    debuffs:UpdateDurationText(button, Debuffs.baseUnit)
 end
 
 debuffs.UpdateAspectRatio = function(self, Debuffs, width, height)
@@ -141,11 +153,13 @@ debuffs.UpdateCountText = function(self, button, db)
     )
 end
 
-debuffs.UpdateCountdownFont = function(self, db)
-    self.CountdownFont:SetFont(LSM:Fetch('font', db.debuffsDurationFont), db.debuffsDurationFontSize,
+debuffs.UpdateCountdownFont = function(self, unit, db)
+    local font = self:GetFont(unit)
+    font:SetFont(LSM:Fetch('font', db.debuffsDurationFont), db.debuffsDurationFontSize,
         db.debuffsDurationFontFlag)
 end
 
-debuffs.UpdateDurationText = function(self, button)
-    button.Cooldown:SetCountdownFont(self.CountdownFontName)
+debuffs.UpdateDurationText = function(self, button, unit)
+    local _, fontName = self:GetFont(unit)
+    button.Cooldown:SetCountdownFont(fontName)
 end

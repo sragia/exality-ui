@@ -227,6 +227,40 @@ party.Init = function(self)
         ['groupRoleIndicatorHideTank'] = true,
         ['groupRoleIndicatorHideHealer'] = false,
         ['groupRoleIndicatorHideDamager'] = true,
+        -- Custom Auras
+        ['aurasEnable'] = false,
+        ['aurasAnchorPoint'] = 'CENTER',
+        ['aurasRelativeAnchorPoint'] = 'CENTER',
+        ['aurasXOff'] = 0,
+        ['aurasYOff'] = 0,
+        ['aurasIconWidth'] = 20,
+        ['aurasIconHeight'] = 20,
+        ['aurasFilters'] = {
+            HELPFUL = false,
+            HARMFUL = false,
+            RAID = false,
+            PLAYER = false,
+            INCLUDE_NAME_PLATE_ONLY = false,
+            CROWD_CONTROL = false,
+            BIG_DEFENSIVE = false,
+            RAID_PLAYER_DISPELLABLE = false,
+            RAID_IN_COMBAT = false
+        },
+        ['aurasSpacing'] = 2,
+        ['aurasNum'] = 32,
+        ['aurasColNum'] = 6,
+        ['aurasAnchorToDebuffs'] = false,
+        ['aurasCountFont'] = 'DMSans',
+        ['aurasCountFontSize'] = 12,
+        ['aurasCountFontFlag'] = 'OUTLINE',
+        ['aurasCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['aurasCountAnchorPoint'] = 'CENTER',
+        ['aurasCountRelativeAnchorPoint'] = 'CENTER',
+        ['aurasCountXOff'] = 0,
+        ['aurasCountYOff'] = 0,
+        ['aurasDurationFont'] = 'DMSans',
+        ['aurasDurationFontSize'] = 12,
+        ['aurasDurationFontFlag'] = 'OUTLINE',
     })
 end
 
@@ -239,8 +273,8 @@ party.Create = function(self, frame, unit)
     frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
     frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
-    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame, 'HELPFUL|RAID')
-    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame, 'HARMFUL|RAID')
+    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame, 'HELPFUL|RAID', 'party')
+    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame, 'HARMFUL|RAID', 'party')
     frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
     frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
     frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
@@ -252,6 +286,7 @@ party.Create = function(self, frame, unit)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.GroupRoleIndicator = EXUI:GetModule('uf-element-group-role-indicator'):Create(frame)
+    frame.Auras = EXUI:GetModule('uf-element-auras'):Create(frame, 'party')
 
     frame.Update = function(self) party:Update(self) end
 

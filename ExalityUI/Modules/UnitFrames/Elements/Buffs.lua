@@ -8,12 +8,20 @@ local buffs = EXUI:GetModule('uf-element-buffs')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
-buffs.CountdownFontName = 'ExalityUI_Buffs_CountdownFont'
-buffs.CountdownFont = CreateFont(buffs.CountdownFontName)
+buffs.GetFont = function(self, unit)
+    local fontName = 'ExalityUI_Buffs_CD_' .. unit
+    local font = _G[fontName]
+    if (not font) then
+        font = CreateFont(fontName)
+    end
 
-buffs.Create = function(self, frame, filters)
+    return font, fontName
+end
+
+buffs.Create = function(self, frame, filters, unit)
     local Buffs = CreateFrame('Frame', nil, frame.ElementFrame)
     Buffs.PostCreateButton = buffs.PostCreateButton
+    Buffs.baseUnit = unit
 
     Buffs.filter = filters
     Buffs.originalFilter = filters
@@ -39,18 +47,23 @@ buffs.Update = function(self, frame)
     Buffs.filter = filters or Buffs.filter
     Buffs.originalFilter = Buffs.filter
 
-    if (not db.debuffsEnable and not db.buffsEnable) then
+    if (not db.debuffsEnable and not db.buffsEnable and not db.aurasEnable) then
         core:DisableElementForFrame(frame, 'Auras')
         return
+    elseif (not frame:IsEventRegistered('UNIT_AURA')) then
+        core:EnableElementForFrame(frame, 'Auras')
     end
+
     if (not db.buffsEnable) then
         Buffs.num = 0
+        Buffs.filter = 'NONE'
         if (Buffs.ForceUpdate) then
             Buffs:ForceUpdate()
         end
+        Buffs:Hide()
         return
     end
-    core:EnableElementForFrame(frame, 'Auras')
+    Buffs:Show()
 
     Buffs.width = db.buffsIconWidth
     Buffs.height = db.buffsIconHeight
@@ -77,7 +90,6 @@ buffs.Update = function(self, frame)
     elseif (growthX == 'RIGHT' and growthY == 'DOWN') then
         Buffs.initialAnchor = 'TOPLEFT'
     end
-    Buffs.onlyShowPlayer = db.buffsOnlyShowPlayer
 
     local col = db.buffsColNum or 6
     local width = (db.buffsIconWidth + db.buffsSpacing) * col - db.buffsSpacing
@@ -87,10 +99,11 @@ buffs.Update = function(self, frame)
     if (db.buffsAnchorToDebuffs and not db.debuffsAnchorToBuffs and frame.Debuffs and db.debuffsEnable) then
         anchorFrame = frame.Debuffs
     end
+    Buffs:ClearAllPoints()
     Buffs:SetPoint(db.buffsAnchorPoint, anchorFrame, db.buffsRelativeAnchorPoint, db.buffsXOff, db.buffsYOff)
     self:UpdateAspectRatio(Buffs, db.buffsIconWidth, db.buffsIconHeight)
     self:UpdateAllTexts(Buffs)
-    self:UpdateCountdownFont(db)
+    self:UpdateCountdownFont(Buffs.baseUnit, db)
     if (Buffs.ForceUpdate) then
         Buffs:ForceUpdate()
     end
@@ -101,7 +114,7 @@ buffs.PostCreateButton = function(Buffs, button)
     local db = Buffs.__owner.db
     icon:SetTexCoord(EXUI.utils.getTexCoords(db.buffsIconWidth, db.buffsIconHeight, 5))
     buffs:UpdateCountText(button, db)
-    buffs:UpdateDurationText(button)
+    buffs:UpdateDurationText(button, Buffs.baseUnit)
 end
 
 buffs.UpdateAspectRatio = function(self, Buffs, width, height)
@@ -139,11 +152,13 @@ buffs.UpdateCountText = function(self, button, db)
     )
 end
 
-buffs.UpdateCountdownFont = function(self, db)
-    self.CountdownFont:SetFont(LSM:Fetch('font', db.buffsDurationFont), db.buffsDurationFontSize,
+buffs.UpdateCountdownFont = function(self, unit, db)
+    local font = self:GetFont(unit)
+    font:SetFont(LSM:Fetch('font', db.buffsDurationFont), db.buffsDurationFontSize,
         db.buffsDurationFontFlag)
 end
 
-buffs.UpdateDurationText = function(self, button)
-    button.Cooldown:SetCountdownFont(self.CountdownFontName)
+buffs.UpdateDurationText = function(self, button, unit)
+    local _, fontName = self:GetFont(unit)
+    button.Cooldown:SetCountdownFont(fontName)
 end

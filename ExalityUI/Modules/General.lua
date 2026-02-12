@@ -600,6 +600,7 @@ generalModule.fonts = {
         "SystemFont_NamePlateFixed",
         "SystemFont_LargeNamePlateFixed",
         "SystemFont_NamePlate",
+        "SystemFont_NamePlate_Outlined",
         "SystemFont_LargeNamePlate",
         "SystemFont_NamePlateCastBar",
         "NumberFont_GameNormal",

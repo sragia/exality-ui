@@ -20,4 +20,5 @@
 	<Script file="PrivateAuras.lua"/>
 	<Script file="CustomTexts.lua"/>
 	<Script file="GroupRoleIndicator.lua"/>
+	<Script file="Auras.lua"/>
 </Ui>

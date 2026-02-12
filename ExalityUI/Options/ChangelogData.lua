@@ -2,6 +2,10 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.1.5|r
+
+- Fix buffs and debuffs CD font settings being shared between units.
+
 # |cffdb49000.1.4|r
 
 - Add support for NSRT nicknames via custom tag [nsrt-name]
