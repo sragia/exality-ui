@@ -519,9 +519,8 @@ core.CheckRaidDificulty = function(self)
             -- Flex
             MAX_GROUPS = 8
         end
+        self:UpdateRaidLayout(raidHeader)
     end
-
-    self:UpdateRaidLayout(raidHeader)
 end
 
 core.UpdatePowerColors = function(self)
@@ -538,7 +537,9 @@ end
 EXUI:RegisterEventHandler(
     { 'PLAYER_ENTERING_WORLD', 'ZONE_CHANGED_NEW_AREA' },
     'raid-check-difficulty',
-    function() core:CheckRaidDificulty() end
+    function()
+        core:CheckRaidDificulty()
+    end
 )
 
 core.ReconfigureFrames = function(self)

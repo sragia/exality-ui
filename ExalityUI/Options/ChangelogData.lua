@@ -5,6 +5,8 @@ EXUI.changelog = [[
 # |cffdb49000.1.5|r
 
 - Fix buffs and debuffs CD font settings being shared between units.
+- Add additional aura display to all UFs. Disabled by default.
+- Fix issue where raid frame flickers on screen on zone change.
 
 # |cffdb49000.1.4|r
 
