@@ -68,14 +68,7 @@ buffs.Update = function(self, frame)
     Buffs.width = db.buffsIconWidth
     Buffs.height = db.buffsIconHeight
     Buffs.spacing = db.buffsSpacing
-    if (frame.isFake) then
-        Buffs.filter = 'HELPFUL'
-        Buffs.num = 3
-    else
-        local filter = Buffs.originalFilter
-        Buffs.num = db.buffsNum
-        Buffs.filter = filter
-    end
+    Buffs.num = db.buffsNum
 
     local growthX = string.find(db.buffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.buffsAnchorPoint, 'TOP') and 'DOWN' or 'UP'
@@ -104,8 +97,71 @@ buffs.Update = function(self, frame)
     self:UpdateAspectRatio(Buffs, db.buffsIconWidth, db.buffsIconHeight)
     self:UpdateAllTexts(Buffs)
     self:UpdateCountdownFont(Buffs.baseUnit, db)
+
+    if (frame.isFake) then
+        Buffs.filter = 'NONE'
+    end
+
+    if (frame:IsElementPreviewEnabled('buffs')) then
+        self:CreateOrUpdatePreview(frame)
+    else
+        self:HidePreview(frame)
+    end
+
     if (Buffs.ForceUpdate) then
         Buffs:ForceUpdate()
+    end
+end
+
+buffs.CreateOrUpdatePreview = function(self, frame)
+    local Buffs = frame.Buffs
+    local num = math.min(5, Buffs.num)
+    if (not frame.BuffsPreviews) then
+        frame.BuffsPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(Buffs, num)
+    else
+        for _, button in ipairs(frame.BuffsPreviews) do
+            if (button) then
+                EXUI:GetModule('uf-preview-util'):DestroyAura(button)
+            end
+        end
+
+        frame.BuffsPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(Buffs, num)
+    end
+    local element = frame.BuffsPreviews
+    local width = Buffs.width or Buffs.size or 16
+    local height = Buffs.height or Buffs.size or 16
+    local sizeX = width + (Buffs.spacingX or Buffs.spacing or 0)
+    local sizeY = height + (Buffs.spacingY or Buffs.spacing or 0)
+    local anchor = Buffs.initialAnchor or 'BOTTOMLEFT'
+    local growthX = (Buffs.growthX == 'LEFT' and -1) or 1
+    local growthY = (Buffs.growthY == 'DOWN' and -1) or 1
+    local cols = Buffs.maxCols or math.floor(Buffs:GetWidth() / sizeX + 0.5)
+    for i = 1, num do
+        local button = element[i]
+        if (not button) then break end
+
+        local col = (i - 1) % cols
+        local row = math.floor((i - 1) / cols)
+
+        button:SetSize(width, height)
+
+        self:UpdateDurationText(button, Buffs.baseUnit)
+        self:UpdateCountText(button, Buffs.__owner.db)
+
+        button:ClearAllPoints()
+        button:SetPoint(anchor, Buffs, anchor, col * sizeX * growthX, row * sizeY * growthY)
+        button:Show()
+    end
+    self:UpdateAspectRatio(element, width, height)
+end
+
+buffs.HidePreview = function(self, frame)
+    if (not frame.BuffsPreviews) then return end
+
+    for _, button in ipairs(frame.BuffsPreviews) do
+        if (button) then
+            button:Hide()
+        end
     end
 end
 

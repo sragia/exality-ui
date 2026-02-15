@@ -124,6 +124,7 @@ core:AddOption({
         {
             name = 'Buffs',
             id = 'buffs',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('pet', 'buffs', true)
@@ -133,6 +134,7 @@ core:AddOption({
         {
             name = 'Debuffs',
             id = 'debuffs',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('pet', 'debuffs', false)
@@ -142,6 +144,7 @@ core:AddOption({
         {
             name = 'Custom Auras',
             id = 'auras',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('pet', 'auras', false, true)

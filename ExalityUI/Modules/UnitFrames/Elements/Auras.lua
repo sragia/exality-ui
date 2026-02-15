@@ -65,16 +65,16 @@ auras.Update = function(self, frame)
     Auras.width = db.aurasIconWidth
     Auras.height = db.aurasIconHeight
     Auras.spacing = db.aurasSpacing
-    if (frame.isFake) then
-        Auras.filter = 'HELPFUL'
-        Auras.num = 3
-    else
-        Auras.num = db.aurasNum
-        Auras.filter = Auras.originalFilter
-    end
+    Auras.num = db.aurasNum
 
     local growthX = string.find(db.aurasAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.aurasAnchorPoint, 'TOP') and 'DOWN' or 'UP'
+    if (db.aurasAnchorPoint == 'CENTER') then
+        growthX = 'LEFT'
+    end
+    if (db.aurasRelativeAnchorPoint == 'CENTER') then
+        growthY = 'DOWN'
+    end
     Auras.growthX = growthX
     Auras.growthY = growthY
     if (growthX == 'LEFT' and growthY == 'UP') then
@@ -96,8 +96,70 @@ auras.Update = function(self, frame)
     self:UpdateAspectRatio(Auras, db.aurasIconWidth, db.aurasIconHeight)
     self:UpdateAllTexts(Auras)
     self:UpdateCountdownFont(Auras.baseUnit, db)
+
+
+    if (frame:IsElementPreviewEnabled('auras')) then
+        Auras.filter = 'NONE'
+        self:CreateOrUpdatePreview(frame)
+    else
+        self:HidePreview(frame)
+    end
+
+
     if (Auras.ForceUpdate) then
         Auras:ForceUpdate()
+    end
+end
+
+auras.CreateOrUpdatePreview = function(self, frame)
+    local Auras = frame.Auras
+    local num = math.min(5, Auras.num)
+    if (not frame.AurasPreviews) then
+        frame.AurasPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(Auras, num)
+    else
+        for _, button in ipairs(frame.AurasPreviews) do
+            if (button) then
+                EXUI:GetModule('uf-preview-util'):DestroyAura(button)
+            end
+        end
+
+        frame.AurasPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(Auras, num)
+    end
+    local element = frame.AurasPreviews
+    local width = Auras.width or Auras.size or 16
+    local height = Auras.height or Auras.size or 16
+    local sizeX = width + (Auras.spacingX or Auras.spacing or 0)
+    local sizeY = height + (Auras.spacingY or Auras.spacing or 0)
+    local anchor = Auras.initialAnchor or 'BOTTOMLEFT'
+    local growthX = (Auras.growthX == 'LEFT' and -1) or 1
+    local growthY = (Auras.growthY == 'DOWN' and -1) or 1
+    local cols = Auras.maxCols or math.floor(Auras:GetWidth() / sizeX + 0.5)
+    for i = 1, num do
+        local button = element[i]
+        if (not button) then break end
+
+        local col = (i - 1) % cols
+        local row = math.floor((i - 1) / cols)
+
+        button:SetSize(width, height)
+
+        self:UpdateDurationText(button, Auras.baseUnit)
+        self:UpdateCountText(button, Auras.__owner.db)
+
+        button:ClearAllPoints()
+        button:SetPoint(anchor, Auras, anchor, col * sizeX * growthX, row * sizeY * growthY)
+        button:Show()
+    end
+    self:UpdateAspectRatio(element, width, height)
+end
+
+auras.HidePreview = function(self, frame)
+    if (not frame.AurasPreviews) then return end
+
+    for _, button in ipairs(frame.AurasPreviews) do
+        if (button) then
+            button:Hide()
+        end
     end
 end
 

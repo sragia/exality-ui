@@ -225,7 +225,9 @@ pet.Update = function(self, frame)
         frame:Disable()
         return;
     end
-    frame:Enable()
+    if (not frame.isFake) then
+        frame:Enable()
+    end
     local generalDB = core:GetDBForUnit('general')
     frame.db = db
     frame.generalDB = generalDB

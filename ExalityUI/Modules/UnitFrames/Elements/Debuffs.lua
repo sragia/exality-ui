@@ -69,13 +69,7 @@ debuffs.Update = function(self, frame)
     Debuffs.width = db.debuffsIconWidth
     Debuffs.height = db.debuffsIconHeight
     Debuffs.spacing = db.debuffsSpacing
-    if (frame.isFake) then
-        Debuffs.filter = 'HELPFUL'
-        Debuffs.num = 3
-    else
-        Debuffs.num = db.debuffsNum
-        Debuffs.filter = Debuffs.originalFilter
-    end
+    Debuffs.num = db.debuffsNum
 
     local growthX = string.find(db.debuffsAnchorPoint, 'RIGHT') and 'LEFT' or 'RIGHT'
     local growthY = string.find(db.debuffsAnchorPoint, 'TOP') and 'DOWN' or 'UP'
@@ -105,8 +99,68 @@ debuffs.Update = function(self, frame)
     self:UpdateAspectRatio(Debuffs, db.debuffsIconWidth, db.debuffsIconHeight)
     self:UpdateAllTexts(Debuffs)
     self:UpdateCountdownFont(Debuffs.baseUnit, db)
+
+    if (frame:IsElementPreviewEnabled('debuffs')) then
+        Debuffs.filter = 'NONE'
+        self:CreateOrUpdatePreview(frame)
+    else
+        self:HidePreview(frame)
+    end
+
     if (Debuffs.ForceUpdate) then
         Debuffs:ForceUpdate()
+    end
+end
+
+debuffs.CreateOrUpdatePreview = function(self, frame)
+    local Debuffs = frame.Debuffs
+    local num = math.min(5, Debuffs.num)
+    if (not frame.DebuffsPreviews) then
+        frame.DebuffsPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(Debuffs, num)
+    else
+        for _, button in ipairs(frame.DebuffsPreviews) do
+            if (button) then
+                EXUI:GetModule('uf-preview-util'):DestroyAura(button)
+            end
+        end
+
+        frame.DebuffsPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(Debuffs, num)
+    end
+    local element = frame.DebuffsPreviews
+    local width = Debuffs.width or Debuffs.size or 16
+    local height = Debuffs.height or Debuffs.size or 16
+    local sizeX = width + (Debuffs.spacingX or Debuffs.spacing or 0)
+    local sizeY = height + (Debuffs.spacingY or Debuffs.spacing or 0)
+    local anchor = Debuffs.initialAnchor or 'BOTTOMLEFT'
+    local growthX = (Debuffs.growthX == 'LEFT' and -1) or 1
+    local growthY = (Debuffs.growthY == 'DOWN' and -1) or 1
+    local cols = Debuffs.maxCols or math.floor(Debuffs:GetWidth() / sizeX + 0.5)
+    for i = 1, num do
+        local button = element[i]
+        if (not button) then break end
+
+        local col = (i - 1) % cols
+        local row = math.floor((i - 1) / cols)
+
+        button:SetSize(width, height)
+
+        self:UpdateDurationText(button, Debuffs.baseUnit)
+        self:UpdateCountText(button, Debuffs.__owner.db)
+
+        button:ClearAllPoints()
+        button:SetPoint(anchor, Debuffs, anchor, col * sizeX * growthX, row * sizeY * growthY)
+        button:Show()
+    end
+    self:UpdateAspectRatio(element, width, height)
+end
+
+debuffs.HidePreview = function(self, frame)
+    if (not frame.DebuffsPreviews) then return end
+
+    for _, button in ipairs(frame.DebuffsPreviews) do
+        if (button) then
+            button:Hide()
+        end
     end
 end
 

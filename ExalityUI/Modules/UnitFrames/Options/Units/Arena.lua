@@ -152,6 +152,7 @@ core:AddOption({
         {
             name = 'Buffs',
             id = 'buffs',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('arena', 'buffs', true)
@@ -161,6 +162,7 @@ core:AddOption({
         {
             name = 'Debuffs',
             id = 'debuffs',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('arena', 'debuffs', false)
@@ -170,6 +172,7 @@ core:AddOption({
         {
             name = 'Custom Auras',
             id = 'auras',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('arena', 'auras', false, true)
@@ -179,6 +182,7 @@ core:AddOption({
         {
             name = 'Private Auras',
             id = 'privateauras',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('arena', 'privateAuras')

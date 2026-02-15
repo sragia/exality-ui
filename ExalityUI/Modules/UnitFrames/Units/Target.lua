@@ -316,7 +316,9 @@ target.Update = function(self, frame)
         frame:Disable()
         return;
     end
-    frame:Enable()
+    if (not frame.isFake) then
+        frame:Enable()
+    end
     local generalDB = core:GetDBForUnit('general')
     frame.db = db
     frame.generalDB = generalDB
@@ -324,7 +326,6 @@ target.Update = function(self, frame)
     frame:ClearAllPoints()
     frame:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     frame:SetSize(db.sizeWidth, db.sizeHeight)
-
     core:UpdateFrame(frame)
 end
 

@@ -24,47 +24,6 @@ privateAuras.Create = function(self, frame)
     return PrivateAuras
 end
 
-privateAuras.DisplayPreview = function(self, PrivateAuras)
-    PrivateAuras.previews = PrivateAuras.previews or {}
-    for _, preview in ipairs(PrivateAuras.previews) do
-        if (preview) then
-            preview:Hide()
-        end
-    end
-    for i = 1, PrivateAuras.num do
-        local preview = PrivateAuras.previews[i]
-        if (not preview) then
-            preview = CreateFrame('Frame', nil, PrivateAuras)
-            local tex = preview:CreateTexture(nil, 'BACKGROUND')
-            tex:SetAllPoints()
-            tex:SetTexture(237514)
-            table.insert(PrivateAuras.previews, preview)
-        end
-
-        preview:ClearAllPoints()
-        local direction = PrivateAuras.growthX == 'RIGHT' and 1 or -1
-        EXUI:SetPoint(
-            preview,
-            'CENTER',
-            PrivateAuras,
-            'CENTER',
-            (i - 1) * direction * (PrivateAuras.width + PrivateAuras.spacingX),
-            0
-        )
-        preview:SetSize(PrivateAuras.width, PrivateAuras.height)
-        preview:Show()
-    end
-end
-
-privateAuras.HidePreview = function(self, PrivateAuras)
-    if (not PrivateAuras.previews) then return end
-    for _, preview in ipairs(PrivateAuras.previews) do
-        if (preview) then
-            preview:Hide()
-        end
-    end
-end
-
 privateAuras.Update = function(self, frame)
     local db = frame.db
     local PrivateAuras = frame.PrivateAuras
@@ -107,11 +66,60 @@ privateAuras.Update = function(self, frame)
         db.privateAurasYOff
     )
 
-    if (frame.isFake) then
-        self:DisplayPreview(PrivateAuras)
+    if (frame.isFake and frame.elementPreviews and frame.elementPreviews.privateauras) then
+        self:CreateOrUpdatePreview(frame)
     else
-        self:HidePreview(PrivateAuras)
+        self:HidePreview(frame)
     end
 
     PrivateAuras:PostUpdate()
+end
+
+privateAuras.CreateOrUpdatePreview = function(self, frame)
+    local PrivateAuras = frame.PrivateAuras
+    local num = math.min(5, PrivateAuras.num)
+    if (not frame.PrivateAurasPreviews) then
+        frame.PrivateAurasPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(PrivateAuras, num)
+    else
+        for _, button in ipairs(frame.PrivateAurasPreviews) do
+            if (button) then
+                EXUI:GetModule('uf-preview-util'):DestroyAura(button)
+            end
+        end
+
+        frame.PrivateAurasPreviews = EXUI:GetModule('uf-preview-util'):GetFakeAuras(PrivateAuras, num)
+    end
+    local element = frame.PrivateAurasPreviews
+    local width = PrivateAuras.width or PrivateAuras.size or 16
+    local height = PrivateAuras.height or PrivateAuras.size or 16
+    local sizeX = width + (PrivateAuras.spacingX or PrivateAuras.spacing or 0)
+    local sizeY = height + (PrivateAuras.spacingY or PrivateAuras.spacing or 0)
+    local anchor = PrivateAuras.initialAnchor or 'BOTTOMLEFT'
+    local growthX = (PrivateAuras.growthX == 'LEFT' and -1) or 1
+    local growthY = (PrivateAuras.growthY == 'DOWN' and -1) or 1
+    local cols = PrivateAuras.maxCols or math.floor(PrivateAuras:GetWidth() / sizeX + 0.5)
+    for i = 1, num do
+        local button = element[i]
+        if (not button) then break end
+
+        local col = (i - 1) % cols
+        local row = math.floor((i - 1) / cols)
+
+        button:SetSize(width, height)
+
+        button:ClearAllPoints()
+        button:SetPoint(anchor, PrivateAuras, anchor, col * sizeX * growthX, row * sizeY * growthY)
+        button:Show()
+        button.Count:SetText('')
+    end
+end
+
+privateAuras.HidePreview = function(self, frame)
+    if (not frame.PrivateAurasPreviews) then return end
+
+    for _, button in ipairs(frame.PrivateAurasPreviews) do
+        if (button) then
+            button:Hide()
+        end
+    end
 end

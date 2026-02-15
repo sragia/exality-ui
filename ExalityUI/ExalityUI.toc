@@ -58,6 +58,7 @@ Modules/XPBar.lua
 
 # UnitFrames
 Modules/UnitFrames/Core.lua
+Modules/UnitFrames/PreviewUtil.lua
 Modules/UnitFrames/CustomTexts.lua
 
 # UF Elements

@@ -22,7 +22,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs, hideAnchorTo)
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'Enable')
             end,
-            width = 100
+            width = 30
         },
         {
             type = 'title',

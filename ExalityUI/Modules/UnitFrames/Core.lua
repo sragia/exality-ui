@@ -159,7 +159,16 @@ core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
             local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
             local unitHeight = self:GetValueForUnit('party', 'sizeHeight')
             data.attributes['oUF-initialConfigFunction'] =
-                string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight)
+                string.format([[
+if not unit then
+    local header = self:GetParent()
+    if header:GetAttribute('EXUI-forcedUnit') then
+        unit = header:GetAttribute('EXUI-forcedUnit')
+        self:SetAttribute('oUF-guessUnit', unit)
+        self:SetAttribute('unit', unit)
+    end
+end
+self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
             header = oUF:SpawnHeader(nil, nil, data.attributes)
             if (data.visibility) then
                 header.originalVisibility = data.visibility
@@ -230,6 +239,10 @@ core.Base = function(self, frame)
     end
 
     frame.generalDB = self:GetDBForUnit('general')
+
+    frame.IsElementPreviewEnabled = function(self, element)
+        return self.isFake and self.elementPreviews and self.elementPreviews[element]
+    end
 
     self:AddTooltip(frame)
 
@@ -462,16 +475,26 @@ core.UpdateRaidLayout = function(self, container)
     for i = 1, #container.groupHeaders do
         local groupHeader = container.groupHeaders[i]
         groupHeader:SetAttribute('oUF-initialConfigFunction',
-            string.format('self:SetWidth(%d); self:SetHeight(%d);', unitWidth, unitHeight))
+            string.format([[
+if not unit then
+    local header = self:GetParent()
+    if header:GetAttribute('EXUI-forcedUnit') then
+        unit = header:GetAttribute('EXUI-forcedUnit')
+        self:SetAttribute('oUF-guessUnit', unit)
+        self:SetAttribute('unit', unit)
+    end
+end
+self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight))
         if (i <= maxGroups) then
-            groupHeader:SetVisibility(groupHeader.originalVisibility)
-            groupHeader:SetAttribute('showRaid', true)
-            groupHeader:SetAttribute('showPlayer', true)
-            groupHeader:SetAttribute('showSolo', true)
-            groupHeader:SetAttribute('showParty', true)
-            groupHeader:SetAttribute('groupFilter', i)
+            if (not groupHeader.isFake) then
+                groupHeader:SetVisibility(groupHeader.originalVisibility)
+                groupHeader:SetAttribute('showRaid', true)
+                groupHeader:SetAttribute('showPlayer', true)
+                groupHeader:SetAttribute('showSolo', true)
+                groupHeader:SetAttribute('showParty', true)
+                groupHeader:SetAttribute('groupFilter', i)
+            end
             groupHeader:SetAttribute('yOffset', -spacingY)
-            groupHeader:Show()
             if (prev) then
                 EXUI:SetPoint(
                     groupHeader,
@@ -608,21 +631,33 @@ core.ForceShow = function(self, unit)
         if (IsInGroup() and not IsInRaid()) then return end
         local header = core.headers[unit]
         if (not header) then return end
+        header:SetAttribute('EXUI-forcedUnit', 'party')
+        header:SetAttribute('showSolo', nil)
+        header:SetAttribute('showParty', nil)
+        header:SetAttribute('showRaid', nil)
+        header:SetAttribute('startingIndex', -4)
         header:SetVisibility('solo')
         header.isFake = true
         self.forcedHeaders[unit] = header
-        for _, frame in ipairs(core.partyFrames) do
-            if (frame) then
-                self.forcedFrames[frame.unit] = frame
-                self:ForceFrame(frame)
+        C_Timer.After(0, function()
+            for _, frame in ipairs(core.partyFrames) do
+                if (frame) then
+                    self.forcedFrames[frame.unit] = frame
+                    self:ForceFrame(frame)
+                end
             end
-        end
+        end)
     elseif (unit == 'raid') then
         if (IsInRaid()) then return end
         local header = core.headers[unit]
         if (not header) then return end
         for _, groupHeader in ipairs(header.groupHeaders) do
             if (groupHeader) then
+                groupHeader:SetAttribute('EXUI-forcedUnit', 'raid')
+                groupHeader:SetAttribute('showSolo', nil)
+                groupHeader:SetAttribute('showParty', nil)
+                groupHeader:SetAttribute('showRaid', nil)
+                groupHeader:SetAttribute('startingIndex', -4)
                 groupHeader:SetVisibility('solo')
                 groupHeader.isFake = true
                 self.forcedHeaders[unit .. groupHeader.group] = groupHeader
@@ -666,6 +701,10 @@ core.ForceFrame = function(self, frame)
     if (frame.Update) then
         frame:Update()
     end
+
+    UnregisterUnitWatch(frame)
+    RegisterUnitWatch(frame, true)
+    frame:Show()
 end
 
 core.Unforce = function(self, unit)
@@ -676,6 +715,11 @@ core.Unforce = function(self, unit)
         if (not header) then return end
         header.isFake = false
         header:SetVisibility(header.originalVisibility)
+        -- header:SetAttribute('EXUI-forcedUnit', nil)
+        header:SetAttribute('showSolo', true)
+        header:SetAttribute('showParty', true)
+        header:SetAttribute('showRaid', true)
+        header:SetAttribute('startingIndex', 1)
         self.forcedHeaders[unit] = nil
         for _, frame in ipairs(core.partyFrames) do
             if (frame) then
@@ -688,6 +732,11 @@ core.Unforce = function(self, unit)
         if (not header) then return end
         for _, groupHeader in ipairs(header.groupHeaders) do
             if (groupHeader) then
+                -- groupHeader:SetAttribute('EXUI-forcedUnit', nil)
+                groupHeader:SetAttribute('showSolo', true)
+                groupHeader:SetAttribute('showParty', true)
+                groupHeader:SetAttribute('showRaid', true)
+                groupHeader:SetAttribute('startingIndex', 1)
                 groupHeader:SetVisibility(groupHeader.originalVisibility)
                 groupHeader.isFake = false
                 self.forcedHeaders[unit .. groupHeader.group] = nil
@@ -722,6 +771,12 @@ core.UnforceFrame = function(self, frame)
     frame.unit = frame.originalUnit
     frame:EnableMouse(true)
 
+    if (frame.elementPreviews) then
+        for element in pairs(frame.elementPreviews) do
+            frame.elementPreviews[element] = false
+        end
+    end
+
     frame.isFake = false
     if (frame.Update) then
         frame:Update()
@@ -745,4 +800,52 @@ core.UnforceAll = function(self)
     end
     self.forcedFrames = {}
     self.forcedHeaders = {}
+end
+
+core.ToggleElementPreview = function(self, unit, element)
+    if (unit == 'party') then
+        for _, frame in ipairs(core.partyFrames) do
+            if (frame and frame.isFake) then
+                frame.elementPreviews = frame.elementPreviews or {}
+                frame.elementPreviews[element] = not frame.elementPreviews[element]
+
+                if (frame.Update) then
+                    frame:Update()
+                end
+            end
+        end
+    elseif (unit == 'raid') then
+        for _, frame in ipairs(core.raidFrames) do
+            if (frame and frame.isFake) then
+                frame.elementPreviews = frame.elementPreviews or {}
+                frame.elementPreviews[element] = not frame.elementPreviews[element]
+
+                if (frame.Update) then
+                    frame:Update()
+                end
+            end
+        end
+    elseif (self.forcedFrames[unit]) then
+        local frame = self.forcedFrames[unit]
+        if (frame and frame.isFake) then
+            frame.elementPreviews = frame.elementPreviews or {}
+            frame.elementPreviews[element] = not frame.elementPreviews[element]
+
+            if (frame.Update) then
+                frame:Update()
+            end
+        end
+    elseif (self.groupUnits[unit]) then
+        for i = 1, self.groupUnits[unit] do
+            local forcedFrame = self.forcedFrames[unit .. i]
+            if (forcedFrame and forcedFrame.isFake) then
+                forcedFrame.elementPreviews = forcedFrame.elementPreviews or {}
+                forcedFrame.elementPreviews[element] = not forcedFrame.elementPreviews[element]
+
+                if (forcedFrame.Update) then
+                    forcedFrame:Update()
+                end
+            end
+        end
+    end
 end

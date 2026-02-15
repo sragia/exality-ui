@@ -140,6 +140,7 @@ core:AddOption({
         {
             name = 'Buffs',
             id = 'buffs',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('party', 'buffs', true)
@@ -149,6 +150,7 @@ core:AddOption({
         {
             name = 'Debuffs',
             id = 'debuffs',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('party', 'debuffs', false)
@@ -158,6 +160,7 @@ core:AddOption({
         {
             name = 'Custom Auras',
             id = 'auras',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-auras'):GetOptions('party', 'auras', false, true)
@@ -167,6 +170,7 @@ core:AddOption({
         {
             name = 'Private Auras',
             id = 'privateauras',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'privateAuras')

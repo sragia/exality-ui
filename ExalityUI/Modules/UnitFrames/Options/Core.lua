@@ -53,6 +53,16 @@ core.GetOrder = function(self)
     return 60
 end
 
+core.ToggleOptionPreview = function(self)
+    local _, tab = FindInTableIf(self.options, function(tab) return tab.id == self.currTabId end)
+    local _, item = FindInTableIf(tab.menu, function(item) return item.id == self.currItemId end)
+
+    local unit = tab.id
+    local element = item.id
+
+    ufCore:ToggleElementPreview(unit, element)
+end
+
 core.SetupTabs = function(self, container)
     local tabs = EXFrames:GetFrame('tabs-frame'):Create()
     tabs:SetParent(container)
@@ -65,8 +75,40 @@ core.SetupTabs = function(self, container)
     tabOptions:SetPoint('BOTTOMRIGHT', tabs.container, 'BOTTOMRIGHT', -5, 5)
     tabOptions:UpdateScroll()
 
+    local previewButton = CreateFrame('Button', nil, tabOptions.container)
+    previewButton:SetSize(140, 30)
+    previewButton:SetPoint('TOPRIGHT')
+    previewButton:SetAlpha(0.7)
+
+    local previewIcon = previewButton:CreateTexture(nil, 'BACKGROUND')
+    previewIcon:SetTexture(EXUI.const.textures.frame.previewIcon)
+    previewIcon:SetSize(40 * 15 / 24, 15)
+    previewIcon:SetPoint('RIGHT')
+
+    local previewText = previewButton:CreateFontString(nil, 'OVERLAY')
+    previewText:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
+    previewText:SetText('Toggle Preview')
+    previewText:SetWidth(0)
+    previewText:SetPoint('RIGHT', previewIcon, 'LEFT', -5, 0)
+    previewText:SetJustifyH('RIGHT')
+
+
+    previewButton:SetScript('OnEnter', function()
+        previewButton:SetAlpha(1)
+    end)
+    previewButton:SetScript('OnLeave', function()
+        previewButton:SetAlpha(0.7)
+    end)
+
+    previewButton:SetScript('OnClick', function()
+        core:ToggleOptionPreview()
+    end)
+
+    previewButton:Hide()
+
     self.tabs = tabs
     self.tabOptions = tabOptions
+    self.tabOptions.previewButton = previewButton
 end
 
 core.OptionHandler = function(container, shouldHide)
@@ -175,6 +217,12 @@ core.HandleOptions = function(self)
         field:Destroy()
     end
     self.fields = {}
+
+    if (menu.allowPreview) then
+        self.tabOptions.previewButton:Show()
+    else
+        self.tabOptions.previewButton:Hide()
+    end
 
     for _, option in ipairs(menu.options) do
         if (type(option) == 'function') then
