@@ -1157,6 +1157,8 @@ raidToolsModule.CreateEncounterTimer = function(self)
             self:Start()
         elseif (event == 'ENCOUNTER_END' or event == 'PLAYER_REGEN_ENABLED') then
             self:Stop()
+        elseif (event == 'PLAYER_ENTERING_WORLD' and self.isRunning and not InCombatLockdown()) then
+            self:Stop()
         end
     end
 
@@ -1169,6 +1171,7 @@ raidToolsModule.CreateEncounterTimer = function(self)
             self:RegisterEvent('PLAYER_REGEN_ENABLED')
             self:RegisterEvent('PLAYER_REGEN_DISABLED')
         end
+        self:RegisterEvent('PLAYER_ENTERING_WORLD')
     end
 
     frame.DisplayTest = function(self)

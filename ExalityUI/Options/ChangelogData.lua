@@ -13,6 +13,7 @@ EXUI.changelog = [[
 - Make aura previews toggleable in the options instead of showing no matter what.
 - Update oUF to latest version, which includes updates to many icons that show up on UFs
 - Add previewing for almost all of the elements that can be seen on UFs, excluding text elements.
+- Fix issue where encounter timer would not stop after finishing encounter
 
 # |cffdb49000.1.4|r
 
