@@ -724,7 +724,6 @@ core.Unforce = function(self, unit)
         if (not header) then return end
         header.isFake = false
         header:SetVisibility(header.originalVisibility)
-        -- header:SetAttribute('EXUI-forcedUnit', nil)
         header:SetAttribute('showSolo', true)
         header:SetAttribute('showParty', true)
         header:SetAttribute('showRaid', true)
@@ -741,7 +740,6 @@ core.Unforce = function(self, unit)
         if (not header) then return end
         for _, groupHeader in ipairs(header.groupHeaders) do
             if (groupHeader) then
-                -- groupHeader:SetAttribute('EXUI-forcedUnit', nil)
                 groupHeader:SetAttribute('showSolo', true)
                 groupHeader:SetAttribute('showParty', true)
                 groupHeader:SetAttribute('showRaid', true)
@@ -802,7 +800,8 @@ core.UnforceAll = function(self)
         end
     end
     for unit in pairs(self.forcedHeaders) do
-        self:Unforce(unit)
+        local normalizedUnit = unit:match('^%a+')
+        self:Unforce(normalizedUnit)
     end
     self.forcedFrames = {}
     self.forcedHeaders = {}
