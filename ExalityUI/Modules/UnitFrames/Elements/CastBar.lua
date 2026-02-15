@@ -97,8 +97,8 @@ end
 castBar.Update = function(self, frame)
     local db = frame.db
     local generalDB = frame.generalDB
-    local castBar = frame.Castbar
-    local container = castBar.container
+    local Castbar = frame.Castbar
+    local container = Castbar.container
 
     if (not db.castbarEnable) then
         frame:DisableElement('Castbar')
@@ -114,36 +114,36 @@ castBar.Update = function(self, frame)
     else
         EXUI:SetSize(container, db.castbarWidth, db.castbarHeight)
     end
-    EXUI:SetSize(castBar.Icon, iconSize, iconSize)
-    castBar.Time:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
-    castBar.Time:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
+    EXUI:SetSize(Castbar.Icon, iconSize, iconSize)
+    Castbar.Time:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
+    Castbar.Time:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
         db.castbarFontColor.a)
-    castBar.Text:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
-    castBar.Text:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
+    Castbar.Text:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
+    Castbar.Text:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
         db.castbarFontColor.a)
-    castBar.Text:SetWidth(container:GetWidth() - 50)
-    castBar.Text:SetHeight(db.castbarHeight)
+    Castbar.Text:SetWidth(container:GetWidth() - 50)
+    Castbar.Text:SetHeight(db.castbarHeight)
 
-    for _, pip in pairs(castBar.Pips or {}) do
+    for _, pip in pairs(Castbar.Pips or {}) do
         pip:SetWidth(db.castbarEmpoweredStageWidth or 1)
         pip.line:SetVertexColor(db.castbarEmpoweredStageColor.r or 1, db.castbarEmpoweredStageColor.g or 1,
             db.castbarEmpoweredStageColor.b or 1, db.castbarEmpoweredStageColor.a or 1)
     end
 
-    castBar.Spark:SetVertexColor(db.castbarSparkColor.r or 1, db.castbarSparkColor.g or 1,
+    Castbar.Spark:SetVertexColor(db.castbarSparkColor.r or 1, db.castbarSparkColor.g or 1,
         db.castbarSparkColor.b or 1, db.castbarSparkColor.a or 1)
-    EXUI:SetWidth(castBar.Spark, db.castbarSparkWidth or 1)
-    EXUI:SetHeight(castBar.Spark, db.castbarHeight)
+    EXUI:SetWidth(Castbar.Spark, db.castbarSparkWidth or 1)
+    EXUI:SetHeight(Castbar.Spark, db.castbarHeight)
 
-    castBar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b,
+    Castbar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b,
         db.castbarBackgroundColor.a)
-    castBar.PPBorder:SetBorderColor(
+    Castbar.PPBorder:SetBorderColor(
         db.castbarBackgroundBorderColor.r,
         db.castbarBackgroundBorderColor.g,
         db.castbarBackgroundBorderColor.b,
         db.castbarBackgroundBorderColor.a
     )
-    castBar:SetStatusBarColor(
+    Castbar:SetStatusBarColor(
         db.castbarForegroundColor.r,
         db.castbarForegroundColor.g,
         db.castbarForegroundColor.b,
@@ -153,7 +153,7 @@ castBar.Update = function(self, frame)
     local statusBarTexture = db.overrideStatusBarTexture ~= '' and db.overrideStatusBarTexture or
         generalDB.statusBarTexture
 
-    castBar:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
+    Castbar:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
 
     container:ClearAllPoints()
     if (db.castbarAnchorToFrame) then
@@ -174,6 +174,31 @@ castBar.Update = function(self, frame)
     end
 
     self:UpdateMover(frame)
+
+    if (frame:IsElementPreviewEnabled('castbar') and not Castbar:IsShown()) then
+        local dur = C_DurationUtil.CreateDuration()
+        dur:SetTimeFromStart(GetTime(), 12)
+        Castbar.isPreview = true
+        if (not Castbar.BAKOnUpdate) then
+            Castbar.BAKOnUpdate = Castbar:GetScript('OnUpdate')
+            Castbar:SetScript('OnUpdate', function(self, elapsed)
+                local durationObject = self:GetTimerDuration() -- can be nil
+                if (durationObject) then
+                    self.Time:SetFormattedText('%.1f', durationObject:GetRemainingDuration())
+                end
+            end)
+        end
+        Castbar:SetTimerDuration(dur, Castbar.smoothing or Enum.StatusBarInterpolation.Immediate,
+            Enum.StatusBarTimerDirection.ElapsedTime)
+        Castbar.Text:SetText('Preview Spell')
+        Castbar.Icon:SetTexture(656176)
+        Castbar:Show()
+    elseif (not frame:IsElementPreviewEnabled('castbar') and Castbar.isPreview) then
+        Castbar:Hide()
+        Castbar:SetScript('OnUpdate', Castbar.BAKOnUpdate)
+        Castbar.BAKOnUpdate = nil
+        Castbar.isPreview = false
+    end
 end
 
 castBar.UpdateMover = function(self, baseFrame)

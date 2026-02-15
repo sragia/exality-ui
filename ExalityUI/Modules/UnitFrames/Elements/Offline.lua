@@ -27,8 +27,10 @@ offline.Update = function(self, frame)
     Offline:ClearAllPoints()
     Offline:SetPoint(db.offlineAnchorPoint, frame.ElementFrame, db.offlineRelativeAnchorPoint,
         db.offlineXOffset, db.offlineYOffset)
-    local ok, err = pcall(function()
+
+    if (frame:IsElementPreviewEnabled('offline')) then
+        frame:Tag(Offline, 'Offline')
+    else
         frame:Tag(Offline, db.offlineTag)
-    end)
-    if (not ok) then EXUI.utils.printOut(err) end
+    end
 end

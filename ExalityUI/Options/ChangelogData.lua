@@ -2,13 +2,17 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
-# |cffdb49000.1.5|r
+# |cffdb49000.2.0|r - "The Previews" Update
+
+## A lot of improvements for previewing each element for unitframes.
 
 - Fix buffs and debuffs CD font settings being shared between units.
 - Add additional aura display to all UFs. Disabled by default.
 - Fix issue where raid frame flickers on screen on zone change.
 - Improve Party/Raid preview to include all units
 - Make aura previews toggleable in the options instead of showing no matter what.
+- Update oUF to latest version, which includes updates to many icons that show up on UFs
+- Add previewing for almost all of the elements that can be seen on UFs, excluding text elements.
 
 # |cffdb49000.1.4|r
 

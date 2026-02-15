@@ -124,6 +124,7 @@ core:AddOption({
         {
             name = 'Cast Bar',
             id = 'castbar',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'castbar')
@@ -179,6 +180,7 @@ core:AddOption({
         {
             name = 'Marker Icon',
             id = 'markericon',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'raidTargetIndicator')
@@ -206,6 +208,7 @@ core:AddOption({
         {
             name = 'Raid Role Icons',
             id = 'raidroles',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'raidRoles')
@@ -233,6 +236,7 @@ core:AddOption({
         {
             name = 'Combat Icon',
             id = 'combatindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'combatIndicator')
@@ -260,6 +264,7 @@ core:AddOption({
         {
             name = 'Offline Text',
             id = 'offline',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'offline')
@@ -275,6 +280,7 @@ core:AddOption({
         {
             name = 'Summon Indicator',
             id = 'summonindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'summon')
@@ -302,6 +308,7 @@ core:AddOption({
         {
             name = 'Phase Indicator',
             id = 'phaseindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'phaseIndicator')

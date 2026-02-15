@@ -241,7 +241,8 @@ core.Base = function(self, frame)
     frame.generalDB = self:GetDBForUnit('general')
 
     frame.IsElementPreviewEnabled = function(self, element)
-        return self.isFake and self.elementPreviews and self.elementPreviews[element]
+        local isFake = self.originalUnit == nil or self.isFake
+        return isFake and self.elementPreviews and self.elementPreviews[element]
     end
 
     self:AddTooltip(frame)
@@ -331,8 +332,16 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-group-role-indicator'):Update(frame)
     end
 
+    if (frame.PhaseIndicator) then
+        EXUI:GetModule('uf-element-phase-indicator'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
+
+    if (frame:IsElementPreviewEnabled('castbar') and frame.Castbar) then
+        EXUI:GetModule('uf-element-cast-bar'):Update(frame) -- Reupdate castbar for preview. Kind of a bandaid fix
+    end
 end
 
 core.AddTooltip = function(self, frame)
@@ -792,11 +801,8 @@ core.UnforceAll = function(self)
             self:UnforceFrame(frame)
         end
     end
-    for _, header in pairs(self.forcedHeaders) do
-        if (header) then
-            header:SetVisibility(header.originalVisibility)
-            header.isFake = false
-        end
+    for unit in pairs(self.forcedHeaders) do
+        self:Unforce(unit)
     end
     self.forcedFrames = {}
     self.forcedHeaders = {}
@@ -828,6 +834,16 @@ core.ToggleElementPreview = function(self, unit, element)
     elseif (self.forcedFrames[unit]) then
         local frame = self.forcedFrames[unit]
         if (frame and frame.isFake) then
+            frame.elementPreviews = frame.elementPreviews or {}
+            frame.elementPreviews[element] = not frame.elementPreviews[element]
+
+            if (frame.Update) then
+                frame:Update()
+            end
+        end
+    elseif (unit == 'player') then
+        local frame = core.frames[unit]
+        if (frame) then
             frame.elementPreviews = frame.elementPreviews or {}
             frame.elementPreviews[element] = not frame.elementPreviews[element]
 

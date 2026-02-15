@@ -27,4 +27,15 @@ resurrectIndicator.Update = function(self, frame)
     ResurrectIndicator:ClearAllPoints()
     EXUI:SetPoint(ResurrectIndicator, db.ressurectAnchorPoint, frame.ElementFrame, db.ressurectRelativeAnchorPoint,
         db.ressurectXOff, db.ressurectYOff)
+
+    if (frame:IsElementPreviewEnabled('resurrectindicator') and not ResurrectIndicator:IsShown()) then
+        ResurrectIndicator.PostUpdate = function(self)
+            self:Show()
+        end
+        ResurrectIndicator:Show()
+        ResurrectIndicator.isPreview = true
+    elseif (not frame:IsElementPreviewEnabled('resurrectindicator') and ResurrectIndicator.isPreview) then
+        ResurrectIndicator.PostUpdate = nil
+        ResurrectIndicator.isPreview = false
+    end
 end

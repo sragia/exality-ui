@@ -43,4 +43,15 @@ raidRoles.Update = function(self, frame)
     anchor:SetSize(size, size)
     frame.LeaderIndicator:SetSize(size, size)
     frame.AssistantIndicator:SetSize(size, size)
+
+    if (frame:IsElementPreviewEnabled('raidroles') and not frame.LeaderIndicator:IsShown()) then
+        frame.LeaderIndicator.PostUpdate = function(self)
+            self:Show()
+            self:SetAtlas('UI-HUD-UnitFrame-Player-Group-LeaderIcon')
+        end
+        frame.LeaderIndicator.isPreview = true
+    elseif (not frame:IsElementPreviewEnabled('raidroles') and frame.LeaderIndicator.isPreview) then
+        frame.LeaderIndicator.PostUpdate = nil
+        frame.LeaderIndicator.isPreview = false
+    end
 end

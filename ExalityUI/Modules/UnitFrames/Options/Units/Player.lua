@@ -123,6 +123,7 @@ core:AddOption({
         {
             name = 'Cast Bar',
             id = 'castbar',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'castbar')
@@ -178,6 +179,7 @@ core:AddOption({
         {
             name = 'Marker Icon',
             id = 'markericon',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'raidTargetIndicator')
@@ -205,6 +207,7 @@ core:AddOption({
         {
             name = 'Raid Role Icons',
             id = 'raidroles',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'raidRoles')
@@ -232,6 +235,7 @@ core:AddOption({
         {
             name = 'Combat Icon',
             id = 'combatindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'combatIndicator')

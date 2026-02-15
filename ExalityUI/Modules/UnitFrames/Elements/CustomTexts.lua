@@ -35,12 +35,26 @@ customTexts.CreateText = function(self, frame)
 end
 
 customTexts.Update = function(self, frame)
-    local db = frame.db
     local CustomTexts = frame.CustomTexts
 
-    local list = ctCore:List(frame.unit)
+    local unit = frame.unit
+    if (frame.isFake) then
+        unit = frame.originalUnit
+    end
+
+    if (unit:match('^boss%d+$')) then
+        unit = 'boss'
+    elseif unit:match('^arena%d+$') then
+        unit = 'arena'
+    elseif (unit:match('^party%d+$')) then
+        unit = 'party'
+    elseif (unit:match('^raid%d+$')) then
+        unit = 'raid'
+    end
+
+    local list = ctCore:List(unit)
     local IDs = {}
-    for id, db in pairs(list) do
+    for id in pairs(list) do
         table.insert(IDs, id)
     end
 
@@ -63,9 +77,6 @@ customTexts.Update = function(self, frame)
         text:ClearAllPoints()
         textContainer:SetPoint(db.anchorPoint, frame.ElementFrame, db.relativeAnchorPoint, db.XOffset, db.YOffset)
         text:SetPoint(db.anchorPoint, frame.ElementFrame, db.relativeAnchorPoint)
-        local ok, err = pcall(function()
-            frame:Tag(text, db.tag)
-        end)
-        if (not ok) then EXUI.utils.printOut(err) end
+        frame:Tag(text, db.tag)
     end
 end

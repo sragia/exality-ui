@@ -152,6 +152,7 @@ core:AddOption({
         {
             name = 'Marker Icon',
             id = 'markericon',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('targettarget', 'raidTargetIndicator')
@@ -179,6 +180,7 @@ core:AddOption({
         {
             name = 'Raid Role Icons',
             id = 'raidroles',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('targettarget', 'raidRoles')
@@ -206,6 +208,7 @@ core:AddOption({
         {
             name = 'Offline Text',
             id = 'offline',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('targettarget', 'offline')
@@ -221,6 +224,7 @@ core:AddOption({
         {
             name = 'Summon Indicator',
             id = 'summonindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('targettarget', 'summon')
@@ -248,6 +252,7 @@ core:AddOption({
         {
             name = 'Phase Indicator',
             id = 'phaseindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('targettarget', 'phaseIndicator')

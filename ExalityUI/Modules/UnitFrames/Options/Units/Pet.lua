@@ -154,6 +154,7 @@ core:AddOption({
         {
             name = 'Marker Icon',
             id = 'markericon',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('pet', 'raidTargetIndicator')

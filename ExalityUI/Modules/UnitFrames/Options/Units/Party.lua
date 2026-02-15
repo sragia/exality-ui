@@ -183,6 +183,7 @@ core:AddOption({
         {
             name = 'Marker Icon',
             id = 'markericon',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'raidTargetIndicator')
@@ -210,6 +211,7 @@ core:AddOption({
         {
             name = 'Raid Role Icons',
             id = 'raidroles',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'raidRoles')
@@ -237,6 +239,7 @@ core:AddOption({
         {
             name = 'Offline Text',
             id = 'offline',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'offline')
@@ -252,6 +255,7 @@ core:AddOption({
         {
             name = 'Resurrect Indicator',
             id = 'resurrectindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'ressurect')
@@ -279,6 +283,7 @@ core:AddOption({
         {
             name = 'Summon Indicator',
             id = 'summonindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'summon')
@@ -306,6 +311,7 @@ core:AddOption({
         {
             name = 'Phase Indicator',
             id = 'phaseindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'phaseIndicator')
@@ -333,6 +339,7 @@ core:AddOption({
         {
             name = 'Group Role Indicator',
             id = 'grouproleindicator',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'groupRoleIndicator')

@@ -27,4 +27,16 @@ summonIndicator.Update = function(self, frame)
     SummonIndicator:ClearAllPoints()
     EXUI:SetPoint(SummonIndicator, db.summonAnchorPoint, frame.ElementFrame, db.summonRelativeAnchorPoint,
         db.summonXOff, db.summonYOff)
+
+    if (frame:IsElementPreviewEnabled('summonindicator') and not SummonIndicator:IsShown()) then
+        SummonIndicator.PostUpdate = function(self)
+            self:SetAtlas('RaidFrame-Icon-SummonPending')
+            self:Show()
+        end
+        SummonIndicator:Show()
+        SummonIndicator.isPreview = true
+    elseif (not frame:IsElementPreviewEnabled('summonindicator') and SummonIndicator.isPreview) then
+        SummonIndicator.PostUpdate = nil
+        SummonIndicator.isPreview = false
+    end
 end

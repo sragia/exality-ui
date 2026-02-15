@@ -140,6 +140,7 @@ core:AddOption({
         {
             name = 'Cast Bar',
             id = 'castbar',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-generic-enable'):GetOptions('arena', 'castbar')
@@ -190,6 +191,34 @@ core:AddOption({
                 function()
                     return EXUI:GetModule('uf-options-private-auras'):GetOptions('arena')
                 end
+            }
+        },
+        {
+            name = 'Marker Icon',
+            id = 'markericon',
+            allowPreview = true,
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('arena', 'raidTargetIndicator')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'raidTargetIndicatorScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('arena', 'raidTargetIndicatorScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('arena', 'raidTargetIndicatorScale', value)
+                        ufCore:UpdateFrameForUnit('arena')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('arena', 'raidTargetIndicator')
+                end,
             }
         },
         {

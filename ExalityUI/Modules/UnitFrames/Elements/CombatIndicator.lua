@@ -30,4 +30,16 @@ combatIndicator.Update = function(self, frame)
         db.combatIndicatorXOff,
         db.combatIndicatorYOff
     )
+
+    if (frame:IsElementPreviewEnabled('combatindicator') and not combatIndicator:IsShown()) then
+        combatIndicator.PostUpdate = function(self, inCombat)
+            self:SetAtlas('UI-HUD-UnitFrame-Player-CombatIcon')
+            self:Show()
+        end
+        combatIndicator:Show()
+        combatIndicator.isPreview = true
+    elseif (not frame:IsElementPreviewEnabled('combatindicator') and combatIndicator.isPreview) then
+        combatIndicator.PostUpdate = nil
+        combatIndicator.isPreview = false
+    end
 end

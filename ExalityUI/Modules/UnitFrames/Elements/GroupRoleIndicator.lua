@@ -6,27 +6,19 @@ local core = EXUI:GetModule('uf-core')
 
 local groupRoleIndicator = EXUI:GetModule('uf-element-group-role-indicator')
 
--- File 64x32
-local function GetTexCoordsForRoleSmallCircle(role)
-    if (role == 'TANK') then
-        return 36 / 64, 54 / 64, 0, 18 / 32
-    elseif (role == 'HEALER') then
-        return 18 / 64, 36 / 64, 0, 18 / 32
-    elseif (role == 'DAMAGER') then
-        return 0, 18 / 64, 0, 18 / 32
-    end
-    return 0, 0, 0, 0
-end
+local atlases = {
+    'UI-LFG-RoleIcon-Tank-Micro-Raid',
+    'UI-LFG-RoleIcon-Healer-Micro-Raid',
+    'UI-LFG-RoleIcon-DPS-Micro-Raid',
+}
 
 groupRoleIndicator.Create = function(self, frame)
     local groupRoleIndicator = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
     EXUI:SetSize(groupRoleIndicator, 16, 16)
-    groupRoleIndicator:SetTexture([[interface\lfgframe\roleicons]])
     groupRoleIndicator:SetPoint('CENTER')
 
     groupRoleIndicator.PostUpdate = function(self, role)
         if (not role) then return end
-        self:SetTexCoord(GetTexCoordsForRoleSmallCircle(role))
         if (self.hideTank and role == 'TANK') then
             self:Hide()
             return
@@ -66,4 +58,16 @@ groupRoleIndicator.Update = function(self, frame)
     EXUI:SetPoint(GroupRoleIndicator, db.groupRoleIndicatorAnchorPoint, frame.ElementFrame,
         db.groupRoleIndicatorRelativeAnchorPoint,
         db.groupRoleIndicatorXOff, db.groupRoleIndicatorYOff)
+
+    if (frame:IsElementPreviewEnabled('grouproleindicator') and not GroupRoleIndicator:IsShown()) then
+        GroupRoleIndicator.PostUpdate = function(self, role)
+            self:SetAtlas(atlases[math.random(1, 3)])
+            self:Show()
+        end
+        GroupRoleIndicator:Show()
+        GroupRoleIndicator.isPreview = true
+    elseif (not frame:IsElementPreviewEnabled('grouproleindicator') and GroupRoleIndicator.isPreview) then
+        GroupRoleIndicator.PostUpdate = nil
+        GroupRoleIndicator.isPreview = false
+    end
 end

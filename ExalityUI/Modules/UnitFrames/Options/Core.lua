@@ -75,46 +75,49 @@ core.SetupTabs = function(self, container)
     tabOptions:SetPoint('BOTTOMRIGHT', tabs.container, 'BOTTOMRIGHT', -5, 5)
     tabOptions:UpdateScroll()
 
-    local previewButton = CreateFrame('Button', nil, tabOptions.container)
-    previewButton:SetSize(140, 30)
-    previewButton:SetPoint('TOPRIGHT')
-    previewButton:SetAlpha(0.7)
-
-    local previewIcon = previewButton:CreateTexture(nil, 'BACKGROUND')
-    previewIcon:SetTexture(EXUI.const.textures.frame.previewIcon)
-    previewIcon:SetSize(40 * 15 / 24, 15)
-    previewIcon:SetPoint('RIGHT')
-
-    local previewText = previewButton:CreateFontString(nil, 'OVERLAY')
-    previewText:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
-    previewText:SetText('Toggle Preview')
-    previewText:SetWidth(0)
-    previewText:SetPoint('RIGHT', previewIcon, 'LEFT', -5, 0)
-    previewText:SetJustifyH('RIGHT')
-
-
-    previewButton:SetScript('OnEnter', function()
-        previewButton:SetAlpha(1)
-    end)
-    previewButton:SetScript('OnLeave', function()
+    if (not tabOptions.previewButton) then
+        local previewButton = CreateFrame('Button', nil, tabOptions.container)
+        previewButton:SetSize(140, 30)
+        previewButton:SetPoint('TOPRIGHT')
         previewButton:SetAlpha(0.7)
-    end)
 
-    previewButton:SetScript('OnClick', function()
-        core:ToggleOptionPreview()
-    end)
+        local previewIcon = previewButton:CreateTexture(nil, 'BACKGROUND')
+        previewIcon:SetTexture(EXUI.const.textures.frame.previewIcon)
+        previewIcon:SetSize(40 * 15 / 24, 15)
+        previewIcon:SetPoint('RIGHT')
 
-    previewButton:Hide()
+        local previewText = previewButton:CreateFontString(nil, 'OVERLAY')
+        previewText:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
+        previewText:SetText('Toggle Preview')
+        previewText:SetWidth(0)
+        previewText:SetPoint('RIGHT', previewIcon, 'LEFT', -5, 0)
+        previewText:SetJustifyH('RIGHT')
+
+
+        previewButton:SetScript('OnEnter', function()
+            previewButton:SetAlpha(1)
+        end)
+        previewButton:SetScript('OnLeave', function()
+            previewButton:SetAlpha(0.7)
+        end)
+
+        previewButton:SetScript('OnClick', function()
+            core:ToggleOptionPreview()
+        end)
+
+        previewButton:Hide()
+        tabOptions.previewButton = previewButton
+    end
 
     self.tabs = tabs
     self.tabOptions = tabOptions
-    self.tabOptions.previewButton = previewButton
 end
 
 core.OptionHandler = function(container, shouldHide)
     if (shouldHide) then
         if (core.tabs) then
             core.tabs:Destroy()
+            core.tabOptions.previewButton:Hide()
             core.tabOptions:Destroy()
             core.tabs = nil
             core.tabOptions = nil
