@@ -382,12 +382,9 @@ runes.GetOptions = function(self, displayID)
             width = 30
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'runeTextAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeShowText')
             end,
@@ -398,15 +395,12 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeTextAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'runeTextRelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeShowText')
             end,
@@ -417,7 +411,11 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeTextRelativeAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -426,7 +424,7 @@ runes.GetOptions = function(self, displayID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeShowText')
             end,
@@ -445,7 +443,7 @@ runes.GetOptions = function(self, displayID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeShowText')
             end,

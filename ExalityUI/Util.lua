@@ -547,9 +547,11 @@ EXUI.utils = {
                 local perc = child.optionData and child.optionData.width or 25
                 child:SetFrameWidth(perc / 100 * rowMaxWidth)
                 if (prev) then
-                    child:SetPoint('TOPLEFT', prev, 'TOPRIGHT', gap, 0)
+                    child:SetPoint('LEFT', prev, 'RIGHT', gap, 0)
+                    child:SetPoint('TOP', 0, 0)
                 else
-                    child:SetPoint('TOPLEFT', rowFrame, 'TOPLEFT', 0, 0)
+                    child:SetPoint('LEFT')
+                    child:SetPoint('TOP')
                 end
                 local childHeight = child:GetHeight()
                 if (childHeight > rowMaxHeight) then
@@ -559,16 +561,10 @@ EXUI.utils = {
             end
 
             -- center child in row vertically
-            local prevPad = 0
             for _, child in ipairs(row) do
                 local childHeight = child:GetHeight()
                 local topPad = (rowMaxHeight - childHeight) / 2
-                if (prevPad > 0) then
-                    topPad = topPad - prevPad
-                end
-                prevPad = topPad
-                local point, relativeTo, relativePoint, xOfs, yOfs = child:GetPoint(1)
-                child:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs - topPad)
+                child:SetPoint('TOP', 0, -topPad)
             end
             rowFrame:SetHeight(rowMaxHeight)
             rowFrame:Show()

@@ -2,6 +2,10 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.2.1|r
+
+- Update visuals of Anchor Point inputs and titles.
+
 # |cffdb49000.2.0|r - "The Previews" Update
 
 ## A lot of improvements for previewing each element for unitframes.

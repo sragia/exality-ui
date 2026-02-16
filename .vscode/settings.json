@@ -237,7 +237,8 @@
         "TYPE",
         "EquipmentManager_GetLocationData",
         "RAID",
-        "PLAYER"
+        "PLAYER",
+        "StaticPopup_Show"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

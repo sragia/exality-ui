@@ -683,12 +683,9 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 width = 52
             },
             {
-                type = 'dropdown',
+                type = 'anchor-point',
                 name = 'encounterTimerAnchor',
                 label = 'Anchor Point',
-                getOptions = function()
-                    return EXUI.const.anchorPoints
-                end,
                 currentValue = function()
                     return data:GetDataByKey('encounterTimerAnchor')
                 end,
@@ -696,15 +693,12 @@ raidToolsModule.GetOptions = function(self, currTabID)
                     data:SetDataByKey('encounterTimerAnchor', value)
                     self:CreateOrRefreshEncounterTimer()
                 end,
-                width = 22
+                width = 23
             },
             {
-                type = 'dropdown',
+                type = 'anchor-point',
                 name = 'encounterTimerRelativePoint',
                 label = 'Relative Anchor Point',
-                getOptions = function()
-                    return EXUI.const.anchorPoints
-                end,
                 currentValue = function()
                     return data:GetDataByKey('encounterTimerRelativePoint')
                 end,
@@ -712,7 +706,11 @@ raidToolsModule.GetOptions = function(self, currTabID)
                     data:SetDataByKey('encounterTimerRelativePoint', value)
                     self:CreateOrRefreshEncounterTimer()
                 end,
-                width = 22
+                width = 23
+            },
+            {
+                type = 'spacer',
+                width = 54
             },
             {
                 type = 'range',
@@ -721,7 +719,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 min = -1000,
                 max = 1000,
                 step = 1,
-                width = 16,
+                width = 23,
                 currentValue = function()
                     return data:GetDataByKey('encounterTimerXOff')
                 end,
@@ -737,7 +735,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
                 min = -1000,
                 max = 1000,
                 step = 1,
-                width = 16,
+                width = 23,
                 currentValue = function()
                     return data:GetDataByKey('encounterTimerYOff')
                 end,
@@ -984,6 +982,7 @@ raidToolsModule.CreateOrRefreshReadyCheck = function(self)
         return;
     end
     self.readyCheckFrame:Show()
+    self.readyCheckFrame:ClearAllPoints()
     EXUI:SetPoint(
         self.readyCheckFrame,
         data:GetDataByKey('readyCheckAnchor'),
@@ -1085,6 +1084,7 @@ raidToolsModule.CreateOrRefreshPullTimer = function(self)
         return;
     end
     self.pullTimerFrame:Show()
+    self.pullTimerFrame:ClearAllPoints()
     EXUI:SetPoint(
         self.pullTimerFrame,
         data:GetDataByKey('pullTimerAnchor'),
@@ -1217,8 +1217,9 @@ raidToolsModule.CreateOrRefreshEncounterTimer = function(self)
     self.encounterTimerFrame:SetBackdropBorderColor(data:GetDataByKey('encounterTimerBorderColor').r,
         data:GetDataByKey('encounterTimerBorderColor').g, data:GetDataByKey('encounterTimerBorderColor').b,
         data:GetDataByKey('encounterTimerBorderColor').a)
+    self.encounterTimerFrame:ClearAllPoints()
     EXUI:SetPoint(self.encounterTimerFrame, data:GetDataByKey('encounterTimerAnchor'), UIParent,
-        data:GetDataByKey('encounterTimerAnchor'), data:GetDataByKey('encounterTimerXOff'),
+        data:GetDataByKey('encounterTimerRelativePoint'), data:GetDataByKey('encounterTimerXOff'),
         data:GetDataByKey('encounterTimerYOff'))
     self.encounterTimerFrame.Text:SetText('00:00.00')
     local width = self.encounterTimerFrame.Text:GetStringWidth()

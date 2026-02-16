@@ -214,12 +214,9 @@ core.GetOptions = function(self, currTabID, currItemID)
         },
         sizeOptions(),
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'anchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'anchorPoint')
             end,
@@ -227,15 +224,12 @@ core.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForDisplay(currItemID, 'anchorPoint', value)
                 self:RefreshDisplayByID(currItemID)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'relativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return self:GetValueForDisplay(currItemID, 'relativeAnchorPoint')
             end,
@@ -243,7 +237,11 @@ core.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForDisplay(currItemID, 'relativeAnchorPoint', value)
                 self:RefreshDisplayByID(currItemID)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -259,7 +257,7 @@ core.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForDisplay(currItemID, 'XOff', value)
                 self:RefreshDisplayByID(currItemID)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -275,7 +273,7 @@ core.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForDisplay(currItemID, 'YOff', value)
                 self:RefreshDisplayByID(currItemID)
             end,
-            width = 20
+            width = 23
         }
     }
 

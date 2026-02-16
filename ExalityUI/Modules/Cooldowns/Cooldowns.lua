@@ -274,12 +274,9 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             width = 60
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'anchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'anchorPoint')
             end,
@@ -287,15 +284,12 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForCD(currItemID, 'anchorPoint', value)
                 self:UpdateById(currItemID)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'relativePoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'relativePoint')
             end,
@@ -303,7 +297,11 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForCD(currItemID, 'relativePoint', value)
                 self:UpdateById(currItemID)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -319,7 +317,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForCD(currItemID, 'XOff', value)
                 self:UpdateById(currItemID)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -335,11 +333,11 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
                 self:UpdateValueForCD(currItemID, 'YOff', value)
                 self:UpdateById(currItemID)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'spacer',
-            width = 16
+            width = 54
         },
         {
             type = 'dropdown',
@@ -467,12 +465,9 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             width = 34
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'CD Anchor Point',
             name = 'fontAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'fontAnchorPoint')
             end,
@@ -483,12 +478,9 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'CR Relative Anchor Point',
             name = 'fontRelativePoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'fontRelativePoint')
             end,
@@ -499,13 +491,17 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             width = 23
         },
         {
+            type = 'spacer',
+            width = 54
+        },
+        {
             type = 'range',
             label = 'X Offset',
             name = 'fontXOff',
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'fontXOff')
             end,
@@ -521,7 +517,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             currentValue = function()
                 return self:GetValueForCD(currItemID, 'fontYOff')
             end,
@@ -612,12 +608,9 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             end
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Stacks Anchor Point',
             name = 'chargeFontAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return self:GetValueForCD(currItemID, 'showStacks')
             end,
@@ -631,12 +624,9 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Stacks Relative Anchor Point',
             name = 'chargeFontRelativePoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return self:GetValueForCD(currItemID, 'showStacks')
             end,
@@ -650,13 +640,17 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             width = 23
         },
         {
+            type = 'spacer',
+            width = 54
+        },
+        {
             type = 'range',
             label = 'Stacks X Offset',
             name = 'chargeFontXOff',
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             depends = function()
                 return self:GetValueForCD(currItemID, 'showStacks')
             end,
@@ -675,7 +669,7 @@ cooldowns.GetOptions = function(self, currTabID, currItemID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             depends = function()
                 return self:GetValueForCD(currItemID, 'showStacks')
             end,

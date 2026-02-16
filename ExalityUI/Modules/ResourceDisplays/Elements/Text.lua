@@ -132,12 +132,9 @@ textElement.GetOptions = function(self, displayID)
             width = 4
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'textAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'textAnchorPoint')
             end,
@@ -145,15 +142,12 @@ textElement.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'textAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'textRelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, 'textRelativeAnchorPoint')
             end,
@@ -161,7 +155,11 @@ textElement.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'textRelativeAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -177,7 +175,7 @@ textElement.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'textXOff', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -193,7 +191,7 @@ textElement.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'textYOff', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 20
+            width = 23
         }
     }
 end

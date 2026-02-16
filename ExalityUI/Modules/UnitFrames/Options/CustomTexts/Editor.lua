@@ -113,12 +113,9 @@ editor.GetOptions = function(self, unit, id)
             size = 18
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'anchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return ctCore:GetValue(unit, id, 'anchorPoint')
             end,
@@ -129,12 +126,9 @@ editor.GetOptions = function(self, unit, id)
             width = 50
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'relativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return ctCore:GetValue(unit, id, 'relativeAnchorPoint')
             end,

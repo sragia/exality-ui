@@ -95,12 +95,9 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs, hideAnchorTo)
             width = 40
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = prefix .. 'AnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'AnchorPoint')
             end,
@@ -108,15 +105,12 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs, hideAnchorTo)
                 core:UpdateValueForUnit(unit, prefix .. 'AnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = prefix .. 'RelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'RelativeAnchorPoint')
             end,
@@ -124,7 +118,11 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs, hideAnchorTo)
                 core:UpdateValueForUnit(unit, prefix .. 'RelativeAnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -140,7 +138,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs, hideAnchorTo)
                 core:UpdateValueForUnit(unit, prefix .. 'XOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -156,7 +154,7 @@ genericAuras.GetOptions = function(self, unit, prefix, isBuffs, hideAnchorTo)
                 core:UpdateValueForUnit(unit, prefix .. 'YOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'title',
@@ -414,13 +412,8 @@ Can be useful for healers in combination of Buffs and My Own Only to show HoTs
             type = 'title',
             label = 'Count',
             width = 100,
-            size = 14
-        },
-        {
-            type = 'title',
-            width = 100,
-            label = 'Font Style',
-            size = 12
+            size = 14,
+            accent = EXUI.const.colors.accentSecondary,
         },
         {
             type = 'dropdown',
@@ -493,15 +486,13 @@ Can be useful for healers in combination of Buffs and My Own Only to show HoTs
             type = 'title',
             width = 100,
             label = 'Position',
-            size = 12
+            accent = EXUI.const.colors.white,
+            size = 11
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = prefix .. 'CountAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'CountAnchorPoint')
             end,
@@ -512,12 +503,9 @@ Can be useful for healers in combination of Buffs and My Own Only to show HoTs
             width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = prefix .. 'CountRelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'CountRelativeAnchorPoint')
             end,
@@ -528,13 +516,17 @@ Can be useful for healers in combination of Buffs and My Own Only to show HoTs
             width = 23
         },
         {
+            type = 'spacer',
+            width = 54
+        },
+        {
             type = 'range',
             label = 'X Offset',
             name = prefix .. 'CountXOff',
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'CountXOff')
             end,
@@ -550,7 +542,7 @@ Can be useful for healers in combination of Buffs and My Own Only to show HoTs
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'CountYOff')
             end,
@@ -562,7 +554,9 @@ Can be useful for healers in combination of Buffs and My Own Only to show HoTs
         {
             type = 'title',
             label = 'Duration',
+            size = 14,
             width = 100,
+            accent = EXUI.const.colors.accentSecondary,
         },
         {
             type = 'dropdown',

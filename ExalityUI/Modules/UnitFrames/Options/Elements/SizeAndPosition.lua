@@ -54,12 +54,9 @@ sizeAndPosition.GetOptions = function(self, unit)
             size = 18
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'positionAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'positionAnchorPoint')
             end,
@@ -67,15 +64,12 @@ sizeAndPosition.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'positionAnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'positionRelativePoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'positionRelativePoint')
             end,
@@ -83,7 +77,11 @@ sizeAndPosition.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'positionRelativePoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -99,7 +97,7 @@ sizeAndPosition.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'positionXOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -115,7 +113,7 @@ sizeAndPosition.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'positionYOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         }
     }
 end

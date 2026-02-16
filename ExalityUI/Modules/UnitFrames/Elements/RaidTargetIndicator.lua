@@ -35,6 +35,7 @@ raidTargetIndicator.Update = function(self, frame)
 
     core:EnableElementForFrame(frame, 'RaidTargetIndicator')
     local size = (db.raidTargetIndicatorScale or 1) * 16
+    RaidTargetIndicator:ClearAllPoints()
     RaidTargetIndicator:SetPoint(
         db.raidTargetIndicatorAnchorPoint,
         frame.ElementFrame,

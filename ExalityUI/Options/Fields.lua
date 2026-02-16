@@ -303,6 +303,10 @@ optionsFields.GetField = function(self, field)
             local f = EXUI:GetModule('custom-texts-list-item'):Create()
             return f
         end,
+        ['anchor-point'] = function()
+            local f = EXFrames:GetFrame('anchor-point'):Create()
+            return f
+        end,
         default = function()
             EXUI.utils.printOut('Unknown Field Type: ' .. field.type)
         end

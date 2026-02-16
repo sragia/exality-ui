@@ -16,12 +16,9 @@ genericPosition.GetOptions = function(self, unit, prefix)
             size = 18
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = prefix .. 'AnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'AnchorPoint')
             end,
@@ -29,15 +26,12 @@ genericPosition.GetOptions = function(self, unit, prefix)
                 core:UpdateValueForUnit(unit, prefix .. 'AnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = prefix .. 'RelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'RelativeAnchorPoint')
             end,
@@ -45,7 +39,11 @@ genericPosition.GetOptions = function(self, unit, prefix)
                 core:UpdateValueForUnit(unit, prefix .. 'RelativeAnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -61,7 +59,7 @@ genericPosition.GetOptions = function(self, unit, prefix)
                 core:UpdateValueForUnit(unit, prefix .. 'XOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -77,7 +75,7 @@ genericPosition.GetOptions = function(self, unit, prefix)
                 core:UpdateValueForUnit(unit, prefix .. 'YOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         }
     }
 end

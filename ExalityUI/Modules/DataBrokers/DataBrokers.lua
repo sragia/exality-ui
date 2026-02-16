@@ -159,12 +159,9 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             width = 50
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'anchor',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'anchor')
             end,
@@ -172,15 +169,12 @@ dataBrokers.GetOptions = function(self, _, currItemId)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'anchor', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'relativeAnchor',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'relativeAnchor')
             end,
@@ -188,7 +182,11 @@ dataBrokers.GetOptions = function(self, _, currItemId)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'relativeAnchor', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -204,7 +202,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'XOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -220,7 +218,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'YOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'spacer',
@@ -291,12 +289,9 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             width = 34
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'fontAnchor',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'fontAnchor')
             end,
@@ -307,12 +302,9 @@ dataBrokers.GetOptions = function(self, _, currItemId)
             width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'fontRelativeAnchor',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return dataBrokers.Data:GetValueForBroker(currItemId, 'fontRelativeAnchor')
             end,
@@ -321,6 +313,10 @@ dataBrokers.GetOptions = function(self, _, currItemId)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
             width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -336,7 +332,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'fontXOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -352,7 +348,7 @@ dataBrokers.GetOptions = function(self, _, currItemId)
                 dataBrokers.Data:UpdateValueForBroker(currItemId, 'fontYOff', value)
                 dataBrokers.Displays:UpdateById(currItemId)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'title',

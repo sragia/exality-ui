@@ -85,12 +85,9 @@ castBar.GetOptions = function(self, unit)
         },
         -- Anchored to Frame
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'castbarAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return core:GetValueForUnit(unit, 'castbarAnchorToFrame')
             end,
@@ -101,15 +98,12 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarAnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'castbarRelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return core:GetValueForUnit(unit, 'castbarAnchorToFrame')
             end,
@@ -120,7 +114,11 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarRelativeAnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -139,7 +137,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarXOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -158,17 +156,14 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarYOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
 
         -- Anchored to UIParent
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'castbarAnchorPointUIParent',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return not core:GetValueForUnit(unit, 'castbarAnchorToFrame')
             end,
@@ -179,15 +174,12 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarAnchorPointUIParent', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'castbarRelativeAnchorPointUIParent',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return not core:GetValueForUnit(unit, 'castbarAnchorToFrame')
             end,
@@ -198,7 +190,11 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarRelativeAnchorPointUIParent', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -217,7 +213,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarXOffUIParent', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -236,7 +232,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarYOffUIParent', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
 
 

@@ -59,6 +59,7 @@ generalFrame.GetOptions = function(self, unit)
         {
             type = 'title',
             label = 'Textures',
+            accent = EXUI.const.colors.accentSecondary,
             width = 100,
             size = 14
         },
@@ -173,6 +174,7 @@ generalFrame.GetOptions = function(self, unit)
         {
             type = 'title',
             label = 'Health',
+            accent = EXUI.const.colors.accentSecondary,
             width = 100,
             size = 14
         },
@@ -273,6 +275,7 @@ generalFrame.GetOptions = function(self, unit)
         {
             type = 'title',
             label = 'Health Absorbs',
+            accent = EXUI.const.colors.accentSecondary,
             width = 100,
             size = 14
         },

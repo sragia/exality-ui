@@ -527,12 +527,9 @@ essence.GetOptions = function(self, displayID)
             width = 30
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'essenceTextAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'essenceShowText')
             end,
@@ -543,15 +540,12 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceTextAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'essenceTextRelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'essenceShowText')
             end,
@@ -562,7 +556,11 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceTextRelativeAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -571,7 +569,7 @@ essence.GetOptions = function(self, displayID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'essenceShowText')
             end,
@@ -590,7 +588,7 @@ essence.GetOptions = function(self, displayID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 23,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'essenceShowText')
             end,

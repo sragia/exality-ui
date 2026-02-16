@@ -226,12 +226,9 @@ privateAuras.GetOptions = function(self, unit)
             size = 18
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'privateAurasAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'privateAurasAnchorPoint')
             end,
@@ -239,15 +236,12 @@ privateAuras.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'privateAurasAnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'privateAurasRelativeAnchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'privateAurasRelativeAnchorPoint')
             end,
@@ -255,7 +249,11 @@ privateAuras.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'privateAurasRelativeAnchorPoint', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 22
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -271,7 +269,7 @@ privateAuras.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'privateAurasXOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -287,7 +285,7 @@ privateAuras.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'privateAurasYOff', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 23
         }
     }
 end

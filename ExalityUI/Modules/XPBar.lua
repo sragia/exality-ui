@@ -91,7 +91,8 @@ xpBar.GetOptions = function(self)
     return {
         {
             type = 'title',
-            label = 'XP Bar'
+            label = 'XP Bar',
+            width = 100,
         },
         {
             type = 'toggle',
@@ -123,6 +124,12 @@ xpBar.GetOptions = function(self)
                 return self.Data:GetValue('showAtMaxLevel')
             end,
             width = 100
+        },
+        {
+            type = 'title',
+            label = 'Size & Position',
+            size = 14,
+            width = 100,
         },
         {
             type = 'range',
@@ -170,12 +177,9 @@ xpBar.GetOptions = function(self)
             end,
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Anchor Point',
             name = 'anchorPoint',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return self.Data:GetValue('enable')
             end,
@@ -186,15 +190,12 @@ xpBar.GetOptions = function(self)
                 self.Data:SetValue('anchorPoint', value)
                 self:Configure()
             end,
-            width = 25
+            width = 23
         },
         {
-            type = 'dropdown',
+            type = 'anchor-point',
             label = 'Relative Anchor Point',
             name = 'relativeAnchor',
-            getOptions = function()
-                return EXUI.const.anchorPoints
-            end,
             depends = function()
                 return self.Data:GetValue('enable')
             end,
@@ -205,7 +206,11 @@ xpBar.GetOptions = function(self)
                 self.Data:SetValue('relativeAnchor', value)
                 self:Configure()
             end,
-            width = 25
+            width = 23
+        },
+        {
+            type = 'spacer',
+            width = 54
         },
         {
             type = 'range',
@@ -224,7 +229,7 @@ xpBar.GetOptions = function(self)
                 self.Data:SetValue('xOffset', value)
                 self:Configure()
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'range',
@@ -243,7 +248,7 @@ xpBar.GetOptions = function(self)
                 self.Data:SetValue('yOffset', value)
                 self:Configure()
             end,
-            width = 20
+            width = 23
         },
         {
             type = 'spacer',
@@ -251,6 +256,15 @@ xpBar.GetOptions = function(self)
             depends = function()
                 return self.Data:GetValue('enable')
             end,
+        },
+        {
+            type = 'title',
+            label = 'Style',
+            depends = function()
+                return self.Data:GetValue('enable')
+            end,
+            size = 14,
+            width = 100,
         },
         {
             type = 'dropdown',
