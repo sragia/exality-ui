@@ -132,6 +132,22 @@ core:AddOption({
                 },
                 {
                     type = 'toggle',
+                    label = 'Use Smooth Health Color',
+                    name = 'useSmoothHealthColor',
+                    tooltip = {
+                        text = 'This overrides Custom Color.'
+                    },
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'useSmoothHealthColor')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'useSmoothHealthColor', value)
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 100
+                },
+                {
+                    type = 'toggle',
                     label = 'Use Class Colored Backdrop',
                     name = 'useClassColoredBackdrop',
                     currentValue = function()
@@ -170,10 +186,124 @@ core:AddOption({
                     width = 20
                 },
                 {
+                    type = 'description',
+                    label = 'Health Colors (for Smooth Health Color)',
+                    width = 100
+                },
+                {
+                    type = 'color-picker',
+                    label = '0%',
+                    name = 'healthCurve0',
+                    currentValue = function()
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            return curve[0]
+                        end
+                        return { r = 1, g = 1, b = 1, a = 1 }
+                    end,
+                    onChange = function(value)
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            curve[0] = value
+                        end
+                        ufCore:UpdateValueForUnit('general', 'healthCurve', curve)
+                        ufCore:UpdateHealthColor()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = '25%',
+                    name = 'healthCurve025',
+                    currentValue = function()
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            return curve[0.25]
+                        end
+                        return { r = 1, g = 1, b = 1, a = 1 }
+                    end,
+                    onChange = function(value)
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            curve[0.25] = value
+                        end
+                        ufCore:UpdateValueForUnit('general', 'healthCurve', curve)
+                        ufCore:UpdateHealthColor()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = '50%',
+                    name = 'healthCurve05',
+                    currentValue = function()
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            return curve[0.5]
+                        end
+                        return { r = 1, g = 1, b = 1, a = 1 }
+                    end,
+                    onChange = function(value)
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            curve[0.5] = value
+                        end
+                        ufCore:UpdateValueForUnit('general', 'healthCurve', curve)
+                        ufCore:UpdateHealthColor()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = '75%',
+                    name = 'healthCurve075',
+                    currentValue = function()
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            return curve[0.75]
+                        end
+                        return { r = 1, g = 1, b = 1, a = 1 }
+                    end,
+                    onChange = function(value)
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            curve[0.75] = value
+                        end
+                        ufCore:UpdateValueForUnit('general', 'healthCurve', curve)
+                        ufCore:UpdateHealthColor()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'color-picker',
+                    label = '100%',
+                    name = 'healthCurve1',
+                    currentValue = function()
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            return curve[1]
+                        end
+                        return { r = 1, g = 1, b = 1, a = 1 }
+                    end,
+                    onChange = function(value)
+                        local curve = ufCore:GetValueForUnit('general', 'healthCurve')
+                        if (curve) then
+                            curve[1] = value
+                        end
+                        ufCore:UpdateValueForUnit('general', 'healthCurve', curve)
+                        ufCore:UpdateHealthColor()
+                        ufCore:UpdateAllFrames()
+                    end,
+                    width = 20
+                },
+                {
                     type = 'title',
                     label = 'Health Absorbs',
-                    width = 100,
-                    size = 14
+                    width = 100
                 },
                 {
                     type = 'color-picker',
@@ -204,8 +334,7 @@ core:AddOption({
                 {
                     type = 'title',
                     label = 'Power',
-                    width = 100,
-                    size = 14
+                    width = 100
                 },
                 {
                     type = 'color-picker',

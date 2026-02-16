@@ -226,6 +226,22 @@ generalFrame.GetOptions = function(self, unit)
         },
         {
             type = 'toggle',
+            label = 'Use Smooth Health Color',
+            name = 'useSmoothHealthColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'useSmoothHealthColor')
+            end,
+            depends = function()
+                return core:GetValueForUnit(unit, 'overrideHealthColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'useSmoothHealthColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 100
+        },
+        {
+            type = 'toggle',
             label = 'Use Class Colored Backdrop',
             name = 'useClassColoredBackdrop',
             currentValue = function()

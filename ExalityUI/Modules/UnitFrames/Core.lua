@@ -46,7 +46,6 @@ core.Init = function(self)
     tags:RegisterCustomTags()
     EXUI.oUF:RegisterStyle("ExalityUI", self.SharedStyle)
     EXUI.oUF:Factory(self.Factory)
-    self:UpdatePowerColors()
 end
 
 core.RegisterUnit = function(self, unit, isGroup, numUnits)
@@ -563,6 +562,20 @@ core.UpdatePowerColors = function(self)
         if (powerColor) then
             EXUI.oUF.colors.power[powerType]:SetRGBA(powerColor.r, powerColor.g, powerColor.b, powerColor.a)
         end
+    end
+end
+
+core.UpdateHealthColor = function(self)
+    local generalDB = self:GetDBForUnit('general')
+    if (not generalDB) then return end
+    local healthCurve = generalDB.healthCurve
+    if (healthCurve) then
+        local color = EXUI.oUF.colors.health
+        local curveValues = {}
+        for breakpoint, color in pairs(healthCurve) do
+            curveValues[breakpoint] = CreateColor(color.r, color.g, color.b, color.a)
+        end
+        color:SetCurve(curveValues)
     end
 end
 

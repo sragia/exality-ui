@@ -137,7 +137,7 @@ chi.GetOptions = function(self, displayID)
             type = 'title',
             size = 14,
             width = 100,
-            label = 'Combo Points'
+            label = 'Chi'
         },
         {
             type = 'range',

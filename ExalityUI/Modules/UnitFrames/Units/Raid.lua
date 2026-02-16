@@ -24,6 +24,7 @@ raid.Init = function(self)
         ['overrideHealAbsorbTexture'] = '',
         ['overrideHealthColor'] = true,
         ['useCustomHealthColor'] = false,
+        ['useSmoothHealthColor'] = false,
         ['customHealthColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
         ['useClassColoredBackdrop'] = false,
         ['useCustomBackdropColor'] = true,

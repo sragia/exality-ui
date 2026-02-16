@@ -5,6 +5,7 @@ EXUI.changelog = [[
 # |cffdb49000.2.1|r
 
 - Update visuals of Anchor Point inputs and titles.
+- New option "Smooth Health Color" for UFs. Uses smooth gradient to color the health bar based on the unit's current health percentage.
 
 # |cffdb49000.2.0|r - "The Previews" Update
 

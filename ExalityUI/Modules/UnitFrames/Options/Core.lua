@@ -26,12 +26,45 @@ core.Init = function(self)
     local defaults = {
         ['useCustomHealthColor'] = true,
         ['customHealthColor'] = { r = 0.125490203499794, g = 0.125490203499794, b = 0.125490203499794, a = 1 },
+        ['useSmoothHealthColor'] = false,
         ['useClassColoredBackdrop'] = true,
         ['useCustomBackdropColor'] = false,
         ['customBackdropColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
         ['statusBarTexture'] = 'ExalityUI Status Bar',
         ['damageAbsorbTexture'] = 'ExalityUI Status Bar',
         ['healAbsorbTexture'] = 'ExalityUI Status Bar',
+        ['healthCurve'] = {
+            [0] = {
+                r = 217 / 255,
+                g = 0,
+                b = 22 / 255,
+                a = 1
+            },
+            [0.25] = {
+                r = 217 / 255,
+                g = 87 / 255,
+                b = 0,
+                a = 1
+            },
+            [0.5] = {
+                r = 217 / 255,
+                g = 152 / 255,
+                b = 0,
+                a = 1
+            },
+            [0.75] = {
+                r = 94 / 255,
+                g = 79 / 255,
+                b = 0,
+                a = 1
+            },
+            [1] = {
+                r = 0,
+                g = 0,
+                b = 0,
+                a = 1
+            }
+        },
         -- Health Prediction
         ['healAbsorbColor'] = { r = 100 / 255, g = 100 / 255, b = 100 / 255, a = 0.8 },
         ['damageAbsorbColor'] = { r = 0, g = 133 / 255, b = 163 / 255, a = 1 },
@@ -43,6 +76,9 @@ core.Init = function(self)
     end
 
     ufCore:SetDefaultsForUnit('general', defaults)
+
+    ufCore:UpdatePowerColors()
+    ufCore:UpdateHealthColor()
 end
 
 core.GetName = function(self)
