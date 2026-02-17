@@ -59,7 +59,7 @@ groupRoleIndicator.Update = function(self, frame)
         db.groupRoleIndicatorRelativeAnchorPoint,
         db.groupRoleIndicatorXOff, db.groupRoleIndicatorYOff)
 
-    if (frame:IsElementPreviewEnabled('grouproleindicator') and not GroupRoleIndicator:IsShown()) then
+    if (frame:IsElementPreviewEnabled('grouproleindicator') and not groupRoleIndicator.isPreview) then
         GroupRoleIndicator.PostUpdate = function(self, role)
             self:SetAtlas(atlases[math.random(1, 3)])
             self:Show()

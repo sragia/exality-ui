@@ -40,6 +40,13 @@ customTexts.GetOptions = function(self, unit)
         end
     end
 
+    if (#options == 1) then
+        table.insert(options, {
+            type = 'description',
+            label = 'No custom texts added yet.'
+        })
+    end
+
     table.insert(options, {
         type = 'button',
         label = 'Add Custom Text',

@@ -125,7 +125,7 @@ optionsMain.CreateWindow = function(self)
 
     local configPanel = panel:Create()
     configPanel:SetParent(window.container)
-    configPanel:SetPoint('TOPLEFT', modulesPanel, 'TOPRIGHT', 10, 0)
+    configPanel:SetPoint('TOPLEFT', modulesPanel, 'TOPRIGHT', 5, 0)
     configPanel:SetPoint('BOTTOMRIGHT')
     configPanel:Show()
     optionsFields:Create(configPanel)

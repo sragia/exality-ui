@@ -74,9 +74,10 @@ customTexts.Update = function(self, frame)
         local text = textContainer.Text
         text:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)
         text:SetVertexColor(db.fontColor.r, db.fontColor.g, db.fontColor.b, db.fontColor.a)
+        textContainer:ClearAllPoints()
         text:ClearAllPoints()
         textContainer:SetPoint(db.anchorPoint, frame.ElementFrame, db.relativeAnchorPoint, db.XOffset, db.YOffset)
-        text:SetPoint(db.anchorPoint, frame.ElementFrame, db.relativeAnchorPoint)
+        text:SetPoint(db.anchorPoint, textContainer, db.relativeAnchorPoint)
         frame:Tag(text, db.tag)
     end
 end

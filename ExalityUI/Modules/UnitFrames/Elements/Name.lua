@@ -3,7 +3,6 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
-
 local name = EXUI:GetModule('uf-element-name')
 
 name.Create = function(self, frame)
