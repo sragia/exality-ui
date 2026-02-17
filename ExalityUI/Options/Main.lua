@@ -91,7 +91,7 @@ optionsMain.CreateWindow = function(self)
     local modulesPanel = panel:Create()
     modulesPanel:SetParent(window.container)
     modulesPanel:SetPoint('TOPLEFT')
-    modulesPanel:SetPoint('BOTTOMRIGHT', window.container, 'BOTTOMLEFT', 200, 80)
+    modulesPanel:SetPoint('BOTTOMRIGHT', window.container, 'BOTTOMLEFT', 180, 80)
     modulesPanel:Show()
 
     local infoPanel = panel:Create()

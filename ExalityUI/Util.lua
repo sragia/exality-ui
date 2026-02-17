@@ -480,8 +480,9 @@ EXUI.utils = {
             end
         end
     end,
-    organizeFramesInList = function(children, gap, parentContainer)
+    organizeFramesInList = function(children, gap, parentContainer, gapX)
         local prev = nil
+        gapX = gapX or 0
 
         for _, child in ipairs_reverse(children) do
             child:ClearAllPoints()
@@ -489,8 +490,8 @@ EXUI.utils = {
 
         for indx, child in ipairs(children) do
             if (not prev) then
-                child:SetPoint('TOPLEFT', parentContainer, 'TOPLEFT', 0, -gap)
-                child:SetPoint('TOPRIGHT', parentContainer, 'TOPRIGHT', 0, -gap)
+                child:SetPoint('TOPLEFT', parentContainer, 'TOPLEFT', gapX, -gap)
+                child:SetPoint('TOPRIGHT', parentContainer, 'TOPRIGHT', -gapX, -gap)
             else
                 child:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, -gap)
                 child:SetPoint('TOPRIGHT', prev, 'BOTTOMRIGHT', 0, -gap)

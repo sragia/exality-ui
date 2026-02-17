@@ -83,8 +83,12 @@ xpBar.GetName = function(self)
     return 'XP Bar'
 end
 
+xpBar.GetCategory = function(self)
+    return 'Quality of Life'
+end
+
 xpBar.GetOrder = function(self)
-    return 999
+    return 20
 end
 
 xpBar.GetOptions = function(self)

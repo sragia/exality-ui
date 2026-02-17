@@ -24,8 +24,12 @@ customWindows.GetName = function(self)
     return 'Custom Windows'
 end
 
+customWindows.GetCategory = function(self)
+    return 'Quality of Life'
+end
+
 customWindows.GetOrder = function(self)
-    return 110
+    return 100
 end
 
 customWindows.GetDefaults = function(self)

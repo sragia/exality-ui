@@ -51,11 +51,11 @@ dataBrokers.Init = function(self)
 end
 
 dataBrokers.GetName = function(self)
-    return 'Data Broker Displays'
+    return 'Data Brokers'
 end
 
 dataBrokers.GetOrder = function(self)
-    return 100
+    return 50
 end
 
 dataBrokers.GetSplitViewItems = function(self)

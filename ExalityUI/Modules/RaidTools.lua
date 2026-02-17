@@ -49,8 +49,12 @@ raidToolsModule.GetName = function(self)
     return 'Raid Tools'
 end
 
+raidToolsModule.GetCategory = function(self)
+    return 'Quality of Life'
+end
+
 raidToolsModule.GetOrder = function(self)
-    return 30
+    return 10
 end
 
 raidToolsModule.GetDefaults = function(self)

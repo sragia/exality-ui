@@ -86,7 +86,7 @@ core.GetName = function(self)
 end
 
 core.GetOrder = function(self)
-    return 60
+    return 30
 end
 
 core.ToggleOptionPreview = function(self)
