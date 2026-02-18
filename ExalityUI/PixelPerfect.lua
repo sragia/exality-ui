@@ -7,13 +7,11 @@ local pixelPerfect = EXUI:GetModule('pixel-perfect')
 pixelPerfect.UIScale = 1
 
 pixelPerfect.Initialize = function(self)
-    local _, screenHeight = GetPhysicalScreenSize()
-    local perfect = 768 / screenHeight
     self.UIScale = UIParent:GetScale()
 end
 
 EXUI.ScalePixel = function(self, value)
-    return PixelUtil.GetNearestPixelSize(value, pixelPerfect.UIScale) - 0.07
+    return PixelUtil.GetNearestPixelSize(value, UIParent:GetEffectiveScale()) - 0.07
 end
 
 function EXUI:SetSize(frame, width, height)

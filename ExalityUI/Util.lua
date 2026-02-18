@@ -480,7 +480,7 @@ EXUI.utils = {
             end
         end
     end,
-    organizeFramesInList = function(children, gap, parentContainer, gapX)
+    organizeFramesInList = function(children, gap, parentContainer, gapX, noAnchoring)
         local prev = nil
         gapX = gapX or 0
 
@@ -488,13 +488,22 @@ EXUI.utils = {
             child:ClearAllPoints()
         end
 
+        local currentY = 0
         for indx, child in ipairs(children) do
             if (not prev) then
                 child:SetPoint('TOPLEFT', parentContainer, 'TOPLEFT', gapX, -gap)
                 child:SetPoint('TOPRIGHT', parentContainer, 'TOPRIGHT', -gapX, -gap)
+                currentY = (2 * -gap) - child:GetHeight()
             else
-                child:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, -gap)
-                child:SetPoint('TOPRIGHT', prev, 'BOTTOMRIGHT', 0, -gap)
+                if (noAnchoring) then
+                    child:SetPoint('TOPLEFT', parentContainer, 'TOPLEFT', gapX, currentY)
+                    child:SetPoint('TOPRIGHT', parentContainer, 'TOPRIGHT', -gapX, currentY)
+                else
+                    child:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, -gap)
+                    child:SetPoint('TOPRIGHT', prev, 'BOTTOMRIGHT', 0, -gap)
+                end
+
+                currentY = currentY - (child:GetHeight() + gap)
             end
             child:Show()
             prev = child
