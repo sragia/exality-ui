@@ -672,5 +672,12 @@ EXUI.utils = {
             end
         end
         return formatted
+    end,
+    spreadTable = function(target, source)
+        for _, value in ipairs(source) do
+            table.insert(target, value)
+        end
+
+        return target
     end
 }

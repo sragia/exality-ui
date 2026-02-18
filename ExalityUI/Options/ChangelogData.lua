@@ -10,6 +10,7 @@ EXUI.changelog = [[
 - Fix issue with custom text offsets not updating.
 - Fix issue with group role indicator preview not showing.
 - Add Notifications which will be used for other modules to show notifications (Disabled by default).
+- Add Tweaks and Bugfixes module which will be used for some small tweaks or bugfixes in UI. (All are disabled by default). Not much added here yet, but core framework is in place to add more easily in future.
 
 # |cffdb49000.2.0|r - "The Previews" Update
 

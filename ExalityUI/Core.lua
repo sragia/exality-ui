@@ -53,7 +53,7 @@ EXUI.RegisterEventHandler = function(self, event, id, func)
     end
 
     for _, event in ipairs(event) do
-        if (not self.handler.eventHandlers[event]) then
+        if (not self.handler:IsEventRegistered(event)) then
             self.handler:RegisterEvent(event)
         end
         self.handler.eventHandlers[event] = self.handler.eventHandlers[event] or {}
@@ -62,10 +62,15 @@ EXUI.RegisterEventHandler = function(self, event, id, func)
 end
 
 EXUI.UnregisterEventHandler = function(self, event, id)
-    self.handler.eventHandlers[event] = self.handler.eventHandlers[event] or {}
-    self.handler.eventHandlers[event][id] = nil
-    if (not next(self.handler.eventHandlers[event])) then
-        self.handler:UnregisterEvent(event)
+    if (type(event) ~= 'table') then
+        event = { event }
+    end
+    for _, event in ipairs(event) do
+        self.handler.eventHandlers[event] = self.handler.eventHandlers[event] or {}
+        self.handler.eventHandlers[event][id] = nil
+        if (not next(self.handler.eventHandlers[event])) then
+            self.handler:UnregisterEvent(event)
+        end
     end
 end
 

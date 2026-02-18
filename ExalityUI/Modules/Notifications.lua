@@ -60,7 +60,7 @@ notifications.GetCategory = function(self)
 end
 
 notifications.GetOrder = function(self)
-    return 100
+    return 80
 end
 
 notifications.GetOptions = function(self)
@@ -99,7 +99,7 @@ notifications.GetOptions = function(self)
             type = 'description',
             width = 100,
             label =
-            'These options only control how Notifications will look, or if they are enabled at all. Actual notifications come from other settings that you can enable. By default no notifications will be triggered unless you enable them.'
+            'These options only control how Notifications will look, or if they are enabled at all. Actual notifications come from other settings that you can enable.'
         },
         {
             type = 'button',
