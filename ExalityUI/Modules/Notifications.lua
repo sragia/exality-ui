@@ -345,6 +345,36 @@ notifications.Remove = function(self, id)
     self:Refresh()
 end
 
+notifications.UpdateMessage = function(self, id, message)
+    for _, notification in ipairs(self.active) do
+        if (notification.id == id) then
+            notification.message = message
+            if (notification.timer) then
+                notification.timer:Cancel()
+                notification.timer = C_Timer.NewTimer(notification.duration, function()
+                    self:Remove(notification.id)
+                end)
+            end
+            for _, f in ipairs(self.frames) do
+                if (f.data.id == id) then
+                    f.text:SetText(message)
+                    break
+                end
+            end
+            break
+        end
+    end
+end
+
+notifications.IsActive = function(self, id)
+    for _, notification in ipairs(self.active) do
+        if (notification.id == id) then
+            return true
+        end
+    end
+    return false
+end
+
 local function StyleNotification(f)
     if (f.configured) then return end
     f:SetWidth(16)

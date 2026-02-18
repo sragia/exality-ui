@@ -7,6 +7,9 @@ local optionsController = EXUI:GetModule('options-controller')
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
+---@class EXUINotifications
+local Notifications = EXUI:GetModule('notifications')
+
 ---@class EXUITweaksAndBugfixes
 local tweaksAndBugfixes = EXUI:GetModule('tweaks-and-bugfixes')
 
@@ -187,14 +190,14 @@ tweaksAndBugfixes:RegisterTweak('repair-notification', {
             end
             if (minDurability < 20 and not isNotificationActive) then
                 isNotificationActive = true
-                EXUI:GetModule('notifications'):Add({
+                Notifications:Add({
                     id = 'repair-notification',
                     message = '|cffffd200Repair!|r',
                     icon = 132281
                 })
             elseif (isNotificationActive and minDurability >= 20) then
                 isNotificationActive = false
-                EXUI:GetModule('notifications'):Remove('repair-notification')
+                Notifications:Remove('repair-notification')
             end
         end
 
@@ -207,6 +210,40 @@ tweaksAndBugfixes:RegisterTweak('repair-notification', {
     end,
     disable = function()
         EXUI:UnregisterEventHandler({ 'UPDATE_INVENTORY_DURABILITY', 'PLAYER_ENTERING_WORLD' }, 'repair-notification')
-        EXUI:GetModule('notifications'):Remove('repair-notification')
+        Notifications:Remove('repair-notification')
+    end,
+})
+
+tweaksAndBugfixes:RegisterTweak('almost-full-bags', {
+    name = 'Low bag space notification (<5 slots)',
+    type = 'tweak',
+    enable = function()
+        EXUI:RegisterEventHandler('BAG_UPDATE_DELAYED', 'almost-full-bags', function()
+            local freeSlots = 0
+            for i = 0, 4 do
+                local free = C_Container.GetContainerNumFreeSlots(i)
+                freeSlots = freeSlots + free
+            end
+
+            if (freeSlots < 5) then
+                if (not Notifications:IsActive('almost-full-bags')) then
+                    Notifications:Add({
+                        id = 'almost-full-bags',
+                        duration = 4,
+                        message = string.format("|cffffffff%s|r slot/s left!", freeSlots),
+                        icon = 133644
+                    })
+                else
+                    Notifications:UpdateMessage('almost-full-bags',
+                        string.format("|cffffffff%s|r slot/s left!", freeSlots))
+                end
+            elseif (Notifications:IsActive('almost-full-bags')) then
+                Notifications:Remove('almost-full-bags')
+            end
+        end)
+    end,
+    disable = function()
+        EXUI:UnregisterEventHandler('BAG_UPDATE_DELAYED', 'almost-full-bags')
+        Notifications:Remove('almost-full-bags')
     end,
 })
