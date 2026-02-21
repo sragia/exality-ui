@@ -2,6 +2,11 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.2.2|r
+
+- [Broker] Fix issue with guild broker throwing error when API doesnt return zone for player
+- [Unit Frames] Update oUF to 13.3.0
+
 # |cffdb49000.2.1|r
 
 - Update visuals of Anchor Point inputs and titles.
