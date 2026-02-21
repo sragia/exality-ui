@@ -59,7 +59,7 @@ local function ShowTooltip(self)
             tooltip:AddLine(
                 WrapTextInColorCode(level, C_ColorUtil.GenerateTextColorCode(GetQuestDifficultyColor(level))),
                 classColor:WrapTextInColorCode(name),
-                WrapTextInColorCode(zone, zone == myZone and 'FF00FD00' or 'ffffffff')
+                WrapTextInColorCode(zone or 'Unknown', zone == myZone and 'FF00FD00' or 'ffffffff')
             )
             if (isShift) then
                 tooltip:AddLine(
