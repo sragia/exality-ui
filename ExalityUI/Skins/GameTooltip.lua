@@ -10,15 +10,19 @@ local gameTooltipSkin = EXUI:GetModule('skin-GameTooltip')
 local function SkinTooltip(tooltip)
     skins:StripNineSlice(tooltip)
 
-    local backdrop = CreateFrame('Frame', nil, tooltip, 'BackdropTemplate')
+    local backdrop = CreateFrame('Frame', nil, tooltip)
     backdrop:SetAllPoints()
     backdrop:SetFrameLevel(0)
     if (tooltip:GetFrameLevel() == 0) then
         tooltip:SetFrameLevel(1)
     end
-    backdrop:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    backdrop:SetBackdropColor(0, 0, 0, 0.8)
-    backdrop:SetBackdropBorderColor(0, 0, 0, 1)
+    local tex = backdrop:CreateTexture()
+    tex:SetTexture(EXUI.const.textures.frame.solidBg)
+    tex:SetAllPoints()
+    tex:SetVertexColor(0, 0, 0, 0.6)
+
+    local border = EXUI:AddPixelPerfectBorder(backdrop, 1)
+    border:SetBorderColor(0, 0, 0, 1)
 
     if (tooltip.CompareHeader) then
         for _, region in ipairs(tooltip.CompareHeader:GetRegions()) do
@@ -28,24 +32,33 @@ local function SkinTooltip(tooltip)
                 region:Hide()
             end
         end
-        local compareBackdrop = CreateFrame('Frame', nil, tooltip.CompareHeader, 'BackdropTemplate')
+        local compareBackdrop = CreateFrame('Frame', nil, tooltip.CompareHeader)
         compareBackdrop:SetAllPoints()
         compareBackdrop:SetFrameLevel(0)
-        compareBackdrop:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-        compareBackdrop:SetBackdropColor(0, 0, 0, 0.8)
-        compareBackdrop:SetBackdropBorderColor(0, 0, 0, 1)
+        local tex = compareBackdrop:CreateTexture()
+        tex:SetTexture(EXUI.const.textures.frame.solidBg)
+        tex:SetAllPoints()
+        tex:SetVertexColor(0, 0, 0, 0.6)
+        local compareBorder = EXUI:AddPixelPerfectBorder(compareBackdrop, 1)
+        compareBorder:SetBorderColor(0, 0, 0, 1)
+
+
         if (tooltip.CompareHeader:GetFrameLevel() == 0) then
             tooltip.CompareHeader:SetFrameLevel(1)
         end
     end
     if (tooltip.StatusBar) then
         tooltip.StatusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
-        local sbBackdrop = CreateFrame('Frame', nil, tooltip.StatusBar, 'BackdropTemplate')
+        local sbBackdrop = CreateFrame('Frame', nil, tooltip.StatusBar)
         sbBackdrop:SetAllPoints()
         sbBackdrop:SetFrameLevel(0)
-        sbBackdrop:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-        sbBackdrop:SetBackdropColor(0, 0, 0, 0.4)
-        sbBackdrop:SetBackdropBorderColor(0, 0, 0, 1)
+        local tex = sbBackdrop:CreateTexture()
+        tex:SetTexture(EXUI.const.textures.frame.solidBg)
+        tex:SetAllPoints()
+        tex:SetVertexColor(0, 0, 0, 0.4)
+        local statusBarBorder = EXUI:AddPixelPerfectBorder(sbBackdrop, 1)
+        statusBarBorder:SetBorderColor(0, 0, 0, 1)
+
         if (tooltip.StatusBar:GetFrameLevel() == 0) then
             tooltip.StatusBar:SetFrameLevel(1)
         end
