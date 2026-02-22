@@ -1,6 +1,10 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUIUnitFramesCore
+local ufCore = EXUI:GetModule('uf-core')
+
+
 ---@class EXUIoUFTags
 local tags = EXUI:GetModule('oUF-Tags')
 
@@ -85,6 +89,26 @@ tags.TAGS = {
         events = 'UNIT_NAME_UPDATE'
     }
 }
+
+tags.Init = function(self)
+    self:RegisterNSRTCallback()
+end
+
+EXUI:RegisterEventHandler('ADDON_LOADED', 'NSRT-Loaded', function(event, addonName)
+    if (addonName == 'NorthernSkyRaidTools') then
+        tags:RegisterNSRTCallback()
+    end
+end)
+
+local callbackRegistered = false
+tags.RegisterNSRTCallback = function(self)
+    if (not callbackRegistered and NSAPI and NSAPI.RegisterCallback) then
+        callbackRegistered = true
+        NSAPI:RegisterCallback("NSRT_NICKNAME_UPDATED", function()
+            ufCore:UpdateAllFrames()
+        end, 'ExalityUI')
+    end
+end
 
 tags.RegisterCustomTags = function(self)
     for _, tag in ipairs(self.TAGS) do

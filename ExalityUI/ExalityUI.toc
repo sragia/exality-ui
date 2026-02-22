@@ -25,8 +25,8 @@ ExalityFrames/ExalityFrames.xml
 Util.lua 
 Init.lua
 Core.lua
-Modules/UnitFrames/oUF/oUF-Plugins.xml
 Data.lua
+Modules/UnitFrames/oUF/oUF-Plugins.xml
 
 Masque/Masque.xml
 

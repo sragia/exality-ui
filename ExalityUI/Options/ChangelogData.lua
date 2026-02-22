@@ -7,6 +7,7 @@ EXUI.changelog = [[
 - [Broker] Fix issue with guild broker throwing error when API doesnt return zone for player
 - [Unit Frames] Update oUF to 13.3.0
 - [Skins] Adjust tooltip skinning to not taint from loot frame
+- [Unit Frames] Update NSRT nickname tag on nickname update
 
 # |cffdb49000.2.1|r
 
