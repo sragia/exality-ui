@@ -135,43 +135,43 @@ tweaksAndBugfixes.RegisterTweak = function(self, key, tweak)
 end
 
 
-tweaksAndBugfixes:RegisterTweak('quest-bug', {
-    name = 'Quest Tracking FPS Bugfix',
-    type = 'bug',
-    description =
-    '"Fixes" issue where you lose FPS due to SUPER_TRACKING_PATH_UPDATED event spam.\n WARNING: This will untrack all of your quests if triggered. Will trigger automatically when issue is noticed.',
-    enable = function()
-        EXUI:UnregisterEventHandler('SUPER_TRACKING_PATH_UPDATED', 'quest-tracking-bugfix') -- Just in case enable is called twice
-        local count = 0
-        local lastTriggered = 0
-        local UnwatchEverything = function()
-            for i = 1, C_QuestLog.GetNumQuestWatches() do
-                local qID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
-                if qID then
-                    C_QuestLog.RemoveQuestWatch(qID)
-                end
-            end
-        end
+-- tweaksAndBugfixes:RegisterTweak('quest-bug', {
+--     name = 'Quest Tracking FPS Bugfix',
+--     type = 'bug',
+--     description =
+--     '"Fixes" issue where you lose FPS due to SUPER_TRACKING_PATH_UPDATED event spam.\n WARNING: This will untrack all of your quests if triggered. Will trigger automatically when issue is noticed.',
+--     enable = function()
+--         EXUI:UnregisterEventHandler('SUPER_TRACKING_PATH_UPDATED', 'quest-tracking-bugfix') -- Just in case enable is called twice
+--         local count = 0
+--         local lastTriggered = 0
+--         local UnwatchEverything = function()
+--             for i = 1, C_QuestLog.GetNumQuestWatches() do
+--                 local qID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
+--                 if qID then
+--                     C_QuestLog.RemoveQuestWatch(qID)
+--                 end
+--             end
+--         end
 
-        EXUI:RegisterEventHandler('SUPER_TRACKING_PATH_UPDATED', 'quest-tracking-bugfix', function()
-            local now = time()
-            if (now - lastTriggered > 2) then
-                count = 0
-            else
-                count = count + 1
-                if (count > 20) then
-                    UnwatchEverything()
-                    count = 0
-                    EXUI.utils.printOut('Quest Tracking FPS Bugfix triggered. Unwatching all quests...')
-                end
-            end
-            lastTriggered = now
-        end)
-    end,
-    disable = function()
-        EXUI:UnregisterEventHandler('SUPER_TRACKING_PATH_UPDATED', 'quest-tracking-bugfix')
-    end,
-})
+--         EXUI:RegisterEventHandler('SUPER_TRACKING_PATH_UPDATED', 'quest-tracking-bugfix', function()
+--             local now = time()
+--             if (now - lastTriggered > 2) then
+--                 count = 0
+--             else
+--                 count = count + 1
+--                 if (count > 20) then
+--                     UnwatchEverything()
+--                     count = 0
+--                     EXUI.utils.printOut('Quest Tracking FPS Bugfix triggered. Unwatching all quests...')
+--                 end
+--             end
+--             lastTriggered = now
+--         end)
+--     end,
+--     disable = function()
+--         EXUI:UnregisterEventHandler('SUPER_TRACKING_PATH_UPDATED', 'quest-tracking-bugfix')
+--     end,
+-- })
 
 tweaksAndBugfixes:RegisterTweak('repair-notification', {
     name = 'Repair notification (<20%)',
