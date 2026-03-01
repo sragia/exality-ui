@@ -124,6 +124,7 @@ equipmentPopout.SetLogic = function(self, f)
         local prev = unequipItem;
         for _, itemInfo in EXUI.utils.spairs(itemInfos, function(t, a, b) return t[a].ilvl > t[b].ilvl end) do
             local itemFrame = equipmentPopout:CreateItemButton(self.frame)
+            itemFrame.IsUnequip = false
             itemFrame.ItemLink = itemInfo.itemLink
             itemFrame.ItemLocation = itemInfo.itemLocation
             itemFrame.ItemName:SetText(itemInfo.itemLink)

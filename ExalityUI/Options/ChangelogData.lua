@@ -2,6 +2,10 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.2.3|r
+
+- Bunch of small fixes for spotted errors during leveling.
+
 # |cffdb49000.2.2|r
 
 - [Broker] Fix issue with guild broker throwing error when API doesnt return zone for player

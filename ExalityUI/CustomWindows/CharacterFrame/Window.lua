@@ -133,6 +133,12 @@ characterFrame.UpdateHeader = function(self)
     self.window.CharacterGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
 end
 
+EXUI:RegisterEventHandler('PLAYER_EQUIPMENT_CHANGED', 'char-frame-update-header', function()
+    if (characterFrame.window and characterFrame.window:IsShown()) then
+        characterFrame:UpdateHeader()
+    end
+end)
+
 characterFrame.UpdateModel = function(self)
     C_Timer.After(0.2, function() -- For some reason need to add some delay
         self.window.CharacterModel:RefreshUnit()

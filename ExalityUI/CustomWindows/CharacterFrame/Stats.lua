@@ -198,7 +198,7 @@ stats.Create = function(self, container)
                 local hastePerc = string.format('%.2f%%', haste)
 
                 if (haste < 0 and not GetPVPGearStatRules()) then
-                    hastePerc = WrapTextInColorCode(hastePerc + 0.5, 'fffc0041')
+                    hastePerc = WrapTextInColorCode(tostring(haste + 0.5), 'fffc0041')
                 end
 
                 frame.StatRating:SetText(hastePerc)

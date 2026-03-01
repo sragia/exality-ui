@@ -62,6 +62,7 @@ local function SkinTooltip(tooltip)
         if (tooltip.StatusBar:GetFrameLevel() == 0) then
             tooltip.StatusBar:SetFrameLevel(1)
         end
+        tooltip.StatusBar:SetHeight(5)
         tooltip.StatusBar.bg = sbBackdrop
     end
 end

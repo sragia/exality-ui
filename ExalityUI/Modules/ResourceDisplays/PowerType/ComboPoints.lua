@@ -43,10 +43,15 @@ comboPoints.Create = function(self, frame)
     frame:RegisterEvent('PLAYER_ENTERING_WORLD')
 
     frame.OnEvent = function(self, event, unit, powerType)
+        if (not frame:IsActive()) then
+            return;
+        end
         if ((unit == 'player' and powerType == 'COMBO_POINTS') or event == 'TRAIT_CONFIG_UPDATED') then
             local maxComboPoints = UnitPowerMax('player', Enum.PowerType.ComboPoints)
             if (maxComboPoints ~= #self.ActiveFrames) then
-                self:Update()
+                if (self.Update) then
+                    self:Update()
+                end
                 return;
             end
             local comboPointsCount = UnitPower('player', Enum.PowerType.ComboPoints)
