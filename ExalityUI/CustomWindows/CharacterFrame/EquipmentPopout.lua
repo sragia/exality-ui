@@ -12,6 +12,9 @@ equipmentPopout.Init = function(self)
     local f = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
     f:SetFrameStrata('DIALOG')
     f:SetFrameLevel(99)
+    f:SetPropagateMouseMotion(false)
+    f:SetScript('OnEnter', function(self) end)
+    f:SetPropagateMouseClicks(false)
     self.frame = f
     self.pool = CreateFramePool('Button', f, 'SecureActionButtonTemplate, BackdropTemplate')
 
@@ -26,9 +29,14 @@ end
 equipmentPopout.CreateItemButton = function(self, parent)
     local f = self.pool:Acquire()
     if (not f.Configured) then
-        f:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-        f:SetBackdropColor(0, 0, 0, 0.7)
-        f:SetBackdropBorderColor(0, 0, 0, 1)
+        f.border = EXUI:AddPixelPerfectBorder(f, 1)
+        f.border:SetBorderColor(0, 0, 0, 1)
+
+        f.bg = f:CreateTexture(nil, 'BACKGROUND')
+        f.bg:SetTexture(EXUI.const.textures.frame.solidBg)
+        f.bg:SetAllPoints()
+        f.bg:SetVertexColor(0, 0, 0, 0.7)
+
         EXUI:SetHeight(f, 20)
 
         local itemIcon = f:CreateTexture(nil, 'OVERLAY')
@@ -57,16 +65,16 @@ equipmentPopout.CreateItemButton = function(self, parent)
                 GameTooltip:SetHyperlink(self.ItemLink)
                 GameTooltip:Show()
             end
-            self:SetBackdropBorderColor(0.9, 0.9, 0.9, 1)
-            self:SetBackdropColor(0.2, 0.2, 0.2, 0.7)
+            self.border:SetBorderColor(0.9, 0.9, 0.9, 1)
+            self.bg:SetVertexColor(0.2, 0.2, 0.2, 0.7)
         end)
 
         f:SetScript('OnLeave', function(self)
             if (not self.IsUnequip) then
                 GameTooltip:Hide()
             end
-            self:SetBackdropBorderColor(0, 0, 0, 1)
-            self:SetBackdropColor(0, 0, 0, 0.7)
+            self.border:SetBorderColor(0, 0, 0, 1)
+            self.bg:SetVertexColor(0, 0, 0, 0.7)
         end)
 
         f:SetScript('OnClick', function(self, button)
@@ -157,7 +165,7 @@ equipmentPopout.Show = function(self, parent)
     self.frame:SetFrameLevel(parent:GetFrameLevel() + 100)
     self.frame.Slot = parent
 
-    self.frame:SetPoint('TOPLEFT', parent, 'TOPRIGHT', 5, 0)
+    self.frame:SetPoint('TOPLEFT', parent, 'TOPRIGHT', 0, 0)
     self.frame:Show()
 
     self.frame:Update()

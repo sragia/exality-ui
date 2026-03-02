@@ -2,6 +2,10 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.2.4|r
+
+- [Character Frame] Equipment popout small improvements
+
 # |cffdb49000.2.3|r
 
 - Bunch of small fixes for spotted errors during leveling.
