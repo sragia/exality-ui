@@ -10,6 +10,7 @@ EXUI.changelog = [[
 - [Unit Frames] Update oUF to 13.3.1
 - [Brezz] Only show in encounters in raid
 - [Media] Add new absorb bar texture
+- [Character Frame] Add crest display
 
 # |cffdb49000.2.3|r
 

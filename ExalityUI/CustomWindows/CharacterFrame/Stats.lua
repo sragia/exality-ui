@@ -106,6 +106,76 @@ stats.CreateStat = function(self, statName, config, parent)
     return stat
 end
 
+stats.CreateCrest = function(self, currencyId, parent)
+    local crest = CreateFrame('Frame', nil, parent)
+    crest.currencyId = currencyId
+    crest:SetSize(26, 26)
+
+    local icon = crest:CreateTexture(nil, 'ARTWORK')
+    icon:SetPoint('TOP')
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    icon:SetSize(26, 26)
+    crest.Icon = icon
+
+    local text = crest:CreateFontString(nil, 'OVERLAY')
+    text:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')
+    text:SetPoint('TOP', icon, 'BOTTOM', 0, -2)
+    text:SetText('0')
+    crest.Text = text
+
+    crest.Update = function(self)
+        local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(self.currencyId)
+        self.Icon:SetTexture(currencyInfo.iconFileID)
+        self.Text:SetText(currencyInfo.quantity)
+
+        if (currencyInfo.maxQuantity > 0 and currencyInfo.quantity >= currencyInfo.maxQuantity) then
+            self.Text:SetVertexColor(0, 1, 0, 1)
+        else
+            self.Text:SetVertexColor(1, 1, 1, 1)
+        end
+    end
+
+    crest:SetScript('OnEnter', function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT", 2, 2);
+        GameTooltip:SetCurrencyByID(self.currencyId);
+    end)
+
+    crest:SetScript('OnLeave', function(self)
+        GameTooltip:Hide()
+    end)
+
+    crest:RegisterEvent('CURRENCY_DISPLAY_UPDATE')
+    crest:SetScript('OnEvent', function(self, event, ...)
+        self:Update()
+    end)
+
+    crest:Update()
+    return crest
+end
+
+local crestIds = {
+    3383, -- Adventurer
+    3341, -- Veteran
+    3343, -- Champion
+    3345, -- Hero
+    3347, -- Myth
+}
+stats.CreateCrestDisplay = function(self, parent)
+    local container = CreateFrame('Frame', nil, parent)
+    local centerContainer = CreateFrame('Frame', nil, container)
+    centerContainer:SetSize(26 * #crestIds + 10 * (#crestIds - 1), 16)
+    centerContainer:SetPoint('TOP')
+    container.CenterContainer = centerContainer
+
+    container:SetHeight(30)
+    for i, currencyId in ipairs(crestIds) do
+        local crest = self:CreateCrest(currencyId, container)
+        crest:SetPoint('LEFT', centerContainer, 'LEFT', (26 + 10) * (i - 1), 0)
+    end
+
+    return container
+end
+
 stats.Create = function(self, container)
     self.container = container
 
@@ -542,6 +612,9 @@ stats.Create = function(self, container)
                 return false
             end
         }, container), -- Stagger
+
+        self:CreateHeader('Crests', container),
+        self:CreateCrestDisplay(container),
     }
 
     self:PositionFrames()
