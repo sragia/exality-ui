@@ -17,6 +17,7 @@
 	<Script file="Elements/PrivateAuras.lua"/>
 	<Script file="Elements/Absorbs.lua"/>
 	<Script file="Elements/CustomTexts.lua"/>
+	<Script file="Elements/DisplelOverlay.lua"/>
 
 	<Script file="GeneralOptions.lua"/>
 	<Script file="Units/Player.lua"/>

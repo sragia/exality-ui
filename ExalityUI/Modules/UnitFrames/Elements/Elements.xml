@@ -21,4 +21,5 @@
 	<Script file="CustomTexts.lua"/>
 	<Script file="GroupRoleIndicator.lua"/>
 	<Script file="Auras.lua"/>
+	<Script file="DispelOverlay.lua"/>
 </Ui>

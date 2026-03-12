@@ -249,6 +249,9 @@ focus.Init = function(self)
         ['aurasDurationFont'] = 'DMSans',
         ['aurasDurationFontSize'] = 12,
         ['aurasDurationFontFlag'] = 'OUTLINE',
+        -- Dispel Overlay
+        ['dispelOverlayEnable'] = true,
+        ['dispelOverlayAlpha'] = 1
     })
 end
 
@@ -272,6 +275,7 @@ focus.Create = function(self, frame)
     frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.Auras = EXUI:GetModule('uf-element-auras'):Create(frame, 'focus')
+    frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Focus', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

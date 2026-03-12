@@ -249,6 +249,9 @@ player.Init = function(self)
         ['aurasDurationFont'] = 'DMSans',
         ['aurasDurationFontSize'] = 12,
         ['aurasDurationFontFlag'] = 'OUTLINE',
+        -- Dispel Overlay
+        ['dispelOverlayEnable'] = false,
+        ['dispelOverlayAlpha'] = 1
     })
 end
 
@@ -270,6 +273,7 @@ player.Create = function(self, frame)
     frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.Auras = EXUI:GetModule('uf-element-auras'):Create(frame, 'player')
+    frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Player', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

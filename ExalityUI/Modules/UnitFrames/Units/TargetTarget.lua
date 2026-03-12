@@ -241,6 +241,9 @@ targettarget.Init = function(self)
         ['aurasDurationFont'] = 'DMSans',
         ['aurasDurationFontSize'] = 12,
         ['aurasDurationFontFlag'] = 'OUTLINE',
+        -- Dispel Overlay
+        ['dispelOverlayEnable'] = false,
+        ['dispelOverlayAlpha'] = 1
     })
 end
 
@@ -263,6 +266,7 @@ targettarget.Create = function(self, frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.Auras = EXUI:GetModule('uf-element-auras'):Create(frame, 'targettarget')
+    frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'TargetTarget', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)

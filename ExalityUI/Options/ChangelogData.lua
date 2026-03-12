@@ -5,6 +5,9 @@ EXUI.changelog = [[
 # |cffdb49000.2.4|r
 
 - [Character Frame] Equipment popout small improvements
+- [Unit Frames] Fix issue where party/raid frames still enabled elements in background when they should be disabled. Should improve performance a bit.
+- [Unit Frames] New UF element - Dispel Overlay. Shows a colored overlay on the unit frame when dispellable auras are present, that you can dispel.
+- [Unit Frames] Update oUF to 13.3.1
 
 # |cffdb49000.2.3|r
 

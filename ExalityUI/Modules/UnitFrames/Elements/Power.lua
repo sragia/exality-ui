@@ -30,13 +30,11 @@ power.Update = function(self, frame)
     local db = frame.db
     local generalDB = frame.generalDB
     local powerBar = frame.Power
-    if (frame.unit ~= 'party') then
-        if (not db.powerEnable) then
-            core:DisableElementForFrame(frame, 'Power')
-            return
-        end
-        core:EnableElementForFrame(frame, 'Power')
+    if (not db.powerEnable) then
+        core:DisableElementForFrame(frame, 'Power')
+        return
     end
+    core:EnableElementForFrame(frame, 'Power')
     powerBar:SetPoint('BOTTOMLEFT')
     powerBar:SetPoint('BOTTOMRIGHT')
     powerBar:SetHeight(db.powerHeight)

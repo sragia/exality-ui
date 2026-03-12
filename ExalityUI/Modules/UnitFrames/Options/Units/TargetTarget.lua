@@ -278,6 +278,15 @@ core:AddOption({
             }
         },
         {
+            name = 'Dispel Overlay',
+            id = 'dispeloverlay',
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-dispel-overlay'):GetOptions('targettarget')
+                end
+            }
+        },
+        {
             name = 'Custom Texts',
             id = 'customtexts',
             options = {

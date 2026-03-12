@@ -679,5 +679,10 @@ EXUI.utils = {
         end
 
         return target
+    end,
+    nextFrame = function(func)
+        C_Timer.After(0, function()
+            func()
+        end)
     end
 }

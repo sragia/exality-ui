@@ -266,6 +266,9 @@ raid.Init = function(self)
         ['aurasDurationFont'] = 'DMSans',
         ['aurasDurationFontSize'] = 12,
         ['aurasDurationFontFlag'] = 'OUTLINE',
+        -- Dispel Overlay
+        ['dispelOverlayEnable'] = true,
+        ['dispelOverlayAlpha'] = 1
     })
 
     local shouldShowBlizzardFrame = core:GetValueForUnit('raid', 'showBlizzardFrame') and
@@ -350,6 +353,7 @@ raid.Create = function(self, frame, unit)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.GroupRoleIndicator = EXUI:GetModule('uf-element-group-role-indicator'):Create(frame)
     frame.Auras = EXUI:GetModule('uf-element-auras'):Create(frame, 'raid')
+    frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
 
     frame.Update = function(self) raid:Update(self) end
 

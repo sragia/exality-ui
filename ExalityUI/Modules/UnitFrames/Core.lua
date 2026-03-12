@@ -75,15 +75,28 @@ core.SharedStyle = function(frame, unit)
         frameFactory = EXUI:GetModule('uf-unit-' .. core.groupUnitMap[unit])
     end
 
+    if (frameFactory and frameFactory.Create) then
+        frameFactory:Create(frame, unit)
+    end
+
+
     if (unit == 'party') then
         table.insert(core.partyFrames, frame)
+        if (frame.Update) then
+            -- Update on next frame to update with correct unit
+            EXUI.utils.nextFrame(function()
+                frame:Update()
+            end)
+        end
     end
     if (unit == 'raid') then
         table.insert(core.raidFrames, frame)
-    end
-
-    if (frameFactory and frameFactory.Create) then
-        frameFactory:Create(frame, unit)
+        if (frame.Update) then
+            -- Update on next frame to update with correct unit
+            EXUI.utils.nextFrame(function()
+                frame:Update()
+            end)
+        end
     end
 end
 
@@ -333,6 +346,10 @@ core.UpdateFrame = function(self, frame)
 
     if (frame.PhaseIndicator) then
         EXUI:GetModule('uf-element-phase-indicator'):Update(frame)
+    end
+
+    if (frame.DispelOverlay) then
+        EXUI:GetModule('uf-element-dispel-overlay'):Update(frame)
     end
 
     frame:UpdateTags()
@@ -642,7 +659,6 @@ core.EnableElementForFrame = function(self, frame, element)
 end
 
 core.DisableElementForFrame = function(self, frame, element)
-    if (frame.unit == 'party' or frame.unit == 'raid') then return end
     frame:DisableElement(element)
 end
 

@@ -91,6 +91,9 @@ EXUI.const = {
         },
         vignetteGradient = [[Interface/Addons/ExalityUI/Assets/Images/Frames/vignette.png]],
         logo = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
+        unitFrames = {
+            dispelOverlay = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/dispel-overlay.png]],
+        }
     },
     masque = {
         rectangle = {
