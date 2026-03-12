@@ -6,8 +6,10 @@ EXUI.changelog = [[
 
 - [Character Frame] Equipment popout small improvements
 - [Unit Frames] Fix issue where party/raid frames still enabled elements in background when they should be disabled. Should improve performance a bit.
-- [Unit Frames] New UF element - Dispel Overlay. Shows a colored overlay on the unit frame when dispellable auras are present, that you can dispel.
+- [Unit Frames] New UF element - Dispel Overlay. Shows a colored overlay on the unit frame when dispellable auras are present, that you can dispel. This is enabled by default for Raid and Party frames.
 - [Unit Frames] Update oUF to 13.3.1
+- [Brezz] Only show in encounters in raid
+- [Media] Add new absorb bar texture
 
 # |cffdb49000.2.3|r
 
