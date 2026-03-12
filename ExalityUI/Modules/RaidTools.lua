@@ -838,7 +838,8 @@ raidToolsModule.CreateBrezz = function(self)
     self.brezzFrame.CheckVisibility = function(self)
         local isInMPlus = C_ChallengeMode.IsChallengeModeActive()
         local isInEncounter = self.inEncounter
-        return isInMPlus or isInEncounter
+        local isInRaid = IsInRaid()
+        return isInMPlus or (isInEncounter and isInRaid)
     end
     self.brezzFrame:SetScript('OnEvent', function(self, event, ...)
         if (event == 'ENCOUNTER_START') then
