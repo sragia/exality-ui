@@ -828,6 +828,16 @@ core.UnforceAll = function(self)
             self:UnforceFrame(frame)
         end
     end
+    -- Special case for player
+    local playerFrame = self.frames['player']
+    if (playerFrame and playerFrame.elementPreviews) then
+        for element in pairs(playerFrame.elementPreviews) do
+            playerFrame.elementPreviews[element] = false
+        end
+        if (playerFrame.Update) then
+            playerFrame:Update()
+        end
+    end
     for unit in pairs(self.forcedHeaders) do
         local normalizedUnit = unit:match('^%a+')
         self:Unforce(normalizedUnit)

@@ -17,11 +17,6 @@ local dispelOverlay = EXUI:GetModule('uf-options-dispel-overlay')
 dispelOverlay.GetOptions = function(self, unit)
     return {
         {
-            type = 'title',
-            label = 'Dispel Overlay',
-            width = 100
-        },
-        {
             type = 'description',
             label = 'Shows colored overlay for dispellable harmful auras.',
             width = 100

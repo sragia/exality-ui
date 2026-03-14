@@ -2,6 +2,11 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.2.5|r
+
+- [Unit Frames] Add missed preview option for Dispel Overlay.
+- [Unit Frames] Fix issue where player frame previews wouldn't hide on window close.
+
 # |cffdb49000.2.4|r
 
 - [Character Frame] Equipment popout small improvements

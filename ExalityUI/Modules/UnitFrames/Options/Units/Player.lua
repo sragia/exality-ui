@@ -263,6 +263,7 @@ core:AddOption({
         {
             name = 'Dispel Overlay',
             id = 'dispeloverlay',
+            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-dispel-overlay'):GetOptions('player')

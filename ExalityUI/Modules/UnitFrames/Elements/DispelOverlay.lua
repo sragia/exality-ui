@@ -27,7 +27,13 @@ dispelOverlay.Update = function(self, frame)
         core:DisableElementForFrame(frame, 'DispelOverlay')
         return
     end
+
     frame.DispelOverlay.dispelColorCurve = self:CreateColorCurve(db.dispelOverlayAlpha)
+    if (frame:IsElementPreviewEnabled('dispeloverlay') and not frame.DispelOverlay:IsShown()) then
+        frame.DispelOverlay.isPreview = true
+    elseif (not frame:IsElementPreviewEnabled('dispeloverlay') and frame.DispelOverlay.isPreview) then
+        frame.DispelOverlay.isPreview = false
+    end
 end
 
 dispelOverlay.CreateColorCurve = function(self, alpha)

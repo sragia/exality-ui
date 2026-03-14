@@ -4,9 +4,20 @@ local EXUI = select(2, ...)
 ---@class EXUIUnitFramesCore
 local core = EXUI:GetModule('uf-core')
 
+-- For preview
+local dispelTypes = { 1, 2, 3, 4, 9, 11 }
+
 local function Update(self, event, unit, updateInfo)
     local element = self.DispelOverlay
     if (not element) then return end
+
+    if (element.isPreview) then
+        element:Show()
+        element:SetVertexColor(element.dispelColorCurve:Evaluate(dispelTypes[math.random(1, #dispelTypes)]):GetRGBA())
+        return
+    else
+        element:Hide()
+    end
     local slots = { C_UnitAuras.GetAuraSlots(unit, 'HARMFUL|RAID_PLAYER_DISPELLABLE') }
     if (#slots < 2) then
         element:Hide()
