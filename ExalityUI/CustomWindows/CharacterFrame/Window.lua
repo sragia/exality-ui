@@ -201,7 +201,7 @@ characterFrame.Create = function(self)
     local window = windowConstruct:Create({
         size = {
             800,
-            450
+            470
         },
         title = 'Exality'
     });

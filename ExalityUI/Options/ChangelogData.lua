@@ -7,6 +7,7 @@ EXUI.changelog = [[
 - [Unit Frames] Add missed preview option for Dispel Overlay.
 - [Unit Frames] Fix issue where player frame previews wouldn't hide on window close.
 - [Character Frame] Equipment popout now limits to 10 items due to some issue where it causes freezes with more items.
+- [Character Frame] Increase window height slightly to accomodate specs with more stats showing.
 
 # |cffdb49000.2.4|r
 
