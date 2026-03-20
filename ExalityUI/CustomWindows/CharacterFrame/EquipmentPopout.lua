@@ -130,7 +130,12 @@ equipmentPopout.SetLogic = function(self, f)
         height = height + unequipItem:GetHeight() + 4
 
         local prev = unequipItem;
+        local i = 0
         for _, itemInfo in EXUI.utils.spairs(itemInfos, function(t, a, b) return t[a].ilvl > t[b].ilvl end) do
+            i = i + 1
+            -- Limit to 10 items per ilvl. There's some kind of issue where SetPoint just takes forever the more items we add.
+            -- Something with the SecureActionButtonTemplate is causing this I think.
+            if (i > 10) then break end
             local itemFrame = equipmentPopout:CreateItemButton(self.frame)
             itemFrame.IsUnequip = false
             itemFrame.ItemLink = itemInfo.itemLink

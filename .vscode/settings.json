@@ -238,10 +238,13 @@
         "EquipmentManager_GetLocationData",
         "RAID",
         "PLAYER",
-        "StaticPopup_Show"
+        "StaticPopup_Show",
+        "UIPanelWindows",
+        "RegisterUIPanel"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [
-        "assign-type-mismatch"
+        "assign-type-mismatch",
+        "unused-local"
     ]
 }
