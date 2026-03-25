@@ -5,6 +5,7 @@ EXUI.changelog = [[
 # |cffdb49000.2.6|r
 
 - [Skins] Add basic bigwigs bar skin. Basically adds border and darker background.
+- [Unit Frames] Update oUF to 13.3.2 to fix private aura issues.
 
 # |cffdb49000.2.5|r
 
