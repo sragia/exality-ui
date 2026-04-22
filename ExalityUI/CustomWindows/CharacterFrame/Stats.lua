@@ -202,7 +202,9 @@ stats.Create = function(self, container)
 
     self.container:SetScript('OnEvent', function(self, event, ...)
         C_Timer.After(0, function()
-            self:Update()
+            if (not C_Secrets.HasSecretRestrictions()) then
+                self:Update()
+            end
         end)
     end)
 

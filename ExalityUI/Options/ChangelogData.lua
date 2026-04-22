@@ -2,6 +2,10 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.2.7|r
+
+- Some quick fixes for 12.0.5 compatibility.
+
 # |cffdb49000.2.6|r
 
 - [Skins] Add basic bigwigs bar skin. Basically adds border and darker background.

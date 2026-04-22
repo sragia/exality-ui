@@ -82,17 +82,21 @@ equipmentSlot.replacements = {
     ["Agility"] = 'Agi',
     ['Stamina'] = 'Stam',
     ['Strength'] = 'Str',
-    ['Versatility'] = 'Vers',
     ['Waking Stats'] = 'Stats',
     ['Armor'] = 'Arm',
-    ['Avoidance'] = 'Avoid',
     ['Shadowflame Wreathe'] = 'Shadowflame',
     ['Regenerative Leech'] = 'Leech',
     ['Authority of the Depths'] = 'Depths',
     ["Scout's March"] = 'Speed',
     ['Chant of Winged Grace'] = 'Avoid',
     ['Crystalline Radiance'] = 'Primary Stat',
-    ['Chant of Leeching Fangs'] = 'Leech'
+    ['Chant of Leeching Fangs'] = 'Leech',
+    ['Mark of the Worldsoul'] = 'Primary Stat',
+    ['Empowered Rune of Avoidance'] = 'Avoidance',
+    ["Amirdrassil's Grace"] = 'Avoidance',
+    ["Acuity of the Ren'dorei"] = 'Primary Stat',
+    ["Silvermoon's Tenacity"] = 'Versatility',
+    ["Shaladrassil's Roots"] = 'Leech + Stamina'
 }
 
 equipmentSlot.CreateGem = function(self, parent)
@@ -374,7 +378,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
                     enchant = string.gsub(enchant, pattern, replacement)
                 end
             end
-            self.EnchantText:SetText(enchant and string.gsub(enchant, '|A.-|a', ''))
+            self.EnchantText:SetText(enchant and string.gsub(string.gsub(enchant, '|A.-|a', ''), '^.-%-%s*', ''))
             self:AddGems(itemLink)
 
             local currDurability, maxDurability = GetInventoryItemDurability(self:GetID())
