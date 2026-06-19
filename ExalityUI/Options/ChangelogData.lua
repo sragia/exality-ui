@@ -2,6 +2,11 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.2.8|r
+
+- [Unit Frames] Update oUF to 13.4.5.
+
+
 # |cffdb49000.2.7|r
 
 - Some quick fixes for 12.0.5 compatibility.
