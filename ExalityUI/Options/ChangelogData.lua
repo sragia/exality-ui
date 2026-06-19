@@ -5,7 +5,9 @@ EXUI.changelog = [[
 # |cffdb49000.2.8|r
 
 - [Unit Frames] Update oUF to 13.4.5.
+- [General] Fix missing LibDBIcon library.
 
+Note: If after the patch you can't target anyone by clicking on the unit frame, go into Options > Gameplay Enhancements > Click Casting > Set keybind to Target Unit Frame.
 
 # |cffdb49000.2.7|r
 

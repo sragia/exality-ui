@@ -9,6 +9,7 @@ externals:
   ExalityUI/Libs/libdatabroker-1-1: https://github.com/tekkub/libdatabroker-1-1
   ExalityUI/Libs/LibSharedMedia-3.0:
     url: https://repos.curseforge.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
+  ExalityUI/Libs/LibDBIcon-1.0: https://repos.curseforge.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
   ExalityUI/Libs/oUF:
     url: https://github.com/oUF-wow/oUF
     tag: 13.4.5
