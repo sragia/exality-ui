@@ -136,6 +136,9 @@ EXUI.const = {
         },
         unitFrames = {
             dispelOverlay = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/dispel-overlay.png]],
+        },
+        skins = {
+            btnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Skins/btn-highlight.png]],
         }
     },
     masque = {

@@ -591,9 +591,9 @@ minimap.GetInstanceDifficultyLabel = function(self)
 
     if (isChallengeMode) then
         if (C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo) then
-            local _, level = C_ChallengeMode.GetActiveKeystoneInfo()
+            local level = C_ChallengeMode.GetActiveKeystoneInfo()
             if (level and level > 0) then
-                return 'M' .. level
+                return 'M+' .. level
             end
         end
         return 'M+'
@@ -1778,6 +1778,7 @@ minimap.SetupMinimapFrame = function(self)
         self.orbitButtonLayer:SetFrameLevel(ORBIT_BUTTON_FRAME_LEVEL)
     end
     self.orbitButtonLayer:EnableMouse(false)
+    self.orbitButtonLayer.Layout = self.noopLayout
 
     if (ldbi.SetButtonToPosition and not self.ldbPositionHooked) then
         self.ldbPositionHooked = true

@@ -7,6 +7,7 @@ EXUI.changelog = [[
 - Visual update for options.
 - Added minimap styling.
 - Pixel Perfect improvements.
+- [Skins] Skin Game Menu.
 
 # |cffdb49000.2.8|r
 
