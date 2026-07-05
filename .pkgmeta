@@ -15,7 +15,7 @@ externals:
     tag: 13.4.5
   ExalityUI/ExalityFrames:
     url: https://github.com/sragia/ExalityFrames
-    tag: 1.0.9
+    tag: 1.1.3
 
 enable-nolib-creation: no
 

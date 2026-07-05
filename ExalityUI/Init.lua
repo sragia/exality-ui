@@ -11,6 +11,31 @@ EXFrames:Configure({
     defaultFontPath = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
 })
 
+EXFrames:SetTheme({
+    white           = { 237 / 255, 237 / 255, 237 / 255, 1 }, -- #ededed
+    accent          = { 1, 68 / 255, 0, 1 },                  -- #FF4400
+    accentLight     = { 1, 113 / 255, 61 / 255, 1 },          -- #71713D
+    accentDark      = { 158 / 255, 42 / 255, 0, 1 },          -- #9E2A00
+
+    background      = { 17 / 255, 25 / 255, 19 / 255, 1 },    -- #111913  main window bg
+    backgroundLight = { 30 / 255, 48 / 255, 36 / 255, 1 },    -- #1e3024
+    backgroundDeep  = { 11 / 255, 18 / 255, 13 / 255, 1 },    -- #0B120D  deepest dark
+    backgroundPanel = { 26 / 255, 36 / 255, 29 / 255, 0.4 },  -- #2B382F  panels / header
+
+
+    border       = { 38 / 255, 41 / 255, 34 / 255, 1 },    -- #262922
+    borderActive = { 171 / 255, 46 / 255, 32 / 255, 1 },   -- #AB2E20  selected border
+    text         = { 244 / 255, 243 / 255, 238 / 255, 1 }, -- #F4F3EE
+    textMuted    = { 138 / 255, 138 / 255, 138 / 255, 1 }, -- #8A8A8A
+    danger       = { 245 / 255, 7 / 255, 68 / 255, 1 },    -- #f50744  close / destructive
+    dangerHover  = { 245 / 255, 7 / 255, 68 / 255, 1 },    -- #f50744  close / destructive
+    success      = { 113 / 255, 173 / 255, 42 / 255, 1 },  -- #71AD2A  success
+    successDark  = { 85 / 255, 138 / 255, 34 / 255, 1 },   -- #558A22  success
+    inProgress   = { 242 / 255, 109 / 255, 0, 1 },         -- #f26d00
+    faded        = { 28 / 255, 28 / 255, 28 / 255, 1 },    -- #1c1c1c
+    gray         = { 116 / 255, 116 / 255, 116 / 255, 1 }, -- #747474
+})
+
 EXUI.const = {
     textures = {
         frame = {
