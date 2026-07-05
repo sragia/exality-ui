@@ -22,6 +22,37 @@ local function GetSecondaryBonus(rating, base, bonusCoeff)
     return (GetCombatRatingBonus(rating) * bonusCoeff);
 end
 
+local function AreUnitStatsSecret()
+    return C_Secrets and C_Secrets.ShouldUnitStatsBeSecret and C_Secrets.ShouldUnitStatsBeSecret()
+end
+
+local function IsInaccessibleValue(value)
+    return (issecretvalue and issecretvalue(value))
+        or (canaccessvalue and not canaccessvalue(value))
+end
+
+local function IsPositiveStat(value)
+    if IsInaccessibleValue(value) then
+        return true
+    end
+    return value > 0
+end
+
+local function IsNonZeroStat(value)
+    if IsInaccessibleValue(value) then
+        return true
+    end
+    return value ~= 0
+end
+
+local function SetPercentageStatText(fontString, value)
+    if IsInaccessibleValue(value) then
+        fontString:SetFormattedText('%.2f%%', value)
+    else
+        fontString:SetText(string.format('%.2f%%', value))
+    end
+end
+
 stats.CreateHeader = function(self, headerText, parent)
     local header = CreateFrame('Frame', nil, parent)
     header:SetHeight(20)
@@ -202,9 +233,7 @@ stats.Create = function(self, container)
 
     self.container:SetScript('OnEvent', function(self, event, ...)
         C_Timer.After(0, function()
-            if (not C_Secrets.HasSecretRestrictions()) then
-                self:Update()
-            end
+            self:Update()
         end)
     end)
 
@@ -218,7 +247,7 @@ stats.Create = function(self, container)
 
     self.container.Update = function(self)
         for statName, config in pairs(self.updateFuncs) do
-            config.update(config.parent)
+            pcall(config.update, config.parent)
         end
     end
 
@@ -496,10 +525,14 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_AVOIDANCE, {
             update = function(frame)
                 local avoidance = GetAvoidance();
-                if (avoidance == 0) then
+                if (not IsNonZeroStat(avoidance)) then
                     return
                 end
-                frame.StatRating:SetText(string.format('%.2f%%', avoidance))
+                SetPercentageStatText(frame.StatRating, avoidance)
+                if (AreUnitStatsSecret()) then
+                    frame.tooltipLines = {}
+                    return
+                end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAT_AVOIDANCE) ..
                     " " .. format("%.2F%%", avoidance) .. FONT_COLOR_CODE_CLOSE;
@@ -508,13 +541,17 @@ stats.Create = function(self, container)
                     GetCombatRatingBonus(CR_AVOIDANCE));
             end,
             shouldShow = function()
-                return GetAvoidance() > 0
+                return IsPositiveStat(GetAvoidance())
             end
         }, container),
         self:CreateStat(STAT_LIFESTEAL, {
             update = function(frame)
                 local lifesteal = GetLifesteal();
-                frame.StatRating:SetText(string.format('%.2f%%', lifesteal))
+                SetPercentageStatText(frame.StatRating, lifesteal)
+                if (AreUnitStatsSecret()) then
+                    frame.tooltipLines = {}
+                    return
+                end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAT_LIFESTEAL) ..
                     " " .. format("%.2F%%", lifesteal) .. FONT_COLOR_CODE_CLOSE;
@@ -523,7 +560,7 @@ stats.Create = function(self, container)
                     GetCombatRatingBonus(CR_LIFESTEAL));
             end,
             shouldShow = function()
-                return GetLifesteal() > 0
+                return IsPositiveStat(GetLifesteal())
             end
         }, container),
         self:CreateStat(STAT_DODGE, {
@@ -627,7 +664,12 @@ stats.PositionFrames = function(self)
     local prev = nil
     local prevIsHeader = false
     for _, frame in ipairs(self.frames) do
-        if (not frame.ShouldShow or frame:ShouldShow()) then
+        local shouldShow = true
+        if (frame.ShouldShow) then
+            local ok, result = pcall(frame.ShouldShow, frame)
+            shouldShow = ok and result
+        end
+        if (shouldShow) then
             local isHeader = frame.isHeader
             local gap = isHeader and -14 or prevIsHeader and -8 or -2
             if (prev) then

@@ -9,6 +9,7 @@ EXUI.changelog = [[
 - Pixel Perfect improvements.
 - [Skins] Skin Game Menu.
 - [Raid Tools] Battle Res rewrite — masked icon, configurable timer position, visibility modes.
+- [Character Frame] Fix stats issue with secrets.
 
 # |cffdb49000.2.8|r
 
