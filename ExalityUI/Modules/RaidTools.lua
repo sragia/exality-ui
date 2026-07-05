@@ -17,7 +17,37 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 ---@class EXUIRaidToolsModule
 local raidToolsModule = EXUI:GetModule('raid-tools-module')
 
+local REBIRTH_SPELL_ID = 20484
+local BREZZ_TIMER_GAP = 6
+
+local BATTLE_RES_DIFFICULTIES = {
+    [8]   = true, -- Mythic+
+    [14]  = true, -- Normal Raid
+    [15]  = true, -- Heroic Raid
+    [16]  = true, -- Mythic Raid
+    [17]  = true, -- Looking For Raid
+    [23]  = true, -- Mythic+ (seen in some game builds)
+    [33]  = true, -- Timewalking Raid
+    [233] = true, -- Flexible Mythic Raid
+}
+
+local BREZZ_VISIBILITY_OPTIONS = {
+    mplus_or_raid = 'M+ & Raid Encounters',
+    mplus = 'Mythic+ Only',
+    raid = 'Raid Encounters Only',
+    always = 'Always (In Content)',
+}
+
+local BREZZ_TIMER_POSITION_OPTIONS = {
+    left = 'Left',
+    right = 'Right',
+    top = 'Top',
+    bottom = 'Bottom',
+}
+
 raidToolsModule.brezzFrame = nil
+raidToolsModule.brezzEncounterActive = false
+raidToolsModule.brezzEditorShowing = false
 raidToolsModule.readyCheckFrame = nil
 raidToolsModule.pullTimerFrame = nil
 raidToolsModule.encounterTimerFrame = nil
@@ -65,6 +95,8 @@ raidToolsModule.GetDefaults = function(self)
         brezzXOff = 16,
         brezzYOff = -295,
         brezzSize = 41,
+        brezzTimerPosition = 'right',
+        brezzVisibility = 'mplus_or_raid',
         brezzFont = 'DMSans',
         brezzFontSize = 24,
         readyCheckEnabled = true,
@@ -159,7 +191,47 @@ raidToolsModule.GetOptions = function(self, currTabID)
             },
             {
                 type = 'spacer',
-                width = 83
+                width = 84
+            },
+            {
+                type = 'dropdown',
+                name = 'brezzTimerPosition',
+                label = 'Timer Position',
+                getOptions = function()
+                    return BREZZ_TIMER_POSITION_OPTIONS
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('brezzTimerPosition') or 'right'
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('brezzTimerPosition', value)
+                    self:CreateOrRefreshBrezz()
+                end,
+                width = 33
+            },
+            {
+                type = 'spacer',
+                width = 67
+            },
+            {
+                type = 'dropdown',
+                name = 'brezzVisibility',
+                label = 'Visibility',
+                getOptions = function()
+                    return BREZZ_VISIBILITY_OPTIONS
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('brezzVisibility') or 'mplus_or_raid'
+                end,
+                onChange = function(value)
+                    data:SetDataByKey('brezzVisibility', value)
+                    self:CreateOrRefreshBrezz()
+                end,
+                width = 33
+            },
+            {
+                type = 'spacer',
+                width = 67
             },
             {
                 type = 'range',
@@ -195,7 +267,7 @@ raidToolsModule.GetOptions = function(self, currTabID)
             },
             {
                 type = 'spacer',
-                width = 50
+                width = 68
             },
             {
                 type = 'dropdown',
@@ -234,6 +306,10 @@ raidToolsModule.GetOptions = function(self, currTabID)
                     data:SetDataByKey('brezzFontSize', value)
                     self:CreateOrRefreshBrezz()
                 end
+            },
+            {
+                type = 'spacer',
+                width = 51
             },
         }
     end
@@ -780,107 +856,190 @@ raidToolsModule.HandleChecks = function(self, recheck)
     end
 end
 
-raidToolsModule.CreateBrezz = function(self)
-    self.brezzFrame = CreateFrame('Frame', nil, UIParent, "BackdropTemplate")
-    self.brezzFrame.inCombat = false
+local function FormatBrezzTimer(remaining)
+    if remaining <= 0 then return '00:00' end
+    local minutes = math.floor(remaining / 60)
+    local seconds = math.floor(remaining % 60)
+    return string.format('%02d:%02d', minutes, seconds)
+end
 
-    local cooldown = CreateFrame('Cooldown', nil, self.brezzFrame)
-    cooldown:SetPoint('TOPLEFT', -1, 1)
-    cooldown:SetPoint('BOTTOMRIGHT', 1, -1)
-    cooldown:SetSwipeColor(0, 0, 0, 0.6)
-    cooldown:SetSwipeTexture(EXUI.const.textures.frame.bg)
-    self.brezzFrame.cooldown = cooldown
+local function ApplyBrezzTimerPosition(frame)
+    local timerPos = data:GetDataByKey('brezzTimerPosition') or 'right'
+    local text = frame.timerText
+    text:ClearAllPoints()
+    if timerPos == 'left' then
+        text:SetPoint('RIGHT', frame, 'LEFT', -BREZZ_TIMER_GAP, 0)
+        text:SetJustifyH('RIGHT')
+    elseif timerPos == 'top' then
+        text:SetPoint('BOTTOM', frame, 'TOP', 0, BREZZ_TIMER_GAP)
+        text:SetJustifyH('CENTER')
+    elseif timerPos == 'bottom' then
+        text:SetPoint('TOP', frame, 'BOTTOM', 0, -BREZZ_TIMER_GAP)
+        text:SetJustifyH('CENTER')
+    else
+        text:SetPoint('LEFT', frame, 'RIGHT', BREZZ_TIMER_GAP, 0)
+        text:SetJustifyH('LEFT')
+    end
+end
+
+raidToolsModule.IsBrezzInActiveContent = function(self)
+    local _, _, diffID = GetInstanceInfo()
+    if not BATTLE_RES_DIFFICULTIES[diffID] then return false end
+
+    local visibility = data:GetDataByKey('brezzVisibility') or 'mplus_or_raid'
+    if visibility == 'always' then
+        return true
+    end
+
+    local isInMPlus = C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive()
+    if visibility == 'mplus' then
+        return isInMPlus
+    end
+
+    if visibility == 'raid' then
+        return self.brezzEncounterActive and IsInRaid()
+    end
+
+    if isInMPlus then return true end
+    return self.brezzEncounterActive and IsInRaid()
+end
+
+raidToolsModule.UpdateBrezzDisplay = function(self)
+    if not self.brezzFrame then return end
+    local frame = self.brezzFrame
+
+    local chargesInfo = C_Spell.GetSpellCharges(REBIRTH_SPELL_ID)
+    if chargesInfo then
+        local charges = chargesInfo.currentCharges
+        local maxCharges = chargesInfo.maxCharges
+        local cooldownStart = chargesInfo.cooldownStartTime
+        local fullDuration = chargesInfo.cooldownDuration
+
+        frame.chargesText:SetText(tostring(charges))
+        frame.icon:SetVertexColor(charges == 0 and 0.35 or 1, charges == 0 and 0.35 or 1, charges == 0 and 0.35 or 1, 1)
+
+        if charges < maxCharges and fullDuration > 0 and cooldownStart > 0 then
+            local remaining = fullDuration - (GetTime() - cooldownStart)
+            frame.timerText:SetText(remaining > 0 and FormatBrezzTimer(remaining) or '')
+        else
+            frame.timerText:SetText('')
+        end
+    else
+        frame.chargesText:SetText('')
+        frame.timerText:SetText('')
+        frame.icon:SetVertexColor(1, 1, 1, 1)
+    end
+end
+
+raidToolsModule.ApplyBrezzLayout = function(self)
+    if not self.brezzFrame then return end
+    local frame = self.brezzFrame
+    local size = data:GetDataByKey('brezzSize') or 41
+
+    EXUI:SetSize(frame, size, size)
+
+    local brezzFont = LSM:Fetch('font', data:GetDataByKey('brezzFont'))
+    if type(brezzFont) ~= 'string' then
+        brezzFont = EXUI.const.fonts.DEFAULT
+    end
+    local brezzFontName = tostring(brezzFont)
+    local chargeFontSize = tonumber(data:GetDataByKey('brezzFontSize')) or 24
+    local timerFontSize = math.max(9, math.floor(size * 0.35))
+
+    ---@diagnostic disable-next-line:param-type-mismatch
+    frame.chargesText:SetFont(brezzFontName, chargeFontSize, 'OUTLINE')
+    frame.timerText:SetFont(brezzFontName, timerFontSize, 'OUTLINE')
+
+    ApplyBrezzTimerPosition(frame)
+end
+
+raidToolsModule.UpdateBrezzVisibility = function(self)
+    if not self.brezzFrame then return end
+
+    if self.brezzEditorShowing then
+        self.brezzFrame:Show()
+        return
+    end
+
+    if not data:GetDataByKey('brezzEnabled') then
+        self.brezzFrame:Hide()
+        return
+    end
+
+    if not self:IsBrezzInActiveContent() then
+        self.brezzFrame:Hide()
+        return
+    end
+
+    self.brezzFrame:Show()
+end
+
+raidToolsModule.CreateBrezz = function(self)
+    local size = data:GetDataByKey('brezzSize') or 41
+
+    self.brezzFrame = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
+    self.brezzFrame:SetClampedToScreen(true)
+    self.brezzFrame:Hide()
 
     self.brezzFrame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
     self.brezzFrame:SetBackdropColor(0, 0, 0, 0.4)
     self.brezzFrame:SetBackdropBorderColor(0, 0, 0, 1)
 
-    local elementFrame = CreateFrame('Frame', nil, self.brezzFrame)
-    elementFrame:SetAllPoints()
-    elementFrame:SetFrameLevel(cooldown:GetFrameLevel() + 10)
-
-    local texture = self.brezzFrame:CreateTexture(nil, 'BACKGROUND')
-    texture:SetTexture([[Interface/ICONS/spell_nature_reincarnation]])
-    texture:SetAllPoints()
-    texture:SetVertexColor(1, 1, 1, 0.8)
-    texture:SetTexCoord(0.15, 0.85, 0.15, 0.85)
-
-    local text = elementFrame:CreateFontString(nil, 'OVERLAY')
-    text:SetFont(EXUI.const.fonts.DEFAULT, 24, 'OUTLINE')
-    text:SetPoint('CENTER', elementFrame, 'TOPRIGHT', -5, -2)
-    text:SetText('1')
-    text:SetVertexColor(1, 1, 1, 1)
-    self.brezzFrame.text = text
-    self.brezzFrame.timer = 0
-    self.brezzFrame.timer = nil
-
-    self.brezzFrame.Update = function(self)
-        local charges = C_Spell.GetSpellCharges(20484)
-        if (not charges) then
-            self:Hide()
-            return;
-        end
-        if (self.timer) then
-            self.timer:Cancel()
-        end
-        self.timer = C_Timer.NewTimer(charges.cooldownDuration, function() self:Update() end)
-        self.cooldown:SetCooldown(charges.cooldownStartTime, charges.cooldownDuration)
-        self.text:SetText(charges.currentCharges)
-        self:Show()
+    local icon = self.brezzFrame:CreateTexture(nil, 'ARTWORK')
+    icon:SetAllPoints()
+    icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+    local spellInfo = C_Spell.GetSpellInfo(REBIRTH_SPELL_ID)
+    if spellInfo then
+        icon:SetTexture(spellInfo.iconID)
     end
+    if icon.SetMaskTexture then
+        icon:SetMaskTexture(EXUI.const.textures.frame.iconMask)
+    else
+        local mask = self.brezzFrame:CreateMaskTexture()
+        mask:SetTexture(EXUI.const.textures.frame.iconMask, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+        mask:SetAllPoints(icon)
+        icon:AddMaskTexture(mask)
+    end
+    self.brezzFrame.icon = icon
+
+    local chargesText = self.brezzFrame:CreateFontString(nil, 'OVERLAY')
+    chargesText:SetPoint('CENTER')
+    chargesText:SetFont(EXUI.const.fonts.DEFAULT, 24, 'OUTLINE')
+    chargesText:SetTextColor(1, 1, 1, 1)
+    chargesText:SetText('')
+    self.brezzFrame.chargesText = chargesText
+
+    local timerText = self.brezzFrame:CreateFontString(nil, 'OVERLAY')
+    timerText:SetFont(EXUI.const.fonts.DEFAULT, math.max(9, math.floor(size * 0.35)), 'OUTLINE')
+    timerText:SetTextColor(1, 1, 1, 1)
+    timerText:SetText('')
+    self.brezzFrame.timerText = timerText
+
+    local timeSinceUpdate = 0
+    self.brezzFrame:SetScript('OnUpdate', function(_, elapsed)
+        timeSinceUpdate = timeSinceUpdate + elapsed
+        if timeSinceUpdate < 0.5 then return end
+        timeSinceUpdate = 0
+        raidToolsModule:UpdateBrezzDisplay()
+    end)
 
     self.brezzFrame:RegisterEvent('ENCOUNTER_START')
     self.brezzFrame:RegisterEvent('ENCOUNTER_END')
     self.brezzFrame:RegisterEvent('CHALLENGE_MODE_START')
     self.brezzFrame:RegisterEvent('CHALLENGE_MODE_COMPLETED')
     self.brezzFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
-
-    self.brezzFrame.CheckVisibility = function(self)
-        local isInMPlus = C_ChallengeMode.IsChallengeModeActive()
-        local isInEncounter = self.inEncounter
-        local isInRaid = IsInRaid()
-        return isInMPlus or (isInEncounter and isInRaid)
-    end
-    self.brezzFrame:SetScript('OnEvent', function(self, event, ...)
-        if (event == 'ENCOUNTER_START') then
-            self.inEncounter = true
-        elseif (event == 'ENCOUNTER_END') then
-            self.inEncounter = false
+    self.brezzFrame:SetScript('OnEvent', function(_, event)
+        if event == 'ENCOUNTER_START' then
+            raidToolsModule.brezzEncounterActive = true
+        elseif event == 'ENCOUNTER_END' then
+            raidToolsModule.brezzEncounterActive = false
+        elseif event == 'PLAYER_ENTERING_WORLD' then
+            raidToolsModule.brezzEncounterActive = IsEncounterInProgress()
         end
-
-        if (self:CheckVisibility()) then
-            if (not self:IsShown()) then
-                self:RegisterEvent('UNIT_FLAGS') -- To try to detect player resurrection
-                if (self.timer) then
-                    self.timer:Cancel()
-                end
-                self.timer = C_Timer.NewTicker(1, function()
-                    self:Update()
-                end) -- Update the timer every second
-            end
-            self:Update()
-            self:Show()
-        else
-            if (self.timer) then
-                self.timer:Cancel()
-            end
-            self:UnregisterEvent('UNIT_FLAGS')
-            self:Hide()
-        end
+        raidToolsModule:UpdateBrezzVisibility()
     end)
 
-    local cdFont = CreateFont('ExalityUI_Brezz_CD_Font')
-    cdFont:SetFont(EXUI.const.fonts.DEFAULT, 14, 'OUTLINE')
-
-    self.brezzFrame.cdFont = cdFont
-    self.brezzFrame.cooldown:SetCountdownFont('ExalityUI_Brezz_CD_Font')
-
-
-    self.brezzFrame:SetSize(100, 100)
-
-    local editorOnShow = function(frame)
-        frame.editor:SetEditorAsMovable()
-    end
+    ApplyBrezzTimerPosition(self.brezzFrame)
 
     editor:RegisterFrameForEditor(self.brezzFrame, 'Brezz', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
@@ -889,34 +1048,35 @@ raidToolsModule.CreateBrezz = function(self)
         data:SetDataByKey('brezzXOff', xOfs)
         data:SetDataByKey('brezzYOff', yOfs)
         raidToolsModule:CreateOrRefreshBrezz()
-    end, editorOnShow)
+    end, function(frame)
+        raidToolsModule.brezzEditorShowing = true
+        raidToolsModule.brezzFrame:Show()
+        frame.editor:SetEditorAsMovable()
+    end, function()
+        raidToolsModule.brezzEditorShowing = false
+        raidToolsModule:UpdateBrezzVisibility()
+    end)
 end
 
 raidToolsModule.CreateOrRefreshBrezz = function(self)
     local isEnabled = data:GetDataByKey('brezzEnabled')
-    if (not self.brezzFrame and isEnabled) then self:CreateBrezz() end
-    if (not isEnabled) then
-        if (self.brezzFrame) then
-            self.brezzFrame:SetScript('OnUpdate', nil)
+    if not self.brezzFrame and isEnabled then self:CreateBrezz() end
+    if not isEnabled then
+        if self.brezzFrame then
             self.brezzFrame:Hide()
         end
-        return;
+        return
     end
 
     self.brezzFrame:ClearAllPoints()
-    self.brezzFrame:SetPoint(data:GetDataByKey('brezzAnchor'), data:GetDataByKey('brezzXOff'),
+    EXUI:SetPoint(self.brezzFrame, data:GetDataByKey('brezzAnchor'), UIParent,
+        data:GetDataByKey('brezzRelativePoint'), data:GetDataByKey('brezzXOff'),
         data:GetDataByKey('brezzYOff'))
-    self.brezzFrame:SetSize(data:GetDataByKey('brezzSize'), data:GetDataByKey('brezzSize'))
 
-    local brezzFont = LSM:Fetch('font', data:GetDataByKey('brezzFont'))
-    if (type(brezzFont) ~= 'string') then
-        brezzFont = EXUI.const.fonts.DEFAULT
-    end
-    local brezzFontName = tostring(brezzFont)
-    local brezzFontSize = tonumber(data:GetDataByKey('brezzFontSize')) or 24
-    self.brezzFrame.cdFont:SetFont(brezzFontName, 14, 'OUTLINE')
-    ---@diagnostic disable-next-line:param-type-mismatch
-    self.brezzFrame.text:SetFont(brezzFontName, brezzFontSize, 'OUTLINE')
+    self:ApplyBrezzLayout()
+    self.brezzEncounterActive = IsEncounterInProgress()
+    self:UpdateBrezzDisplay()
+    self:UpdateBrezzVisibility()
 end
 
 raidToolsModule.CreateReadyCheck = function(self)

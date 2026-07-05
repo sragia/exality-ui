@@ -8,6 +8,7 @@ EXUI.changelog = [[
 - Added minimap styling.
 - Pixel Perfect improvements.
 - [Skins] Skin Game Menu.
+- [Raid Tools] Battle Res rewrite — masked icon, configurable timer position, visibility modes.
 
 # |cffdb49000.2.8|r
 
