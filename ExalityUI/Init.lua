@@ -16,30 +16,30 @@ EXUI.const = {
 
         white           = { 237 / 255, 237 / 255, 237 / 255, 1 }, -- #ededed
         accent          = { 1, 68 / 255, 0, 1 },                  -- #FF4400
-        accentLight     = { 1, 113 / 255, 61 / 255, 1 },          -- #71713D
-        accentDark      = { 158 / 255, 42 / 255, 0, 1 },          -- #9E2A00
+        accentLight     = { 1, 110 / 255, 51 / 255, 1 },          -- #FF6E33  button hover
+        accentDark      = { 184 / 255, 51 / 255, 0, 1 },          -- #B83300  pressed / deep accent
 
-        background      = { 17 / 255, 25 / 255, 19 / 255, 1 },    -- #111913  main window bg
-        backgroundLight = { 30 / 255, 48 / 255, 36 / 255, 1 },    -- #1e3024
-        backgroundDeep  = { 11 / 255, 18 / 255, 13 / 255, 1 },    -- #0B120D  deepest dark
-        backgroundPanel = { 26 / 255, 36 / 255, 29 / 255, 0.4 },  -- #2B382F  panels / header
+        background      = { 23 / 255, 20 / 255, 18 / 255, 1 },    -- #171412  main window bg
+        backgroundLight = { 38 / 255, 32 / 255, 28 / 255, 1 },    -- #26201C  elevated rows / submenu
+        backgroundDeep  = { 13 / 255, 11 / 255, 10 / 255, 1 },    -- #0D0B0A  deepest dark
+        backgroundPanel = { 48 / 255, 40 / 255, 34 / 255, 0.4 },  -- #302822  panels / tabs / header
 
 
-        border       = { 38 / 255, 41 / 255, 34 / 255, 1 },    -- #262922
-        borderActive = { 171 / 255, 46 / 255, 32 / 255, 1 },   -- #AB2E20  selected border
-        text         = { 244 / 255, 243 / 255, 238 / 255, 1 }, -- #F4F3EE
-        textMuted    = { 138 / 255, 138 / 255, 138 / 255, 1 }, -- #8A8A8A
-        danger       = { 245 / 255, 7 / 255, 68 / 255, 1 },    -- #f50744  close / destructive
-        dangerHover  = { 245 / 255, 7 / 255, 68 / 255, 1 },    -- #f50744  close / destructive
-        success      = { 113 / 255, 173 / 255, 42 / 255, 1 },  -- #71AD2A  success
-        successDark  = { 85 / 255, 138 / 255, 34 / 255, 1 },   -- #558A22  success
-        inProgress   = { 242 / 255, 109 / 255, 0, 1 },         -- #f26d00
-        faded        = { 28 / 255, 28 / 255, 28 / 255, 1 },    -- #1c1c1c
-        gray         = { 116 / 255, 116 / 255, 116 / 255, 1 }, -- #747474
+        border       = { 61 / 255, 53 / 255, 48 / 255, 1 },    -- #3D3530  warm neutral border
+        borderActive = { 217 / 255, 69 / 255, 16 / 255, 1 },   -- #D94510  selected border
+        text         = { 237 / 255, 230 / 255, 223 / 255, 1 }, -- #EDE6DF  warm off-white
+        textMuted    = { 138 / 255, 128 / 255, 118 / 255, 1 }, -- #8A8076
+        danger       = { 232 / 255, 48 / 255, 80 / 255, 1 },   -- #E83050  close / destructive
+        dangerHover  = { 245 / 255, 64 / 255, 96 / 255, 1 },   -- #F54060  close hover
+        success      = { 107 / 255, 168 / 255, 50 / 255, 1 },  -- #6BA832  success
+        successDark  = { 82 / 255, 130 / 255, 38 / 255, 1 },   -- #528226  success dark
+        inProgress   = { 245 / 255, 160 / 255, 32 / 255, 1 },  -- #F5A020  amber progress
+        faded        = { 28 / 255, 24 / 255, 22 / 255, 1 },    -- #1C1816  muted button bg
+        gray         = { 110 / 255, 100 / 255, 92 / 255, 1 },  -- #6E645C
 
         minimap = {
-            buttonBg = { 11 / 255, 18 / 255, 13 / 255, 1 },     -- #0B120D  ldb / drawer buttons
-            mailButtonBg = { 77 / 255, 29 / 255, 7 / 255, 1 },  -- dark accent blend for mail
+            buttonBg = { 13 / 255, 11 / 255, 10 / 255, 1 },     -- #0D0B0A  ldb / drawer buttons
+            mailButtonBg = { 92 / 255, 34 / 255, 8 / 255, 1 },  -- #5C2208  dark accent blend for mail
         },
     },
     textures = {
