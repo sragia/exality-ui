@@ -37,8 +37,12 @@ local dataBroker = libDataBroker:NewDataObject('ExalityUI', {
 })
 
 cmd.Init = function(self)
-    local showMinimap = data:GetDataByKey('showMinimap')
-    libDB:Register('ExalityUI', dataBroker, { show = showMinimap })
+    local profile = data:GetData()
+    profile.minimapIcon = profile.minimapIcon or {}
+    if (profile.minimapIcon.hide == nil) then
+        profile.minimapIcon.hide = not profile.showMinimap
+    end
+    libDB:Register('ExalityUI', dataBroker, profile.minimapIcon)
     self:RefreshMinimap();
 end
 

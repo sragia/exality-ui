@@ -50,6 +50,7 @@ Modules/UnitFrames/Options/UFOptions.xml
 
 # Modules
 Modules/Notifications.lua
+Modules/Minimap.lua
 Modules/General.lua
 Modules/RaidTools.lua
 Modules/ResourceDisplays/ResourceDisplays.xml

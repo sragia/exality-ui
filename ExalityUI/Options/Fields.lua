@@ -54,7 +54,7 @@ optionsFields.AddSplitView = function(self, module)
     else
         self.splitView:DisableExtraButton()
     end
-    local items = module.GetSplitViewItems()
+    local items = module:GetSplitViewItems()
     self.splitView:AddItems(items)
     self.splitView:SetOnItemChange(function(id)
         self.currItemID = id
@@ -77,6 +77,33 @@ optionsFields.AddSplitView = function(self, module)
     self.container = self.splitView.container
 end
 
+optionsFields.RefreshSplitViewForTab = function(self)
+    local module = optionsController:GetSelectedModule()
+    local currentModule = module and module.module
+    if (not currentModule or not currentModule.useSplitView) then
+        self:RefreshFields()
+        return
+    end
+
+    local splitViewTabID = currentModule.splitViewTabID
+    local shouldShow = not splitViewTabID or splitViewTabID == self.currTabID
+
+    if (shouldShow and not self.splitView) then
+        self:AddSplitView(currentModule)
+    elseif (not shouldShow and self.splitView) then
+        self.splitView:Destroy()
+        self.splitView = nil
+        self.currItemID = nil
+        if (self.tabs) then
+            self.container = self.tabs.container
+        else
+            self.container = self.baseContainer
+        end
+    end
+
+    self:RefreshFields()
+end
+
 optionsFields.AddTabs = function(self, module)
     self.tabs = EXFrames:GetFrame('tabs-frame'):Create()
     self.tabs:SetParent(self.baseContainer)
@@ -89,7 +116,12 @@ optionsFields.AddTabs = function(self, module)
 
     self.tabs:SetOnTabChange(function(id)
         self.currTabID = id
-        self:RefreshFields()
+        local selected = optionsController:GetSelectedModule()
+        if (selected and selected.module and selected.module.splitViewTabID) then
+            self:RefreshSplitViewForTab()
+        else
+            self:RefreshFields()
+        end
     end)
 
     if (#tabs > 0) then
@@ -143,7 +175,10 @@ optionsFields.Refresh = function(self)
         end
 
         if (currentModule.useSplitView) then
-            self:AddSplitView(currentModule)
+            local splitViewTabID = currentModule.splitViewTabID
+            if ((not splitViewTabID or splitViewTabID == self.currTabID) and not self.splitView) then
+                self:AddSplitView(currentModule)
+            end
         end
     end
 
@@ -232,7 +267,9 @@ optionsFields.RefreshFields = function(self)
 end
 
 optionsFields.RefreshItemList = function(self)
+    if (not self.splitView) then return end
     local module = optionsController:GetSelectedModule()
+    if (not module or not module.module or not module.module.GetSplitViewItems) then return end
     local items = module.module:GetSplitViewItems()
     self.splitView:AddItems(items)
 end

@@ -2,6 +2,11 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.3.0|r
+
+- Visual update for options.
+- Added minimap styling.
+
 # |cffdb49000.2.8|r
 
 - [Unit Frames] Update oUF to 13.4.5.
