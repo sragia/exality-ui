@@ -405,12 +405,11 @@ xpBar.CreateFrame = function(self)
 
     -- Containers
     local statusBarFrame = CreateFrame('Frame', nil, self.frame)
-    statusBarFrame:SetAllPoints()
     statusBarFrame:SetClipsChildren(true)
     self.frame.StatusBarContainer = statusBarFrame
 
     local elementFrame = CreateFrame('Frame', nil, self.frame)
-    elementFrame:SetAllPoints()
+    self.frame.ElementFrame = elementFrame
 
     --- Bars
     local statusBar = CreateFrame('StatusBar', nil, statusBarFrame)
@@ -482,6 +481,10 @@ xpBar.CreateFrame = function(self)
     self.frame.Texts.Prediction = predictionText
 
     self:SetLogic(self.frame)
+    self:ApplyContentInsets()
+    self.frame.ApplyContentInsets = function()
+        xpBar:ApplyContentInsets()
+    end
 
     editor:RegisterFrameForEditor(self.frame, 'XP Bar', function(frame)
         local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
@@ -493,12 +496,26 @@ xpBar.CreateFrame = function(self)
     end)
 end
 
+xpBar.ApplyContentInsets = function(self)
+    if not self.frame then return end
+
+    local inset = EXUI:ScalePixels(1, self.frame)
+    self.frame.StatusBarContainer:ClearAllPoints()
+    self.frame.StatusBarContainer:SetPoint('TOPLEFT', self.frame, 'TOPLEFT', inset, -inset)
+    self.frame.StatusBarContainer:SetPoint('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', -inset, inset)
+
+    self.frame.ElementFrame:ClearAllPoints()
+    self.frame.ElementFrame:SetPoint('TOPLEFT', self.frame, 'TOPLEFT', inset, -inset)
+    self.frame.ElementFrame:SetPoint('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', -inset, inset)
+end
+
 xpBar.Configure = function(self)
     if (not self.frame) then return end
 
     local db = self.Data:GetDB()
     EXUI:SetSize(self.frame, db.width, db.height)
     EXUI:SetPoint(self.frame, db.anchorPoint, UIParent, db.relativeAnchor, db.xOffset, db.yOffset)
+    self:ApplyContentInsets()
     self.frame.RestedBar:SetWidth(db.width)
     self.frame.CompletedQuestBar:SetWidth(db.width)
     self.frame.Texts.Level:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)

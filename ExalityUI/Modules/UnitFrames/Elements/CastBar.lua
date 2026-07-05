@@ -35,13 +35,13 @@ castBar.Create = function(self, frame, unit)
 
     -- Time
     local time = castBar:CreateFontString(nil, 'OVERLAY')
-    time:SetPoint('RIGHT', -2, 0)
+    time:SetPoint('RIGHT', -(EXUI:GetBorderInset(castBar, 1, 2)), 0)
     time:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
     castBar.Time = time
 
     -- Spell Text
     local spellText = castBar:CreateFontString(nil, 'OVERLAY')
-    spellText:SetPoint('LEFT', 2, 0)
+    spellText:SetPoint('LEFT', EXUI:GetBorderInset(castBar, 1, 2), 0)
     spellText:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
     spellText:SetWidth(300)
     spellText:SetHeight(20)

@@ -9,6 +9,15 @@ local EXFrames = EXUI.EXFrames
 EXFrames:Configure({
     logoPath = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
     defaultFontPath = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
+    scalePixel = function(value, region, minPixels)
+        return EXUI:ScalePixel(value, region, minPixels)
+    end,
+    snapFrame = function(frame)
+        EXUI:SnapFrameToPixels(frame)
+    end,
+    addPixelPerfectBorder = function(frame, thickness, options)
+        return EXUI:AddPixelPerfectBorder(frame, thickness, options)
+    end,
 })
 
 EXUI.const = {
@@ -149,11 +158,20 @@ EXUI.const = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         },
-        pixelPerfect = function()
+        backgroundOnly = {
+            bgFile = "Interface\\BUTTONS\\WHITE8X8.blp",
+            tile = false,
+        },
+        pixelPerfect = function(borderSize, region)
+            borderSize = borderSize or 1
+            local edge = EXUI:ScalePixels(borderSize, region)
             return {
                 bgFile = "Interface\\BUTTONS\\WHITE8X8.blp",
                 edgeFile = "Interface\\BUTTONS\\WHITE8X8.blp",
-                edgeSize = EXUI:ScalePixel(1)
+                tile = false,
+                tileSize = 0,
+                edgeSize = edge,
+                insets = { left = 0, right = 0, top = 0, bottom = 0 }
             }
         end
     },

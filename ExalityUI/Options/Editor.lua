@@ -101,9 +101,7 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
     frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     frame.editor:SetFrameStrata('FULLSCREEN_DIALOG')
-    frame.editor:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    frame.editor:SetBackdropBorderColor(1, 1, 1, 1)
-    frame.editor:SetBackdropColor(0, 0, 0, 0.7)
+    EXUI:ApplySolidBorder(frame.editor, 1, { 1, 1, 1, 1 }, { 0, 0, 0, 0.7 })
 
     frame.editor:SetPropagateMouseClicks(true)
     frame.editor:SetScript('OnMouseDown', function(self)
@@ -112,7 +110,7 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
 
     local labelText = frame.editor:CreateFontString(nil, 'OVERLAY')
     labelText:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')
-    labelText:SetPoint('LEFT', 3, 0)
+    labelText:SetPoint('LEFT', EXUI:GetBorderInset(frame.editor, 1, 3), 0)
     labelText:SetWidth(0)
     labelText:SetText(label)
     frame.editor.labelText = labelText
@@ -201,6 +199,10 @@ editor.EnableEditor = function(self)
         f.frame.editor:ClearAllPoints()
         f.frame.editor:SetPoint('TOPLEFT', f.frame, 'TOPLEFT', 0, 0)
         f.frame.editor:SetPoint('BOTTOMRIGHT', f.frame, 'BOTTOMRIGHT', 0, 0)
+        if f.frame.editor.PPBorder then
+            f.frame.editor.PPBorder:SetBorderThickness(1)
+            f.frame.editor.PPBorder:SetBorderColor(1, 1, 1, 1)
+        end
         if (f.onShow) then
             f.onShow(f.frame)
         end

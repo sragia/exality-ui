@@ -8,29 +8,36 @@ local RDCore = EXUI:GetModule('resource-displays-core')
 
 local statusBar = EXUI:GetModule('resource-displays-elements-status-bar')
 
+local function ApplyInsets(statusBarFrame, parent)
+    local inset = EXUI:ScalePixels(1, parent)
+    statusBarFrame:ClearAllPoints()
+    statusBarFrame:SetPoint('TOPLEFT', parent, 'TOPLEFT', inset, -inset)
+    statusBarFrame:SetPoint('BOTTOMRIGHT', parent, 'BOTTOMRIGHT', -inset, inset)
+end
+
 statusBar.Create = function(self, frame)
-    local statusBar = CreateFrame('StatusBar', nil, frame)
+    local bar = CreateFrame('StatusBar', nil, frame)
 
-    statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
-    statusBar:SetMinMaxValues(0, 100)
-    statusBar:SetValue(0)
-    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
-    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
+    bar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
+    bar:SetMinMaxValues(0, 100)
+    bar:SetValue(0)
+    ApplyInsets(bar, frame)
 
-
-    return statusBar
+    return bar
 end
 
 statusBar.Update = function(self, frame)
     local db = frame.db
-    local statusBar = frame.StatusBar
+    local bar = frame.StatusBar
+
+    ApplyInsets(bar, frame)
 
     if (db.barTexture) then
         local texture = LSM:Fetch('statusbar', db.barTexture)
-        statusBar:SetStatusBarTexture(texture)
+        bar:SetStatusBarTexture(texture)
     end
     if (db.barColor and not self.NOCOLOR) then
-        statusBar:SetStatusBarColor(db.barColor.r, db.barColor.g, db.barColor.b, db.barColor.a)
+        bar:SetStatusBarColor(db.barColor.r, db.barColor.g, db.barColor.b, db.barColor.a)
     end
 end
 

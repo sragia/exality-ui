@@ -7,9 +7,6 @@ local core = EXUI:GetModule('resource-displays-core')
 local maelstrom = EXUI:GetModule('resource-displays-maelstrom')
 
 maelstrom.Create = function(self, frame)
-    frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    frame:SetBackdropBorderColor(0, 0, 0, 1)
-    frame:SetBackdropColor(0, 0, 0, 0.5)
     frame.IsActive = function(self) return maelstrom:IsActive(self) end
     frame.StatusBar = EXUI:GetModule('resource-displays-elements-status-bar'):Create(frame)
     frame.Text = EXUI:GetModule('resource-displays-elements-text'):Create(frame)

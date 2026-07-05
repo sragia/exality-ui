@@ -134,10 +134,6 @@ essence.CreateSingleEssence = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
 
-    frame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    frame:SetBackdropBorderColor(0, 0, 0, 1)
-    frame:SetBackdropColor(0, 0, 0, 0.5)
-
     local statusBar = CreateFrame('StatusBar', nil, frame)
     EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
     EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)

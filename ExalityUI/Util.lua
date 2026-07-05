@@ -555,7 +555,7 @@ EXUI.utils = {
             for _, child in ipairs(row) do
                 child:SetParent(rowFrame)
                 local perc = child.optionData and child.optionData.width or 25
-                child:SetFrameWidth(perc / 100 * rowMaxWidth)
+                child:SetFrameWidth(EXUI:ScalePixel(perc / 100 * rowMaxWidth, parentContainer))
                 if (prev) then
                     child:SetPoint('LEFT', prev, 'RIGHT', gap, 0)
                     child:SetPoint('TOP', 0, 0)

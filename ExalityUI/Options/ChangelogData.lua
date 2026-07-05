@@ -6,6 +6,7 @@ EXUI.changelog = [[
 
 - Visual update for options.
 - Added minimap styling.
+- Pixel Perfect improvements.
 
 # |cffdb49000.2.8|r
 

@@ -41,10 +41,19 @@ local MASK_TEXTURE = [[Interface\BUTTONS\WHITE8X8]]
 local SQUARE_SHAPE = 'SQUARE'
 local MINIMAP_BUTTON_ICON_SIZE = 20
 local MINIMAP_MAIL_ICON_SIZE = 16
+local MINIMAP_DIFFICULTY_FONT_SIZE = 11
+local MINIMAP_DIFFICULTY_TEXT_PAD_X = 6
 local MINIMAP_ICON_BG_PAD = 4
 local MINIMAP_BUTTON_BG_SLICE = 6
+local INSTANCE_DIFFICULTY_EVENTS = {
+    'PLAYER_DIFFICULTY_CHANGED',
+    'INSTANCE_GROUP_SIZE_CHANGED',
+    'UPDATE_INSTANCE_INFO',
+    'GROUP_ROSTER_UPDATE',
+}
 local MISSIONS_CORNER_OFFSET = 12
-local ORBIT_BUTTON_FRAME_LEVEL = 8
+local ORBIT_BUTTON_FRAME_LEVEL = 10
+local MINIMAP_BORDER_FRAME_LEVEL = 0
 local MINIMAP_OVERLAY_FRAME_STRATA = 'MEDIUM'
 local MINIMAP_OVERLAY_FRAME_LEVEL = 30
 local LIST_MENU_ROW_HEIGHT = 24
@@ -132,10 +141,35 @@ local MINIMAP_SHAPES = {
     ['TRICORNER-BOTTOMRIGHT'] = { true, true, true, false },
 }
 
+local function GetMinimapBorderOrbitOffset()
+    if (not minimap.enabled) then return 0 end
+    local borderSize = minimap.Data:GetValue('borderSize') or 0
+    if (borderSize <= 0) then return 0 end
+    return EXUI:ScalePixels(borderSize, Minimap)
+end
+
+local function NudgeOrbitButtonOutward(button)
+    local offset = GetMinimapBorderOrbitOffset()
+    if (offset <= 0 or not button) then return end
+
+    local mx, my = Minimap:GetCenter()
+    local bx, by = button:GetCenter()
+    if (not mx or not bx) then return end
+
+    local dx, dy = bx - mx, by - my
+    local dist = math.sqrt((dx * dx) + (dy * dy))
+    if (dist <= 0) then return end
+
+    local scale = (dist + offset) / dist
+    button:ClearAllPoints()
+    button:SetPoint('CENTER', Minimap, 'CENTER', dx * scale, dy * scale)
+end
+
 local function SetButtonToPosition(button, position)
     if (not button) then return end
     if (ldbi.SetButtonToPosition) then
         ldbi:SetButtonToPosition(button, position)
+        NudgeOrbitButtonOutward(button)
         return
     end
 
@@ -147,8 +181,9 @@ local function SetButtonToPosition(button, position)
     local minimapShape = GetMinimapShape and GetMinimapShape() or 'ROUND'
     local quadTable = MINIMAP_SHAPES[minimapShape]
     local radius = ldbi.radius or 5
-    local w = (Minimap:GetWidth() / 2) + radius
-    local h = (Minimap:GetHeight() / 2) + radius
+    local borderOffset = GetMinimapBorderOrbitOffset()
+    local w = (Minimap:GetWidth() / 2) + radius + borderOffset
+    local h = (Minimap:GetHeight() / 2) + radius + borderOffset
     if (quadTable and quadTable[q]) then
         x, y = x * w, y * h
     else
@@ -173,27 +208,37 @@ local function GetButtonAngle(btn)
     return math.floor(math.deg(math.atan2(by - my, bx - mx)) + 0.5) % 360
 end
 
+local function GetOrbitButtonParent()
+    return minimap.orbitButtonLayer or Minimap
+end
+
 local function PrepareOrbitButton(btn)
     if (not btn) then return end
-    if (btn:GetParent() ~= Minimap) then
-        btn:SetParent(Minimap)
+    local orbitParent = GetOrbitButtonParent()
+    if (btn:GetParent() ~= orbitParent) then
+        btn:SetParent(orbitParent)
     end
     if (btn.SetFixedFrameStrata) then
         btn:SetFixedFrameStrata(true)
     end
     if (btn.SetFrameStrata) then
-        btn:SetFrameStrata('MEDIUM')
+        btn:SetFrameStrata('LOW')
     end
     if (btn.SetFixedFrameLevel) then
         btn:SetFixedFrameLevel(true)
     end
-    btn:SetFrameLevel(ORBIT_BUTTON_FRAME_LEVEL)
+    btn:SetFrameLevel(1)
     if (btn.EnableMouse) then
         btn:EnableMouse(true)
     end
     if (btn.RegisterForClicks) then
         btn:RegisterForClicks('AnyUp')
     end
+end
+
+local function PrepareBlizzOrbitButton(btn)
+    PrepareOrbitButton(btn)
+    btn:SetFrameLevel(2)
 end
 
 local function GetMinimapCursorOffset(frame)
@@ -298,6 +343,25 @@ local function HideBlizzMailChrome(btn)
     scan(btn, 0)
 end
 
+local function HideBlizzDifficultyChrome(btn)
+    if (not btn) then return end
+
+    local contentModes = btn.ContentModes or { btn.Default, btn.Guild, btn.ChallengeMode }
+    for _, frame in ipairs(contentModes) do
+        if (frame) then
+            frame:Hide()
+            if (not frame._exuiDifficultyChromeHooked) then
+                frame._exuiDifficultyChromeHooked = true
+                hooksecurefunc(frame, 'Show', function(contentFrame)
+                    if (minimap.enabled) then
+                        contentFrame:Hide()
+                    end
+                end)
+            end
+        end
+    end
+end
+
 local function GetMinimapButtonBgTexture()
     if (EXUI.EXFrames and EXUI.EXFrames.assets and EXUI.EXFrames.assets.textures.ui.buttonBg) then
         return EXUI.EXFrames.assets.textures.ui.buttonBg
@@ -305,14 +369,14 @@ local function GetMinimapButtonBgTexture()
     return EXUI.const.textures.frame.inputs.buttonBg
 end
 
-local function ApplyMinimapButtonBgTexture(tex, size)
+local function ApplyMinimapButtonBgTexture(tex, width, height)
     tex:SetTexture(GetMinimapButtonBgTexture())
     local slice = EXUI:ScalePixel(MINIMAP_BUTTON_BG_SLICE)
     if (tex.SetTextureSliceMargins) then
         tex:SetTextureSliceMargins(slice, slice, slice, slice)
         tex:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
     end
-    tex:SetSize(size, size)
+    tex:SetSize(width, height or width)
 end
 
 local function GetFontDropdownOptions()
@@ -389,12 +453,12 @@ minimap.GetScaledMinimapIconSize = function(self, baseSize)
     return EXUI:ScalePixel(baseSize * self:GetButtonScale())
 end
 
-minimap.ApplyButtonBackground = function(self, btn, bgTex, bgSize)
+minimap.ApplyButtonBackground = function(self, btn, bgTex, bgWidth, bgHeight)
     if (not btn or not bgTex) then return end
 
     if (self:IsButtonBackgroundEnabled()) then
         local r, g, b, a = self:GetButtonAppearanceColor()
-        self:ApplyMinimapButtonBackground(bgTex, bgSize, r, g, b, a)
+        self:ApplyMinimapButtonBackground(bgTex, bgWidth, r, g, b, a, bgHeight)
         bgTex:Show()
         bgTex:SetAlpha(1)
     else
@@ -402,8 +466,8 @@ minimap.ApplyButtonBackground = function(self, btn, bgTex, bgSize)
     end
 end
 
-minimap.ApplyMinimapButtonBackground = function(self, tex, size, r, g, b, a)
-    ApplyMinimapButtonBgTexture(tex, size)
+minimap.ApplyMinimapButtonBackground = function(self, tex, width, r, g, b, a, height)
+    ApplyMinimapButtonBgTexture(tex, width, height)
     tex:SetVertexColor(r, g, b, a)
 end
 
@@ -456,6 +520,8 @@ end
 minimap.StyleBlizzMailButton = function(self, btn)
     if (not btn) then return end
 
+    PrepareBlizzOrbitButton(btn)
+
     HideBlizzMailChrome(btn)
 
     local iconSize = self:GetScaledMinimapIconSize(MINIMAP_MAIL_ICON_SIZE)
@@ -485,7 +551,264 @@ minimap.StyleBlizzMailButton = function(self, btn)
 
     local frameSize = self:IsButtonBackgroundEnabled() and bgSize or iconSize
     EXUI:SetSize(btn, frameSize, frameSize)
+    PrepareBlizzOrbitButton(btn)
     HideBlizzMailChrome(btn)
+end
+
+minimap.IsInActiveDelve = function(self)
+    if (not C_DelvesUI or not C_DelvesUI.HasActiveDelve) then return false end
+    local _, _, _, mapID = UnitPosition('player')
+    return mapID and C_DelvesUI.HasActiveDelve(mapID)
+end
+
+minimap.GetInstanceDifficultyLabel = function(self)
+    if (C_GameRules and C_GameRules.IsGameRuleActive and Enum and Enum.GameRule
+        and C_GameRules.IsGameRuleActive(Enum.GameRule.InstanceDifficultyBannerDisabled)) then
+        return nil
+    end
+
+    local _, instanceType, difficulty, _, _, _, _, _, instanceGroupSize, _, hasWorldTier = GetInstanceInfo()
+    if (instanceType == 'interior' or instanceType == 'neighborhood') then
+        return nil
+    end
+
+    local _, _, isHeroic, isChallengeMode, displayHeroic, displayMythic = GetDifficultyInfo(difficulty)
+    local isLFR = select(8, GetDifficultyInfo(difficulty))
+    local inDelve = self:IsInActiveDelve()
+    local showBanner = false
+
+    if (isChallengeMode) then
+        showBanner = true
+    elseif (hasWorldTier and C_DelvesUI and C_DelvesUI.GetWorldTierDifficultyForActivePlayer and Enum
+        and Enum.WorldTierDifficulty) then
+        local worldTier = C_DelvesUI.GetWorldTierDifficultyForActivePlayer()
+        showBanner = worldTier ~= Enum.WorldTierDifficulty.Normal
+    elseif (instanceType ~= 'none') then
+        showBanner = true
+    end
+
+    if (not showBanner) then return nil end
+
+    if (isChallengeMode) then
+        if (C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo) then
+            local _, level = C_ChallengeMode.GetActiveKeystoneInfo()
+            if (level and level > 0) then
+                return 'M' .. level
+            end
+        end
+        return 'M+'
+    end
+
+    local prefix
+    if (hasWorldTier and C_DelvesUI and C_DelvesUI.GetWorldTierDifficultyForActivePlayer and Enum
+        and Enum.WorldTierDifficulty) then
+        local worldTier = C_DelvesUI.GetWorldTierDifficultyForActivePlayer()
+        if (worldTier == Enum.WorldTierDifficulty.Heroic) then
+            prefix = 'HC'
+        elseif (worldTier == Enum.WorldTierDifficulty.Mythic) then
+            prefix = 'M'
+        else
+            return nil
+        end
+    elseif (isLFR) then
+        prefix = 'LFR'
+    elseif (displayMythic) then
+        prefix = 'M'
+    elseif (isHeroic or displayHeroic) then
+        prefix = 'HC'
+    else
+        prefix = 'N'
+    end
+
+    if (instanceGroupSize and instanceGroupSize > 0 and not inDelve) then
+        return prefix .. instanceGroupSize
+    end
+    return prefix
+end
+
+minimap.GetInstanceDifficultyBgColor = function(self, label)
+    local quality
+    if (label:sub(1, 3) == 'LFR') then
+        quality = 1 -- common
+    elseif (label:sub(1, 2) == 'HC') then
+        quality = 4 -- epic
+    elseif (label:sub(1, 1) == 'M') then
+        quality = 5 -- legendary
+    elseif (label:sub(1, 1) == 'N') then
+        quality = 3 -- rare
+    else
+        quality = 3
+    end
+
+    local r, g, b = 1, 1, 1
+    if (C_Item and C_Item.GetItemQualityColor) then
+        r, g, b = C_Item.GetItemQualityColor(quality)
+    elseif (ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]) then
+        local info = ITEM_QUALITY_COLORS[quality]
+        if (info.color and info.color.GetRGB) then
+            r, g, b = info.color:GetRGB()
+        else
+            r, g, b = info.r or 1, info.g or 1, info.b or 1
+        end
+    end
+
+    local _, _, _, a = self:GetButtonAppearanceColor()
+    return r, g, b, a
+end
+
+minimap.GetInstanceDifficultyTooltipLines = function(self)
+    local _, instanceType, difficulty, _, maxPlayers, _, _, _, instanceGroupSize, lfgID, hasWorldTier = GetInstanceInfo()
+    if (instanceType == 'none' or instanceType == 'interior' or instanceType == 'neighborhood') then
+        return nil
+    end
+
+    local isLFR = select(8, GetDifficultyInfo(difficulty))
+    local difficultyName
+
+    if (hasWorldTier and DifficultyUtil and DifficultyUtil.GetWorldTierDifficultyName) then
+        difficultyName = DifficultyUtil.GetWorldTierDifficultyName()
+    elseif (DifficultyUtil and DifficultyUtil.GetDifficultyName) then
+        difficultyName = DifficultyUtil.GetDifficultyName(difficulty)
+    else
+        difficultyName = select(1, GetDifficultyInfo(difficulty))
+    end
+
+    if (not difficultyName or difficultyName == '') then
+        return nil
+    end
+
+    local title = DUNGEON_DIFFICULTY_BANNER_TOOLTIP and DUNGEON_DIFFICULTY_BANNER_TOOLTIP:format(difficultyName)
+        or difficultyName
+    local lines = {}
+
+    if (isLFR and lfgID and RAID_FINDER) then
+        table.insert(lines, RAID_FINDER)
+    end
+
+    if (maxPlayers and maxPlayers > 0) then
+        local countText = DUNGEON_DIFFICULTY_BANNER_TOOLTIP_PLAYER_COUNT
+            and DUNGEON_DIFFICULTY_BANNER_TOOLTIP_PLAYER_COUNT:format(instanceGroupSize or 0, maxPlayers)
+            or string.format('%d / %d', instanceGroupSize or 0, maxPlayers)
+        table.insert(lines, countText)
+    end
+
+    local diffBtn = GetBlizzButton('difficulty')
+    if (diffBtn and diffBtn.IsGuildGroup and diffBtn:IsGuildGroup() and InGuildParty) then
+        local _, numGuildPresent, numGuildRequired, xpMultiplier = InGuildParty()
+        if (GUILD_GROUP) then
+            table.insert(lines, GUILD_GROUP)
+        end
+        if (numGuildRequired and numGuildPresent and instanceGroupSize and GUILD_ACHIEVEMENTS_ELIGIBLE) then
+            local guildName = GetGuildInfo('player') or ''
+            if (xpMultiplier and xpMultiplier < 1 and GUILD_ACHIEVEMENTS_ELIGIBLE_MINXP) then
+                table.insert(lines, GUILD_ACHIEVEMENTS_ELIGIBLE_MINXP:format(numGuildRequired, instanceGroupSize,
+                    guildName, xpMultiplier * 100))
+            elseif (xpMultiplier and xpMultiplier > 1 and GUILD_ACHIEVEMENTS_ELIGIBLE_MAXXP) then
+                table.insert(lines, GUILD_ACHIEVEMENTS_ELIGIBLE_MAXXP:format(guildName, xpMultiplier * 100))
+            else
+                local required = numGuildRequired
+                if (instanceType == 'party' and maxPlayers == 5) then
+                    required = 4
+                end
+                table.insert(lines, GUILD_ACHIEVEMENTS_ELIGIBLE:format(required, instanceGroupSize, guildName))
+            end
+        end
+    end
+
+    return title, lines
+end
+
+minimap.ShowInstanceDifficultyTooltip = function(self, anchor)
+    local title, lines = self:GetInstanceDifficultyTooltipLines()
+    if (not title) then return end
+
+    GameTooltip:SetOwner(anchor, 'ANCHOR_BOTTOMLEFT', 8, 8)
+    if (GameTooltip_SetTitle) then
+        GameTooltip_SetTitle(GameTooltip, title)
+    else
+        GameTooltip:SetText(title, 1, 1, 1)
+    end
+
+    for _, line in ipairs(lines or {}) do
+        if (GameTooltip_AddColoredLine and line == GUILD_GROUP) then
+            GameTooltip_AddColoredLine(GameTooltip, line, GREEN_FONT_COLOR)
+        elseif (GameTooltip_AddNormalLine) then
+            GameTooltip_AddNormalLine(GameTooltip, line, true)
+        else
+            GameTooltip:AddLine(line, 1, 1, 1, true)
+        end
+    end
+
+    GameTooltip:Show()
+end
+
+minimap.SetupInstanceDifficultyTooltip = function(self, btn)
+    if (not btn or btn._exuiDifficultyTooltipSetup) then return end
+    btn._exuiDifficultyTooltipSetup = true
+    btn:SetScript('OnEnter', function(frame)
+        minimap:ShowInstanceDifficultyTooltip(frame)
+    end)
+    btn:SetScript('OnLeave', function()
+        GameTooltip:Hide()
+    end)
+end
+
+minimap.StyleBlizzDifficultyButton = function(self, btn, label)
+    if (not btn) then return end
+
+    label = label or self:GetInstanceDifficultyLabel()
+    PrepareBlizzOrbitButton(btn)
+    HideBlizzDifficultyChrome(btn)
+    self:SetupInstanceDifficultyTooltip(btn)
+
+    if (not label) then
+        btn:Hide()
+        return
+    end
+
+    local textPadX = self:GetScaledMinimapIconSize(MINIMAP_DIFFICULTY_TEXT_PAD_X)
+    local minHeight = self:GetScaledMinimapIconSize(MINIMAP_BUTTON_ICON_SIZE)
+    local bgPad = self:GetScaledMinimapIconSize(MINIMAP_ICON_BG_PAD)
+    local fontSize = self:GetScaledMinimapIconSize(MINIMAP_DIFFICULTY_FONT_SIZE)
+
+    if (not btn.exuiText) then
+        btn.exuiText = btn:CreateFontString(nil, 'OVERLAY', nil, 7)
+        btn.exuiText:SetPoint('CENTER', btn, 'CENTER', 0, 0)
+    end
+
+    local fontPath = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]]
+    if (EXUI.EXFrames and EXUI.EXFrames.assets and EXUI.EXFrames.assets.font) then
+        fontPath = EXUI.EXFrames.assets.font.default()
+    end
+    btn.exuiText:SetFont(fontPath, fontSize, 'OUTLINE')
+    btn.exuiText:SetTextColor(1, 1, 1, 1)
+    btn.exuiText:SetText(label)
+    btn.exuiText:Show()
+
+    local textWidth = btn.exuiText:GetStringWidth() or 0
+    local bgWidth = math.max(textWidth + textPadX * 2, minHeight + bgPad * 2)
+    local bgHeight = minHeight + bgPad * 2
+
+    if (not btn.exuiBg) then
+        btn.exuiBg = btn:CreateTexture(nil, 'BACKGROUND', nil, -1)
+    end
+    btn.exuiBg:ClearAllPoints()
+    btn.exuiBg:SetPoint('CENTER', btn, 'CENTER', 0, 0)
+    if (self:IsButtonBackgroundEnabled()) then
+        local r, g, b, a = self:GetInstanceDifficultyBgColor(label)
+        self:ApplyMinimapButtonBackground(btn.exuiBg, bgWidth, r, g, b, a, bgHeight)
+        btn.exuiBg:Show()
+        btn.exuiBg:SetAlpha(1)
+    else
+        btn.exuiBg:Hide()
+    end
+
+    local frameWidth = self:IsButtonBackgroundEnabled() and bgWidth or math.max(textWidth, minHeight)
+    local frameHeight = self:IsButtonBackgroundEnabled() and bgHeight or minHeight
+    EXUI:SetSize(btn, frameWidth, frameHeight)
+    btn:Show()
+    PrepareBlizzOrbitButton(btn)
+    HideBlizzDifficultyChrome(btn)
 end
 
 minimap.Data = data:GetControlsForKey('minimap')
@@ -1433,10 +1756,37 @@ minimap.SetupMinimapFrame = function(self)
     Minimap:EnableMouse(true)
 
     self.borderContainer = CreateFrame('Frame', nil, Minimap)
-    self.borderContainer:SetFrameLevel(0)
+    if (self.borderContainer.SetFixedFrameStrata) then
+        self.borderContainer:SetFixedFrameStrata(true)
+        self.borderContainer:SetFrameStrata('BACKGROUND')
+    end
+    if (self.borderContainer.SetFixedFrameLevel) then
+        self.borderContainer:SetFixedFrameLevel(true)
+        self.borderContainer:SetFrameLevel(MINIMAP_BORDER_FRAME_LEVEL)
+    end
     self.borderContainer:EnableMouse(false)
-    self.border = EXUI:AddPixelPerfectBorder(self.borderContainer, 1)
-    self.border:EnableMouse(false)
+    self.border = EXUI:AddPixelPerfectBorder(self.borderContainer, 1, { layer = 'BACKGROUND' })
+
+    self.orbitButtonLayer = CreateFrame('Frame', nil, Minimap)
+    self.orbitButtonLayer:SetAllPoints(Minimap)
+    if (self.orbitButtonLayer.SetFixedFrameStrata) then
+        self.orbitButtonLayer:SetFixedFrameStrata(true)
+        self.orbitButtonLayer:SetFrameStrata('LOW')
+    end
+    if (self.orbitButtonLayer.SetFixedFrameLevel) then
+        self.orbitButtonLayer:SetFixedFrameLevel(true)
+        self.orbitButtonLayer:SetFrameLevel(ORBIT_BUTTON_FRAME_LEVEL)
+    end
+    self.orbitButtonLayer:EnableMouse(false)
+
+    if (ldbi.SetButtonToPosition and not self.ldbPositionHooked) then
+        self.ldbPositionHooked = true
+        hooksecurefunc(ldbi, 'SetButtonToPosition', function(_, button)
+            if (not minimap.enabled) then return end
+            PrepareOrbitButton(button)
+            NudgeOrbitButtonOutward(button)
+        end)
+    end
 
     self:SetupBlizzButtonFixes()
 
@@ -1477,8 +1827,11 @@ minimap.PlaceOrbitButton = function(self, btn, angle)
         self.applyingLdbButton = true
     end
     PrepareOrbitButton(btn)
-    btn:Show()
+    if (not btn:IsShown()) then
+        btn:Show()
+    end
     SetButtonToPosition(btn, angle)
+    PrepareOrbitButton(btn)
     if (guard) then
         self.applyingLdbButton = false
     end
@@ -1496,7 +1849,9 @@ minimap.RepositionMissionsButton = function(self)
     PrepareOrbitButton(btn)
     btn:Show()
     btn:ClearAllPoints()
-    EXUI:SetPoint(btn, 'CENTER', Minimap, 'BOTTOMLEFT', MISSIONS_CORNER_OFFSET, MISSIONS_CORNER_OFFSET)
+    local borderOffset = GetMinimapBorderOrbitOffset()
+    EXUI:SetPoint(btn, 'CENTER', Minimap, 'BOTTOMLEFT', MISSIONS_CORNER_OFFSET + borderOffset,
+        MISSIONS_CORNER_OFFSET + borderOffset)
     self.repositioningMissions = false
 end
 
@@ -1508,12 +1863,15 @@ minimap.SetupBlizzButtonFixes = function(self)
             hooksecurefunc(ExpansionLandingPageMinimapButton, 'SetParent', function(_, parent)
                 if (minimap.repositioningMissions) then return end
                 local blizzButtons = minimap.Data:GetDB().blizzButtons or {}
-                if (blizzButtons.missions ~= 'outside' or parent == Minimap) then return end
+                local orbitParent = GetOrbitButtonParent()
+                if (blizzButtons.missions ~= 'outside' or parent == orbitParent) then return end
                 minimap.repositioningMissions = true
-                ExpansionLandingPageMinimapButton:SetParent(Minimap)
+                ExpansionLandingPageMinimapButton:SetParent(orbitParent)
+                PrepareOrbitButton(ExpansionLandingPageMinimapButton)
                 ExpansionLandingPageMinimapButton:ClearAllPoints()
+                local borderOffset = GetMinimapBorderOrbitOffset()
                 EXUI:SetPoint(ExpansionLandingPageMinimapButton, 'CENTER', Minimap, 'BOTTOMLEFT',
-                    MISSIONS_CORNER_OFFSET, MISSIONS_CORNER_OFFSET)
+                    MISSIONS_CORNER_OFFSET + borderOffset, MISSIONS_CORNER_OFFSET + borderOffset)
                 minimap.repositioningMissions = false
             end)
             hooksecurefunc(ExpansionLandingPageMinimapButton, 'UpdateIconForGarrison', function()
@@ -1546,8 +1904,8 @@ minimap.SetupBlizzButtonFixes = function(self)
         if (mailBtn) then
             self.mailHooksSetup = true
             hooksecurefunc(mailBtn, 'Show', function()
-                if (minimap.enabled) then
-                    minimap:StyleBlizzMailButton(mailBtn)
+                if (minimap.enabled and not minimap.applyingBlizzButton) then
+                    minimap:ApplyBlizzButton('mail')
                 end
             end)
             if (not self.mailEventRegistered and self.eventFrame) then
@@ -1556,10 +1914,7 @@ minimap.SetupBlizzButtonFixes = function(self)
                 local origOnEvent = self.eventFrame:GetScript('OnEvent')
                 self.eventFrame:SetScript('OnEvent', function(frame, event, ...)
                     if (event == 'UPDATE_PENDING_MAIL' and minimap.enabled) then
-                        local btn = GetBlizzButton('mail')
-                        if (btn) then
-                            minimap:StyleBlizzMailButton(btn)
-                        end
+                        minimap:ApplyBlizzButton('mail')
                     end
                     if (origOnEvent) then
                         origOnEvent(frame, event, ...)
@@ -1569,10 +1924,49 @@ minimap.SetupBlizzButtonFixes = function(self)
             if (MinimapMailFrameUpdate) then
                 hooksecurefunc('MinimapMailFrameUpdate', function()
                     if (minimap.enabled) then
-                        local btn = GetBlizzButton('mail')
-                        if (btn) then
-                            minimap:StyleBlizzMailButton(btn)
+                        minimap:ApplyBlizzButton('mail')
+                    end
+                end)
+            end
+        end
+    end
+
+    if (not self.difficultyHooksSetup) then
+        local diffBtn = GetBlizzButton('difficulty')
+        if (diffBtn) then
+            self.difficultyHooksSetup = true
+            if (diffBtn.Update) then
+                hooksecurefunc(diffBtn, 'Update', function()
+                    if (minimap.enabled and not minimap.applyingBlizzButton) then
+                        minimap:ApplyBlizzButton('difficulty')
+                    end
+                end)
+            end
+            if (not self.difficultyEventsRegistered and self.eventFrame) then
+                self.difficultyEventsRegistered = true
+                for _, event in ipairs(INSTANCE_DIFFICULTY_EVENTS) do
+                    self.eventFrame:RegisterEvent(event)
+                end
+                local origOnEvent = self.eventFrame:GetScript('OnEvent')
+                self.eventFrame:SetScript('OnEvent', function(frame, event, ...)
+                    if (minimap.enabled) then
+                        for _, diffEvent in ipairs(INSTANCE_DIFFICULTY_EVENTS) do
+                            if (event == diffEvent) then
+                                if (not minimap.difficultyRefreshPending) then
+                                    minimap.difficultyRefreshPending = true
+                                    C_Timer.After(0.3, function()
+                                        minimap.difficultyRefreshPending = false
+                                        if (minimap.enabled) then
+                                            minimap:ApplyBlizzButton('difficulty')
+                                        end
+                                    end)
+                                end
+                                break
+                            end
                         end
+                    end
+                    if (origOnEvent) then
+                        origOnEvent(frame, event, ...)
                     end
                 end)
             end
@@ -2575,6 +2969,8 @@ minimap.ConfigureDrawer = function(self)
 end
 
 minimap.ApplyBlizzButton = function(self, key)
+    if (self.applyingBlizzButton) then return end
+
     local btn = GetBlizzButton(key)
     if (not btn) then return end
 
@@ -2602,8 +2998,17 @@ minimap.ApplyBlizzButton = function(self, key)
     end
 
     local angle = angles[key] or DEFAULT_BLIZZ_ANGLES[key] or 180
+    self.applyingBlizzButton = true
     if (key == 'missions') then
         self:RepositionMissionsButton()
+    elseif (key == 'difficulty') then
+        local label = self:GetInstanceDifficultyLabel()
+        if (not label) then
+            btn:Hide()
+        else
+            self:PlaceOrbitButton(btn, angle)
+            self:StyleBlizzDifficultyButton(btn, label)
+        end
     else
         self:PlaceOrbitButton(btn, angle)
     end
@@ -2611,6 +3016,7 @@ minimap.ApplyBlizzButton = function(self, key)
     if (key == 'mail') then
         self:StyleBlizzMailButton(btn)
     end
+    self.applyingBlizzButton = false
 end
 
 minimap.ApplyLdbButton = function(self, name, cfg)
@@ -2808,10 +3214,19 @@ minimap.ConfigureMinimap = function(self)
 
     if (self.borderContainer) then
         if (borderSize > 0) then
-            local outerSize = db.size + (borderSize * 2)
+            local borderThickness = EXUI:ScalePixels(borderSize, Minimap)
+            local outerSize = db.size + (borderThickness * 2)
             EXUI:SetSize(self.borderContainer, outerSize, outerSize)
             self.borderContainer:ClearAllPoints()
             EXUI:SetPoint(self.borderContainer, 'CENTER', Minimap, 'CENTER', 0, 0)
+            if (self.borderContainer.SetFixedFrameStrata) then
+                self.borderContainer:SetFixedFrameStrata(true)
+                self.borderContainer:SetFrameStrata('BACKGROUND')
+            end
+            if (self.borderContainer.SetFixedFrameLevel) then
+                self.borderContainer:SetFixedFrameLevel(true)
+                self.borderContainer:SetFrameLevel(MINIMAP_BORDER_FRAME_LEVEL)
+            end
             self.border:SetBorderThickness(borderSize)
             local r, g, b, a = UnpackColor(db.borderColor)
             self.border:SetBorderColor(r, g, b, a)

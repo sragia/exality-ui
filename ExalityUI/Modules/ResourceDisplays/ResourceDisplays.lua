@@ -403,6 +403,17 @@ core.CreateNewDisplay = function(self)
     self:SetDisplayToDB(display)
 end
 
+core.ApplyDisplayChrome = function(self, frame)
+    frame:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
+    frame:SetBackdropColor(0, 0, 0, 0.5)
+    if not frame.PPBorder then
+        frame.PPBorder = EXUI:AddPixelPerfectBorder(frame, 1)
+    else
+        frame.PPBorder:SetBorderThickness(1)
+    end
+    frame.PPBorder:SetBorderColor(0, 0, 0, 1)
+end
+
 core.Create = function(self, resourceType)
     local frame = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
 
@@ -416,6 +427,8 @@ core.Create = function(self, resourceType)
     if (control) then
         control:Create(frame)
     end
+
+    self:ApplyDisplayChrome(frame)
 
     return frame
 end
@@ -525,6 +538,8 @@ core.RefreshDisplayByID = function(self, displayID)
         displayDB.XOff,
         displayDB.YOff
     )
+    EXUI:SnapFrameToPixels(frame)
+    self:ApplyDisplayChrome(frame)
 
     if (not frame.Update) then
         frame.Update = function(self)
