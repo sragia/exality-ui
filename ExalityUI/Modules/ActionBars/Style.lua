@@ -85,13 +85,14 @@ style.BuildLABConfig = function(self, barConfig, commandName)
         actionButtonUI = true,
         assistedHighlight = false,
         hideElements = {
-            macro = not barConfig.showMacro or not barConfig.macro.enabled,
-            hotkey = not barConfig.showHotkey or not barConfig.hotkey.enabled,
+            macro = not barConfig.macro.enabled,
+            hotkey = not barConfig.hotkey.enabled,
             border = hideLabBorder,
             borderIfEmpty = hideLabBorder,
             equipped = true,
         },
         keyBoundTarget = commandName,
+        keyBoundClickButton = 'Keybind',
         text = {
             hotkey = self:BuildLABTextBlock(barConfig.hotkey),
             count = self:BuildLABTextBlock(barConfig.count),
@@ -220,25 +221,38 @@ style.HideBlizzardButtonChrome = function(self, button)
 end
 
 style.ApplyIconLayout = function(self, button, barConfig)
+    self:NormalizeAbilityButtonIcon(button)
     if not button.icon then
         return
     end
 
     local w, h = barConfig.width, barConfig.height
-    if button.exuiLayoutWidth == w and button.exuiLayoutHeight == h then
-        return
-    end
+    local sizeChanged = button.exuiLayoutWidth ~= w or button.exuiLayoutHeight ~= h
 
-    button.exuiLayoutWidth = w
-    button.exuiLayoutHeight = h
-
+    -- SmallActionButtonTemplate (stance/pet/possess) hardcodes mask/cooldown insets in OnLoad.
     button.icon:ClearAllPoints()
     button.icon:SetAllPoints(button)
+
+    if button.IconMask then
+        button.IconMask:ClearAllPoints()
+        button.IconMask:SetAllPoints(button.icon)
+    end
+
     if button.cooldown then
         button.cooldown:ClearAllPoints()
         button.cooldown:SetAllPoints(button.icon)
     end
-    self:ApplyCooldownSettings(button, barConfig)
+
+    if button.Flash then
+        button.Flash:ClearAllPoints()
+        button.Flash:SetAllPoints(button)
+    end
+
+    if sizeChanged then
+        button.exuiLayoutWidth = w
+        button.exuiLayoutHeight = h
+        self:ApplyCooldownSettings(button, barConfig)
+    end
 end
 
 style.ApplyIconMask = function(self, button, barConfig)
@@ -339,7 +353,7 @@ style.EnsureSlotBackdrop = function(self, button)
 end
 
 style.UpdateSlotBackdrop = function(self, button, barConfig)
-    if not barConfig.showBackdrop then
+    if not barConfig.showBackdrop or not barConfig.showBorder or self:ShouldUseMasque(barConfig) then
         if button.exuiSlotBackdrop then
             button.exuiSlotBackdrop:Hide()
         end
@@ -347,13 +361,9 @@ style.UpdateSlotBackdrop = function(self, button, barConfig)
     end
 
     local slotBackdrop = self:EnsureSlotBackdrop(button)
-    if self:ButtonIsEmpty(button) then
-        local c = barConfig.backdropColor or { r = 0, g = 0, b = 0, a = 0.55 }
-        slotBackdrop:SetBackdropColor(c.r, c.g, c.b, c.a)
-        slotBackdrop:Show()
-    else
-        slotBackdrop:Hide()
-    end
+    local c = barConfig.backdropColor or { r = 0, g = 0, b = 0, a = 0.55 }
+    slotBackdrop:SetBackdropColor(c.r, c.g, c.b, c.a)
+    slotBackdrop:Show()
 end
 
 style.StyleNonMasqueButtonChrome = function(self, button, barConfig)
@@ -389,7 +399,6 @@ style.StyleNonMasqueButtonChrome = function(self, button, barConfig)
 end
 
 style.StyleNonMasqueButton = function(self, button, barConfig)
-    self:ApplyIconLayout(button, barConfig)
     self:StyleNonMasqueButtonChrome(button, barConfig)
 end
 
@@ -447,6 +456,8 @@ style.ApplyButtonStyle = function(self, button, barConfig)
         return
     end
 
+    self:ApplyIconLayout(button, barConfig)
+
     if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
         self:StyleMasqueButton(button, barConfig)
     else
@@ -461,7 +472,7 @@ style.ApplyTextVisibility = function(self, button, barConfig)
     end
 
     if button.Count then
-        if barConfig.showStacks and barConfig.count.enabled then
+        if barConfig.count.enabled then
             button.Count:Show()
         else
             button.Count:Hide()
@@ -474,14 +485,12 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
         return
     end
 
+    self:ApplyIconLayout(button, barConfig)
+
     if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
         self:StyleMasqueButton(button, barConfig)
     else
         self:StyleNonMasqueButtonChrome(button, barConfig)
-        if button.cooldown and button.icon then
-            button.cooldown:ClearAllPoints()
-            button.cooldown:SetAllPoints(button.icon)
-        end
     end
     self:UpdateSlotBackdrop(button, barConfig)
     self:ApplyCooldownSettings(button, barConfig)
@@ -585,11 +594,11 @@ style.ReleaseMasqueGroups = function(self)
     end
 end
 
-style.ApplyFontString = function(self, fontString, textConfig, enabled)
+style.ApplyFontString = function(self, fontString, textConfig)
     if not fontString then
         return
     end
-    if not enabled or not textConfig or textConfig.enabled == false then
+    if not textConfig or textConfig.enabled == false then
         fontString:Hide()
         return
     end
@@ -685,8 +694,8 @@ style.StyleBlizzardAbilityButton = function(self, button, barId, barConfig)
         self:ApplyAbilityCooldowns(button, barConfig)
     end
 
-    self:ApplyFontString(button.HotKey, barConfig.hotkey, barConfig.showHotkey)
-    self:ApplyFontString(button.Count, barConfig.count, barConfig.showStacks)
+    self:ApplyFontString(button.HotKey, barConfig.hotkey)
+    self:ApplyFontString(button.Count, barConfig.count)
 
     if button.Flash then
         button.Flash:ClearAllPoints()

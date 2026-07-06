@@ -532,12 +532,26 @@ xpBar.Configure = function(self)
 end
 
 xpBar.HandleVisibility = function(self)
-    if (self.maxLevel > UnitLevel('player') or self.Data:GetValue('showAtMaxLevel')) then
+    if not self.frame then return end
+
+    local shouldShow = self.maxLevel > UnitLevel('player') or self.Data:GetValue('showAtMaxLevel')
+
+    if shouldShow then
         FrameUtil.RegisterFrameForEvents(self.frame, self.EVENTS)
         self.frame:Show()
+        if not self.ticker then
+            self.ticker = C_Timer.NewTicker(5, function()
+                self:UpdatePerHourXP()
+                self:UpdateValues()
+            end)
+        end
     else
         self.frame:UnregisterAllEvents()
         self.frame:Hide()
+        if self.ticker then
+            self.ticker:Cancel()
+            self.ticker = nil
+        end
     end
 end
 
@@ -625,6 +639,7 @@ xpBar.Update = function(self, event, ...)
     local maxXP = UnitXPMax('player')
     if (event == 'PLAYER_ENTERING_WORLD') then
         RequestTimePlayed()
+        self:HandleVisibility()
     elseif (event == 'UPDATE_EXPANSION_LEVEL') then -- Expansion Launch
         local arg1, arg2, arg3, arg4 = ...
         local maxExpLevel = max(arg1, arg2, arg3, arg4)
@@ -669,24 +684,22 @@ xpBar.Enable = function(self)
         self:CreateFrame()
     end
     self:Configure()
-
-    self.frame:Show()
-    FrameUtil.RegisterFrameForEvents(self.frame, self.EVENTS)
-    self:GetCompletedQuestXP() -- Event where this is requested will not be called on Update here
-    self:Update()
     self:HandleVisibility()
-    self.ticker = C_Timer.NewTicker(5, function()
-        self:UpdatePerHourXP()
-        self:UpdateValues()
-    end)
+
+    if (self.frame:IsShown()) then
+        self:GetCompletedQuestXP() -- Event where this is requested will not be called on Update here
+        self:Update()
+    end
 end
 
 xpBar.Disable = function(self)
     if (self.frame) then
         self.frame:Hide()
         self.frame:UnregisterAllEvents()
-        self.ticker:Cancel()
-        self.ticker = nil
+        if self.ticker then
+            self.ticker:Cancel()
+            self.ticker = nil
+        end
     end
 end
 

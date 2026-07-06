@@ -344,6 +344,7 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
 
     for i, button in ipairs(frame.buttons) do
         if i <= numForms then
+            EXUI:SetSize(button, barConfig.width, barConfig.height)
             if button.Update then
                 button:Update()
             end
@@ -378,6 +379,7 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
     end
 
     self:ApplyStanceBarVisibility(frame, barConfig)
+    EXUI:GetModule('action-bars-keybind'):ReassignBindings()
 end
 
 special.UpdateAll = function(self, barFrame)

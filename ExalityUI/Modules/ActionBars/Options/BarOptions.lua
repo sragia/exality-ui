@@ -405,12 +405,23 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
             },
             {
                 type = 'toggle',
-                label = 'Show Empty Slots',
+                label = 'Button Background',
                 name = 'showBackdrop',
                 width = 100,
                 depends = function() return bar.useGlobalAppearance == false end,
                 currentValue = function() return bar.showBackdrop end,
                 onChange = function(v) bar.showBackdrop = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
+            },
+            {
+                type = 'color-picker',
+                label = 'Background Color',
+                name = 'backdropColor',
+                width = 50,
+                depends = function()
+                    return bar.useGlobalAppearance == false and bar.showBackdrop and bar.showBorder
+                end,
+                currentValue = function() return bar.backdropColor end,
+                onChange = function(v) bar.backdropColor = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
             },
             {
                 type = 'toggle',

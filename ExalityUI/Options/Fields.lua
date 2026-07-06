@@ -59,7 +59,11 @@ optionsFields.AddSplitView = function(self, module)
     self.splitView:AddItems(items)
     self.splitView:SetOnItemChange(function(id)
         self.currItemID = id
-        self.currTabID = nil
+        -- Inner-tab modules (e.g. Action Bars) reuse currTabID for section tabs.
+        -- Modules with outer tabs + splitViewTabID (e.g. Minimap Buttons) must keep currTabID.
+        if module.useInnerTabs then
+            self.currTabID = nil
+        end
         if self:HasInnerTabs(module, id) then
             self:AddInnerTabs(module)
         else
@@ -84,6 +88,7 @@ optionsFields.AddSplitView = function(self, module)
 
     if (not module.useInnerTabs) then
         self.container = self.splitView.container
+        self.container.exuiAutoSizeHeight = true
     end
 end
 
@@ -108,6 +113,7 @@ end
 optionsFields.UseSplitViewContainer = function(self)
     if self.splitView then
         self.container = self.splitView.container
+        self.container.exuiAutoSizeHeight = true
     end
 end
 
@@ -324,6 +330,10 @@ optionsFields.RefreshFields = function(self)
     end
     self.fields = {}
 
+    if self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
+        self.splitView:UpdateScroll()
+    end
+
     local fields = currentModule:GetOptions(self.currTabID, self.currItemID)
     for _, field in ipairs(fields) do
         if (type(field) == 'function') then
@@ -353,6 +363,8 @@ optionsFields.RefreshFields = function(self)
     EXUI.utils.organizeFramesInGrid('fields', self.fields, 10, self.container, 10, 10)
     if self.innerTabs and self.innerTabs.scrollable and self.innerTabs.UpdateScroll then
         self.innerTabs:UpdateScroll()
+    elseif self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
+        self.splitView:UpdateScroll()
     end
 end
 

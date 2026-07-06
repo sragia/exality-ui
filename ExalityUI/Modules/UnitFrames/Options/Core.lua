@@ -99,6 +99,25 @@ core.ToggleOptionPreview = function(self)
     ufCore:ToggleElementPreview(unit, element)
 end
 
+core.TeardownOptions = function(self)
+    if (self.tabOptions) then
+        if (self.tabOptions.previewButton) then
+            self.tabOptions.previewButton:Hide()
+        end
+        self.tabOptions:Destroy()
+        self.tabOptions = nil
+    end
+    if (self.tabs) then
+        self.tabs:Destroy()
+        self.tabs = nil
+    end
+    for _, field in pairs(self.fields) do
+        field:Destroy()
+    end
+    self.fields = {}
+    self.currItem = nil
+end
+
 core.SetupTabs = function(self, container)
     local tabs = EXFrames:GetFrame('tabs-frame'):Create()
     tabs:SetParent(container)
@@ -109,7 +128,10 @@ core.SetupTabs = function(self, container)
     tabOptions:SetParent(tabs.container)
     tabOptions:SetPoint('TOPLEFT', tabs.container, 'TOPLEFT', 5, -5)
     tabOptions:SetPoint('BOTTOMRIGHT', tabs.container, 'BOTTOMRIGHT', -5, 5)
-    tabOptions:UpdateScroll()
+    tabOptions.container.exuiAutoSizeHeight = true
+    if (tabOptions.scrollFrame) then
+        tabOptions.scrollFrame:Show()
+    end
 
     if (not tabOptions.previewButton) then
         local previewButton = CreateFrame('Button', nil, tabOptions.container)
@@ -151,22 +173,12 @@ end
 
 core.OptionHandler = function(container, shouldHide)
     if (shouldHide) then
-        if (core.tabs) then
-            core.tabs:Destroy()
-            core.tabOptions.previewButton:Hide()
-            core.tabOptions:Destroy()
-            core.tabs = nil
-            core.tabOptions = nil
-            for _, field in pairs(core.fields) do
-                field:Destroy()
-            end
-            core.fields = {}
-        end
-        return;
+        core:TeardownOptions()
+        return
     end
-    if (not core.tabs) then
-        core:SetupTabs(container)
-    end
+
+    core:TeardownOptions()
+    core:SetupTabs(container)
 
     local tabs = {}
     for _, option in ipairs(core.options) do
@@ -188,6 +200,13 @@ core.OptionHandler = function(container, shouldHide)
     if (not found) then
         core.tabs:onTabClick(tabs[1].ID)
     end
+
+    -- Layout may not be ready in the same frame after a module switch.
+    C_Timer.After(0, function()
+        if (core.tabOptions and core.currItem) then
+            core:HandleOptions()
+        end
+    end)
 end
 
 core.OnTabChange = function(self, id)
@@ -244,12 +263,16 @@ end
 core.OnItemChange = function(self, id)
     self.currItemId = id
     local _, tab = FindInTableIf(self.options, function(tab) return tab.id == self.currTabId end)
+    if (not tab) then return end
     local _, item = FindInTableIf(tab.menu, function(item) return item.id == id end)
+    if (not item) then return end
     self.currItem = item
     self:HandleOptions()
 end
 
 core.HandleOptions = function(self)
+    if (not self.tabOptions) then return end
+
     local container = self.tabOptions.container
     local menu = self.currItem
     for _, field in pairs(self.fields) do
@@ -257,23 +280,33 @@ core.HandleOptions = function(self)
     end
     self.fields = {}
 
-    if (menu.allowPreview) then
+    if (not menu or not menu.options) then return end
+
+    if (self.tabOptions.scrollFrame) then
+        self.tabOptions.scrollFrame:Show()
+    end
+
+    if (menu.allowPreview and self.tabOptions.previewButton) then
         self.tabOptions.previewButton:Show()
-    else
+    elseif (self.tabOptions.previewButton) then
         self.tabOptions.previewButton:Hide()
     end
+
+    self.tabOptions:UpdateScroll()
 
     for _, option in ipairs(menu.options) do
         if (type(option) == 'function') then
             local fields = option(container)
-            for _, field in ipairs(fields) do
-                if (not field.depends or field.depends()) then
-                    local fieldFrame = EXUI:GetModule('options-fields'):GetField(field)
-                    EXUI:GetModule('options-fields'):CreateOrUpdateTooltip(fieldFrame, field.tooltip)
-                    if (fieldFrame) then
-                        fieldFrame:SetOptionData(field)
-                        fieldFrame:SetParent(container)
-                        table.insert(self.fields, fieldFrame)
+            if (fields) then
+                for _, field in ipairs(fields) do
+                    if (not field.depends or field.depends()) then
+                        local fieldFrame = EXUI:GetModule('options-fields'):GetField(field)
+                        EXUI:GetModule('options-fields'):CreateOrUpdateTooltip(fieldFrame, field.tooltip)
+                        if (fieldFrame) then
+                            fieldFrame:SetOptionData(field)
+                            fieldFrame:SetParent(container)
+                            table.insert(self.fields, fieldFrame)
+                        end
                     end
                 end
             end
@@ -290,6 +323,7 @@ core.HandleOptions = function(self)
         end
     end
     EXUI.utils.organizeFramesInGrid('UFfields', self.fields, 10, container, 10, 10)
+    self.tabOptions:UpdateScroll()
 end
 
 core.AddOption = function(self, option)
@@ -298,6 +332,8 @@ end
 
 core.RefreshCurrentView = function(self)
     C_Timer.After(0.3, function() -- Small delay to allow inputs to finish animating
-        self:HandleOptions()
+        if (self.tabOptions) then
+            self:HandleOptions()
+        end
     end)
 end

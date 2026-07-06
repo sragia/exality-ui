@@ -207,7 +207,7 @@ pixelPerfect.Refresh = function(self)
     local snapped = {}
     for i = #self.borders, 1, -1 do
         local border = self.borders[i]
-        if border.anchor then
+        if border.anchor and border.anchor:IsShown() then
             if not snapped[border.anchor] then
                 EXUI:SnapFrameToPixels(border.anchor)
                 snapped[border.anchor] = true

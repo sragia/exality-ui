@@ -510,7 +510,7 @@ EXUI.utils = {
         end
     end,
     organizeFramesInGrid = function(gridId, children, gap, parentContainer, startOffsetX, startOffsetY)
-        local maxWidth = parentContainer:GetWidth() - startOffsetX * 2
+        local maxWidth = math.max(1, parentContainer:GetWidth() - startOffsetX * 2)
 
         if (rowFrames[gridId]) then
             for _, frame in ipairs(rowFrames[gridId]) do

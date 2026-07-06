@@ -5,6 +5,13 @@ local LSM = LibStub('LibSharedMedia-3.0')
 
 local castBar = EXUI:GetModule('uf-element-cast-bar')
 
+local function applyCastBarDrawLayers(castBarFrame)
+    local statusBarTexture = castBarFrame:GetStatusBarTexture()
+    if statusBarTexture then
+        statusBarTexture:SetDrawLayer('BORDER', 0)
+    end
+end
+
 ---@class EXUIUnitFramesCore
 local core = EXUI:GetModule('uf-core')
 ---@class EXUIOptionsEditor
@@ -16,6 +23,7 @@ castBar.Create = function(self, frame, unit)
     castBar.container = castBarContainer
     castBar:SetSize(200, 20)
     castBar:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
+    applyCastBarDrawLayers(castBar)
     castBar.PPBorder = EXUI:AddPixelPerfectBorder(castBar)
 
     -- Background
@@ -154,6 +162,7 @@ castBar.Update = function(self, frame)
         generalDB.statusBarTexture
 
     Castbar:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
+    applyCastBarDrawLayers(Castbar)
 
     container:ClearAllPoints()
     if (db.castbarAnchorToFrame) then

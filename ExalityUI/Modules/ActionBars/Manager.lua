@@ -69,6 +69,7 @@ manager.CreateBars = function(self)
     extraAbilities:SetupHover()
     microMenu:Apply(db)
     microMenu:SetupHover(db)
+    keybind:ReassignBindings()
 end
 
 manager.RefreshBar = function(self, barId)

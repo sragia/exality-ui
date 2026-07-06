@@ -20,6 +20,7 @@ extraAbilities.anchorFrame = nil
 extraAbilities.applyingLayout = false
 extraAbilities.cachedConfig = nil
 extraAbilities.pendingStyle = false
+extraAbilities.pendingClickThrough = false
 
 local function canModifyExtraFrames()
     return not InCombatLockdown()
@@ -78,6 +79,12 @@ extraAbilities.GetAnchorFrame = function(self)
 end
 
 extraAbilities.ConfigureClickThrough = function(self)
+    if InCombatLockdown() then
+        self.pendingClickThrough = true
+        return
+    end
+    self.pendingClickThrough = false
+
     local function passThrough(frame)
         if not frame then
             return
@@ -122,14 +129,22 @@ extraAbilities.ApplyPending = function(self)
     if not manager.enabled or InCombatLockdown() or not self.cachedConfig then
         return
     end
-    if not self.pendingStyle and not self.pendingLayout then
+    if not self.pendingStyle and not self.pendingLayout and not self.pendingClickThrough then
         return
     end
 
+    local clickThroughOnly = self.pendingClickThrough and not self.pendingStyle and not self.pendingLayout
+
     self.pendingStyle = false
     self.pendingLayout = false
-    self:ApplyStyle(self.cachedConfig)
-    self:ApplyLayout()
+    self.pendingClickThrough = false
+
+    if clickThroughOnly then
+        self:ConfigureClickThrough()
+    else
+        self:ApplyStyle(self.cachedConfig)
+        self:ApplyLayout()
+    end
 end
 
 extraAbilities.ApplyLayout = function(self)
@@ -469,5 +484,8 @@ extraAbilities.Disable = function(self)
 end
 
 extraAbilities.Init = function(self)
+    if not InCombatLockdown() then
+        self:GetAnchorFrame()
+    end
     self:InitHooks()
 end

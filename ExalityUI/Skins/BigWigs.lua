@@ -22,9 +22,7 @@ bigWigs.ApplyStyle = function(self, bar)
     if (not bar.EXUI) then
         bar.EXUI = {}
 
-        local border = EXUI:AddPixelPerfectBorder(bar, 1)
-        border:SetFrameLevel(bar.candyBarBar:GetFrameLevel() + 100)
-        bar.EXUI.Border = border
+        bar.EXUI.Border = EXUI:AddPixelPerfectBorder(bar, 1, { layer = 'OVERLAY', register = false })
     end
     bar.EXUI.Border:SetBorderColor(0, 0, 0, 1)
     bar.candyBarBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)

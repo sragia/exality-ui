@@ -197,16 +197,26 @@ barMod.Configure = function(self, frame, db)
 end
 
 barMod.UpdateVisibilityAlpha = function(self, frame, config, isHovering)
+    local alpha
+    if config.visibility == 'hidden' then
+        alpha = 0
+    elseif config.visibility == 'hover' then
+        alpha = isHovering and 1 or 0
+    else
+        alpha = 1
+    end
+
+    if InCombatLockdown() then
+        frame:SetAlpha(alpha)
+        return
+    end
+
     if config.visibility == 'hidden' then
         frame:Hide()
         return
     end
     frame:Show()
-    if config.visibility == 'hover' then
-        frame:SetAlpha(isHovering and 1 or 0)
-    else
-        frame:SetAlpha(1)
-    end
+    frame:SetAlpha(alpha)
 end
 
 barMod.SetupVisibility = function(self, frame, config)

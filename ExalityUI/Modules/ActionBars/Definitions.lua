@@ -175,7 +175,11 @@ definitions.GetCommandName = function(self, barId, buttonIndex)
     if not def or not def.commandPrefix then
         return nil
     end
-    return def.commandPrefix .. buttonIndex
+    local prefix = def.commandPrefix
+    if prefix == 'SHAPESHIFT' then
+        return 'SHAPESHIFTBUTTON' .. buttonIndex
+    end
+    return prefix .. buttonIndex
 end
 
 definitions.GetActionSlot = function(self, barId, buttonIndex, page)
