@@ -55,7 +55,7 @@ dataBrokers.GetName = function(self)
 end
 
 dataBrokers.GetOrder = function(self)
-    return 50
+    return 70
 end
 
 dataBrokers.GetSplitViewItems = function(self)

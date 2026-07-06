@@ -21,7 +21,7 @@ optionsModuleSelector.buttons = {}
 local categoryItems = {
     {
         name = 'Quality of Life',
-        order = 60
+        order = 80
     }
 }
 

@@ -920,7 +920,7 @@ minimap.GetName = function(self)
 end
 
 minimap.GetOrder = function(self)
-    return 45
+    return 60
 end
 
 minimap.GetTabs = function(self)

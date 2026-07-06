@@ -17,35 +17,41 @@ Masque:AddSkin('ExalityUI Square', {
         TexCoords = { EXUI.utils.getTexCoords(36, 36, 15) },
     },
     Normal = {
-        Hide = true
+        Texture = EXUI.const.masque.rectangle.border,
+        EmptyTexture = EXUI.const.masque.rectangle.border,
+        SetAllPoints = true,
     },
     Cooldown = {
-        Width = 36,
-        Height = 36,
+        SetAllPoints = true,
     },
     Highlight = {
         Texture = EXUI.const.masque.rectangle.highlight,
         Color = { 1, 1, 1, 0.6 },
         BlendMode = "BLEND",
+        SetAllPoints = true,
     },
     Pushed = {
         Color = { 237 / 255, 162 / 255, 0, 1 },
         BlendMode = "BLEND",
-        Texture = EXUI.const.masque.rectangle.border
+        Texture = EXUI.const.masque.rectangle.border,
+        SetAllPoints = true,
     },
     SpellHighlight = {
         Texture = EXUI.const.masque.rectangle.spellHighlight,
         Color = { 237 / 255, 162 / 255, 0, 1 },
         BlendMode = "BLEND",
+        SetAllPoints = true,
     },
     Flash = {
         Color = { 0, 0, 0, 0.3 },
         BlendMode = "ADD",
+        SetAllPoints = true,
     },
     Checked = {
         Color = { 1, 1, 1, 1 },
         BlendMode = "BLEND",
-        Texture = EXUI.const.masque.rectangle.border
+        Texture = EXUI.const.masque.rectangle.border,
+        SetAllPoints = true,
     },
 })
 
@@ -63,35 +69,41 @@ Masque:AddSkin('ExalityUI Square w/ Backdrop', {
         TexCoords = { EXUI.utils.getTexCoords(36, 36, 15) },
     },
     Normal = {
-        Hide = true
+        Texture = EXUI.const.masque.rectangle.border,
+        EmptyTexture = EXUI.const.masque.rectangle.border,
+        SetAllPoints = true,
     },
     Cooldown = {
-        Width = 36,
-        Height = 36,
+        SetAllPoints = true,
     },
     Highlight = {
         Texture = EXUI.const.masque.rectangle.highlight,
         Color = { 1, 1, 1, 0.6 },
         BlendMode = "BLEND",
+        SetAllPoints = true,
     },
     Pushed = {
         Color = { 237 / 255, 162 / 255, 0, 1 },
         BlendMode = "BLEND",
-        Texture = EXUI.const.masque.rectangle.border
+        Texture = EXUI.const.masque.rectangle.border,
+        SetAllPoints = true,
     },
     SpellHighlight = {
         Texture = EXUI.const.masque.rectangle.spellHighlight,
         Color = { 237 / 255, 162 / 255, 0, 1 },
         BlendMode = "BLEND",
+        SetAllPoints = true,
     },
     Flash = {
         Color = { 0, 0, 0, 0.3 },
         BlendMode = "ADD",
+        SetAllPoints = true,
     },
     Checked = {
         Color = { 1, 1, 1, 1 },
         BlendMode = "BLEND",
-        Texture = EXUI.const.masque.rectangle.border
+        Texture = EXUI.const.masque.rectangle.border,
+        SetAllPoints = true,
     },
 
 })

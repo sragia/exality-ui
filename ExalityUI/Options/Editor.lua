@@ -78,7 +78,16 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
         end)
         self:SetScript('OnDragStop', function(self)
             self:StopMovingOrSizing()
-            self.onChange(self)
+            local owner = self.__owner
+            local point, relativeTo, relativePoint, xOfs, yOfs = self:GetPoint(1)
+            owner:ClearAllPoints()
+            owner:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs)
+            self:ClearAllPoints()
+            self:SetPoint('TOPLEFT', owner, 'TOPLEFT', 0, 0)
+            self:SetPoint('BOTTOMRIGHT', owner, 'BOTTOMRIGHT', 0, 0)
+            if self.onChange then
+                self.onChange(owner)
+            end
         end)
     end
 
@@ -195,16 +204,20 @@ end
 
 editor.EnableEditor = function(self)
     for _, f in ipairs(self.frames) do
+        if not f.frame:IsShown() then
+            f.frame:Show()
+        end
+        if (f.onShow) then
+            f.onShow(f.frame)
+        end
         f.frame.editor:Show()
+        f.frame.editor:EnableMouse(true)
         f.frame.editor:ClearAllPoints()
         f.frame.editor:SetPoint('TOPLEFT', f.frame, 'TOPLEFT', 0, 0)
         f.frame.editor:SetPoint('BOTTOMRIGHT', f.frame, 'BOTTOMRIGHT', 0, 0)
         if f.frame.editor.PPBorder then
             f.frame.editor.PPBorder:SetBorderThickness(1)
             f.frame.editor.PPBorder:SetBorderColor(1, 1, 1, 1)
-        end
-        if (f.onShow) then
-            f.onShow(f.frame)
         end
         if (not f.frame.editorMoveOverride) then
             f.frame.isMovable = true
@@ -222,6 +235,7 @@ editor.DisableEditor = function(self)
         end
         f.frame.isMovable = false
         f.frame:SetMovable(false)
+        f.frame.editorMoveOverride = nil
         f.frame:EnableMouse(f.frame.editor.isMouseEnabledByDefault)
     end
 end

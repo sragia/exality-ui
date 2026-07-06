@@ -61,7 +61,7 @@ core.GetName = function(self)
 end
 
 core.GetOrder = function(self)
-    return 20
+    return 40
 end
 
 core.GetSplitViewItems = function(self)

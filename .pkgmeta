@@ -16,6 +16,7 @@ externals:
   ExalityUI/ExalityFrames:
     url: https://github.com/sragia/ExalityFrames
     tag: 1.1.4
+  ExalityUI/Libs/LibActionButton-1.0: https://repos.wowace.com/wow/libactionbutton-1-0
 
 enable-nolib-creation: no
 

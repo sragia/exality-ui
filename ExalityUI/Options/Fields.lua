@@ -19,6 +19,7 @@ optionsFields.baseContainer = nil
 optionsFields.container = nil
 optionsFields.splitView = nil
 optionsFields.tabs = nil
+optionsFields.innerTabs = nil
 optionsFields.currTabID = nil
 optionsFields.currItemID = nil
 optionsFields.fields = {}
@@ -58,6 +59,10 @@ optionsFields.AddSplitView = function(self, module)
     self.splitView:AddItems(items)
     self.splitView:SetOnItemChange(function(id)
         self.currItemID = id
+        self.currTabID = nil
+        if (module.useInnerTabs and module.GetSectionTabs) then
+            self:AddInnerTabs(module)
+        end
         self:RefreshFields()
     end)
     if (#items > 0) then
@@ -74,7 +79,49 @@ optionsFields.AddSplitView = function(self, module)
         end
     end
 
-    self.container = self.splitView.container
+    if (not module.useInnerTabs) then
+        self.container = self.splitView.container
+    end
+end
+
+optionsFields.AddInnerTabs = function(self, module)
+    if (self.innerTabs) then
+        self.innerTabs:Destroy()
+        self.innerTabs = nil
+    end
+
+    local rightPanel = self.splitView.rightPanel
+    self.innerTabs = EXFrames:GetFrame('tabs-frame'):Create()
+    self.innerTabs:SetParent(rightPanel)
+    self.innerTabs:SetPoint('TOPLEFT', rightPanel, 'TOPLEFT', 5, -5)
+    self.innerTabs:SetPoint('BOTTOMRIGHT', rightPanel, 'BOTTOMRIGHT', -5, 5)
+
+    local tabs = module:GetSectionTabs(self.currItemID)
+    self.innerTabs:AddTabs(tabs)
+    self.innerTabs:SetOnTabChange(function(id)
+        self.currTabID = id
+        self:RefreshFields()
+    end)
+
+    if (#tabs > 0) then
+        local found = false
+        for _, tab in ipairs(tabs) do
+            if (tab.ID == self.currTabID) then
+                self.innerTabs:onTabClick(tab.ID)
+                found = true
+                break
+            end
+        end
+        if (not found) then
+            self.currTabID = tabs[1].ID
+            self.innerTabs:onTabClick(tabs[1].ID)
+        end
+    end
+
+    if (self.splitView.scrollFrame) then
+        self.splitView.scrollFrame:Hide()
+    end
+    self.container = self.innerTabs.container
 end
 
 optionsFields.RefreshSplitViewForTab = function(self)
@@ -160,6 +207,11 @@ optionsFields.Refresh = function(self)
         self.tabs = nil
     end
 
+    if (self.innerTabs) then
+        self.innerTabs:Destroy()
+        self.innerTabs = nil
+    end
+
     self.container = self.baseContainer
     self.fields = {}
 
@@ -178,6 +230,9 @@ optionsFields.Refresh = function(self)
             local splitViewTabID = currentModule.splitViewTabID
             if ((not splitViewTabID or splitViewTabID == self.currTabID) and not self.splitView) then
                 self:AddSplitView(currentModule)
+            end
+            if (currentModule.useInnerTabs and self.splitView) then
+                self:AddInnerTabs(currentModule)
             end
         end
     end

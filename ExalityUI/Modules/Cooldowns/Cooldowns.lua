@@ -101,7 +101,7 @@ cooldowns.GetName = function(self)
 end
 
 cooldowns.GetOrder = function(self)
-    return 40
+    return 50
 end
 
 cooldowns.GetSplitViewItems = function(self)

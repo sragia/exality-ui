@@ -16,8 +16,16 @@ local libDataBroker = LibStub("LibDataBroker-1.1")
 
 SLASH_EXALITYUI1 = '/exui'
 function SlashCmdList.EXALITYUI(msg)
-    if (msg == 'test') then
+    msg = strtrim(msg or '')
+    if msg == 'test' then
         EXUI.utils.printOut('Test')
+    elseif msg == 'abcd' or msg == 'abcd on' then
+        EXUI:GetModule('action-bars-cooldown-debug'):Toggle()
+    elseif msg == 'abcd off' then
+        local debugMod = EXUI:GetModule('action-bars-cooldown-debug')
+        if debugMod.enabled then
+            debugMod:Toggle()
+        end
     else
         optionsMain:Show()
     end
