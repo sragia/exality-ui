@@ -5,76 +5,8 @@ local LSM = LibStub('LibSharedMedia-3.0', true)
 local Masque = LibStub('Masque', true)
 local LAB = LibStub('LibActionButton-1.0')
 
-local useActionButtonUI = C_ActionBar and C_ActionBar.RegisterActionUIButton ~= nil
-
 ---@class EXUIActionBarsStyle
 local style = EXUI:GetModule('action-bars-style')
-
----@param value any
----@return boolean|nil
-local function safeBool(value)
-    if value == nil then
-        return nil
-    end
-    if issecretvalue and issecretvalue(value) then
-        return nil
-    end
-    return value and true or false
-end
-
----@param durationObject any
----@return boolean|nil confirmed true/false, or nil if unknown/secret
-local function safeDurationIsZero(durationObject)
-    if not durationObject or not durationObject.IsZero then
-        return nil
-    end
-    local ok, isZero = pcall(durationObject.IsZero, durationObject)
-    if not ok then
-        return nil
-    end
-    return safeBool(isZero)
-end
-
---- Secret-safe cooldown apply: always use duration objects, never branch on isActive.
----@param cooldownFrame Cooldown|nil
----@param durationObject any
-style.ApplyDurationCooldown = function(self, cooldownFrame, durationObject)
-    if not cooldownFrame or not durationObject then
-        return
-    end
-    pcall(cooldownFrame.SetCooldownFromDurationObject, cooldownFrame, durationObject, false)
-    if safeDurationIsZero(durationObject) == true then
-        pcall(cooldownFrame.Clear, cooldownFrame)
-    end
-end
-
----@param cooldownFrame Cooldown|nil
----@param spellID number|nil
----@param ignoreGCD boolean|nil
-style.ApplySpellCooldownDuration = function(self, cooldownFrame, spellID, ignoreGCD)
-    if not cooldownFrame or not spellID or not C_Spell or not C_Spell.GetSpellCooldownDuration then
-        return
-    end
-    local ok, durationObject = pcall(C_Spell.GetSpellCooldownDuration, spellID, ignoreGCD == true)
-    if ok and durationObject then
-        self:ApplyDurationCooldown(cooldownFrame, durationObject)
-    end
-end
-
----@param button any
-style.RefreshActionButtonCooldown = function(self, button)
-    if not button or button._state_type ~= 'action' or not button.cooldown then
-        return
-    end
-    local slot = button._state_action or button.action
-    if useActionButtonUI and slot and slot > 0 and C_ActionBar.RegisterActionUIButton then
-        pcall(C_ActionBar.RegisterActionUIButton, button, slot, button.cooldown)
-        button.action = slot
-    end
-    if button.RefreshCooldown then
-        button:RefreshCooldown()
-    end
-end
 
 style.masqueGroups = {}
 style.initialized = false
@@ -149,10 +81,8 @@ style.BuildLABConfig = function(self, barConfig, commandName)
         showGrid = true,
         outOfRangeColoring = 'button',
         tooltip = 'enabled',
-        cooldownCount = barConfig.showCooldownText,
-        -- Required on 12.0.1+ (build 66562): cooldown swipes use duration objects and
-        -- C_ActionBar.RegisterActionUIButton, same as Blizzard action buttons.
-        actionButtonUI = useActionButtonUI,
+        cooldownCount = barConfig.showCooldownText ~= false and barConfig.cooldown.enabled ~= false,
+        actionButtonUI = true,
         assistedHighlight = false,
         hideElements = {
             macro = not barConfig.showMacro or not barConfig.macro.enabled,
@@ -190,33 +120,67 @@ style.EnsureBorderTexture = function(self, button)
     return border
 end
 
+style.ShouldShowCooldownText = function(self, barConfig)
+    return barConfig
+        and barConfig.showCooldownText ~= false
+        and barConfig.cooldown
+        and barConfig.cooldown.enabled ~= false
+end
+
+style.ApplyCooldownText = function(self, cooldown, button, barConfig)
+    if not cooldown or not barConfig then
+        return
+    end
+
+    local show = self:ShouldShowCooldownText(barConfig)
+    if cooldown.SetHideCountdownNumbers then
+        cooldown:SetHideCountdownNumbers(not show)
+    end
+    if not show or not cooldown.GetCountdownFontString then
+        return
+    end
+
+    local textConfig = barConfig.cooldown
+    local fontString = cooldown:GetCountdownFontString()
+    if not fontString then
+        return
+    end
+
+    fontString:SetFont(self:GetFontPath(textConfig.font), textConfig.fontSize, textConfig.fontFlag)
+    local color = textConfig.color or { r = 1, g = 1, b = 1, a = 1 }
+    fontString:SetTextColor(color.r, color.g, color.b, color.a or 1)
+
+    local anchorParent = button.icon or button
+    fontString:ClearAllPoints()
+    fontString:SetPoint(
+        textConfig.anchorPoint or 'CENTER',
+        anchorParent,
+        textConfig.relativePoint or textConfig.anchorPoint or 'CENTER',
+        textConfig.xOffset or 0,
+        textConfig.yOffset or 0
+    )
+    if fontString.SetJustifyH then
+        fontString:SetJustifyH(EXUI.utils.getJustifyHFromAnchor(textConfig.anchorPoint))
+    end
+    fontString:Show()
+end
+
 style.ApplyCooldownSettings = function(self, button, barConfig)
-    if not button.cooldown or not barConfig then
+    if not button or not barConfig then
         return
     end
 
     local showSwipe = barConfig.showCooldownSwipe ~= false
-    if button.cooldown.SetDrawSwipe then
+    if button.cooldown and button.cooldown.SetDrawSwipe then
         button.cooldown:SetDrawSwipe(showSwipe)
     end
 
-    if button.cooldown.SetHideCountdownNumbers and barConfig.showCooldownText ~= nil then
-        button.cooldown:SetHideCountdownNumbers(not barConfig.showCooldownText)
+    self:ApplyCooldownText(button.cooldown, button, barConfig)
+
+    if button.chargeCooldown and button.chargeCooldown.SetHideCountdownNumbers then
+        button.chargeCooldown:SetHideCountdownNumbers(true)
     end
 end
-
-style.SyncActionCooldown = function(self, button)
-    if not button or button._state_type ~= 'action' then
-        return
-    end
-    self:RefreshActionButtonCooldown(button)
-    if button.exuiBarConfig then
-        self:ApplyCooldownSettings(button, button.exuiBarConfig)
-    end
-end
-
--- Legacy name used by debug module.
-style.RefreshActionCooldown = style.SyncActionCooldown
 
 style.ApplyDefaultBorder = function(self, button, alpha)
     if button.NormalTexture then
@@ -349,7 +313,7 @@ style.ButtonIsEmpty = function(self, button)
     if button._state_type == 'action' and button._state_action then
         return not HasAction(button._state_action)
     end
-    if button.HasAction then
+    if button.HasAction and button.index then
         local hasAction = button:HasAction()
         if hasAction ~= nil then
             return not hasAction
@@ -416,6 +380,11 @@ style.StyleNonMasqueButtonChrome = function(self, button, barConfig)
     end
 
     local isEmpty = self:ButtonIsEmpty(button)
+    if isEmpty and not barConfig.showBackdrop then
+        self:HideDefaultBorder(button)
+        return
+    end
+
     self:ApplyDefaultBorder(button, isEmpty and 0.65 or 1)
 end
 
@@ -486,6 +455,20 @@ style.ApplyButtonStyle = function(self, button, barConfig)
     self:UpdateSlotBackdrop(button, barConfig)
 end
 
+style.ApplyTextVisibility = function(self, button, barConfig)
+    if not button or not barConfig then
+        return
+    end
+
+    if button.Count then
+        if barConfig.showStacks and barConfig.count.enabled then
+            button.Count:Show()
+        else
+            button.Count:Hide()
+        end
+    end
+end
+
 style.OnLABButtonUpdate = function(self, button, barConfig)
     if not barConfig then
         return
@@ -501,9 +484,8 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
         end
     end
     self:UpdateSlotBackdrop(button, barConfig)
-    if not self:ShouldUseMasque(barConfig) then
-        self:ApplyCooldownSettings(button, barConfig)
-    end
+    self:ApplyCooldownSettings(button, barConfig)
+    self:ApplyTextVisibility(button, barConfig)
 end
 
 style.OnButtonUpdated = function(self, button, barConfig)
@@ -557,6 +539,7 @@ style.ApplyToButton = function(self, button, barId, barConfig, commandName)
 
     local labConfig = self:BuildLABConfig(barConfig, commandName)
     button:UpdateConfig(labConfig)
+    self:ApplyTextVisibility(button, barConfig)
 
     if self:ShouldUseMasque(barConfig) then
         local group = self:GetMasqueGroup(barId, barConfig.masqueSkin)
@@ -578,7 +561,6 @@ style.ApplyToButton = function(self, button, barId, barConfig, commandName)
     end
 
     self:ApplyCooldownSettings(button, barConfig)
-    self:SyncActionCooldown(button)
 
     if not self:ShouldUseMasque(barConfig) or not button.MasqueSkinned then
         self:StyleNonMasqueButtonChrome(button, barConfig)
@@ -600,6 +582,115 @@ style.ReleaseMasqueGroups = function(self)
             group:Delete()
         end
         self.masqueGroups[barId] = nil
+    end
+end
+
+style.ApplyFontString = function(self, fontString, textConfig, enabled)
+    if not fontString then
+        return
+    end
+    if not enabled or not textConfig or textConfig.enabled == false then
+        fontString:Hide()
+        return
+    end
+    fontString:Show()
+    fontString:SetFont(self:GetFontPath(textConfig.font), textConfig.fontSize, textConfig.fontFlag)
+    local color = textConfig.color or { r = 1, g = 1, b = 1, a = 1 }
+    fontString:SetTextColor(color.r, color.g, color.b, color.a or 1)
+end
+
+style.NormalizeAbilityButtonIcon = function(self, button)
+    if not button then
+        return nil
+    end
+    if button.icon then
+        return button.icon
+    end
+    if button.Icon then
+        button.icon = button.Icon
+        return button.Icon
+    end
+    return nil
+end
+
+style.ApplyAbilityCooldowns = function(self, button, barConfig)
+    local cooldowns = {
+        button.cooldown,
+        button.Cooldown,
+        button.chargeCooldown,
+        button.ChargeCooldown,
+        button.lossOfControlCooldown,
+    }
+    local showSwipe = barConfig.showCooldownSwipe ~= false
+    for _, cooldown in ipairs(cooldowns) do
+        if cooldown then
+            if cooldown.SetDrawSwipe then
+                cooldown:SetDrawSwipe(showSwipe)
+            end
+            local isCharge = cooldown == button.chargeCooldown or cooldown == button.ChargeCooldown
+            local isLossOfControl = cooldown == button.lossOfControlCooldown
+            if isCharge or isLossOfControl then
+                if cooldown.SetHideCountdownNumbers then
+                    cooldown:SetHideCountdownNumbers(true)
+                end
+            else
+                self:ApplyCooldownText(cooldown, button, barConfig)
+            end
+        end
+    end
+end
+
+style.StyleBlizzardAbilityButton = function(self, button, barId, barConfig)
+    if not button or not barConfig then
+        return
+    end
+    if InCombatLockdown() then
+        return
+    end
+    self:Init()
+    self:NormalizeAbilityButtonIcon(button)
+
+    EXUI:SetSize(button, barConfig.width, barConfig.height)
+
+    local icon = button.icon
+    if icon then
+        icon:ClearAllPoints()
+        icon:SetAllPoints(button)
+        self:ApplyIconTexCoords(button, barConfig.width, barConfig.height, barConfig.zoom)
+    end
+
+    self:ApplyIconMask(button, barConfig)
+    self:ApplyIconLayout(button, barConfig)
+    self:ApplyButtonHighlight(button)
+    self:HideBlizzardButtonChrome(button)
+
+    if button.style then
+        button.style:SetShown(barConfig.showBlizzardArtwork == true)
+    end
+    if button.NormalTexture and barConfig.showBlizzardArtwork ~= true then
+        button.NormalTexture:SetAlpha(0)
+    end
+
+    if self:ShouldUseMasque(barConfig) then
+        local group = self:GetMasqueGroup(barId, barConfig.masqueSkin)
+        if group and not button.MasqueSkinned then
+            group:AddButton(button, nil, 'Action')
+            button.MasqueSkinned = true
+        end
+        if button.MasqueSkinned then
+            self:StyleMasqueButton(button, barConfig)
+        end
+    else
+        self:StyleNonMasqueButton(button, barConfig)
+        self:ApplyAbilityCooldowns(button, barConfig)
+    end
+
+    self:ApplyFontString(button.HotKey, barConfig.hotkey, barConfig.showHotkey)
+    self:ApplyFontString(button.Count, barConfig.count, barConfig.showStacks)
+
+    if button.Flash then
+        button.Flash:ClearAllPoints()
+        button.Flash:SetAllPoints(button)
     end
 end
 

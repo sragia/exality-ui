@@ -60,8 +60,11 @@ optionsFields.AddSplitView = function(self, module)
     self.splitView:SetOnItemChange(function(id)
         self.currItemID = id
         self.currTabID = nil
-        if (module.useInnerTabs and module.GetSectionTabs) then
+        if self:HasInnerTabs(module, id) then
             self:AddInnerTabs(module)
+        else
+            self:ClearInnerTabs()
+            self:UseSplitViewContainer()
         end
         self:RefreshFields()
     end)
@@ -84,6 +87,30 @@ optionsFields.AddSplitView = function(self, module)
     end
 end
 
+optionsFields.HasInnerTabs = function(self, module, itemId)
+    if not module.useInnerTabs or not module.GetSectionTabs then
+        return false
+    end
+    local tabs = module:GetSectionTabs(itemId or self.currItemID)
+    return tabs and #tabs > 0
+end
+
+optionsFields.ClearInnerTabs = function(self)
+    if self.innerTabs then
+        self.innerTabs:Destroy()
+        self.innerTabs = nil
+    end
+    if self.splitView and self.splitView.scrollFrame then
+        self.splitView.scrollFrame:Show()
+    end
+end
+
+optionsFields.UseSplitViewContainer = function(self)
+    if self.splitView then
+        self.container = self.splitView.container
+    end
+end
+
 optionsFields.AddInnerTabs = function(self, module)
     if (self.innerTabs) then
         self.innerTabs:Destroy()
@@ -91,7 +118,7 @@ optionsFields.AddInnerTabs = function(self, module)
     end
 
     local rightPanel = self.splitView.rightPanel
-    self.innerTabs = EXFrames:GetFrame('tabs-frame'):Create()
+    self.innerTabs = EXFrames:GetFrame('tabs-frame'):Create({ scrollable = true })
     self.innerTabs:SetParent(rightPanel)
     self.innerTabs:SetPoint('TOPLEFT', rightPanel, 'TOPLEFT', 5, -5)
     self.innerTabs:SetPoint('BOTTOMRIGHT', rightPanel, 'BOTTOMRIGHT', -5, 5)
@@ -232,7 +259,12 @@ optionsFields.Refresh = function(self)
                 self:AddSplitView(currentModule)
             end
             if (currentModule.useInnerTabs and self.splitView) then
-                self:AddInnerTabs(currentModule)
+                if self:HasInnerTabs(currentModule, self.currItemID) then
+                    self:AddInnerTabs(currentModule)
+                else
+                    self:ClearInnerTabs()
+                    self:UseSplitViewContainer()
+                end
             end
         end
     end
@@ -319,6 +351,9 @@ optionsFields.RefreshFields = function(self)
     end
 
     EXUI.utils.organizeFramesInGrid('fields', self.fields, 10, self.container, 10, 10)
+    if self.innerTabs and self.innerTabs.scrollable and self.innerTabs.UpdateScroll then
+        self.innerTabs:UpdateScroll()
+    end
 end
 
 optionsFields.RefreshItemList = function(self)

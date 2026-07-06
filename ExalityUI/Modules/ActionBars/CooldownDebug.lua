@@ -261,12 +261,12 @@ debugMod.DumpOnce = function(self)
         return
     end
 
-    self:DumpButton(button, barId .. ' (before sync)', slot, active)
+    self:DumpButton(button, barId .. ' (snapshot)', slot, active)
 
-    local style = EXUI:GetModule('action-bars-style')
-    style:SyncActionCooldown(button)
-
-    self:DumpButton(button, barId .. ' (after sync)', slot, self:ScanActiveSlots())
+    if button.UpdateAction then
+        button:UpdateAction(true)
+        self:DumpButton(button, barId .. ' (after UpdateAction)', slot, self:ScanActiveSlots())
+    end
 end
 
 debugMod.Toggle = function(self)

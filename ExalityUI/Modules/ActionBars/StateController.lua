@@ -26,7 +26,6 @@ state.EVENTS = {
     'UPDATE_SHAPESHIFT_FORMS',
     'UPDATE_SHAPESHIFT_COOLDOWN',
     'UPDATE_POSSESS_BAR',
-    'UPDATE_EXTRA_ACTIONBAR',
     'PET_BATTLE_OPENING_START',
     'PET_BATTLE_CLOSE',
     'PET_BAR_UPDATE',
@@ -35,71 +34,49 @@ state.EVENTS = {
     'UNIT_PET',
 }
 
-state.GetEffectiveMainBarPage = function(self)
-    if (C_ActionBar.HasVehicleActionBar() and UnitVehicleSkin('player') and UnitVehicleSkin('player') ~= '')
-        or (C_ActionBar.HasOverrideActionBar() and C_ActionBar.GetOverrideBarSkin() and C_ActionBar.GetOverrideBarSkin() ~= 0) then
-        return nil -- override bar handles this
-    end
-    if C_ActionBar.HasVehicleActionBar() then
-        return C_ActionBar.GetVehicleBarIndex()
-    end
-    if C_ActionBar.HasOverrideActionBar() then
-        return C_ActionBar.GetOverrideBarIndex()
-    end
-    if C_ActionBar.HasTempShapeshiftActionBar() then
-        return C_ActionBar.GetTempShapeshiftBarIndex()
-    end
-    if C_ActionBar.HasBonusActionBar() and C_ActionBar.GetActionBarPage() == 1 then
-        return C_ActionBar.GetBonusBarIndex()
-    end
-    return C_ActionBar.GetActionBarPage()
+state.COOLDOWN_ONLY_EVENTS = {
+    UPDATE_SHAPESHIFT_COOLDOWN = 'stance',
+    PET_BAR_UPDATE_COOLDOWN = 'pet',
+}
+
+state.pendingUpdate = false
+state.pendingVisibility = false
+state.pendingSlots = false
+
+state.IsOverrideBarActive = function(self)
+    return (C_ActionBar.HasVehicleActionBar() and UnitVehicleSkin('player') and UnitVehicleSkin('player') ~= '')
+        or (C_ActionBar.HasOverrideActionBar() and C_ActionBar.GetOverrideBarSkin() and C_ActionBar.GetOverrideBarSkin() ~= 0)
 end
 
-state.UpdateBar1 = function(self)
+state.UpdateBar1Visibility = function(self)
     local frame = barMod:Get('bar1')
-    if not frame then return end
-
-    local page = self:GetEffectiveMainBarPage()
-    if not page then
-        self:TrySetFrameShown(frame, false)
+    if not frame then
         return
     end
 
     local db = EXUI:GetModule('action-bars'):GetDB()
     local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'bar1')
-    if config.enable and config.visibility ~= 'hidden' then
-        self:TrySetFrameShown(frame, true)
+
+    if not config.enable or config.visibility == 'hidden' then
+        self:TrySetFrameShown(frame, false)
+        return
     end
 
-    for i, button in ipairs(frame.buttons) do
-        local slot = definitions:GetActionSlot('bar1', i, page)
-        buttonMod:SetActionSlot(button, slot)
+    if self:IsOverrideBarActive() then
+        self:TrySetFrameShown(frame, false)
+        return
     end
-end
 
-state.UpdateFixedPlayerBars = function(self)
-    for _, barId in ipairs(definitions.PLAYER_BAR_IDS) do
-        local def = definitions:Get(barId)
-        if def and not def.dynamicPage then
-            local frame = barMod:Get(barId)
-            if frame then
-                for i, button in ipairs(frame.buttons) do
-                    local slot = definitions:GetActionSlot(barId, i)
-                    if slot then
-                        buttonMod:SetActionSlot(button, slot)
-                    end
-                end
-            end
-        end
-    end
+    self:TrySetFrameShown(frame, true)
 end
 
 state.UpdateOverrideBar = function(self)
     local frame = barMod:Get('override')
-    if not frame then return end
+    if not frame then
+        return
+    end
 
-    local showOverride = (C_ActionBar.HasVehicleActionBar() and UnitVehicleSkin('player') and UnitVehicleSkin('player') ~= '')
-        or (C_ActionBar.HasOverrideActionBar() and C_ActionBar.GetOverrideBarSkin() and C_ActionBar.GetOverrideBarSkin() ~= 0)
+    local showOverride = self:IsOverrideBarActive()
 
     if not showOverride or C_PetBattles.IsInBattle() then
         self:TrySetFrameShown(frame, false)
@@ -119,50 +96,22 @@ state.UpdateOverrideBar = function(self)
     end
 end
 
-state.UpdateExtraBar = function(self)
-    local frame = barMod:Get('extra')
-    if not frame or not frame.buttons[1] then return end
-
-    if C_ActionBar.HasExtraActionBar() then
-        local page = C_ActionBar.GetExtraBarIndex()
-        local slot = (page - 1) * 12 + 1
-        buttonMod:SetActionSlot(frame.buttons[1], slot)
-        local db = EXUI:GetModule('action-bars'):GetDB()
-        local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'extra')
-        if config.enable then
-            self:TrySetFrameShown(frame, true)
-        end
-    else
-        if not KeybindFrames_InQuickKeybindMode or not KeybindFrames_InQuickKeybindMode() then
-            self:TrySetFrameShown(frame, false)
-        end
-    end
-end
-
 state.UpdateStanceBar = function(self)
     local frame = barMod:Get('stance')
-    if not frame then return end
-
-    local numForms = GetNumShapeshiftForms()
-    local shouldShow = numForms > 0
-        and not C_ActionBar.IsPossessBarVisible()
-        and (not ActionBarController_GetCurrentActionBarState or ActionBarController_GetCurrentActionBarState() ~= LE_ACTIONBAR_STATE_OVERRIDE)
-
-    if shouldShow and (not ActionBarBusy or not ActionBarBusy()) then
-        specialButton:UpdateAll(frame)
-        local db = EXUI:GetModule('action-bars'):GetDB()
-        local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'stance')
-        if config.enable then
-            self:TrySetFrameShown(frame, true)
-        end
-    else
-        self:TrySetFrameShown(frame, false)
+    if not frame then
+        return
     end
+
+    local db = EXUI:GetModule('action-bars'):GetDB()
+    local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'stance')
+    specialButton:UpdateStanceButtons(frame, config)
 end
 
 state.UpdatePetBar = function(self)
     local frame = barMod:Get('pet')
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     local shouldShow = PetHasActionBar and PetHasActionBar()
     if shouldShow then
@@ -179,7 +128,9 @@ end
 
 state.UpdatePossessBar = function(self)
     local frame = barMod:Get('possess')
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     if C_ActionBar.IsPossessBarVisible() then
         specialButton:UpdateAll(frame)
@@ -193,11 +144,6 @@ state.UpdatePossessBar = function(self)
     end
 end
 
-state.COOLDOWN_ONLY_EVENTS = {
-    UPDATE_SHAPESHIFT_COOLDOWN = 'stance',
-    PET_BAR_UPDATE_COOLDOWN = 'pet',
-}
-
 state.RefreshBarCooldowns = function(self, barId)
     local frame = barMod:Get(barId)
     if frame then
@@ -205,12 +151,10 @@ state.RefreshBarCooldowns = function(self, barId)
     end
 end
 
-state.pendingUpdate = false
-state.pendingVisibility = false
-state.pendingSlots = false
-
 state.TrySetFrameShown = function(self, frame, shouldShow)
-    if not frame then return end
+    if not frame then
+        return
+    end
     if InCombatLockdown() then
         frame.exuiPendingShown = shouldShow
         self.pendingVisibility = true
@@ -242,11 +186,25 @@ state.ApplyPendingVisibility = function(self)
     end
 end
 
+state.ApplyPendingSlots = function(self)
+    if InCombatLockdown() then
+        return
+    end
+    for _, frame in pairs(barMod.instances) do
+        for _, button in ipairs(frame.buttons or {}) do
+            if button.exuiPendingSlot then
+                local slot = button.exuiPendingSlot
+                button.exuiPendingSlot = nil
+                buttonMod:SetActionSlot(button, slot)
+            end
+        end
+    end
+    self.pendingSlots = false
+end
+
 state.ApplyAll = function(self)
-    self:UpdateBar1()
-    self:UpdateFixedPlayerBars()
+    self:UpdateBar1Visibility()
     self:UpdateOverrideBar()
-    self:UpdateExtraBar()
     self:UpdateStanceBar()
     self:UpdatePetBar()
     self:UpdatePossessBar()
@@ -268,15 +226,18 @@ end
 
 state.OnRegenEnabled = function(self)
     self:ApplyPendingVisibility()
+    buttonMod:ApplyPendingStateSetup()
+    self:ApplyPendingSlots()
     if self.pendingUpdate or self.pendingSlots then
         self.pendingUpdate = false
-        self.pendingSlots = false
         self:ApplyAll()
     end
 end
 
 state.Init = function(self)
-    if self.initialized then return end
+    if self.initialized then
+        return
+    end
     self.initialized = true
     self.eventFrame = CreateFrame('Frame')
     self.eventFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -295,5 +256,7 @@ end
 state.Shutdown = function(self)
     if self.eventFrame then
         self.eventFrame:UnregisterAllEvents()
+        self.eventFrame = nil
     end
+    self.initialized = false
 end

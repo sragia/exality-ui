@@ -28,6 +28,9 @@ local barOptions = EXUI:GetModule('action-bars-bar-options')
 ---@class EXUIActionBarsMicroMenuOptions
 local microMenuOptions = EXUI:GetModule('action-bars-micro-menu-options')
 
+---@class EXUIActionBarsBagsOptions
+local bagsOptions = EXUI:GetModule('action-bars-bags-options')
+
 ---@class EXUIActionBarsModule
 local actionBars = EXUI:GetModule('action-bars')
 
@@ -77,6 +80,7 @@ actionBars.GetSplitViewItems = function(self)
         table.insert(items, { ID = barId, label = definitions:Get(barId).label })
     end
     table.insert(items, { ID = 'microMenu', label = 'Micro Menu' })
+    table.insert(items, { ID = 'bags', label = 'Bag Bar' })
     return items
 end
 
@@ -89,14 +93,11 @@ actionBars.GetSectionTabs = function(self, itemId)
             { ID = 'text', label = 'Text' },
         }
     end
-    if itemId == 'microMenu' then
-        return {
-            { ID = 'menu', label = 'Micro Menu' },
-            { ID = 'bags', label = 'Bags' },
-        }
+    if itemId == 'microMenu' or itemId == 'bags' then
+        return {}
     end
     if definitions:Get(itemId) then
-        return barOptions:GetSectionTabs()
+        return barOptions:GetSectionTabs(itemId)
     end
     return {}
 end
@@ -111,7 +112,10 @@ actionBars.GetOptions = function(self, currTabID, currItemID)
         return globalOptions:GetOptions(self, section or 'module')
     end
     if itemId == 'microMenu' then
-        return microMenuOptions:GetOptions(self, section or 'menu')
+        return microMenuOptions:GetOptions(self)
+    end
+    if itemId == 'bags' then
+        return bagsOptions:GetOptions(self)
     end
     if definitions:Get(itemId) then
         return barOptions:GetBarOptions(self, itemId, section or 'layout')

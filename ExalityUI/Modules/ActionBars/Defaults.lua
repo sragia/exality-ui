@@ -60,6 +60,33 @@ defaults.GLOBAL = {
         yOffset = 2,
         color = { r = 1, g = 1, b = 1, a = 1 },
     },
+    cooldown = {
+        useGlobal = true,
+        enabled = true,
+        font = 'DMSans',
+        fontSize = 16,
+        fontFlag = 'OUTLINE',
+        anchorPoint = 'CENTER',
+        relativePoint = 'CENTER',
+        xOffset = 0,
+        yOffset = 0,
+        color = { r = 1, g = 1, b = 1, a = 1 },
+    },
+}
+
+defaults.BAR1_STATES = {
+    enabled = true,
+    possess = true,
+    actionbar = false,
+    default = 0,
+    ctrl = 0,
+    alt = 0,
+    shift = 0,
+    stance = {
+        DRUID = { bear = 9, cat = 7, prowl = 8 },
+        ROGUE = { stealth = 7 },
+        EVOKER = { soar = 7 },
+    },
 }
 
 defaults.BAR = {
@@ -96,6 +123,7 @@ defaults.BAR = {
     hotkey = textDefaults(),
     count = defaults.GLOBAL.count,
     macro = defaults.GLOBAL.macro,
+    cooldown = defaults.GLOBAL.cooldown,
 }
 
 defaults.MICRO_MENU = {
@@ -105,12 +133,17 @@ defaults.MICRO_MENU = {
     xOffset = -4,
     yOffset = 4,
     orientation = 'horizontal',
+    order = 'default',
     visibility = 'always',
     scale = 1,
 }
 
 defaults.BAGS = {
     enable = true,
+    anchorPoint = 'BOTTOMRIGHT',
+    relativeAnchor = 'BOTTOMRIGHT',
+    xOffset = -6,
+    yOffset = 39,
     visibility = 'always',
     scale = 1,
 }
@@ -128,9 +161,16 @@ defaults.BuildBarDefaults = function(self, barId)
         bar.xOffset = def.defaultAnchor.x
         bar.yOffset = def.defaultAnchor.y
     end
+    if barId == 'extra' then
+        bar.showBlizzardArtwork = false
+    end
+    if barId == 'bar1' then
+        bar.states = EXUI.utils.deepCloneTable(self.BAR1_STATES)
+    end
     bar.hotkey = EXUI.utils.deepCloneTable(self.GLOBAL.hotkey)
     bar.count = EXUI.utils.deepCloneTable(self.GLOBAL.count)
     bar.macro = EXUI.utils.deepCloneTable(self.GLOBAL.macro)
+    bar.cooldown = EXUI.utils.deepCloneTable(self.GLOBAL.cooldown)
     return bar
 end
 
@@ -170,13 +210,31 @@ defaults.MergeIntoDB = function(self, db)
                     db.bars[barId][key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
                 end
             end
+            if barId == 'bar1' and not db.bars[barId].states then
+                db.bars[barId].states = EXUI.utils.deepCloneTable(self.BAR1_STATES)
+            end
+            if barId == 'extra' and db.bars[barId].showBlizzardArtwork == nil then
+                db.bars[barId].showBlizzardArtwork = false
+            end
         end
     end
     if not db.microMenu then
         db.microMenu = template.microMenu
+    else
+        for key, value in pairs(template.microMenu) do
+            if db.microMenu[key] == nil then
+                db.microMenu[key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
+            end
+        end
     end
     if not db.bags then
         db.bags = template.bags
+    else
+        for key, value in pairs(template.bags) do
+            if db.bags[key] == nil then
+                db.bags[key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
+            end
+        end
     end
     return db
 end

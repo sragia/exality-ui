@@ -7,14 +7,17 @@
     <Script file="CooldownDebug.lua"/>
     <Script file="Button.lua"/>
     <Script file="SpecialButton.lua"/>
+    <Script file="StateDriver.lua"/>
     <Script file="Bar.lua"/>
     <Script file="BlizzardSuppress.lua"/>
     <Script file="StateController.lua"/>
     <Script file="Keybind.lua"/>
     <Script file="MicroMenu.lua"/>
+    <Script file="ExtraAbilities.lua"/>
     <Script file="Manager.lua"/>
     <Script file="Options/GlobalOptions.lua"/>
     <Script file="Options/BarOptions.lua"/>
     <Script file="Options/MicroMenuOptions.lua"/>
+    <Script file="Options/BagsOptions.lua"/>
     <Script file="ActionBars.lua"/>
 </Ui>

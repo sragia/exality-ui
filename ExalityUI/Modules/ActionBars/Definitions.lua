@@ -139,9 +139,9 @@ definitions.BARS = {
     },
     extra = {
         id = 'extra',
-        label = 'Extra Action',
-        blizzardFrame = 'ExtraActionBarFrame',
-        barType = 'extra',
+        label = 'Extra Abilities',
+        blizzardFrame = 'ExtraAbilityContainer',
+        barType = 'extraAbilities',
         numButtons = 1,
         commandPrefix = 'EXTRAACTIONBUTTON',
         defaultEnabled = true,

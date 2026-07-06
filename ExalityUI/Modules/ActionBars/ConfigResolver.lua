@@ -24,11 +24,9 @@ local function resolveField(globalValue, barValue, useGlobalKey, barConfig)
     return globalValue
 end
 
-local function resolveTextBlock(globalBlock, barBlock, barConfig)
-    local useGlobal = barConfig.useGlobalText ~= false
-    if barBlock and barBlock.useGlobal == false then
-        useGlobal = false
-    end
+local function resolveTextBlock(globalBlock, barBlock)
+    barBlock = barBlock or {}
+    local useGlobal = barBlock.useGlobal ~= false
     local source = useGlobal and globalBlock or barBlock
     source = source or globalBlock
     return {
@@ -51,7 +49,7 @@ resolver.GetBarConfig = function(self, db, barId)
     local useGlobalSize = bar.useGlobalSize ~= false
     local useGlobalAppearance = bar.useGlobalAppearance ~= false
 
-    return {
+    local resolved = {
         enable = bar.enable ~= false,
         name = bar.name or barId,
         width = useGlobalSize and global.width or bar.width,
@@ -73,16 +71,24 @@ resolver.GetBarConfig = function(self, db, barId)
         orientation = bar.orientation or 'horizontal',
         numButtons = bar.numButtons or 12,
         buttonsPerRow = bar.buttonsPerRow or 12,
-        paddingX = bar.paddingX or 2,
-        paddingY = bar.paddingY or 2,
+        paddingX = bar.paddingX ~= nil and bar.paddingX or 2,
+        paddingY = bar.paddingY ~= nil and bar.paddingY or 2,
         growHorizontal = bar.growHorizontal or 'right',
         growVertical = bar.growVertical or 'up',
         showBackdrop = bar.showBackdrop ~= false,
+        showBlizzardArtwork = bar.showBlizzardArtwork == true,
         backdropColor = bar.backdropColor or { r = 0, g = 0, b = 0, a = 0.5 },
-        hotkey = resolveTextBlock(global.hotkey, bar.hotkey, bar),
-        count = resolveTextBlock(global.count, bar.count, bar),
-        macro = resolveTextBlock(global.macro, bar.macro, bar),
+        hotkey = resolveTextBlock(global.hotkey, bar.hotkey),
+        count = resolveTextBlock(global.count, bar.count),
+        macro = resolveTextBlock(global.macro, bar.macro),
+        cooldown = resolveTextBlock(global.cooldown, bar.cooldown),
     }
+
+    if barId == 'bar1' and bar.states then
+        resolved.states = bar.states
+    end
+
+    return resolved
 end
 
 resolver.GetGlobalConfig = function(self, db)

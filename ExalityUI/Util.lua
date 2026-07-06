@@ -538,7 +538,8 @@ EXUI.utils = {
         end
         local prevRowFrame = nil
 
-        for _, row in ipairs(rows) do
+        local totalHeight = startOffsetY
+        for i, row in ipairs(rows) do
             local rowFrame = CreateRowFrame(parentContainer)
             table.insert(rowFrames[gridId], rowFrame)
             if (prevRowFrame) then
@@ -579,6 +580,14 @@ EXUI.utils = {
             rowFrame:SetHeight(rowMaxHeight)
             rowFrame:Show()
             prevRowFrame = rowFrame
+            totalHeight = totalHeight + rowMaxHeight
+            if i < #rows then
+                totalHeight = totalHeight + gap
+            end
+        end
+
+        if parentContainer and parentContainer.exuiAutoSizeHeight then
+            parentContainer:SetHeight(totalHeight + startOffsetY)
         end
     end,
     getPowerTypeColor = function(powerType)

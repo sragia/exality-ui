@@ -53,7 +53,14 @@ globalOptions.GetMasqueSkins = function()
     }
 end
 
-globalOptions.BuildTextFields = function(self, mod, scope, textKey, label, sectionDepends)
+globalOptions.IsMasqueAvailable = function()
+    if not C_AddOns.DoesAddOnExist('Masque') then
+        return false
+    end
+    return C_AddOns.GetAddOnEnableState('Masque', UnitGUID('player')) > Enum.AddOnEnableState.None
+end
+
+globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
     local isGlobal = scope == 'global'
     local getText = function()
         local db = mod.Data:GetDB()
@@ -73,26 +80,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label, secti
         { type = 'title', label = label, width = 100 },
     }
 
-    if sectionDepends then
-        fields[1].depends = sectionDepends
-    end
-
     local depends = not isGlobal and function()
         return getText().useGlobal == false
     end or nil
-
-    if sectionDepends then
-        local innerDepends = depends
-        depends = function()
-            if not sectionDepends() then
-                return false
-            end
-            if innerDepends then
-                return innerDepends()
-            end
-            return true
-        end
-    end
 
     if not isGlobal then
         table.insert(fields, {
@@ -100,7 +90,6 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label, secti
             label = 'Use Global ' .. label,
             name = textKey .. '_useGlobal',
             width = 100,
-            depends = sectionDepends,
             currentValue = function()
                 return getText().useGlobal ~= false
             end,
@@ -152,6 +141,60 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label, secti
         getOptions = function() return EXUI.const.fontFlags end,
         currentValue = function() return getText().fontFlag end,
         onChange = function(v) setText('fontFlag', v); mod:RefreshBars() end,
+    })
+    table.insert(fields, {
+        type = 'title',
+        label = 'Position',
+        name = textKey .. '_positionTitle',
+        width = 100,
+        size = 14,
+        color = { 0.75, 0.75, 0.75 },
+        background = { 0.10, 0.10, 0.10, 1 },
+        accent = { 0.40, 0.40, 0.40, 1 },
+        depends = depends,
+    })
+    table.insert(fields, {
+        type = 'anchor-point',
+        label = 'Anchor Point',
+        name = textKey .. '_anchorPoint',
+        width = 23,
+        depends = depends,
+        currentValue = function() return getText().anchorPoint end,
+        onChange = function(v) setText('anchorPoint', v); mod:RefreshBars() end,
+    })
+    table.insert(fields, {
+        type = 'anchor-point',
+        label = 'Relative Anchor Point',
+        name = textKey .. '_relativePoint',
+        width = 23,
+        depends = depends,
+        currentValue = function() return getText().relativePoint end,
+        onChange = function(v) setText('relativePoint', v); mod:RefreshBars() end,
+    })
+    table.insert(fields, { type = 'spacer', width = 54, depends = depends })
+    table.insert(fields, {
+        type = 'range',
+        label = 'X Offset',
+        name = textKey .. '_xOffset',
+        width = 23,
+        min = -100,
+        max = 100,
+        step = 1,
+        depends = depends,
+        currentValue = function() return getText().xOffset or 0 end,
+        onChange = function(v) setText('xOffset', v); mod:RefreshBars() end,
+    })
+    table.insert(fields, {
+        type = 'range',
+        label = 'Y Offset',
+        name = textKey .. '_yOffset',
+        width = 23,
+        min = -100,
+        max = 100,
+        step = 1,
+        depends = depends,
+        currentValue = function() return getText().yOffset or 0 end,
+        onChange = function(v) setText('yOffset', v); mod:RefreshBars() end,
     })
 
     return fields
@@ -234,6 +277,7 @@ globalOptions.GetOptions = function(self, mod, section)
                 label = 'Use Masque',
                 name = 'global_useMasque',
                 width = 100,
+                depends = function() return self:IsMasqueAvailable() end,
                 currentValue = function() return db.global.useMasque end,
                 onChange = function(v) db.global.useMasque = v; mod.Data:SetDB(db); mod:RefreshBars() end,
             },
@@ -242,6 +286,7 @@ globalOptions.GetOptions = function(self, mod, section)
                 label = 'Masque Skin',
                 name = 'global_masqueSkin',
                 width = 50,
+                depends = function() return self:IsMasqueAvailable() end,
                 getOptions = function() return self:GetMasqueSkins() end,
                 currentValue = function() return db.global.masqueSkin end,
                 onChange = function(v) db.global.masqueSkin = v; mod.Data:SetDB(db); mod:RefreshBars() end,
@@ -305,6 +350,8 @@ globalOptions.GetOptions = function(self, mod, section)
         appendFields(fields, self:BuildTextFields(mod, 'global', 'count', 'Stack Text'))
         table.insert(fields, { type = 'spacer', width = 100 })
         appendFields(fields, self:BuildTextFields(mod, 'global', 'macro', 'Macro Text'))
+        table.insert(fields, { type = 'spacer', width = 100 })
+        appendFields(fields, self:BuildTextFields(mod, 'global', 'cooldown', 'Cooldown Text'))
         return fields
     end
 

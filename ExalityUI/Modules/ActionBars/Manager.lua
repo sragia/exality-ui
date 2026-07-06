@@ -19,6 +19,9 @@ local suppress = EXUI:GetModule('action-bars-blizzard-suppress')
 ---@class EXUIActionBarsStateController
 local stateController = EXUI:GetModule('action-bars-state')
 
+---@class EXUIActionBarsStateDriver
+local stateDriver = EXUI:GetModule('action-bars-state-driver')
+
 ---@class EXUIActionBarsStyle
 local barStyle = EXUI:GetModule('action-bars-style')
 
@@ -27,6 +30,9 @@ local keybind = EXUI:GetModule('action-bars-keybind')
 
 ---@class EXUIActionBarsMicroMenu
 local microMenu = EXUI:GetModule('action-bars-micro-menu')
+
+---@class EXUIActionBarsExtraAbilities
+local extraAbilities = EXUI:GetModule('action-bars-extra-abilities')
 
 ---@class EXUIActionBarsManager
 local manager = EXUI:GetModule('action-bars-manager')
@@ -46,23 +52,36 @@ manager.CreateBars = function(self)
 
     local db = self:GetDB()
     for _, barId in ipairs(definitions.ALL_BAR_IDS) do
-        if not barMod:Get(barId) then
-            barMod:Create(barId, db)
-        else
-            barMod:Configure(barMod:Get(barId), db)
+        if barId ~= 'extra' then
+            if not barMod:Get(barId) then
+                barMod:Create(barId, db)
+            else
+                barMod:Configure(barMod:Get(barId), db)
+            end
         end
     end
 
     stateController:Init()
     stateController:UpdateAll()
+    stateDriver:Init()
+    stateDriver:RefreshBar1()
+    extraAbilities:Apply(db)
+    extraAbilities:SetupHover()
     microMenu:Apply(db)
     microMenu:SetupHover(db)
 end
 
 manager.RefreshBar = function(self, barId)
+    if barId == 'extra' then
+        extraAbilities:Apply(self:GetDB())
+        return
+    end
     local frame = barMod:Get(barId)
     if frame then
         barMod:Configure(frame, self:GetDB())
+        if barId == 'stance' then
+            stateController:UpdateStanceBar()
+        end
     end
 end
 
@@ -76,6 +95,7 @@ manager.RefreshAll = function(self)
         barMod:Configure(frame, db)
     end
     stateController:UpdateAll()
+    extraAbilities:Apply(db)
     self:ApplyMicroMenu()
 end
 
@@ -84,6 +104,7 @@ manager.Enable = function(self)
     self.enabled = true
     suppress:Enable()
     keybind:Init()
+    extraAbilities:Init()
     microMenu:Init()
     self:CreateBars()
 end
@@ -92,11 +113,13 @@ manager.Disable = function(self)
     if not self.enabled then return end
     self.enabled = false
     stateController:Shutdown()
+    stateDriver:Shutdown()
     for barId in pairs(barMod.instances) do
         barMod:Destroy(barId)
     end
     barStyle:ReleaseMasqueGroups()
     keybind:Clear()
+    extraAbilities:Disable()
     suppress:Disable()
 end
 

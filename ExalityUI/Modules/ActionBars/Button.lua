@@ -12,6 +12,28 @@ local barStyle = EXUI:GetModule('action-bars-style')
 ---@class EXUIActionBarsButton
 local buttonMod = EXUI:GetModule('action-bars-button')
 
+buttonMod.RETAIL_PAGES = 18
+
+buttonMod.SetupActionStates = function(self, button, barId, buttonIndex, buttonOffset)
+    if not button or not barId or not buttonIndex then
+        return
+    end
+
+    buttonOffset = buttonOffset or 0
+    local def = definitions:Get(barId)
+    local offsetId = (buttonIndex + buttonOffset - 1) % 12 + 1
+
+    for page = 1, self.RETAIL_PAGES do
+        button:SetState(page, 'action', (page - 1) * 12 + offsetId)
+    end
+
+    if def and def.baseSlot then
+        button:SetState(0, 'action', def.baseSlot + buttonIndex - 1)
+    elseif barId == 'bar1' then
+        button:SetState(0, 'action', buttonIndex)
+    end
+end
+
 buttonMod.CreateActionButton = function(self, barId, index, header, barConfig)
     local name = 'EXUIActionBar_' .. barId .. '_' .. index
     local commandName = definitions:GetCommandName(barId, index)
@@ -20,10 +42,22 @@ buttonMod.CreateActionButton = function(self, barId, index, header, barConfig)
     button.commandName = commandName
     button.exuiBarId = barId
 
+    if not InCombatLockdown() then
+        self:SetupActionStates(button, barId, index, 0)
+    else
+        button.exuiPendingStateSetup = { barId, index, 0 }
+    end
+
     barStyle:ApplyToButton(button, barId, barConfig, commandName)
+
+    if not InCombatLockdown() and button.UpdateAction then
+        button:UpdateAction()
+    end
+
     return button
 end
 
+-- Dynamic slot assignment for override/extra bars only.
 buttonMod.SetActionSlot = function(self, button, actionSlot)
     if not button or not actionSlot then
         return
@@ -36,7 +70,28 @@ buttonMod.SetActionSlot = function(self, button, actionSlot)
     end
     button.exuiPendingSlot = nil
     button:SetState(0, 'action', actionSlot)
-    barStyle:SyncActionCooldown(button)
+    if button.UpdateAction then
+        button:UpdateAction()
+    end
+end
+
+buttonMod.ApplyPendingStateSetup = function(self)
+    if InCombatLockdown() then
+        return
+    end
+    local barMod = EXUI:GetModule('action-bars-bar')
+    for _, frame in pairs(barMod.instances) do
+        for _, button in ipairs(frame.buttons or {}) do
+            if button.exuiPendingStateSetup then
+                local barId, index, offset = unpack(button.exuiPendingStateSetup)
+                button.exuiPendingStateSetup = nil
+                self:SetupActionStates(button, barId, index, offset)
+                if button.UpdateAction then
+                    button:UpdateAction()
+                end
+            end
+        end
+    end
 end
 
 buttonMod.RefreshBar = function(self, barFrame, barConfig)

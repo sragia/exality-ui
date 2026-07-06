@@ -7,8 +7,14 @@ local layout = EXUI:GetModule('action-bars-layout')
 layout.Apply = function(self, barFrame, config, buttons)
     local numShown = math.min(config.numButtons or #buttons, #buttons)
     local buttonsPerRow = math.max(1, config.buttonsPerRow or numShown)
-    local paddingX = config.paddingX or 2
-    local paddingY = config.paddingY or 2
+    local paddingX = config.paddingX
+    if paddingX == nil then
+        paddingX = 2
+    end
+    local paddingY = config.paddingY
+    if paddingY == nil then
+        paddingY = 2
+    end
     local btnW = config.width or 36
     local btnH = config.height or 36
     local isHorizontal = config.orientation ~= 'vertical'
@@ -18,16 +24,25 @@ layout.Apply = function(self, barFrame, config, buttons)
     local rows = math.ceil(numShown / buttonsPerRow)
     local cols = math.min(buttonsPerRow, numShown)
 
+    -- Snap cell size and padding once, then build the grid from those values.
+    -- Snapping each offset independently causes cumulative 1-2px gaps at 0 padding.
+    local snappedBtnW = EXUI:ScalePixel(btnW, barFrame)
+    local snappedBtnH = EXUI:ScalePixel(btnH, barFrame)
+    local snappedPadX = EXUI:ScalePixel(paddingX, barFrame)
+    local snappedPadY = EXUI:ScalePixel(paddingY, barFrame)
+    local stepX = snappedBtnW + snappedPadX
+    local stepY = snappedBtnH + snappedPadY
+
     local totalW, totalH
     if isHorizontal then
-        totalW = cols * btnW + (cols - 1) * paddingX
-        totalH = rows * btnH + (rows - 1) * paddingY
+        totalW = cols * snappedBtnW + math.max(0, cols - 1) * snappedPadX
+        totalH = rows * snappedBtnH + math.max(0, rows - 1) * snappedPadY
     else
-        totalW = rows * btnW + (rows - 1) * paddingX
-        totalH = cols * btnH + (cols - 1) * paddingY
+        totalW = rows * snappedBtnW + math.max(0, rows - 1) * snappedPadX
+        totalH = cols * snappedBtnH + math.max(0, cols - 1) * snappedPadY
     end
 
-    EXUI:SetSize(barFrame, totalW, totalH)
+    barFrame:SetSize(totalW, totalH)
 
     local anchorX = growRight and 'LEFT' or 'RIGHT'
     local anchorY = growUp and 'BOTTOM' or 'TOP'
@@ -45,8 +60,8 @@ layout.Apply = function(self, barFrame, config, buttons)
                 row = (i - 1) % buttonsPerRow
             end
 
-            local xOff = col * (btnW + paddingX)
-            local yOff = row * (btnH + paddingY)
+            local xOff = col * stepX
+            local yOff = row * stepY
             if not growRight then
                 xOff = -xOff
             end
@@ -54,9 +69,9 @@ layout.Apply = function(self, barFrame, config, buttons)
                 yOff = -yOff
             end
 
-            EXUI:SetSize(button, btnW, btnH)
+            button:SetSize(snappedBtnW, snappedBtnH)
             button:ClearAllPoints()
-            EXUI:SetPoint(button, startAnchor, barFrame, startAnchor, xOff, yOff)
+            button:SetPoint(startAnchor, barFrame, startAnchor, xOff, yOff)
             button:Show()
         else
             button:Hide()

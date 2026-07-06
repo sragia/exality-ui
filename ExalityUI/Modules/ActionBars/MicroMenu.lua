@@ -12,6 +12,46 @@ local manager = EXUI:GetModule('action-bars-manager')
 
 microMenu.initialized = false
 
+local function applyFramePosition(frame, config, defaults)
+    if not frame then
+        return
+    end
+
+    local point = config.anchorPoint or defaults.point
+    local relativePoint = config.relativeAnchor or defaults.relativePoint
+    local x = config.xOffset
+    if x == nil then
+        x = defaults.x
+    end
+    local y = config.yOffset
+    if y == nil then
+        y = defaults.y
+    end
+
+    if frame.ClearAllPointsBase then
+        frame:ClearAllPointsBase()
+        frame:SetPointBase(point, UIParent, relativePoint, EXUI:ScalePixel(x, frame), EXUI:ScalePixel(y, frame))
+    else
+        frame:ClearAllPoints()
+        EXUI:SetPoint(frame, point, UIParent, relativePoint, x, y)
+    end
+end
+
+local function isEditorActive(frame)
+    return frame and frame.editor and frame.editor:IsShown()
+end
+
+local function hookHoverTarget(frame, onEnter, onLeave)
+    if not frame or frame.__exuiHoverHooked then
+        return
+    end
+    frame.__exuiHoverHooked = true
+    frame:HookScript('OnEnter', onEnter)
+    frame:HookScript('OnLeave', function()
+        C_Timer.After(0.05, onLeave)
+    end)
+end
+
 microMenu.ApplyOrientation = function(self, config)
     if not MicroMenu then
         return
@@ -22,10 +62,15 @@ microMenu.ApplyOrientation = function(self, config)
 
     if isVertical then
         MicroMenu.stride = MicroMenu.numButtons or 1
-        MicroMenu.layoutFramesGoingRight = true
-        MicroMenu.layoutFramesGoingUp = true
     else
         MicroMenu.stride = MicroMenu.numButtons or 12
+    end
+
+    local reversed = config.order == 'reverse'
+    if reversed then
+        MicroMenu.layoutFramesGoingRight = false
+        MicroMenu.layoutFramesGoingUp = true
+    else
         MicroMenu.layoutFramesGoingRight = true
         MicroMenu.layoutFramesGoingUp = false
     end
@@ -50,76 +95,152 @@ microMenu.ApplyLayout = function(self)
     end
 end
 
-microMenu.ConfigureMouse = function(self, config)
+microMenu.UpdateMicroVisibilityAlpha = function(self, config, isHovering)
     if not MicroMenuContainer then
         return
     end
 
-    -- The container is only a layout box; it must not capture world clicks.
-    MicroMenuContainer:EnableMouse(false)
-    MicroMenuContainer:SetPropagateMouseClicks(true)
+    if config.visibility == 'hidden' then
+        MicroMenuContainer:Hide()
+        return
+    end
+
+    MicroMenuContainer:Show()
+    if isEditorActive(MicroMenuContainer) then
+        MicroMenuContainer:SetAlpha(1)
+    elseif config.visibility == 'hover' then
+        MicroMenuContainer:SetAlpha(isHovering and 1 or 0)
+    else
+        MicroMenuContainer:SetAlpha(1)
+    end
+end
+
+microMenu.UpdateBagsVisibilityAlpha = function(self, config, isHovering)
+    if not BagsBar then
+        return
+    end
+
+    if config.enable == false or config.visibility == 'hidden' then
+        BagsBar:Hide()
+        return
+    end
+
+    BagsBar:Show()
+    if isEditorActive(BagsBar) then
+        BagsBar:SetAlpha(1)
+    elseif config.visibility == 'hover' then
+        BagsBar:SetAlpha(isHovering and 1 or 0)
+    else
+        BagsBar:SetAlpha(1)
+    end
+end
+
+microMenu.ConfigureMicroMouse = function(self, config)
+    if not MicroMenuContainer then
+        return
+    end
+
+    local hoverMode = config.visibility == 'hover'
+    MicroMenuContainer:EnableMouse(hoverMode)
+    MicroMenuContainer:SetPropagateMouseClicks(not hoverMode)
 
     if MicroMenu then
-        MicroMenu:EnableMouse(true)
+        MicroMenu:EnableMouse(hoverMode)
+    end
+end
+
+microMenu.ConfigureBagsMouse = function(self, config)
+    if not BagsBar then
+        return
+    end
+
+    local hoverMode = config.enable ~= false and config.visibility == 'hover'
+    BagsBar:EnableMouse(hoverMode)
+    BagsBar:SetPropagateMouseClicks(not hoverMode)
+end
+
+microMenu.ApplyBags = function(self, db)
+    if not BagsBar then
+        return
+    end
+
+    local bagsConfig = db.bags or {}
+
+    if bagsConfig.enable == false then
+        BagsBar:Hide()
+        return
+    end
+
+    applyFramePosition(BagsBar, bagsConfig, {
+        point = 'BOTTOMRIGHT',
+        relativePoint = 'BOTTOMRIGHT',
+        x = -6,
+        y = 39,
+    })
+
+    BagsBar:SetScale(bagsConfig.scale or 1)
+    self:ConfigureBagsMouse(bagsConfig)
+    self:UpdateBagsVisibilityAlpha(bagsConfig, BagsBar.isHovering)
+
+    if not self.bagsEditorRegistered then
+        local actionBars = EXUI:GetModule('action-bars')
+        editor:RegisterFrameForEditor(BagsBar, 'Bag Bar', function(movedFrame)
+            local point, _, relativePoint, xOfs, yOfs = movedFrame:GetPoint(1)
+            local currentDb = actionBars:GetDB()
+            currentDb.bags.anchorPoint = point
+            currentDb.bags.relativeAnchor = relativePoint
+            currentDb.bags.xOffset = xOfs
+            currentDb.bags.yOffset = yOfs
+            actionBars.Data:SetDB(currentDb)
+            self:ApplyBags(currentDb)
+        end, function()
+            if BagsBar.Layout then
+                BagsBar:Layout()
+            end
+            BagsBar.editor:SetEditorAsMovable()
+        end, function()
+            BagsBar.editorMoveOverride = nil
+            self:ConfigureBagsMouse(actionBars:GetDB().bags or {})
+            if BagsBar.Layout then
+                BagsBar:Layout()
+            end
+        end)
+        self.bagsEditorRegistered = true
     end
 end
 
 microMenu.Apply = function(self, db)
-    if not MicroMenuContainer then return end
-
-    local config = db.microMenu or {}
-    local bagsConfig = db.bags or {}
-
-    if config.enable == false then
-        MicroMenuContainer:Hide()
-        if MicroButtonAndBagsBar then
-            MicroButtonAndBagsBar:Hide()
-        end
+    if not MicroMenuContainer then
         return
     end
 
-    EXUI:SetPoint(
-        MicroMenuContainer,
-        config.anchorPoint or 'BOTTOMRIGHT',
-        UIParent,
-        config.relativeAnchor or 'BOTTOMRIGHT',
-        config.xOffset or -4,
-        config.yOffset or 4
-    )
-
-    self:ApplyOrientation(config)
-    self:ApplyLayout()
-    self:ConfigureMouse(config)
-
-    local scale = config.scale or 1
-    MicroMenuContainer:SetScale(scale)
-
-    if config.visibility == 'hidden' then
-        MicroMenuContainer:Hide()
-    else
-        MicroMenuContainer:Show()
-        if config.visibility == 'hover' then
-            MicroMenuContainer:SetAlpha(0)
-        else
-            MicroMenuContainer:SetAlpha(1)
-        end
-    end
+    local config = db.microMenu or {}
 
     if MicroButtonAndBagsBar then
-        if bagsConfig.enable == false or bagsConfig.visibility == 'hidden' then
-            MicroButtonAndBagsBar:Hide()
-        else
-            MicroButtonAndBagsBar:Show()
-            MicroButtonAndBagsBar:SetScale(bagsConfig.scale or 1)
-            if bagsConfig.visibility == 'hover' then
-                MicroButtonAndBagsBar:SetAlpha(0)
-            else
-                MicroButtonAndBagsBar:SetAlpha(1)
-            end
-        end
+        MicroButtonAndBagsBar:Hide()
     end
 
-    if not self.editorRegistered and MicroMenuContainer then
+    if config.enable == false then
+        MicroMenuContainer:Hide()
+    else
+        applyFramePosition(MicroMenuContainer, config, {
+            point = 'BOTTOMRIGHT',
+            relativePoint = 'BOTTOMRIGHT',
+            x = -4,
+            y = 4,
+        })
+
+        self:ApplyOrientation(config)
+        self:ApplyLayout()
+        self:ConfigureMicroMouse(config)
+
+        MicroMenuContainer:SetScale(config.scale or 1)
+        self:UpdateMicroVisibilityAlpha(config, MicroMenuContainer.isHovering)
+    end
+
+    self:ApplyBags(db)
+
+    if not self.editorRegistered and config.enable ~= false then
         local actionBars = EXUI:GetModule('action-bars')
         editor:RegisterFrameForEditor(MicroMenuContainer, 'Micro Menu', function(movedFrame)
             local point, _, relativePoint, xOfs, yOfs = movedFrame:GetPoint(1)
@@ -131,10 +252,11 @@ microMenu.Apply = function(self, db)
             actionBars.Data:SetDB(currentDb)
             self:Apply(currentDb)
         end, function()
+            self:ApplyLayout()
             MicroMenuContainer.editor:SetEditorAsMovable()
         end, function()
             MicroMenuContainer.editorMoveOverride = nil
-            self:ConfigureMouse(actionBars:GetDB().microMenu or {})
+            self:ConfigureMicroMouse(actionBars:GetDB().microMenu or {})
             self:ApplyLayout()
         end)
         self.editorRegistered = true
@@ -142,46 +264,124 @@ microMenu.Apply = function(self, db)
 end
 
 microMenu.SetupHover = function(self, db)
-    if not MicroMenuContainer or self.hoverHooked then return end
+    if not MicroMenuContainer or self.hoverHooked then
+        return
+    end
     self.hoverHooked = true
 
-    local function updateHover(isHover)
-        local cfg = db.microMenu
-        if cfg and cfg.visibility == 'hover' then
-            MicroMenuContainer:SetAlpha(isHover and 1 or 0)
+    local actionBars = EXUI:GetModule('action-bars')
+    MicroMenuContainer.isHovering = false
+    if BagsBar then
+        BagsBar.isHovering = false
+    end
+
+    local function microTargetsMouseOver()
+        if MicroMenuContainer:IsMouseOver() then
+            return true
         end
-        local bagsCfg = db.bags
-        if MicroButtonAndBagsBar and bagsCfg and bagsCfg.visibility == 'hover' then
-            MicroButtonAndBagsBar:SetAlpha(isHover and 1 or 0)
+        if MicroMenu and MicroMenu:IsMouseOver() then
+            return true
+        end
+        if QueueStatusButton and QueueStatusButton:IsMouseOver() then
+            return true
+        end
+        if MicroMenu then
+            for _, child in ipairs({ MicroMenu:GetChildren() }) do
+                if child:IsMouseOver() then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function bagsTargetsMouseOver()
+        if not BagsBar then
+            return false
+        end
+        if BagsBar:IsMouseOver() then
+            return true
+        end
+        for _, child in ipairs({ BagsBar:GetChildren() }) do
+            if child:IsMouseOver() then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function setMicroHover(state)
+        if isEditorActive(MicroMenuContainer) then
+            return
+        end
+        MicroMenuContainer.isHovering = state
+        local cfg = actionBars:GetDB().microMenu
+        if cfg then
+            self:UpdateMicroVisibilityAlpha(cfg, state)
         end
     end
 
-    MicroMenuContainer:HookScript('OnEnter', function() updateHover(true) end)
-    MicroMenuContainer:HookScript('OnLeave', function()
-        C_Timer.After(0.05, function()
-            if not MicroMenuContainer:IsMouseOver() then
-                updateHover(false)
-            end
-        end)
-    end)
+    local function setBagsHover(state)
+        if isEditorActive(BagsBar) then
+            return
+        end
+        if BagsBar then
+            BagsBar.isHovering = state
+        end
+        local cfg = actionBars:GetDB().bags
+        if cfg then
+            self:UpdateBagsVisibilityAlpha(cfg, state)
+        end
+    end
 
+    local function onMicroEnter()
+        setMicroHover(true)
+    end
+
+    local function onMicroLeave()
+        if not microTargetsMouseOver() then
+            setMicroHover(false)
+        end
+    end
+
+    local function onBagsEnter()
+        setBagsHover(true)
+    end
+
+    local function onBagsLeave()
+        if not bagsTargetsMouseOver() then
+            setBagsHover(false)
+        end
+    end
+
+    hookHoverTarget(MicroMenuContainer, onMicroEnter, onMicroLeave)
     if MicroMenu then
-        MicroMenu:HookScript('OnEnter', function() updateHover(true) end)
-        MicroMenu:HookScript('OnLeave', function()
-            C_Timer.After(0.05, function()
-                if not MicroMenu:IsMouseOver() and not MicroMenuContainer:IsMouseOver() then
-                    updateHover(false)
-                end
-            end)
-        end)
+        hookHoverTarget(MicroMenu, onMicroEnter, onMicroLeave)
+        for _, child in ipairs({ MicroMenu:GetChildren() }) do
+            hookHoverTarget(child, onMicroEnter, onMicroLeave)
+        end
+    end
+    if QueueStatusButton then
+        hookHoverTarget(QueueStatusButton, onMicroEnter, onMicroLeave)
+    end
+
+    if BagsBar then
+        hookHoverTarget(BagsBar, onBagsEnter, onBagsLeave)
+        for _, child in ipairs({ BagsBar:GetChildren() }) do
+            hookHoverTarget(child, onBagsEnter, onBagsLeave)
+        end
     end
 end
 
 microMenu.InitHousingHook = function(self)
-    if self.housingHooked or not EventRegistry then return end
+    if self.housingHooked or not EventRegistry then
+        return
+    end
     self.housingHooked = true
     EventRegistry:RegisterCallback('HouseEditor.StateUpdated', function(_, active)
-        if microMenu.housingActive == active then return end
+        if microMenu.housingActive == active then
+            return
+        end
         microMenu.housingActive = active
         if not active then
             local mod = EXUI:GetModule('action-bars')
@@ -194,4 +394,27 @@ end
 
 microMenu.Init = function(self)
     self:InitHousingHook()
+
+    if self.deferredApplyRegistered then
+        return
+    end
+    self.deferredApplyRegistered = true
+
+    local function reapply()
+        if manager.enabled then
+            self:Apply(manager:GetDB())
+        end
+    end
+
+    EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'action-bars-micro-menu-reapply', function()
+        C_Timer.After(0, reapply)
+    end)
+
+    if EditModeManagerFrame then
+        hooksecurefunc(EditModeManagerFrame, 'UpdateSystems', function()
+            if manager.enabled then
+                C_Timer.After(0, reapply)
+            end
+        end)
+    end
 end

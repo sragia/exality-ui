@@ -16,6 +16,9 @@ local buttonMod = EXUI:GetModule('action-bars-button')
 ---@class EXUIActionBarsSpecialButton
 local specialButton = EXUI:GetModule('action-bars-special-button')
 
+---@class EXUIActionBarsStateDriver
+local stateDriver = EXUI:GetModule('action-bars-state-driver')
+
 ---@class EXUIOptionsEditor
 local editor = EXUI:GetModule('editor')
 
@@ -39,7 +42,7 @@ barMod.Create = function(self, barId, db)
     header:SetAllPoints()
     frame.header = header
 
-    local numButtons = math.min(config.numButtons, def.numButtons or config.numButtons)
+    local numButtons = def.barType == 'stance' and 0 or math.min(config.numButtons, def.numButtons or config.numButtons)
     for i = 1, numButtons do
         local button
         if def.barType == 'action' then
@@ -50,11 +53,6 @@ barMod.Create = function(self, barId, db)
             button = specialButton:CreatePetButton(barId, i, header, config)
         elseif def.barType == 'possess' then
             button = specialButton:CreatePossessButton(barId, i, header, config)
-        elseif def.barType == 'extra' then
-            button = buttonMod:CreateActionButton(barId, 1, header, config)
-            buttonMod:RegisterWithKeybind(button)
-            table.insert(frame.buttons, button)
-            break
         elseif def.barType == 'override' then
             button = buttonMod:CreateActionButton(barId, i, header, config)
         end
@@ -79,6 +77,16 @@ barMod.Create = function(self, barId, db)
     self:Configure(frame, db)
     self:SetupVisibility(frame, config)
     self:RegisterEditor(frame, barId)
+
+    if barId == 'bar1' and frame.header then
+        stateDriver:Init()
+        stateDriver:ApplyToFrame(frame, config.states)
+    end
+
+    if def.barType == 'stance' or def.barType == 'pet' or def.barType == 'possess' then
+        specialButton:InitBarEvents(frame, def.barType)
+    end
+
     self.instances[barId] = frame
     return frame
 end
@@ -144,24 +152,36 @@ barMod.Configure = function(self, frame, db)
     end
 
     EXUI:SetPoint(frame, config.anchorPoint, UIParent, config.relativeAnchor, config.xOffset, config.yOffset)
-    barLayout:Apply(frame, config, frame.buttons)
+
+    if barId == 'stance' then
+        frame.exuiLastConfig = config
+        specialButton:UpdateStanceButtons(frame, config)
+    else
+        barLayout:Apply(frame, config, frame.buttons)
+    end
 
     for i, button in ipairs(frame.buttons) do
         if button.exuiBarId and button.UpdateConfig then
             local commandName = definitions:GetCommandName(barId, button.id or i)
             buttonMod:Refresh(button, barId, config)
-        elseif specialButton.ApplyStyle then
+        elseif specialButton.ApplyStyle and barId ~= 'stance' then
             specialButton:ApplyStyle(button, barId, config)
+            EXUI:SetSize(button, config.width, config.height)
+        elseif barId == 'stance' and button:IsShown() then
             EXUI:SetSize(button, config.width, config.height)
         end
     end
 
     if config.visibility ~= 'hidden' then
-        frame:Show()
-        if frame.editor and frame.editor:IsShown() then
-            frame:SetAlpha(1)
+        if barId == 'stance' then
+            specialButton:ApplyStanceBarVisibility(frame, config)
         else
-            self:UpdateVisibilityAlpha(frame, config, frame.isHovering)
+            frame:Show()
+            if frame.editor and frame.editor:IsShown() then
+                frame:SetAlpha(1)
+            else
+                self:UpdateVisibilityAlpha(frame, config, frame.isHovering)
+            end
         end
     else
         frame:Hide()
@@ -169,6 +189,10 @@ barMod.Configure = function(self, frame, db)
 
     if frame.editorRegistered then
         editor:UpdateFrameLabel(frame, config.name or barId)
+    end
+
+    if barId == 'bar1' and config.states then
+        stateDriver:ApplyToFrame(frame, config.states)
     end
 end
 

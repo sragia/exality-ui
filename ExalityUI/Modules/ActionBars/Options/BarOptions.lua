@@ -84,7 +84,26 @@ barOptions.GetPositionFields = function(self, mod, db, scope, onRefresh)
     }
 end
 
-barOptions.GetSectionTabs = function()
+barOptions.GetPageOptions = function()
+    local options = {}
+    for i = 0, 18 do
+        options[i] = {
+            label = i == 0 and 'Main Bar' or ('Page ' .. i),
+            order = i,
+        }
+    end
+    return options
+end
+
+barOptions.GetSectionTabs = function(barId)
+    if barId == 'extra' then
+        return {
+            { ID = 'layout', label = 'Layout' },
+            { ID = 'appearance', label = 'Appearance' },
+            { ID = 'text', label = 'Text' },
+            { ID = 'visibility', label = 'Visibility' },
+        }
+    end
     return {
         { ID = 'layout', label = 'Layout' },
         { ID = 'appearance', label = 'Appearance' },
@@ -112,9 +131,105 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 onChange = function(v) bar.enable = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
             },
         })
+        if barId == 'bar1' then
+            if not bar.states then
+                bar.states = EXUI.utils.deepCloneTable(EXUI:GetModule('action-bars-defaults').BAR1_STATES)
+            end
+            appendFields(fields, {
+                { type = 'title', label = 'Paging', width = 100 },
+                {
+                    type = 'toggle',
+                    label = 'Enable State Paging',
+                    name = 'statesEnabled',
+                    width = 100,
+                    currentValue = function() return bar.states.enabled ~= false end,
+                    onChange = function(v)
+                        bar.states.enabled = v
+                        mod.Data:SetDB(db)
+                        mod:RefreshBar(barId)
+                    end,
+                },
+                {
+                    type = 'toggle',
+                    label = 'Possess / Vehicle Pages',
+                    name = 'statesPossess',
+                    width = 100,
+                    currentValue = function() return bar.states.possess ~= false end,
+                    onChange = function(v)
+                        bar.states.possess = v
+                        mod.Data:SetDB(db)
+                        mod:RefreshBar(barId)
+                    end,
+                },
+                {
+                    type = 'toggle',
+                    label = 'Blizzard Bar Paging',
+                    name = 'statesActionbar',
+                    width = 100,
+                    currentValue = function() return bar.states.actionbar == true end,
+                    onChange = function(v)
+                        bar.states.actionbar = v
+                        mod.Data:SetDB(db)
+                        mod:RefreshBar(barId)
+                    end,
+                },
+                {
+                    type = 'dropdown',
+                    label = 'Default Page',
+                    name = 'statesDefault',
+                    width = 100,
+                    getOptions = function() return barOptions:GetPageOptions() end,
+                    currentValue = function() return bar.states.default or 0 end,
+                    onChange = function(v)
+                        bar.states.default = v
+                        mod.Data:SetDB(db)
+                        mod:RefreshBar(barId)
+                    end,
+                },
+            })
+            local playerClass = select(2, UnitClass('player'))
+            local classStances = bar.states.stance and bar.states.stance[playerClass]
+            if classStances then
+                appendFields(fields, { { type = 'title', label = 'Stance Pages (' .. playerClass .. ')', width = 100 } })
+                for stanceId in pairs(classStances) do
+                    local capturedStanceId = stanceId
+                    appendFields(fields, {
+                        {
+                            type = 'range',
+                            label = capturedStanceId,
+                            name = 'stance_' .. capturedStanceId,
+                            width = 50,
+                            min = 0,
+                            max = 18,
+                            step = 1,
+                            currentValue = function()
+                                return classStances[capturedStanceId] or 0
+                            end,
+                            onChange = function(v)
+                                classStances[capturedStanceId] = v
+                                mod.Data:SetDB(db)
+                                mod:RefreshBar(barId)
+                            end,
+                        },
+                    })
+                end
+            end
+        end
         appendFields(fields, self:GetPositionFields(mod, db, bar, function()
             mod:RefreshBar(barId)
         end))
+        if barId == 'extra' then
+            appendFields(fields, {
+                {
+                    type = 'title',
+                    label = 'Encounter extra actions and zone abilities share this anchor.',
+                    width = 100,
+                    size = 12,
+                    color = EXUI.const.theme.textMuted,
+                },
+            })
+            return fields
+        end
         appendFields(fields, {
             { type = 'title', label = 'Layout', width = 100 },
             {
@@ -133,6 +248,13 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 width = 50,
                 min = 1,
                 max = definitions:Get(barId).numButtons or 12,
+                depends = function()
+                    local def = definitions:Get(barId)
+                    if def and def.barType == 'stance' then
+                        return false
+                    end
+                    return (def.numButtons or 12) > 1
+                end,
                 currentValue = function() return bar.numButtons end,
                 onChange = function(v) bar.numButtons = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
             },
@@ -143,6 +265,13 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 width = 50,
                 min = 1,
                 max = definitions:Get(barId).numButtons or 12,
+                depends = function()
+                    local def = definitions:Get(barId)
+                    if def and def.barType == 'stance' then
+                        return false
+                    end
+                    return (def.numButtons or 12) > 1
+                end,
                 currentValue = function() return bar.buttonsPerRow end,
                 onChange = function(v) bar.buttonsPerRow = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
             },
@@ -151,7 +280,7 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 label = 'Horizontal Padding',
                 name = 'paddingX',
                 width = 50,
-                min = 0,
+                min = -3,
                 max = 20,
                 currentValue = function() return bar.paddingX end,
                 onChange = function(v) bar.paddingX = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
@@ -161,7 +290,7 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 label = 'Vertical Padding',
                 name = 'paddingY',
                 width = 50,
-                min = 0,
+                min = -3,
                 max = 20,
                 currentValue = function() return bar.paddingY end,
                 onChange = function(v) bar.paddingY = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
@@ -184,18 +313,28 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 currentValue = function() return bar.growVertical end,
                 onChange = function(v) bar.growVertical = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
             },
-            {
-                type = 'toggle',
-                label = 'Show Empty Slots',
-                name = 'showBackdrop',
-                width = 100,
-                currentValue = function() return bar.showBackdrop end,
-                onChange = function(v) bar.showBackdrop = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
-            },
         })
     elseif section == 'appearance' then
         appendFields(fields, {
             { type = 'title', label = 'Appearance Overrides', width = 100 },
+        })
+        if barId == 'extra' then
+            appendFields(fields, {
+                {
+                    type = 'toggle',
+                    label = 'Show Blizzard Artwork',
+                    name = 'showBlizzardArtwork',
+                    width = 100,
+                    currentValue = function() return bar.showBlizzardArtwork == true end,
+                    onChange = function(v)
+                        bar.showBlizzardArtwork = v
+                        mod.Data:SetDB(db)
+                        mod:RefreshBar(barId)
+                    end,
+                },
+            })
+        end
+        appendFields(fields, {
             {
                 type = 'toggle',
                 label = 'Use Global Size',
@@ -266,10 +405,21 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
             },
             {
                 type = 'toggle',
+                label = 'Show Empty Slots',
+                name = 'showBackdrop',
+                width = 100,
+                depends = function() return bar.useGlobalAppearance == false end,
+                currentValue = function() return bar.showBackdrop end,
+                onChange = function(v) bar.showBackdrop = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
+            },
+            {
+                type = 'toggle',
                 label = 'Use Masque',
                 name = 'useMasque',
                 width = 100,
-                depends = function() return bar.useGlobalAppearance == false end,
+                depends = function()
+                    return bar.useGlobalAppearance == false and globalOptions:IsMasqueAvailable()
+                end,
                 currentValue = function() return bar.useMasque end,
                 onChange = function(v) bar.useMasque = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
             },
@@ -278,7 +428,9 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 label = 'Masque Skin',
                 name = 'masqueSkin',
                 width = 50,
-                depends = function() return bar.useGlobalAppearance == false end,
+                depends = function()
+                    return bar.useGlobalAppearance == false and globalOptions:IsMasqueAvailable()
+                end,
                 getOptions = function() return globalOptions:GetMasqueSkins() end,
                 currentValue = function() return bar.masqueSkin end,
                 onChange = function(v) bar.masqueSkin = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
@@ -303,27 +455,15 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
             },
         })
     elseif section == 'text' then
-        local textDepends = function() return bar.useGlobalText == false end
-        appendFields(fields, {
-            {
-                type = 'toggle',
-                label = 'Use Global Text Settings',
-                name = 'useGlobalText',
-                width = 100,
-                currentValue = function() return bar.useGlobalText ~= false end,
-                onChange = function(v)
-                    bar.useGlobalText = v
-                    mod.Data:SetDB(db)
-                    mod:RefreshBar(barId)
-                    optionsFields:RefreshOptions()
-                end,
-            },
-        })
-        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'hotkey', 'Hotkey Text', textDepends))
-        appendFields(fields, { { type = 'spacer', width = 100, depends = textDepends } })
-        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'count', 'Stack Text', textDepends))
-        appendFields(fields, { { type = 'spacer', width = 100, depends = textDepends } })
-        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'macro', 'Macro Text', textDepends))
+        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'hotkey', 'Hotkey Text'))
+        appendFields(fields, { { type = 'spacer', width = 100 } })
+        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'count', 'Stack Text'))
+        if barId ~= 'extra' then
+            appendFields(fields, { { type = 'spacer', width = 100 } })
+            appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'macro', 'Macro Text'))
+        end
+        appendFields(fields, { { type = 'spacer', width = 100 } })
+        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'cooldown', 'Cooldown Text'))
     elseif section == 'visibility' then
         appendFields(fields, {
             {

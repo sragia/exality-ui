@@ -17,7 +17,6 @@ suppress.FRAMES_TO_HIDE = {
     { frame = 'StanceBar', removeEvents = true },
     { frame = 'PetActionBar', removeEvents = true },
     { frame = 'PossessActionBar', removeEvents = true },
-    { frame = 'ExtraActionBarFrame', removeEvents = true },
     { frame = 'OverrideActionBar', removeEvents = true },
     { frame = 'MainMenuBarVehicleLeaveButton', removeEvents = false },
     { frame = 'MainStatusTrackingBarContainer', removeEvents = true },
