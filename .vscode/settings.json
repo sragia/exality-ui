@@ -12,7 +12,7 @@
         "utf8": "disable"
     },
     "Lua.workspace.library": [
-        "c:\\Users\\aigars\\.cursor\\extensions\\ketho.wow-api-0.21.0\\Annotations\\Core"
+        "~\\.vscode\\extensions\\ketho.wow-api-0.22.3\\Annotations\\Core"
     ],
     "Lua.diagnostics.globals": [
         "SlashCmdList",
@@ -257,7 +257,42 @@
         "AnchorUtil",
         "MiniMapMailIcon",
         "MinimapMailFrameUpdate",
-        "DropdownButtonMixin"
+        "DropdownButtonMixin",
+        "MicroMenuContainer",
+        "MicroMenu",
+        "ExtraAbilityContainer",
+        "ExtraActionBarFrame",
+        "ZoneAbilityFrame",
+        "ExtraActionBar_Update",
+        "UIParentBottomManagedFrameContainer",
+        "ZoneAbilityFrameSpellButtonMixin",
+        "ActionButtonUtil",
+        "QuickKeybindButtonTemplateMixin",
+        "QuickKeybindFrame",
+        "KeybindFrames_InQuickKeybindMode",
+        "BagsBar",
+        "MicroButtonAndBagsBar",
+        "QueueStatusButton",
+        "CooldownFrame_Set",
+        "ActionBarController_GetCurrentActionBarState",
+        "ActionBarBusy",
+        "LE_ACTIONBAR_STATE_OVERRIDE",
+        "UnregisterStateDriver",
+        "DUNGEON_DIFFICULTY_BANNER_TOOLTIP",
+        "GameTooltip_SetTitle",
+        "ITEM_QUALITY_COLORS",
+        "DifficultyUtil",
+        "RAID_FINDER",
+        "GameTooltip_AddColoredLine",
+        "GameTooltip_AddNormalLine",
+        "DUNGEON_DIFFICULTY_BANNER_TOOLTIP_PLAYER_COUNT",
+        "GUILD_GROUP",
+        "GUILD_ACHIEVEMENTS_ELIGIBLE",
+        "GUILD_ACHIEVEMENTS_ELIGIBLE_MINXP",
+        "GUILD_ACHIEVEMENTS_ELIGIBLE_MAXXP",
+        "GameMenuFrame",
+        "GameMenuFrameMixin",
+        "ThreeSliceButtonMixin"
     ],
     "Lua.type.weakUnionCheck": true,
     "Lua.diagnostics.disable": [

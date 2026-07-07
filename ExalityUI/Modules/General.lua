@@ -58,7 +58,7 @@ generalModule.GetOptions = function(self)
             min = 0.2,
             max = 1,
             step = 0.001,
-            width = 16,
+            width = 25,
             currentValue = function()
                 return data:GetDataByKey('uiScale')
             end,

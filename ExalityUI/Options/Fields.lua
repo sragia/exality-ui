@@ -380,7 +380,43 @@ end
 
 optionsFields.RefreshFields = function(self)
     local module = optionsController:GetSelectedModule()
+    if (not module) then
+        return
+    end
+
+    if (module.optionHandler) then
+        local currentModule = module.module
+        if (currentModule) then
+            if (currentModule.HandleOptions) then
+                C_Timer.After(0, function()
+                    if (optionsController:GetSelectedModule() == module) then
+                        currentModule:HandleOptions()
+                    end
+                end)
+            elseif (currentModule.Refresh) then
+                C_Timer.After(0, function()
+                    if (optionsController:GetSelectedModule() == module) then
+                        currentModule:Refresh()
+                    end
+                end)
+            elseif (currentModule.RefreshCurrentView) then
+                currentModule:RefreshCurrentView()
+            end
+
+            if (currentModule.tabOptions and currentModule.tabOptions.UpdateScroll) then
+                currentModule.tabOptions:UpdateScroll()
+            end
+            if (currentModule.splitFrame and currentModule.splitFrame.UpdateScroll) then
+                currentModule.splitFrame:UpdateScroll()
+            end
+        end
+        return
+    end
+
     local currentModule = module.module
+    if (not currentModule or not currentModule.GetOptions) then
+        return
+    end
 
     self:HideActiveFields()
     self.fields = {}

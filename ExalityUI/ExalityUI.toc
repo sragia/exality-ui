@@ -42,6 +42,7 @@ Options/ChangelogData.lua
 Options/Changelog.lua
 Options/ReloadDialog.lua
 Options/Controller.lua
+Options/NavIcons.lua
 Options/Editor.lua
 Options/Main.lua
 Options/ModuleSelector.lua

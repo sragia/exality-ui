@@ -33,22 +33,153 @@ local profiles = EXUI:GetModule('profiles')
 ---@class EXUIOptionsMain
 local optionsMain = EXUI:GetModule('options-main')
 
+local LAYOUT = {
+    expanded = { window = { 980, 680 }, nav = 160, info = 80 },
+    compact = { window = { 856, 680 }, nav = 36, info = 0 },
+}
+
+local NAV_ANIM_DURATION = 0.2
+local NAV_PANEL_INSET = 5
+local NAV_TOGGLE_HEIGHT = 26
+local DISCORD_LINK = 'discord.gg/F8bhZUvQfz'
+
+local menuItemFrame = EXFrames:GetFrame('menu-item')
+
 optionsMain.window = nil
 optionsMain.profileSwitcher = nil
 optionsMain.editModeDialog = nil
+optionsMain.isNavCompact = false
+optionsMain.LAYOUT = LAYOUT
+
+optionsMain.ApplyPanelLayout = function(self, nav, info)
+    self.modulesPanel:ClearAllPoints()
+    self.modulesPanel:SetPoint('TOPLEFT', self.window.container, 'TOPLEFT')
+    self.modulesPanel:SetPoint('BOTTOMRIGHT', self.window.container, 'BOTTOMLEFT', nav, info)
+
+    self.infoPanel:ClearAllPoints()
+    self.infoPanel:SetPoint('TOPLEFT', self.modulesPanel, 'BOTTOMLEFT', 0, -5)
+    self.infoPanel:SetPoint('BOTTOMRIGHT', self.window.container, 'BOTTOMLEFT', nav, 0)
+end
+
+optionsMain.SetInfoPanelCompact = function(self, compact)
+    self.infoPanel:SetShown(not compact)
+end
+
+optionsMain.UpdateNavToggleIcon = function(self)
+    if (not self.navToggle) then
+        return
+    end
+    local icon = self.navToggle.main.icon
+    if (self.isNavCompact) then
+        icon:SetRotation(math.rad(90))
+    else
+        icon:SetRotation(math.rad(-90))
+    end
+end
+
+optionsMain.UpdateNavToggleLayout = function(self)
+    if (not self.navToggle or not self.menuContainer or not self.modulesPanel) then
+        return
+    end
+
+    local chevron = EXFrames.assets.textures.icon.chevronDown
+    local toggleHeight = NAV_TOGGLE_HEIGHT
+
+    self.navToggle:SetCompact(true)
+    self.navToggle:SetIcon(chevron)
+    self.navToggle.main.icon:SetSize(10, 10)
+    self.navToggle.main.icon:ClearAllPoints()
+    self.navToggle.main.icon:SetPoint('CENTER')
+    self.navToggle:ClearAllPoints()
+
+    if (self.isNavCompact) then
+        self.navToggle:SetText('Expand navigation')
+        self.navToggle:SetSize(toggleHeight, toggleHeight)
+        self.navToggle:SetPoint('BOTTOM', self.modulesPanel, 'BOTTOM', 0, NAV_PANEL_INSET)
+    else
+        self.navToggle.main.text:SetText('')
+        self.navToggle.tooltipText = nil
+        self.navToggle:SetHeight(toggleHeight)
+        self.navToggle:SetPoint('BOTTOMLEFT', self.modulesPanel, 'BOTTOMLEFT', NAV_PANEL_INSET, NAV_PANEL_INSET)
+        self.navToggle:SetPoint('BOTTOMRIGHT', self.modulesPanel, 'BOTTOMRIGHT', -NAV_PANEL_INSET, NAV_PANEL_INSET)
+    end
+
+    self.menuContainer:ClearAllPoints()
+    self.menuContainer:SetPoint('TOPLEFT', NAV_PANEL_INSET, -NAV_PANEL_INSET)
+    self.menuContainer:SetPoint('TOPRIGHT', -NAV_PANEL_INSET, -NAV_PANEL_INSET)
+    self.menuContainer:SetPoint('BOTTOM', self.modulesPanel, 'BOTTOM', 0, toggleHeight + NAV_PANEL_INSET)
+
+    self:UpdateNavToggleIcon()
+end
+
+optionsMain.SetNavCompact = function(self, compact, animate)
+    if (self.isNavCompact == compact) then
+        return
+    end
+    self.isNavCompact = compact
+
+    ExalityUICharData.optionsNavCompact = compact
+    data:Save()
+
+    local layout = compact and LAYOUT.compact or LAYOUT.expanded
+    local fromLayout = compact and LAYOUT.expanded or LAYOUT.compact
+    local targetW, targetH = layout.window[1], layout.window[2]
+    local fromNav, fromInfo = fromLayout.nav, fromLayout.info
+    local toNav, toInfo = layout.nav, layout.info
+
+    optionsModuleSelector:HideFlyout()
+    optionsModuleSelector:SetCompactMode(compact)
+    self:SetInfoPanelCompact(compact)
+
+    local applyPanels = function(nav, info)
+        self:ApplyPanelLayout(nav, info)
+    end
+
+    local finish = function()
+        self.window:SetSize(targetW, targetH)
+        applyPanels(toNav, toInfo)
+        self:UpdateNavToggleLayout()
+        self.window.resizeBtn:Init(self.window, targetW, targetH, targetW, targetH + 1000)
+        if (compact) then
+            optionsModuleSelector:Relayout()
+        end
+        optionsFields:RefreshFields()
+    end
+
+    if (not animate) then
+        finish()
+        return
+    end
+
+    local startW = self.window:GetWidth()
+    local startH = self.window:GetHeight()
+
+    EXFrames.utils.animation.lerpSize(self.window, NAV_ANIM_DURATION, targetW, targetH, finish, function(_, w, h)
+        local t = (targetW ~= startW) and ((w - startW) / (targetW - startW)) or 1
+        local nav = fromNav + (toNav - fromNav) * t
+        local info = fromInfo + (toInfo - fromInfo) * t
+        applyPanels(nav, info)
+    end)
+end
 
 optionsMain.CreateWindow = function(self)
+    local isCompact = ExalityUICharData.optionsNavCompact or false
+    local layout = isCompact and LAYOUT.compact or LAYOUT.expanded
+
     local window = EXFrames:GetFrame('window-frame'):Create({
-        size = { 1300, 900 },
-        title = 'ExalityUI',
+        size = layout.window,
+        title = '',
         onClose = function()
             EXUI:GetModule('uf-core'):UnforceAll()
+            optionsModuleSelector:HideFlyout()
         end
     })
 
+    self.isNavCompact = isCompact
+
     -- Profile Selector
     local profilePanel = panel:Create()
-    profilePanel:SetWidth(236)
+    profilePanel:SetWidth(230)
     profilePanel:SetParent(window)
     profilePanel:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
     profilePanel:SetPoint('BOTTOMRIGHT', window.close, 'BOTTOMLEFT', -5, 0)
@@ -90,20 +221,17 @@ optionsMain.CreateWindow = function(self)
 
     local modulesPanel = panel:Create()
     modulesPanel:SetParent(window.container)
-    modulesPanel:SetPoint('TOPLEFT')
-    modulesPanel:SetPoint('BOTTOMRIGHT', window.container, 'BOTTOMLEFT', 180, 80)
     modulesPanel:Show()
+
+    local menuContainer = CreateFrame('Frame', nil, modulesPanel)
 
     local infoPanel = panel:Create()
     infoPanel:SetParent(window.container)
-    infoPanel:SetPoint('TOPLEFT', modulesPanel, 'BOTTOMLEFT', 0, -5)
-    infoPanel:SetPoint('BOTTOMRIGHT', modulesPanel, 'BOTTOMRIGHT', 0, 0)
-    infoPanel:SetPoint('BOTTOM')
     infoPanel:Show()
 
     local discordInput = EXFrames:GetFrame('edit-box-input'):Create({
         label = 'Discord',
-        initial = 'discord.gg/F8bhZUvQfz',
+        initial = DISCORD_LINK,
         onChange = function() end
     }, infoPanel)
     discordInput:SetPoint('TOPLEFT', 5, -5)
@@ -120,15 +248,38 @@ optionsMain.CreateWindow = function(self)
     changelogBtn:SetPoint('TOPLEFT', discordInput, 'BOTTOMLEFT', 0, -5)
     changelogBtn:SetPoint('BOTTOMRIGHT', infoPanel, 'BOTTOMRIGHT', -5, 5)
 
+    local navToggle = menuItemFrame:Create(modulesPanel)
+    navToggle:SetOnClick(function()
+        self:SetNavCompact(not self.isNavCompact, true)
+    end)
 
-    optionsModuleSelector:Create(modulesPanel)
+    self.window = window
+    self.modulesPanel = modulesPanel
+    self.menuContainer = menuContainer
+    self.infoPanel = infoPanel
+    self.discordInput = discordInput
+    self.changelogBtn = changelogBtn
+    self.navToggle = navToggle
+
+    self:ApplyPanelLayout(layout.nav, layout.info)
+    self:SetInfoPanelCompact(isCompact)
+    self:UpdateNavToggleLayout()
+
+    optionsModuleSelector:Create(menuContainer, window.container)
 
     local configPanel = panel:Create()
     configPanel:SetParent(window.container)
     configPanel:SetPoint('TOPLEFT', modulesPanel, 'TOPRIGHT', 5, 0)
     configPanel:SetPoint('BOTTOMRIGHT')
     configPanel:Show()
+    configPanel:SetFrameLevel(navToggle:GetFrameLevel() - 1)
+    navToggle:SetFrameLevel(configPanel:GetFrameLevel() + 5)
     optionsFields:Create(configPanel)
+    self.configPanel = configPanel
+
+    if (isCompact) then
+        optionsModuleSelector:SetCompactMode(true)
+    end
 
     self.editModeDialog = EXFrames:GetFrame('dialog-frame'):Create()
     self.editModeDialog:SetText(
@@ -154,8 +305,8 @@ optionsMain.CreateWindow = function(self)
             self.editModeDialog:ShowDialog()
             self.window:HideWindow()
         end,
-        size = { 100, 25 },
-        color = { 219 / 255, 73 / 255, 0, 1 }
+        size = { 86, 28 },
+        color = EXUI.const.theme.faded
     }, configPanel)
     editModeBtn:SetPoint('RIGHT', profilePanel, 'LEFT', -5, 0)
 
@@ -167,4 +318,13 @@ optionsMain.Show = function(self)
         self.window = self:CreateWindow()
     end
     self.window:ShowWindow()
+    optionsFields:RefreshFields()
+    C_Timer.After(0, function()
+        if (self.window and self.window:IsShown()) then
+            if (self.isNavCompact) then
+                optionsModuleSelector:Relayout()
+            end
+            optionsFields:RefreshFields()
+        end
+    end)
 end

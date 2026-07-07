@@ -22,8 +22,12 @@ data.Init = function(self)
         self.currentProfile = ExalityUICharData.currentProfile
     else
         ExalityUICharData = {
-            currentProfile = self.currentProfile
+            currentProfile = self.currentProfile,
+            optionsNavCompact = false,
         }
+    end
+    if (ExalityUICharData.optionsNavCompact == nil) then
+        ExalityUICharData.optionsNavCompact = false
     end
 end
 
