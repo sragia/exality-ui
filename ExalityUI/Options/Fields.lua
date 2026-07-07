@@ -185,7 +185,7 @@ optionsFields.RefreshSplitViewForTab = function(self)
 end
 
 optionsFields.AddTabs = function(self, module)
-    self.tabs = EXFrames:GetFrame('tabs-frame'):Create()
+    self.tabs = EXFrames:GetFrame('tabs-frame'):Create({ scrollable = true })
     self.tabs:SetParent(self.baseContainer)
     self.tabs:SetAllPoints()
     self.container = self.tabs.container
@@ -361,7 +361,9 @@ optionsFields.RefreshFields = function(self)
     end
 
     EXUI.utils.organizeFramesInGrid('fields', self.fields, 10, self.container, 10, 10)
-    if self.innerTabs and self.innerTabs.scrollable and self.innerTabs.UpdateScroll then
+    if self.tabs and self.tabs.scrollable and self.tabs.UpdateScroll and self.container == self.tabs.container then
+        self.tabs:UpdateScroll()
+    elseif self.innerTabs and self.innerTabs.scrollable and self.innerTabs.UpdateScroll and self.container == self.innerTabs.container then
         self.innerTabs:UpdateScroll()
     elseif self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
         self.splitView:UpdateScroll()

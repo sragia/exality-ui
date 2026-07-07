@@ -48,10 +48,10 @@ tagsInfo.Create = function(self)
         title = 'Tags Info'
     })
     local container = self.window.container
-    local scrollFrame = EXFrames:GetFrame('scroll-frame'):Create()
+    local scrollFrame = EXFrames:GetFrame('smooth-scroll-frame'):Create()
     scrollFrame:SetParent(container)
     scrollFrame:SetPoint('TOPLEFT', 0, -10)
-    scrollFrame:SetPoint('BOTTOMRIGHT', -30, 10)
+    scrollFrame:SetPoint('BOTTOMRIGHT', -5, 10)
     self.window.scrollFrame = scrollFrame
 
     local child = scrollFrame.child
@@ -71,6 +71,6 @@ tagsInfo.Show = function(self)
     end
 
     self.window:ShowWindow()
-    self.window.scrollFrame:UpdateScrollChild(self.window.container:GetWidth() - 30,
+    self.window.scrollFrame:UpdateScrollChild(self.window.container:GetWidth() - 10,
         self.window.container:GetHeight() - 20)
 end

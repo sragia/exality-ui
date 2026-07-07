@@ -47,10 +47,10 @@ changelog.SetupWindow = function(self)
         title = 'Changelog'
     })
 
-    local scrollFrame = EXFrames:GetFrame('scroll-frame'):Create()
+    local scrollFrame = EXFrames:GetFrame('smooth-scroll-frame'):Create()
     scrollFrame:SetParent(window.container)
     scrollFrame:SetPoint('TOPLEFT', 0, -10)
-    scrollFrame:SetPoint('BOTTOMRIGHT', -30, 10)
+    scrollFrame:SetPoint('BOTTOMRIGHT', -5, 10)
     window.scrollFrame = scrollFrame
 
     local child = scrollFrame.child
@@ -100,7 +100,7 @@ changelog.UpdateScrollHeight = function(self)
     local window = self.window
     if not window then return end
 
-    local width = window.container:GetWidth() - 30
+    local width = window.container:GetWidth() - 10
     local viewportHeight = window.container:GetHeight() - 20
 
     window.scrollFrame:UpdateScrollChild(width, viewportHeight)
