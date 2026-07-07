@@ -15,6 +15,15 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 ---@class EXUIUnitFramesOptionsGeneralFrame
 local generalFrame = EXUI:GetModule('uf-options-general-frame')
 
+local function getTextureDisplayValue(globalKey)
+    return function(value)
+        if value ~= '' then
+            return value
+        end
+        return core:GetValueForUnit('general', globalKey)
+    end
+end
+
 generalFrame.GetOptions = function(self, unit)
     return {
         {
@@ -89,6 +98,7 @@ generalFrame.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'overrideStatusBarTexture')
             end,
+            getDisplayValue = getTextureDisplayValue('statusBarTexture'),
             onChange = function(value)
                 core:UpdateValueForUnit(unit, 'overrideStatusBarTexture', value)
                 core:UpdateFrameForUnit(unit)
@@ -125,6 +135,7 @@ generalFrame.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'overrideDamageAbsorbTexture')
             end,
+            getDisplayValue = getTextureDisplayValue('damageAbsorbTexture'),
             onChange = function(value)
                 core:UpdateValueForUnit(unit, 'overrideDamageAbsorbTexture', value)
                 core:UpdateFrameForUnit(unit)
@@ -161,6 +172,7 @@ generalFrame.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'overrideHealAbsorbTexture')
             end,
+            getDisplayValue = getTextureDisplayValue('healAbsorbTexture'),
             onChange = function(value)
                 core:UpdateValueForUnit(unit, 'overrideHealAbsorbTexture', value)
                 core:UpdateFrameForUnit(unit)

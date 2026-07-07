@@ -9,6 +9,8 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIActionBarsGlobalOptions
 local globalOptions = EXUI:GetModule('action-bars-global-options')
 
+local cachedFontOptions
+
 local VISIBILITY = {
     always = 'Always',
     hover = 'On Hover',
@@ -36,13 +38,25 @@ globalOptions.GetOrientationOptions = function()
 end
 
 globalOptions.GetFontOptions = function()
+    if cachedFontOptions then
+        return cachedFontOptions
+    end
     local fonts = {}
     if LSM then
         for _, font in ipairs(LSM:List('font')) do
             fonts[font] = font
         end
     end
-    return fonts
+    cachedFontOptions = fonts
+    return cachedFontOptions
+end
+
+if LSM then
+    LSM.RegisterCallback(globalOptions, 'LibSharedMedia_Registered', function(_, mediaType)
+        if mediaType == 'font' then
+            cachedFontOptions = nil
+        end
+    end)
 end
 
 globalOptions.GetMasqueSkins = function()

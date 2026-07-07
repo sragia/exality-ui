@@ -23,6 +23,7 @@ optionsFields.innerTabs = nil
 optionsFields.currTabID = nil
 optionsFields.currItemID = nil
 optionsFields.fields = {}
+optionsFields.fieldCache = {}
 
 optionsFields.Init = function(self)
     EXUI.utils.addObserver(self)
@@ -222,9 +223,7 @@ end
 optionsFields.Refresh = function(self)
     local module = optionsController:GetSelectedModule()
 
-    for _, field in pairs(self.fields) do
-        field:Destroy()
-    end
+    self:InvalidateFieldCache()
     for _, module in pairs(optionsController:GetAllModules()) do
         if (module.optionHandler) then
             module.optionHandler(self.container, true)
@@ -246,7 +245,6 @@ optionsFields.Refresh = function(self)
     end
 
     self.container = self.baseContainer
-    self.fields = {}
 
     if (module.optionHandler) then
         module.optionHandler(self.container)
@@ -279,9 +277,68 @@ optionsFields.Refresh = function(self)
 end
 
 optionsFields.RefreshOptions = function(self)
+    self:InvalidateFieldCache(self:GetFieldCacheKey())
     C_Timer.After(0.3, function()
         self:RefreshFields()
     end)
+end
+
+optionsFields.GetFieldCacheKey = function(self)
+    local module = optionsController:GetSelectedModule()
+    if not module or not module.module or not module.module.GetName then
+        return nil
+    end
+    local moduleName = module.module:GetName()
+    if not moduleName then
+        return nil
+    end
+    return string.format('%s:%s:%s', moduleName, self.currItemID or '', self.currTabID or '')
+end
+
+optionsFields.InvalidateFieldCache = function(self, key)
+    local destroyed = {}
+    local function destroyField(field)
+        if not field or destroyed[field] then
+            return
+        end
+        destroyed[field] = true
+        if field.Destroy then
+            field:Destroy()
+        end
+    end
+
+    if key then
+        local cached = self.fieldCache[key]
+        if cached then
+            for _, field in ipairs(cached) do
+                destroyField(field)
+            end
+            self.fieldCache[key] = nil
+        end
+        for i = #self.fields, 1, -1 do
+            if destroyed[self.fields[i]] then
+                table.remove(self.fields, i)
+            end
+        end
+        return
+    end
+
+    for _, field in pairs(self.fields) do
+        destroyField(field)
+    end
+    for _, cached in pairs(self.fieldCache) do
+        for _, field in ipairs(cached) do
+            destroyField(field)
+        end
+    end
+    self.fieldCache = {}
+    self.fields = {}
+end
+
+optionsFields.HideActiveFields = function(self)
+    for _, field in ipairs(self.fields) do
+        field:Hide()
+    end
 end
 
 optionsFields.CreateOrUpdateTooltip = function(self, field, tooltipInfo)
@@ -325,38 +382,50 @@ optionsFields.RefreshFields = function(self)
     local module = optionsController:GetSelectedModule()
     local currentModule = module.module
 
-    for _, field in pairs(self.fields) do
-        field:Destroy()
-    end
+    self:HideActiveFields()
     self.fields = {}
 
     if self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
         self.splitView:UpdateScroll()
     end
 
-    local fields = currentModule:GetOptions(self.currTabID, self.currItemID)
-    for _, field in ipairs(fields) do
-        if (type(field) == 'function') then
-            local funcFields = field()
-            if (funcFields) then
-                for _, funcField in ipairs(funcFields) do
-                    local fieldFrame = self:GetField(funcField)
-                    self:CreateOrUpdateTooltip(fieldFrame, funcField.tooltip)
-                    if (fieldFrame) then
-                        fieldFrame:SetOptionData(funcField)
-                        fieldFrame:SetParent(self.container)
-                        table.insert(self.fields, fieldFrame)
+    local cacheKey = self:GetFieldCacheKey()
+    if cacheKey and self.fieldCache[cacheKey] then
+        for _, fieldFrame in ipairs(self.fieldCache[cacheKey]) do
+            fieldFrame:SetParent(self.container)
+            fieldFrame:Show()
+            table.insert(self.fields, fieldFrame)
+        end
+    else
+        local builtFields = {}
+        local fields = currentModule:GetOptions(self.currTabID, self.currItemID)
+        for _, field in ipairs(fields) do
+            if (type(field) == 'function') then
+                local funcFields = field()
+                if (funcFields) then
+                    for _, funcField in ipairs(funcFields) do
+                        local fieldFrame = self:GetField(funcField)
+                        self:CreateOrUpdateTooltip(fieldFrame, funcField.tooltip)
+                        if (fieldFrame) then
+                            fieldFrame:SetOptionData(funcField)
+                            fieldFrame:SetParent(self.container)
+                            table.insert(builtFields, fieldFrame)
+                        end
                     end
                 end
+            elseif (not field.depends or field.depends()) then
+                local fieldFrame = self:GetField(field)
+                self:CreateOrUpdateTooltip(fieldFrame, field.tooltip)
+                if (fieldFrame) then
+                    fieldFrame:SetOptionData(field)
+                    fieldFrame:SetParent(self.container)
+                    table.insert(builtFields, fieldFrame)
+                end
             end
-        elseif (not field.depends or field.depends()) then
-            local fieldFrame = self:GetField(field)
-            self:CreateOrUpdateTooltip(fieldFrame, field.tooltip)
-            if (fieldFrame) then
-                fieldFrame:SetOptionData(field)
-                fieldFrame:SetParent(self.container)
-                table.insert(self.fields, fieldFrame)
-            end
+        end
+        self.fields = builtFields
+        if cacheKey then
+            self.fieldCache[cacheKey] = builtFields
         end
     end
 
