@@ -16,6 +16,7 @@ local keybind = EXUI:GetModule('action-bars-keybind')
 keybind.buttons = {}
 keybind.hooked = false
 keybind.pendingReassign = false
+keybind.inHousing = false
 
 local function getBindingKeys(commandName)
     local keys = {}
@@ -148,8 +149,22 @@ keybind.ClearOverrides = function(self)
     end
 end
 
+-- The housing editor uses its own binding context; our overrides would shadow it
+keybind.HousingStateChanged = function(self, active)
+    active = not not active
+    if active == self.inHousing then
+        return
+    end
+    self.inHousing = active
+    if active then
+        self:ClearOverrides()
+    else
+        self:ReassignBindings()
+    end
+end
+
 keybind.ReassignBindings = function(self)
-    if not manager.enabled then
+    if not manager.enabled or self.inHousing then
         return
     end
     if InCombatLockdown() then
@@ -208,6 +223,9 @@ keybind.HookBindingEvents = function(self)
         EventRegistry:RegisterCallback('KeybindListener.RebindSuccess', function()
             keybind:ReassignBindings()
         end, keybind)
+        EventRegistry:RegisterCallback('HouseEditor.StateUpdated', function(_, active)
+            keybind:HousingStateChanged(active)
+        end, keybind)
     end
 end
 
@@ -224,6 +242,9 @@ end
 keybind.Init = function(self)
     self:HookActionButtonUtil()
     self:HookBindingEvents()
+    if C_HouseEditor and C_HouseEditor.IsHouseEditorActive then
+        self.inHousing = C_HouseEditor.IsHouseEditorActive()
+    end
     self:ReassignBindings()
 end
 
@@ -233,6 +254,7 @@ keybind.Clear = function(self)
     self.pendingReassign = false
     if EventRegistry and self.bindingEventsHooked then
         EventRegistry:UnregisterCallback('KeybindListener.RebindSuccess', keybind)
+        EventRegistry:UnregisterCallback('HouseEditor.StateUpdated', keybind)
     end
     self.bindingEventsHooked = false
 end
