@@ -21,6 +21,8 @@ extraAbilities.applyingLayout = false
 extraAbilities.cachedConfig = nil
 extraAbilities.pendingStyle = false
 extraAbilities.pendingClickThrough = false
+---@type boolean|nil desired anchor shown state deferred until combat ends
+extraAbilities.pendingShown = nil
 
 local function canModifyExtraFrames()
     return not InCombatLockdown()
@@ -126,7 +128,16 @@ extraAbilities.ClearManagedContainer = function(self)
 end
 
 extraAbilities.ApplyPending = function(self)
-    if not manager.enabled or InCombatLockdown() or not self.cachedConfig then
+    if InCombatLockdown() then
+        return
+    end
+
+    if self.pendingShown ~= nil and self.anchorFrame then
+        self.anchorFrame:SetShown(self.pendingShown)
+        self.pendingShown = nil
+    end
+
+    if not manager.enabled or not self.cachedConfig then
         return
     end
     if not self.pendingStyle and not self.pendingLayout and not self.pendingClickThrough then
@@ -262,12 +273,27 @@ extraAbilities.UpdateVisibilityAlpha = function(self, config, isHovering)
         return
     end
 
-    if config.visibility == 'hidden' then
-        frame:Hide()
-        return
+    local shouldShow = config.visibility ~= 'hidden'
+
+    -- Show/Hide on the anchor is protected in combat because the secure
+    -- extra ability frames are parented to it; fall back to alpha and
+    -- defer the real Show/Hide until combat ends.
+    if InCombatLockdown() then
+        if frame:IsShown() ~= shouldShow then
+            self.pendingShown = shouldShow
+        end
+        if not shouldShow then
+            frame:SetAlpha(0)
+            return
+        end
+    else
+        self.pendingShown = nil
+        frame:SetShown(shouldShow)
+        if not shouldShow then
+            return
+        end
     end
 
-    frame:Show()
     if isEditorActive(frame) then
         frame:SetAlpha(1)
     elseif config.visibility == 'hover' then
@@ -290,7 +316,12 @@ extraAbilities.Apply = function(self, db)
     local frame = self:GetAnchorFrame()
 
     if not config.enable then
-        frame:Hide()
+        if InCombatLockdown() then
+            frame:SetAlpha(0)
+            self.pendingShown = false
+        else
+            frame:Hide()
+        end
         return
     end
 
@@ -468,7 +499,12 @@ end
 
 extraAbilities.Disable = function(self)
     if self.anchorFrame then
-        self.anchorFrame:Hide()
+        if InCombatLockdown() then
+            self.anchorFrame:SetAlpha(0)
+            self.pendingShown = false
+        else
+            self.anchorFrame:Hide()
+        end
     end
     if ExtraAbilityContainer then
         if ExtraAbilityContainer.ClearAllPointsBase then

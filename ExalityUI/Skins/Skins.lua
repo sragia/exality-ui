@@ -15,29 +15,31 @@ skins.NineSliceTextures = {
     'BottomRightCorner',
     'BottomLeftCorner'
 }
+local function StripTexture(texture)
+    texture:SetTexture(nil)
+    texture:SetAlpha(0)
+    texture:SetVertexColor(0, 0, 0, 0)
+    texture:Hide()
+end
+
 local function StripNineSliceContainer(nineSliceTextures, container)
     if (not container) then return end
+    container.exuiNineSliceStripped = true
     for _, pieceName in ipairs(nineSliceTextures) do
         local piece = container[pieceName]
         if (piece and piece.SetTexture) then
-            piece:SetTexture(nil)
-            piece:SetAlpha(0)
-            piece:SetVertexColor(0, 0, 0, 0)
-            piece:Hide()
-            if (not piece.exuiStripped) then
-                piece.exuiStripped = true
-                piece.SetTextureOriginal = piece.SetTexture
-                piece.SetAtlasOriginal = piece.SetAtlas
-                piece.SetTexture = function()
-                    -- noop
-                end
-                piece.SetAtlas = function()
-                    -- noop
-                end
-            end
+            StripTexture(piece)
         end
     end
 end
+
+-- Re-strip after Blizzard reapplies a layout. Never replace piece methods with addon
+-- functions: secure callers (e.g. GameTooltip_OnHide) get tainted and error on secret values.
+hooksecurefunc(NineSliceUtil, 'ApplyLayout', function(container)
+    if (container.exuiNineSliceStripped) then
+        StripNineSliceContainer(skins.NineSliceTextures, container)
+    end
+end)
 
 skins.StripNineSlice = function(self, frame)
     if (frame.NineSlice) then
@@ -49,20 +51,7 @@ end
 
 local function StripThreeSliceTexture(texture)
     if (not texture) then return end
-    texture:SetTexture(nil)
-    texture:SetAlpha(0)
-    texture:Hide()
-    if (not texture.exuiStripped) then
-        texture.exuiStripped = true
-        texture.SetTextureOriginal = texture.SetTexture
-        texture.SetAtlasOriginal = texture.SetAtlas
-        texture.SetTexture = function()
-            -- noop
-        end
-        texture.SetAtlas = function()
-            -- noop
-        end
-    end
+    StripTexture(texture)
 end
 
 skins.StripThreeSliceButton = function(self, button, options)

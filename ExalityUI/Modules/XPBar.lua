@@ -493,6 +493,12 @@ xpBar.CreateFrame = function(self)
         self.Data:SetValue('xOffset', xOfs)
         self.Data:SetValue('yOffset', yOfs)
         self:Configure()
+    end, nil, function()
+        if (self.Data:GetValue('enable')) then
+            self:HandleVisibility()
+        else
+            self.frame:Hide()
+        end
     end)
 end
 
