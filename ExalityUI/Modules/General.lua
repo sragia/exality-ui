@@ -157,6 +157,10 @@ generalModule.UpdateUIScale = function(self)
     if EXUI.EXFrames and EXUI.EXFrames.RefreshPixelPerfect then
         EXUI.EXFrames:RefreshPixelPerfect()
     end
+    local ufCore = EXUI:GetModule('uf-core')
+    if ufCore and ufCore.UpdateAllFrames then
+        ufCore:UpdateAllFrames()
+    end
 end
 
 -- Only called on load

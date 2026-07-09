@@ -331,7 +331,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarBackgroundColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 25
         },
         {
             type = 'color-picker',
@@ -344,7 +344,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarBackgroundBorderColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 25
         },
         {
             type = 'color-picker',
@@ -357,7 +357,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarForegroundColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 25
         },
         {
             type = 'color-picker',
@@ -370,11 +370,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarSparkColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
-        },
-        {
-            type = 'spacer',
-            width = 20
+            width = 25
         },
         {
             type = 'range',
@@ -390,7 +386,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarEmpoweredStageWidth', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 25
         },
         {
             type = 'color-picker',
@@ -403,7 +399,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarEmpoweredStageColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 25
         },
         {
             type = 'range',
@@ -419,7 +415,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarSparkWidth', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 25
         },
         {
             type = 'color-picker',
@@ -432,7 +428,7 @@ castBar.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'castbarSparkColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 25
         },
     }
 end

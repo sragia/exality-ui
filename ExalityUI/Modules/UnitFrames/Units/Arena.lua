@@ -296,27 +296,23 @@ arena.Update = function(self, frame)
     self.frames[frame.index] = frame
     local db = core:GetDBForUnit(self.unit)
     local generalDB = core:GetDBForUnit('general')
-    self.container:SetSize(db.sizeWidth, db.sizeHeight * #self.frames + db.spacing * (#self.frames - 1))
-    self.container:ClearAllPoints()
-    self.container:SetPoint(
-        db.positionAnchorPoint,
-        UIParent,
-        db.positionRelativePoint,
-        db.positionXOff,
-        db.positionYOff
-    )
-
+    local spacing = EXUI:ScalePixel(db.spacing, self.container)
+    local containerHeight = db.sizeHeight * #self.frames + spacing * (#self.frames - 1)
+    core:ApplyContainerLayout(self.container, db, db.sizeWidth, containerHeight)
 
     frame.db = db
     frame.generalDB = generalDB
-    frame:SetSize(db.sizeWidth, db.sizeHeight)
+    EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
     frame:SetFrameLevel(self.container:GetFrameLevel() + 1)
 
     if (frame.index == 1) then
-        frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, 0)
+        frame:ClearAllPoints()
+        EXUI:SetPoint(frame, 'TOPLEFT', self.container, 'TOPLEFT', 0, 0)
     else
-        frame:SetPoint('TOPLEFT', self.frames[frame.index - 1], 'BOTTOMLEFT', 0, -db.spacing)
+        frame:ClearAllPoints()
+        EXUI:SetPoint(frame, 'TOPLEFT', self.frames[frame.index - 1], 'BOTTOMLEFT', 0, -spacing)
     end
+    core:SnapUnitFrame(frame)
 
     core:UpdateFrame(frame)
 end

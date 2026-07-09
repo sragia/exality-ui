@@ -296,6 +296,7 @@ targettarget.Update = function(self, frame)
     frame:ClearAllPoints()
     EXUI:SetPoint(frame, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
+    core:SnapUnitFrame(frame)
 
     core:UpdateFrame(frame)
 end

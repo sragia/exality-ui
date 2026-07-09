@@ -5,6 +5,7 @@ local pixelPerfect = EXUI:GetModule('pixel-perfect')
 
 pixelPerfect.UIScale = 1
 pixelPerfect.borders = {}
+pixelPerfect.snapFrames = {}
 
 ---@param region? Frame
 function pixelPerfect:GetLayoutScale(region)
@@ -53,9 +54,68 @@ function EXUI:GetBorderInset(region, thickness, padding)
     return self:ScalePixels(thickness, region) + padding
 end
 
+local ANCHOR_COORDS = {
+    TOPLEFT = function(left, bottom, width, height)
+        return left, bottom + height
+    end,
+    TOP = function(left, bottom, width, height)
+        return left + width * 0.5, bottom + height
+    end,
+    TOPRIGHT = function(left, bottom, width, height)
+        return left + width, bottom + height
+    end,
+    LEFT = function(left, bottom, width, height)
+        return left, bottom + height * 0.5
+    end,
+    CENTER = function(left, bottom, width, height)
+        return left + width * 0.5, bottom + height * 0.5
+    end,
+    RIGHT = function(left, bottom, width, height)
+        return left + width, bottom + height * 0.5
+    end,
+    BOTTOMLEFT = function(left, bottom, width, height)
+        return left, bottom
+    end,
+    BOTTOM = function(left, bottom, width, height)
+        return left + width * 0.5, bottom
+    end,
+    BOTTOMRIGHT = function(left, bottom, width, height)
+        return left + width, bottom
+    end,
+}
+
+local function getAnchorCoord(left, bottom, width, height, anchor)
+    local fn = ANCHOR_COORDS[anchor]
+    if not fn then
+        return left, bottom
+    end
+    return fn(left, bottom, width, height)
+end
+
+local function getRelativeAnchorCoord(relativeTo, relativePoint)
+    local left, bottom, width, height = relativeTo:GetRect()
+    if not left or not bottom or not width or not height then
+        return 0, 0
+    end
+    return getAnchorCoord(left, bottom, width, height, relativePoint)
+end
+
+---Register a root frame for pixel snapping on UI scale refresh.
+---@param frame Frame
+function EXUI:RegisterSnapFrame(frame)
+    table.insert(pixelPerfect.snapFrames, frame)
+end
+
 ---Align a frame's screen rect to the physical pixel grid.
 ---@param frame Frame
 function EXUI:SnapFrameToPixels(frame)
+    local point, relativeTo, relativePoint = frame:GetPoint(1)
+    if not point then
+        return
+    end
+    relativeTo = relativeTo or UIParent
+    relativePoint = relativePoint or point
+
     local scale = self:GetLayoutScale(frame)
 
     local left = frame:GetLeft()
@@ -84,8 +144,14 @@ function EXUI:SnapFrameToPixels(frame)
     local newBottom = fromPhysicalPixels(pxBottom, scale)
 
     frame:SetSize(newWidth, newHeight)
+
+    local frameX, frameY = getAnchorCoord(newLeft, newBottom, newWidth, newHeight, point)
+    local relX, relY = getRelativeAnchorCoord(relativeTo, relativePoint)
+    local newXOfs = frameX - relX
+    local newYOfs = frameY - relY
+
     frame:ClearAllPoints()
-    frame:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMLEFT', newLeft, newBottom)
+    frame:SetPoint(point, relativeTo, relativePoint, newXOfs, newYOfs)
 end
 
 function EXUI:SetSize(frame, width, height)
@@ -119,23 +185,25 @@ local function applyBorderThickness(border, thickness, region)
 
     border.Top:ClearAllPoints()
     border.Top:SetHeight(size)
-    border.Top:SetPoint('TOPLEFT', frame, 'TOPLEFT', size, 0)
-    border.Top:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -size, 0)
+    border.Top:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+    border.Top:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
 
     border.Bottom:ClearAllPoints()
     border.Bottom:SetHeight(size)
-    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', size, 0)
-    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -size, 0)
+    border.Bottom:SetSnapToPixelGrid(false)
+    local bottomNudge = EXUI:ScalePixels(1, region)
+    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, -bottomNudge)
+    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, -bottomNudge)
 
     border.Left:ClearAllPoints()
     border.Left:SetWidth(size)
-    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, -size)
-    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, size)
+    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, 0)
 
     border.Right:ClearAllPoints()
     border.Right:SetWidth(size)
-    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, -size)
-    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, size)
+    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
+    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
 end
 
 function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor)
@@ -203,6 +271,13 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     return border
 end
 
+local function refreshUnitFrameBorder(frame)
+    local elementFrame = frame.ElementFrame
+    if elementFrame and elementFrame.PPBorder then
+        elementFrame.PPBorder:SetBorderThickness(1)
+    end
+end
+
 pixelPerfect.Refresh = function(self)
     local snapped = {}
     for i = #self.borders, 1, -1 do
@@ -218,6 +293,16 @@ pixelPerfect.Refresh = function(self)
             end
         else
             table.remove(self.borders, i)
+        end
+    end
+
+    for i = #self.snapFrames, 1, -1 do
+        local frame = self.snapFrames[i]
+        if frame and frame.IsShown and frame:IsShown() then
+            EXUI:SnapFrameToPixels(frame)
+            refreshUnitFrameBorder(frame)
+        elseif not frame then
+            table.remove(self.snapFrames, i)
         end
     end
 end

@@ -302,9 +302,7 @@ focus.Update = function(self, frame)
     frame.db = db
     frame.generalDB = generalDB
 
-    frame:ClearAllPoints()
-    frame:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
-    frame:SetSize(db.sizeWidth, db.sizeHeight)
+    core:ApplyUnitFrameLayout(frame, db)
 
     core:UpdateFrame(frame)
 end

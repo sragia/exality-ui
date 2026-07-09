@@ -181,6 +181,8 @@ castBar.Update = function(self, frame)
             db.castbarYOffUIParent
         )
     end
+    EXUI:SnapFrameToPixels(container)
+    Castbar.PPBorder:SetBorderThickness(1)
 
     self:UpdateMover(frame)
 

@@ -27,25 +27,25 @@ local function ApplyMenuBorderEdges(overlay)
 
     border.Top:SetHeight(size)
     border.Top:ClearAllPoints()
-    border.Top:SetPoint('TOPLEFT', overlay, 'TOPLEFT', size, 0)
-    border.Top:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', -size, 0)
+    border.Top:SetPoint('TOPLEFT', overlay, 'TOPLEFT', 0, 0)
+    border.Top:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', 0, 0)
 
     border.Left:SetWidth(size)
     border.Left:ClearAllPoints()
-    border.Left:SetPoint('TOPLEFT', overlay, 'TOPLEFT', 0, -size)
-    border.Left:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', 0, size)
+    border.Left:SetPoint('TOPLEFT', overlay, 'TOPLEFT', 0, 0)
+    border.Left:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', 0, 0)
 
     border.Right:SetWidth(size)
     border.Right:ClearAllPoints()
-    border.Right:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', 0, -size)
-    border.Right:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', 0, size)
+    border.Right:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', 0, 0)
+    border.Right:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', 0, 0)
 
     border.Bottom:SetHeight(size)
     border.Bottom:SetSnapToPixelGrid(false)
     border.Bottom:ClearAllPoints()
     local bottomNudge = EXUI:ScalePixels(1, overlay)
-    border.Bottom:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', size, -bottomNudge)
-    border.Bottom:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', -size, -bottomNudge)
+    border.Bottom:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', 0, -bottomNudge)
+    border.Bottom:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', 0, -bottomNudge)
     border.Bottom:Show()
 end
 

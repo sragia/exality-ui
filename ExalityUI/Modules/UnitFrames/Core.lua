@@ -233,16 +233,37 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
     end)
 end
 
+core.SnapUnitFrame = function(self, frame)
+    EXUI:SnapFrameToPixels(frame)
+    local elementFrame = frame.ElementFrame
+    if elementFrame and elementFrame.PPBorder then
+        elementFrame.PPBorder:SetBorderThickness(1)
+    end
+end
+
+core.ApplyUnitFrameLayout = function(self, frame, db)
+    frame:ClearAllPoints()
+    EXUI:SetPoint(frame, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
+    self:SnapUnitFrame(frame)
+end
+
+core.ApplyContainerLayout = function(self, container, db, width, height)
+    container:ClearAllPoints()
+    EXUI:SetSize(container, width, height)
+    EXUI:SetPoint(container, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    EXUI:SnapFrameToPixels(container)
+end
+
 core.Base = function(self, frame)
-    local elementFrame = CreateFrame('Frame', '$parent_ElementFrame', frame, 'BackdropTemplate')
+    local elementFrame = CreateFrame('Frame', '$parent_ElementFrame', frame)
     elementFrame:SetAllPoints()
     elementFrame:SetFrameLevel(frame:GetFrameLevel() + 100)
-    -- Add Border
-    elementFrame:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    elementFrame:SetBackdropBorderColor(0, 0, 0, 1)
-    elementFrame:SetBackdropColor(0, 0, 0, 0)
+    elementFrame.PPBorder = EXUI:AddPixelPerfectBorder(elementFrame, 1, { register = false })
+    elementFrame.PPBorder:SetBorderColor(0, 0, 0, 1)
 
     frame.ElementFrame = elementFrame
+    EXUI:RegisterSnapFrame(frame)
 
     if (not self.groupUnitMap[frame.unit]) then
         frame.db = self:GetDBForUnit(frame.unit)
@@ -473,9 +494,11 @@ core.UpdateHeader = function(self, unit)
     if (header.groupHeaders) then
         -- Raid
         self:UpdateRaidLayout(header)
+        EXUI:SnapFrameToPixels(header)
     else
         -- Party
-        header:SetAttribute('yOffset', -db.spacing)
+        header:SetAttribute('yOffset', -EXUI:ScalePixel(db.spacing, header))
+        EXUI:SnapFrameToPixels(header)
     end
 end
 
@@ -483,8 +506,8 @@ core.UpdateRaidLayout = function(self, container)
     if (not container) then return end
     local unitWidth = self:GetValueForUnit('raid', 'sizeWidth')
     local unitHeight = self:GetValueForUnit('raid', 'sizeHeight')
-    local spacingX = self:GetValueForUnit('raid', 'spacingX')
-    local spacingY = self:GetValueForUnit('raid', 'spacingY')
+    local spacingX = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingX'), container)
+    local spacingY = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingY'), container)
     local numGroups = #container.groupHeaders
     local totalHeight = unitHeight * numGroups + spacingY * (numGroups - 1)
     EXUI:SetSize(container, unitWidth * 8 + spacingX * 7, totalHeight)
