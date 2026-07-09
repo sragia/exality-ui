@@ -3,6 +3,7 @@
     <Script file="GameTooltip.lua"/>
     <Script file="GameMenu.lua"/>
     <Script file="WorldMap.lua"/>
+    <Script file="PlayerSpells.lua"/>
     <Script file="QuestLog.lua"/>
     <Script file="BigWigs.lua"/>
 </Ui>

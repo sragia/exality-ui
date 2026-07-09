@@ -91,6 +91,8 @@ EXUI.const = {
             },
             solidBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/white.png]],
             whiteTextured = [[Interface/Addons/ExalityUI/ExalityFrames/Assets/white-textured.png]],
+            gradientBottom = [[Interface/Addons/ExalityUI/Assets/Images/Frames/gradient-bottom.png]],
+            gradientTop = [[Interface/Addons/ExalityUI/Assets/Images/Frames/gradient-top.png]],
             icons = {
                 info = [[Interface/Addons/ExalityUI/Assets/Images/Frames/info_icon.png]],
                 fullscreen = [[Interface/Addons/ExalityUI/Assets/Images/Icons/fullscreen.png]],

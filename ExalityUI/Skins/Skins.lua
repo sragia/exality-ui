@@ -268,7 +268,8 @@ skins.ApplyPanelButtonBackground = function(self, button)
     end
 
     button.exuiBg:SetTexture(EXUI.const.textures.frame.inputs.buttonBg)
-    button.exuiBg:SetTextureSliceMargins(PANEL_BUTTON_BG_MARGINS, PANEL_BUTTON_BG_MARGINS, PANEL_BUTTON_BG_MARGINS, PANEL_BUTTON_BG_MARGINS)
+    button.exuiBg:SetTextureSliceMargins(PANEL_BUTTON_BG_MARGINS, PANEL_BUTTON_BG_MARGINS, PANEL_BUTTON_BG_MARGINS,
+        PANEL_BUTTON_BG_MARGINS)
     button.exuiBg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
     button.exuiBg:SetAlpha(1)
     button.exuiBg:Show()
@@ -321,7 +322,8 @@ skins.ApplyPanelButtonHighlight = function(self, button)
     local highlight = button:GetHighlightTexture()
     if (not highlight) then return end
 
-    highlight:SetTextureSliceMargins(PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS)
+    highlight:SetTextureSliceMargins(PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS,
+        PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS)
     highlight:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
     highlight:SetVertexColor(unpack(GetTheme().accent))
     -- Undo a prior strip; the button widget drives visibility itself.
@@ -367,23 +369,346 @@ skins.SkinPanelButton = function(self, button, options)
 end
 
 ---Modern WowStyle1DropdownTemplate: flat dark box, 1px border, themed text and arrow.
+local MODERN_DROPDOWN_FONT_SIZE = 12
+local MODERN_DROPDOWN_MENU_FONT_SIZE = 11
+local MODERN_DROPDOWN_CHEVRON_SIZE = 12
+local MODERN_DROPDOWN_TEXT_LEFT_PAD = 10
+local MODERN_DROPDOWN_CHEVRON_RIGHT_PAD = 10
+local MODERN_DROPDOWN_MENU_HIGHLIGHT_ALPHA = 0.35
+local MODERN_DROPDOWN_MENU_FONT_NAME = 'ExalityUI_ModernDropdownMenuFont'
+local modernDropdownHooksInstalled = false
+
+local function EnsureModernDropdownMenuFontObject()
+    local font = _G[MODERN_DROPDOWN_MENU_FONT_NAME]
+    if (not font) then
+        font = CreateFont(MODERN_DROPDOWN_MENU_FONT_NAME)
+        font:SetFont(EXUI.const.fonts.DEFAULT, MODERN_DROPDOWN_MENU_FONT_SIZE, 'OUTLINE')
+    end
+    return MODERN_DROPDOWN_MENU_FONT_NAME
+end
+
+local function IsExuiDropdownMenuOwner(region)
+    while (region) do
+        if (region.exuiSkinned) then
+            return true
+        end
+
+        local owner = region.GetOwnerRegion and region:GetOwnerRegion()
+        if (owner and owner ~= region) then
+            region = owner
+        else
+            region = region:GetParent()
+        end
+    end
+
+    return false
+end
+
+local function StyleModernDropdownMenuFont(fontString, enabled, hovered)
+    if (not fontString or not fontString.SetFontObject) then return end
+
+    fontString:SetFontObject(EnsureModernDropdownMenuFontObject())
+
+    local th = GetTheme()
+    if (hovered) then
+        fontString:SetTextColor(unpack(th.white))
+    elseif (enabled == false) then
+        fontString:SetTextColor(unpack(th.textMuted))
+    else
+        fontString:SetTextColor(unpack(th.text))
+    end
+end
+
+local function SkinModernDropdownMenuPanel(menuFrame)
+    if (not menuFrame) then return end
+
+    local th = GetTheme()
+    local bg = menuFrame.exuiMenuBg
+
+    if (not bg) then
+        for _, region in ipairs({ menuFrame:GetRegions() }) do
+            if (region:IsObjectType('Texture')) then
+                local atlas = region.GetAtlas and region:GetAtlas()
+                if (atlas == 'common-dropdown-bg') then
+                    bg = region
+                    menuFrame.exuiMenuBg = bg
+                    break
+                end
+            end
+        end
+    end
+
+    if (bg) then
+        bg:ClearAllPoints()
+        bg:SetAllPoints(menuFrame)
+        bg:SetTexture(EXUI.const.textures.frame.solidBg)
+        bg:SetTexCoord(0, 1, 0, 1)
+        bg:SetVertexColor(unpack(th.backgroundDeep))
+        bg:SetAlpha(0.98)
+    end
+
+    skins:AddBorder(menuFrame, { thickness = 1, level = 600 })
+end
+
+local function SkinModernDropdownMenuHighlight(element)
+    local highlightFrame = element.HighlightBGTex
+    if (not highlightFrame) then return end
+
+    for _, region in ipairs({ highlightFrame:GetRegions() }) do
+        if (region:IsObjectType('Texture')) then
+            skins:StripTexture(region)
+        end
+    end
+
+    if (not highlightFrame.exuiHighlight) then
+        local highlight = highlightFrame:CreateTexture(nil, 'BACKGROUND')
+        highlight:SetTexture(EXUI.const.textures.frame.solidBg)
+        highlight:SetAllPoints()
+        highlightFrame.exuiHighlight = highlight
+    end
+
+    local th = GetTheme()
+    highlightFrame.exuiHighlight:SetVertexColor(th.accent[1], th.accent[2], th.accent[3],
+        MODERN_DROPDOWN_MENU_HIGHLIGHT_ALPHA)
+end
+
+local function WrapModernDropdownMenuHover(element)
+    local onEnter = element:GetScript('OnEnter')
+    if (onEnter and element.exuiWrappingEnter ~= onEnter) then
+        element.exuiWrappingEnter = onEnter
+        element:SetScript('OnEnter', function(button)
+            onEnter(button)
+            StyleModernDropdownMenuFont(button.Text, button:IsEnabled(), true)
+            StyleModernDropdownMenuFont(button.fontString, button:IsEnabled(), true)
+        end)
+    end
+
+    local onLeave = element:GetScript('OnLeave')
+    if (onLeave and element.exuiWrappingLeave ~= onLeave) then
+        element.exuiWrappingLeave = onLeave
+        element:SetScript('OnLeave', function(button)
+            onLeave(button)
+            StyleModernDropdownMenuFont(button.Text, button:IsEnabled(), false)
+            StyleModernDropdownMenuFont(button.fontString, button:IsEnabled(), false)
+        end)
+    end
+end
+
+local function SkinModernDropdownMenuElement(element)
+    if (not element) then return end
+
+    local enabled = element.IsEnabled and element:IsEnabled()
+
+    StyleModernDropdownMenuFont(element.Text, enabled, false)
+    StyleModernDropdownMenuFont(element.fontString, enabled, false)
+
+    SkinModernDropdownMenuHighlight(element)
+    WrapModernDropdownMenuHover(element)
+
+    if (element.arrow) then
+        element.arrow:SetTexture(EXUI.const.textures.frame.icons.chevronRight)
+        element.arrow:SetSize(10, 10)
+        element.arrow:SetDesaturated(true)
+        element.arrow:SetVertexColor(unpack(GetTheme().textMuted))
+    end
+
+    for _, key in ipairs({ 'leftTexture1', 'leftTexture2' }) do
+        local texture = element[key]
+        if (texture and texture:IsShown()) then
+            texture:SetDesaturated(true)
+            texture:SetVertexColor(unpack(GetTheme().accent))
+        end
+    end
+
+    for _, region in ipairs({ element:GetRegions() }) do
+        if (region:IsObjectType('Texture')) then
+            local file = region.GetTexture and region:GetTexture()
+            if (file == [[Interface\Common\UI-TooltipDivider-Transparent]]) then
+                skins:StripTexture(region)
+                region:SetTexture(EXUI.const.textures.frame.solidBg)
+                region:SetHeight(EXUI:ScalePixel(1, element, 1))
+                region:SetVertexColor(unpack(GetTheme().border))
+                region:Show()
+            end
+        end
+    end
+end
+
+local function RestyleModernDropdownMenu(menu)
+    if (not menu or not menu.ToProxy) then return end
+
+    local menuFrame = menu:ToProxy()
+    if (not IsExuiDropdownMenuOwner(menuFrame:GetOwnerRegion())) then return end
+
+    SkinModernDropdownMenuPanel(menuFrame)
+
+    if (menu.frames) then
+        for _, element in menu.frames:Enumerate() do
+            SkinModernDropdownMenuElement(element)
+        end
+    end
+end
+
+local function ApplyModernDropdownArrow(dropdown)
+    local arrow = dropdown.exuiChevron
+    if (not arrow) then return end
+
+    local th = GetTheme()
+
+    if (dropdown:IsEnabled()) then
+        if (dropdown:IsMouseOver()) then
+            arrow:SetVertexColor(unpack(th.white))
+        else
+            arrow:SetVertexColor(unpack(th.textMuted))
+        end
+    else
+        arrow:SetVertexColor(unpack(th.textMuted))
+    end
+
+    if (dropdown.IsMenuOpen and dropdown:IsMenuOpen()) then
+        arrow:SetRotation(math.rad(180))
+    else
+        arrow:SetRotation(0)
+    end
+end
+
+local function BlockDropdownStateTexture(texture)
+    if (not texture or texture.exuiStateTextureBlocked) then return end
+    texture.exuiStateTextureBlocked = true
+    skins:StripTexture(texture)
+    texture.SetAtlas = function() end
+    texture:Hide()
+end
+
+local function InstallModernDropdownHooks()
+    if (modernDropdownHooksInstalled) then return end
+    if (not WowStyle1DropdownMixin or not MenuMixin or not MenuStyle1Mixin or not DropdownButtonMixin) then return end
+    modernDropdownHooksInstalled = true
+
+    if (WowStyle1DropdownMixin) then
+        hooksecurefunc(WowStyle1DropdownMixin, 'OnButtonStateChanged', function(dropdown)
+            if (not dropdown.exuiSkinned) then return end
+
+            BlockDropdownStateTexture(dropdown.Background)
+            BlockDropdownStateTexture(dropdown.Arrow)
+            ApplyModernDropdownArrow(dropdown)
+
+            local text = dropdown.Text
+            if (not text) then return end
+
+            local th = GetTheme()
+            if (dropdown:IsEnabled()) then
+                text:SetTextColor(unpack(th.text))
+            else
+                text:SetTextColor(unpack(th.textMuted))
+            end
+        end)
+    end
+
+    if (MenuStyle1Mixin) then
+        hooksecurefunc(MenuStyle1Mixin, 'Generate', function(menuFrame)
+            if (IsExuiDropdownMenuOwner(menuFrame:GetOwnerRegion())) then
+                SkinModernDropdownMenuPanel(menuFrame)
+            end
+        end)
+    end
+
+    if (MenuMixin) then
+        hooksecurefunc(MenuMixin, 'PerformLayout', function(menu)
+            RestyleModernDropdownMenu(menu)
+        end)
+    end
+
+    if (DropdownButtonMixin) then
+        hooksecurefunc(DropdownButtonMixin, 'OnMenuOpened', function(dropdown, menu)
+            if (not dropdown.exuiSkinned) then return end
+            RestyleModernDropdownMenu(menu)
+        end)
+    end
+end
+
 skins.SkinModernDropdown = function(self, dropdown)
     if (not dropdown or dropdown.exuiSkinned) then return end
     dropdown.exuiSkinned = true
     local th = GetTheme()
 
-    self:StripRegions(dropdown, { 'Background' })
-    self:AddBackdrop(dropdown, { color = th.background, alpha = 0.9 })
-    self:AddBorder(dropdown)
+    InstallModernDropdownHooks()
 
-    if (dropdown.Arrow) then
-        dropdown.Arrow:SetDesaturated(true)
-        dropdown.Arrow:SetVertexColor(unpack(th.textMuted))
+    self:StripRegions(dropdown, { 'Background' })
+    BlockDropdownStateTexture(dropdown.Background)
+    BlockDropdownStateTexture(dropdown.Arrow)
+
+    if (dropdown.exuiBackdrop) then
+        dropdown.exuiBackdrop:Hide()
     end
+
+    if (not dropdown.exuiBg) then
+        local bg = dropdown:CreateTexture(nil, 'BACKGROUND', nil, 0)
+        bg:SetTexture(EXUI.const.textures.frame.solidBg)
+        bg:SetAllPoints()
+        dropdown.exuiBg = bg
+    end
+
+    if (not dropdown.exuiBorderOverlay) then
+        local overlay = CreateFrame('Frame', nil, dropdown)
+        overlay:SetAllPoints()
+        overlay:SetFrameLevel(500)
+        overlay:EnableMouse(false)
+        overlay.PPBorder = EXUI:AddPixelPerfectBorder(overlay, 1, { register = false, layer = 'OVERLAY' })
+        dropdown.exuiBorderOverlay = overlay
+    end
+
+    if (not dropdown.exuiChevron) then
+        local chevron = dropdown:CreateTexture(nil, 'OVERLAY', nil, 2)
+        chevron:SetTexture(EXUI.const.textures.frame.inputs.chevronDown)
+        chevron:SetSize(MODERN_DROPDOWN_CHEVRON_SIZE, MODERN_DROPDOWN_CHEVRON_SIZE)
+        chevron:SetPoint('RIGHT', dropdown, 'RIGHT', -MODERN_DROPDOWN_CHEVRON_RIGHT_PAD, 0)
+        chevron:SetDesaturated(true)
+        dropdown.exuiChevron = chevron
+    end
+
+    dropdown.exuiBg:SetVertexColor(unpack(th.background))
+    dropdown.exuiBorderOverlay.PPBorder:SetBorderColor(unpack(th.border))
+
+    ApplyModernDropdownArrow(dropdown)
+
     if (dropdown.Text) then
-        dropdown.Text:SetFont(EXUI.const.fonts.DEFAULT, 12, '')
+        dropdown.Text:SetFont(EXUI.const.fonts.DEFAULT, MODERN_DROPDOWN_FONT_SIZE, '')
+        dropdown.Text:ClearAllPoints()
+        dropdown.Text:SetPoint('LEFT', dropdown, 'LEFT', MODERN_DROPDOWN_TEXT_LEFT_PAD, 0)
+        dropdown.Text:SetPoint('RIGHT', dropdown.exuiChevron, 'LEFT', -6, 0)
         dropdown.Text:SetTextColor(unpack(th.text))
     end
+
+    local function ApplyBorderState(active)
+        local border = dropdown.exuiBorderOverlay and dropdown.exuiBorderOverlay.PPBorder
+        if (border) then
+            local color = active and GetTheme().accent or GetTheme().border
+            border:SetBorderColor(unpack(color))
+        end
+    end
+
+    dropdown:HookScript('OnEnter', function()
+        ApplyBorderState(true)
+        ApplyModernDropdownArrow(dropdown)
+    end)
+    dropdown:HookScript('OnLeave', function()
+        ApplyBorderState(false)
+        ApplyModernDropdownArrow(dropdown)
+    end)
+    dropdown:HookScript('OnMouseDown', function()
+        ApplyBorderState(true)
+    end)
+    dropdown:HookScript('OnMouseUp', function()
+        ApplyBorderState(dropdown:IsMouseOver())
+        ApplyModernDropdownArrow(dropdown)
+    end)
+    dropdown:HookScript('OnShow', function()
+        if (dropdown.exuiBg) then
+            dropdown.exuiBg:Show()
+        end
+        ApplyModernDropdownArrow(dropdown)
+    end)
 end
 
 ---SearchBoxTemplate: flat dark input matching Exality edit boxes.
@@ -392,11 +717,16 @@ local SEARCH_BOX_ICON_LEFT_PAD = 8
 local SEARCH_BOX_ICON_SIZE = 10
 local SEARCH_BOX_TEXT_LEFT_INSET = SEARCH_BOX_ICON_LEFT_PAD + SEARCH_BOX_ICON_SIZE + 6
 
-local function RefreshSearchBoxBorder(searchBox)
-    local chrome = searchBox.exuiChrome
-    if (not chrome or not chrome.PPBorder) then return end
-    EXUI:SnapFrameToPixels(chrome)
-    chrome.PPBorder:SetBorderThickness(1)
+local function RefreshSearchBoxChrome(searchBox)
+    if (searchBox.exuiBg) then
+        searchBox.exuiBg:Show()
+    end
+
+    local overlay = searchBox.exuiBorderOverlay
+    if (overlay and overlay.PPBorder) then
+        overlay:SetAllPoints()
+        overlay.PPBorder:SetBorderThickness(1)
+    end
 end
 
 skins.SkinSearchBox = function(self, searchBox)
@@ -405,30 +735,28 @@ skins.SkinSearchBox = function(self, searchBox)
 
     self:StripRegions(searchBox, { 'Left', 'Right', 'Middle' })
 
-    if (not searchBox.exuiChrome) then
-        local chrome = CreateFrame('Frame', nil, searchBox:GetParent())
-        chrome:SetPoint('TOPLEFT', searchBox, 'TOPLEFT', 0, 0)
-        chrome:SetPoint('BOTTOMRIGHT', searchBox, 'BOTTOMRIGHT', 0, 0)
-        chrome:SetFrameLevel(searchBox:GetFrameLevel() - 1)
-        chrome:EnableMouse(false)
-
-        local bg = chrome:CreateTexture(nil, 'BACKGROUND')
-        bg:SetTexture(EXUI.const.textures.frame.inputs.editboxBg)
-        bg:SetTextureSliceMargins(6, 6, 6, 6)
-        bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    if (not searchBox.exuiBg) then
+        local bg = searchBox:CreateTexture(nil, 'BACKGROUND', nil, 0)
+        bg:SetTexture(EXUI.const.textures.frame.solidBg)
         bg:SetAllPoints()
-        chrome.bg = bg
-
-        chrome.PPBorder = EXUI:AddPixelPerfectBorder(chrome, 1, { register = true, layer = 'OVERLAY' })
-        searchBox.exuiChrome = chrome
+        searchBox.exuiBg = bg
     end
 
-    searchBox.exuiChrome.bg:SetVertexColor(unpack(th.backgroundDeep))
-    searchBox.exuiChrome.PPBorder:SetBorderColor(unpack(th.border))
-    RefreshSearchBoxBorder(searchBox)
+    if (not searchBox.exuiBorderOverlay) then
+        local overlay = CreateFrame('Frame', nil, searchBox)
+        overlay:SetAllPoints()
+        overlay:SetFrameLevel(500)
+        overlay:EnableMouse(false)
+        overlay.PPBorder = EXUI:AddPixelPerfectBorder(overlay, 1, { register = false, layer = 'OVERLAY' })
+        searchBox.exuiBorderOverlay = overlay
+    end
+
+    searchBox.exuiBg:SetVertexColor(unpack(th.background))
+    searchBox.exuiBorderOverlay.PPBorder:SetBorderColor(unpack(th.border))
+    RefreshSearchBoxChrome(searchBox)
 
     local function ApplyBorderState(active)
-        local border = searchBox.exuiChrome and searchBox.exuiChrome.PPBorder
+        local border = searchBox.exuiBorderOverlay and searchBox.exuiBorderOverlay.PPBorder
         if (border) then
             local color = active and GetTheme().accent or GetTheme().border
             border:SetBorderColor(unpack(color))
@@ -474,8 +802,8 @@ skins.SkinSearchBox = function(self, searchBox)
         end)
     end
 
-    searchBox:HookScript('OnShow', RefreshSearchBoxBorder)
-    searchBox:HookScript('OnSizeChanged', RefreshSearchBoxBorder)
+    searchBox:HookScript('OnShow', RefreshSearchBoxChrome)
+    searchBox:HookScript('OnSizeChanged', RefreshSearchBoxChrome)
     searchBox:HookScript('OnEditFocusGained', function()
         ApplyBorderState(true)
     end)
@@ -494,6 +822,180 @@ skins.SkinSearchBox = function(self, searchBox)
     end)
 
     searchBox.exuiSkinned = true
+end
+
+---SpellSearchPreviewContainerTemplate: flat dropdown under spell/talent search boxes.
+local SEARCH_PREVIEW_FONT_SIZE = 11
+local SEARCH_PREVIEW_HIGHLIGHT_ALPHA = 0.35
+local searchPreviewHooksInstalled = false
+
+local function StyleSearchPreviewLabel(fontString)
+    if (not fontString) then return end
+    local th = GetTheme()
+    fontString:SetFont(EXUI.const.fonts.DEFAULT, SEARCH_PREVIEW_FONT_SIZE, 'OUTLINE')
+    fontString:SetTextColor(unpack(th.text))
+end
+
+local function ApplySearchPreviewRowHighlight(button, highlighted)
+    if (not button) then return end
+    local th = GetTheme()
+
+    if (not button.exuiHighlight) then
+        local highlight = button:CreateTexture(nil, 'BACKGROUND', nil, 2)
+        highlight:SetTexture(EXUI.const.textures.frame.solidBg)
+        highlight:SetAllPoints()
+        button.exuiHighlight = highlight
+    end
+
+    if (highlighted) then
+        button.exuiHighlight:SetVertexColor(th.accent[1], th.accent[2], th.accent[3], SEARCH_PREVIEW_HIGHLIGHT_ALPHA)
+        button.exuiHighlight:Show()
+    else
+        button.exuiHighlight:Hide()
+    end
+
+    if (button.HighlightTexture) then
+        button.HighlightTexture:Hide()
+    end
+end
+
+local function SkinSearchPreviewRow(button)
+    if (not button or button.exuiPreviewRowSkinned) then return end
+    button.exuiPreviewRowSkinned = true
+    local th = GetTheme()
+
+    skins:StripTexture(button:GetNormalTexture())
+    skins:StripTexture(button:GetPushedTexture())
+    if (button.HighlightTexture) then
+        skins:StripTexture(button.HighlightTexture)
+    end
+
+    if (button.IconFrame) then
+        button.IconFrame:SetDesaturated(true)
+        button.IconFrame:SetVertexColor(unpack(th.border))
+    end
+
+    if (button.Icon and button.Icon.SetDesaturated and not button.Name) then
+        button.Icon:SetDesaturated(true)
+        button.Icon:SetVertexColor(unpack(th.textMuted))
+    end
+
+    StyleSearchPreviewLabel(button.Name or button.Text)
+end
+
+local function RestyleSearchPreviewSuggestedRows(container)
+    if (not container or not container.suggestedResultButtonsPool) then return end
+
+    for button in container.suggestedResultButtonsPool:EnumerateActive() do
+        SkinSearchPreviewRow(button)
+        ApplySearchPreviewRowHighlight(button, button.displayIndex == container.highlightedIndex)
+    end
+end
+
+local function RefreshSearchPreviewLayer(container)
+    if (not container) then return end
+
+    if (container.exuiBg) then
+        container.exuiBg:Show()
+    end
+
+    local parent = container:GetParent()
+    if (parent) then
+        container:SetFrameStrata(parent:GetFrameStrata())
+        container:SetFrameLevel(math.max(container:GetFrameLevel(), parent:GetFrameLevel() + 150))
+    end
+
+    if (container.exuiBorderOverlay) then
+        container.exuiBorderOverlay:SetFrameLevel(container:GetFrameLevel() + 50)
+    end
+
+    if (container.ScrollBox) then
+        container.ScrollBox:SetFrameStrata(container:GetFrameStrata())
+        container.ScrollBox:SetFrameLevel(container:GetFrameLevel() + 10)
+    end
+
+    if (container.suggestedResultButtonsPool) then
+        for button in container.suggestedResultButtonsPool:EnumerateActive() do
+            button:SetFrameStrata(container:GetFrameStrata())
+            button:SetFrameLevel(container:GetFrameLevel() + 20)
+        end
+    end
+end
+
+local function InstallSearchPreviewHooks()
+    if (searchPreviewHooksInstalled) then return end
+    searchPreviewHooksInstalled = true
+
+    hooksecurefunc(SpellSearchPreviewResultMixin, 'Init', function(button)
+        SkinSearchPreviewRow(button)
+        ApplySearchPreviewRowHighlight(button, false)
+
+        local owner = button.owningFrame
+        if (owner and owner.exuiPreviewWidth) then
+            button:SetWidth(owner.exuiPreviewWidth)
+        end
+    end)
+
+    hooksecurefunc(SpellSearchPreviewResultMixin, 'OnShow', function(button)
+        local owner = button.owningFrame
+        if (owner and owner.exuiSkinned) then
+            button:SetFrameStrata(owner:GetFrameStrata())
+            button:SetFrameLevel(owner:GetFrameLevel() + 25)
+        end
+    end)
+
+    hooksecurefunc(SpellSearchPreviewResultMixin, 'SetHighlighted', function(button, isHighlighted)
+        ApplySearchPreviewRowHighlight(button, isHighlighted)
+    end)
+
+    hooksecurefunc(SpellSearchPreviewContainerMixin, 'UpdateResultsDisplay', function(container)
+        RestyleSearchPreviewSuggestedRows(container)
+        RefreshSearchPreviewLayer(container)
+    end)
+
+    hooksecurefunc(SpellSearchPreviewContainerMixin, 'HighlightPreviewResult', function(container)
+        RestyleSearchPreviewSuggestedRows(container)
+    end)
+end
+
+skins.SkinSearchPreviewContainer = function(self, container)
+    if (not container or container.exuiSkinned) then return end
+    container.exuiSkinned = true
+    local th = GetTheme()
+
+    InstallSearchPreviewHooks()
+
+    self:StripRegions(container, {
+        'Background',
+        'BorderAnchor',
+        'BotRightCorner',
+        'BottomBorder',
+        'LeftBorder',
+        'RightBorder',
+    })
+
+    if (container.exuiBackdrop) then
+        container.exuiBackdrop:Hide()
+    end
+
+    if (not container.exuiBg) then
+        local bg = container:CreateTexture(nil, 'BACKGROUND', nil, 0)
+        bg:SetTexture(EXUI.const.textures.frame.solidBg)
+        bg:SetAllPoints()
+        container.exuiBg = bg
+    end
+
+    container.exuiBg:SetVertexColor(unpack(th.backgroundDeep))
+    self:AddBorder(container, { thickness = 1, level = 40 })
+
+    if (container.OverflowCount and container.OverflowCount.Text) then
+        local overflowText = container.OverflowCount.Text
+        overflowText:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
+        overflowText:SetTextColor(unpack(th.textMuted))
+    end
+
+    container:HookScript('OnShow', RefreshSearchPreviewLayer)
+    RefreshSearchPreviewLayer(container)
 end
 
 ---Flat restyle for the code-created MinimalScrollBar (modern ScrollFrameTemplate scroll bar).
