@@ -8,11 +8,12 @@ local RDCore = EXUI:GetModule('resource-displays-core')
 
 local statusBar = EXUI:GetModule('resource-displays-elements-status-bar')
 
-local function ApplyInsets(statusBarFrame, parent)
+statusBar.ApplyInsets = function(self, statusBarFrame, parent)
     local inset = EXUI:ScalePixels(1, parent)
     statusBarFrame:ClearAllPoints()
     statusBarFrame:SetPoint('TOPLEFT', parent, 'TOPLEFT', inset, -inset)
-    statusBarFrame:SetPoint('BOTTOMRIGHT', parent, 'BOTTOMRIGHT', -inset, inset)
+    -- Bottom border is nudged down 1px for pixel alignment, so no bottom inset.
+    statusBarFrame:SetPoint('BOTTOMRIGHT', parent, 'BOTTOMRIGHT', -inset, 0)
 end
 
 statusBar.Create = function(self, frame)
@@ -21,7 +22,7 @@ statusBar.Create = function(self, frame)
     bar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     bar:SetMinMaxValues(0, 100)
     bar:SetValue(0)
-    ApplyInsets(bar, frame)
+    self:ApplyInsets(bar, frame)
 
     return bar
 end
@@ -30,7 +31,7 @@ statusBar.Update = function(self, frame)
     local db = frame.db
     local bar = frame.StatusBar
 
-    ApplyInsets(bar, frame)
+    self:ApplyInsets(bar, frame)
 
     if (db.barTexture) then
         local texture = LSM:Fetch('statusbar', db.barTexture)

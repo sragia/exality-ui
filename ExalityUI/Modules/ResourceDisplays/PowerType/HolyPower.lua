@@ -10,14 +10,14 @@ local holyPower = EXUI:GetModule('resource-displays-holy-power')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
 
 holyPower.CreateSinglePower = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
 
     local statusBar = CreateFrame('StatusBar', nil, frame)
-    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
-    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
+    statusBarElement:ApplyInsets(statusBar, frame)
     statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     statusBar:SetMinMaxValues(0, 1)
     statusBar:SetValue(0)
@@ -90,9 +90,7 @@ holyPower.Update = function(frame)
         EXUI:SetSize(powerFrame, db.hpWidth, db.hpHeight)
         powerFrame.StatusBar:SetStatusBarColor(db.hpColor.r, db.hpColor.g, db.hpColor.b, db.hpColor.a)
         powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.hpBarTexture))
-        powerFrame:SetBackdropColor(db.hpBackgroundColor.r, db.hpBackgroundColor.g, db.hpBackgroundColor.b,
-            db.hpBackgroundColor.a)
-        powerFrame:SetBackdropBorderColor(db.hpBorderColor.r, db.hpBorderColor.g, db.hpBorderColor.b, db.hpBorderColor.a)
+        core:ApplySegmentChrome(powerFrame, db.hpBackgroundColor, db.hpBorderColor)
         powerFrame.FillAnimation = db.fillAnimation
     end
 
@@ -107,7 +105,8 @@ holyPower.Update = function(frame)
         prev = activeFrame
     end
 
-    frame:SetSize(db.hpWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.hpHeight)
+    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.hpWidth, db.hpHeight, #frame.ActiveFrames, db.hpSpacing)
+    EXUI:SetSize(frame, groupWidth, groupHeight)
 
     frame:OnEvent('UNIT_POWER_UPDATE', 'player', 'HOLY_POWER') -- Trigger Update
 end
@@ -228,7 +227,7 @@ holyPower.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'hpBackgroundColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 26
         },
         {
             type = 'color-picker',

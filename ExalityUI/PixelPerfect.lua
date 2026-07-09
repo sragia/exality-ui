@@ -301,6 +301,9 @@ pixelPerfect.Refresh = function(self)
         if frame and frame.IsShown and frame:IsShown() then
             EXUI:SnapFrameToPixels(frame)
             refreshUnitFrameBorder(frame)
+            if frame.ApplyContentInsets then
+                frame:ApplyContentInsets()
+            end
         elseif not frame then
             table.remove(self.snapFrames, i)
         end

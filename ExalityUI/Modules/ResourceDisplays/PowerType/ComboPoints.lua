@@ -10,14 +10,14 @@ local comboPoints = EXUI:GetModule('resource-displays-combo-points')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
 
 comboPoints.CreateSinglePower = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
 
     local statusBar = CreateFrame('StatusBar', nil, frame)
-    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
-    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
+    statusBarElement:ApplyInsets(statusBar, frame)
     statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     statusBar:SetMinMaxValues(0, 1)
     statusBar:SetValue(0)
@@ -96,11 +96,7 @@ comboPoints.Update = function(frame)
         powerFrame.StatusBar:SetStatusBarColor(db.comboPointsColor.r, db.comboPointsColor.g, db.comboPointsColor.b,
             db.comboPointsColor.a)
         powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.comboPointsBarTexture))
-        powerFrame:SetBackdropColor(db.comboPointsBackgroundColor.r, db.comboPointsBackgroundColor.g,
-            db.comboPointsBackgroundColor.b,
-            db.comboPointsBackgroundColor.a)
-        powerFrame:SetBackdropBorderColor(db.comboPointsBorderColor.r, db.comboPointsBorderColor.g,
-            db.comboPointsBorderColor.b, db.comboPointsBorderColor.a)
+        core:ApplySegmentChrome(powerFrame, db.comboPointsBackgroundColor, db.comboPointsBorderColor)
         powerFrame.FillAnimation = db.fillAnimation
     end
 
@@ -115,7 +111,8 @@ comboPoints.Update = function(frame)
         prev = activeFrame
     end
 
-    frame:SetSize(db.comboPointsWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.comboPointsHeight)
+    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.comboPointsWidth, db.comboPointsHeight, #frame.ActiveFrames, db.comboPointsSpacing)
+    EXUI:SetSize(frame, groupWidth, groupHeight)
 
     frame:OnEvent('UNIT_POWER_UPDATE', 'player', 'COMBO_POINTS') -- Trigger Update
 end

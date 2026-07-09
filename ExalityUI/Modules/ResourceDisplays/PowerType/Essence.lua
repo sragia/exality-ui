@@ -11,6 +11,7 @@ local optionsFields = EXUI:GetModule('options-fields')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
 
 ------------------
 
@@ -135,8 +136,7 @@ essence.CreateSingleEssence = function(self, parent)
     EXUI:SetSize(frame, 30, 16)
 
     local statusBar = CreateFrame('StatusBar', nil, frame)
-    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
-    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
+    statusBarElement:ApplyInsets(statusBar, frame)
     statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     statusBar:SetMinMaxValues(0, 1)
     statusBar:SetValue(0)
@@ -260,11 +260,7 @@ essence.Update = function(frame)
         essenceFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.essenceBarTexture))
         essenceFrame.StatusBar:SetStatusBarColor(db.essenceColor.r, db.essenceColor.g, db.essenceColor.b,
             db.essenceColor.a)
-        essenceFrame:SetBackdropColor(db.essenceBackgroundColor.r, db.essenceBackgroundColor.g,
-            db.essenceBackgroundColor.b,
-            db.essenceBackgroundColor.a)
-        essenceFrame:SetBackdropBorderColor(db.essenceBorderColor.r, db.essenceBorderColor.g, db.essenceBorderColor.b,
-            db.essenceBorderColor.a)
+        core:ApplySegmentChrome(essenceFrame, db.essenceBackgroundColor, db.essenceBorderColor)
         essenceFrame.Text:SetFont(LSM:Fetch('font', db.essenceFont), db.essenceFontSize, db.essenceFontFlag)
         essenceFrame.Text:SetVertexColor(db.essenceTextColor.r, db.essenceTextColor.g, db.essenceTextColor.b,
             db.essenceTextColor.a)
@@ -286,7 +282,8 @@ essence.Update = function(frame)
         prev = activeFrame
     end
 
-    frame:SetSize(db.essenceWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.essenceHeight)
+    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.essenceWidth, db.essenceHeight, #frame.ActiveFrames, db.essenceSpacing)
+    EXUI:SetSize(frame, groupWidth, groupHeight)
     frame:OnEvent()
 end
 

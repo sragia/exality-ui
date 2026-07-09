@@ -403,15 +403,88 @@ core.CreateNewDisplay = function(self)
     self:SetDisplayToDB(display)
 end
 
-core.ApplyDisplayChrome = function(self, frame)
+core.GetSegmentGroupSize = function(self, segmentWidth, segmentHeight, count, spacing)
+    if count <= 0 then
+        return 0, segmentHeight
+    end
+    local totalWidth = segmentWidth * count + spacing * (count - 1)
+    return totalWidth, segmentHeight
+end
+
+core.RefreshSegmentFrame = function(self, segmentFrame)
+    EXUI:SnapFrameToPixels(segmentFrame)
+    if segmentFrame.PPBorder then
+        segmentFrame.PPBorder:SetBorderThickness(1)
+    end
+    if segmentFrame.StatusBar then
+        EXUI:GetModule('resource-displays-elements-status-bar'):ApplyInsets(segmentFrame.StatusBar, segmentFrame)
+    end
+end
+
+core.RefreshSegmentFrames = function(self, frame)
+    if not frame.ActiveFrames then
+        return
+    end
+    EXUI:SnapFrameToPixels(frame)
+    for _, segmentFrame in ipairs(frame.ActiveFrames) do
+        self:RefreshSegmentFrame(segmentFrame)
+    end
+end
+
+core.ClearDisplayChrome = function(self, frame)
+    frame:SetBackdrop(nil)
+    if frame.PPBorder then
+        frame.PPBorder.Top:Hide()
+        frame.PPBorder.Bottom:Hide()
+        frame.PPBorder.Left:Hide()
+        frame.PPBorder.Right:Hide()
+    end
+end
+
+core.ApplyDisplayChrome = function(self, frame, resourceType)
+    resourceType = resourceType or (frame.db and frame.db.resourceType)
+    if resourceType and self:IsSelfControlledSize(resourceType) then
+        self:ClearDisplayChrome(frame)
+        return
+    end
+
     frame:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
     frame:SetBackdropColor(0, 0, 0, 0.5)
     if not frame.PPBorder then
         frame.PPBorder = EXUI:AddPixelPerfectBorder(frame, 1)
     else
         frame.PPBorder:SetBorderThickness(1)
+        frame.PPBorder.Top:Show()
+        frame.PPBorder.Bottom:Show()
+        frame.PPBorder.Left:Show()
+        frame.PPBorder.Right:Show()
     end
     frame.PPBorder:SetBorderColor(0, 0, 0, 1)
+end
+
+core.ApplySegmentChrome = function(self, segmentFrame, bgColor, borderColor)
+    segmentFrame:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
+    if bgColor then
+        segmentFrame:SetBackdropColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
+    end
+    if not segmentFrame.PPBorder then
+        segmentFrame.PPBorder = EXUI:AddPixelPerfectBorder(segmentFrame, 1, { register = false })
+    else
+        segmentFrame.PPBorder:SetBorderThickness(1)
+        segmentFrame.PPBorder.Top:Show()
+        segmentFrame.PPBorder.Bottom:Show()
+        segmentFrame.PPBorder.Left:Show()
+        segmentFrame.PPBorder.Right:Show()
+    end
+    if borderColor then
+        segmentFrame.PPBorder:SetBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+    end
+end
+
+core.ApplyContentInsets = function(self, frame)
+    if frame.StatusBar then
+        EXUI:GetModule('resource-displays-elements-status-bar'):ApplyInsets(frame.StatusBar, frame)
+    end
 end
 
 core.Create = function(self, resourceType)
@@ -428,7 +501,15 @@ core.Create = function(self, resourceType)
         control:Create(frame)
     end
 
-    self:ApplyDisplayChrome(frame)
+    self:ApplyDisplayChrome(frame, resourceType)
+    EXUI:RegisterSnapFrame(frame)
+    frame.ApplyContentInsets = function()
+        if frame.db and core:IsSelfControlledSize(frame.db.resourceType) then
+            core:RefreshSegmentFrames(frame)
+        else
+            core:ApplyContentInsets(frame)
+        end
+    end
 
     return frame
 end
@@ -529,7 +610,9 @@ core.RefreshDisplayByID = function(self, displayID)
     frame:Show()
     local displayDB = self:GetDBByDisplayID(displayID)
     frame.db = displayDB
-    EXUI:SetSize(frame, displayDB.width, displayDB.height)
+    if not self:IsSelfControlledSize(displayDB.resourceType) then
+        EXUI:SetSize(frame, displayDB.width, displayDB.height)
+    end
     EXUI:SetPoint(
         frame,
         displayDB.anchorPoint,
@@ -540,6 +623,7 @@ core.RefreshDisplayByID = function(self, displayID)
     )
     EXUI:SnapFrameToPixels(frame)
     self:ApplyDisplayChrome(frame)
+    self:ApplyContentInsets(frame)
 
     if (not frame.Update) then
         frame.Update = function(self)
@@ -550,6 +634,10 @@ core.RefreshDisplayByID = function(self, displayID)
         end
     end
     frame:Update()
+
+    if self:IsSelfControlledSize(displayDB.resourceType) then
+        self:RefreshSegmentFrames(frame)
+    end
 
     self:UpdateFrame(frame)
 end

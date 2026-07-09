@@ -10,14 +10,14 @@ local soulShards = EXUI:GetModule('resource-displays-soul-shards')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
 
 soulShards.CreateSinglePower = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
 
     local statusBar = CreateFrame('StatusBar', nil, frame)
-    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
-    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
+    statusBarElement:ApplyInsets(statusBar, frame)
     statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     statusBar:SetMinMaxValues(0, 10)
     statusBar:SetValue(0)
@@ -104,9 +104,7 @@ soulShards.Update = function(frame)
         EXUI:SetSize(powerFrame, db.ssWidth, db.ssHeight)
         powerFrame.StatusBar:SetStatusBarColor(db.ssColor.r, db.ssColor.g, db.ssColor.b, db.ssColor.a)
         powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.ssBarTexture))
-        powerFrame:SetBackdropColor(db.ssBackgroundColor.r, db.ssBackgroundColor.g, db.ssBackgroundColor.b,
-            db.ssBackgroundColor.a)
-        powerFrame:SetBackdropBorderColor(db.ssBorderColor.r, db.ssBorderColor.g, db.ssBorderColor.b, db.ssBorderColor.a)
+        core:ApplySegmentChrome(powerFrame, db.ssBackgroundColor, db.ssBorderColor)
         powerFrame.FillAnimation = db.fillAnimation
     end
 
@@ -121,7 +119,8 @@ soulShards.Update = function(frame)
         prev = activeFrame
     end
 
-    frame:SetSize(db.ssWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.ssHeight)
+    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.ssWidth, db.ssHeight, #frame.ActiveFrames, db.ssSpacing)
+    EXUI:SetSize(frame, groupWidth, groupHeight)
 
     frame:OnEvent('UNIT_POWER_UPDATE', 'player', 'SOUL_SHARDS') -- Trigger Update
 end
@@ -243,7 +242,7 @@ soulShards.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'ssPartialColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 20
         },
         {
             type = 'color-picker',
@@ -256,7 +255,7 @@ soulShards.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'ssBackgroundColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 25
         },
         {
             type = 'color-picker',

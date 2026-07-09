@@ -17,13 +17,14 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 ---@class EXUIResourceDisplaysRunes
 local runes = EXUI:GetModule('resource-displays-runes')
 
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
+
 runes.CreateSingleRune = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
 
     local statusBar = CreateFrame('StatusBar', nil, frame)
-    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
-    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
+    statusBarElement:ApplyInsets(statusBar, frame)
     statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     statusBar:SetMinMaxValues(0, 1)
     statusBar:SetValue(0)
@@ -114,10 +115,7 @@ runes.Update = function(frame)
         EXUI:SetSize(runeFrame, db.runeWidth, db.runeHeight)
         runeFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.runeBarTexture))
         runeFrame.StatusBar:SetStatusBarColor(db.runeColor.r, db.runeColor.g, db.runeColor.b, db.runeColor.a)
-        runeFrame:SetBackdropColor(db.runeBackgroundColor.r, db.runeBackgroundColor.g, db.runeBackgroundColor.b,
-            db.runeBackgroundColor.a)
-        runeFrame:SetBackdropBorderColor(db.runeBorderColor.r, db.runeBorderColor.g, db.runeBorderColor.b,
-            db.runeBorderColor.a)
+        core:ApplySegmentChrome(runeFrame, db.runeBackgroundColor, db.runeBorderColor)
         runeFrame.Text:SetFont(LSM:Fetch('font', db.runeFont), db.runeFontSize, db.runeFontFlag)
         runeFrame.Text:SetVertexColor(db.runeTextColor.r, db.runeTextColor.g, db.runeTextColor.b, db.runeTextColor.a)
         runeFrame.Text:ClearAllPoints()
@@ -141,7 +139,9 @@ runes.Update = function(frame)
         prev = activeFrame
     end
 
-    frame:SetSize(db.runeWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.runeHeight)
+    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.runeWidth, db.runeHeight, #frame.ActiveFrames,
+    db.runeSpacing)
+    EXUI:SetSize(frame, groupWidth, groupHeight)
     frame:OnEvent()
 end
 
@@ -275,7 +275,7 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeBackgroundColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 26
         },
         {
             type = 'color-picker',

@@ -10,14 +10,14 @@ local chi = EXUI:GetModule('resource-displays-chi')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
 
 chi.CreateSinglePower = function(self, parent)
     local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
     EXUI:SetSize(frame, 30, 16)
 
     local statusBar = CreateFrame('StatusBar', nil, frame)
-    EXUI:SetPoint(statusBar, 'TOPLEFT', 1, -1)
-    EXUI:SetPoint(statusBar, 'BOTTOMRIGHT', -1, 1)
+    statusBarElement:ApplyInsets(statusBar, frame)
     statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
     statusBar:SetMinMaxValues(0, 1)
     statusBar:SetValue(0)
@@ -93,11 +93,7 @@ chi.Update = function(frame)
         powerFrame.StatusBar:SetStatusBarColor(db.chiColor.r, db.chiColor.g, db.chiColor.b,
             db.chiColor.a)
         powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.chiBarTexture))
-        powerFrame:SetBackdropColor(db.chiBackgroundColor.r, db.chiBackgroundColor.g,
-            db.chiBackgroundColor.b,
-            db.chiBackgroundColor.a)
-        powerFrame:SetBackdropBorderColor(db.chiBorderColor.r, db.chiBorderColor.g,
-            db.chiBorderColor.b, db.chiBorderColor.a)
+        core:ApplySegmentChrome(powerFrame, db.chiBackgroundColor, db.chiBorderColor)
         powerFrame.FillAnimation = db.fillAnimation
     end
 
@@ -112,7 +108,8 @@ chi.Update = function(frame)
         prev = activeFrame
     end
 
-    frame:SetSize(db.chiWidth * #frame.ActiveFrames + 2 * #frame.ActiveFrames - 2, db.chiHeight)
+    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.chiWidth, db.chiHeight, #frame.ActiveFrames, db.chiSpacing)
+    EXUI:SetSize(frame, groupWidth, groupHeight)
 
     frame:OnEvent('UNIT_POWER_UPDATE', 'player', 'CHI') -- Trigger Update
 end
