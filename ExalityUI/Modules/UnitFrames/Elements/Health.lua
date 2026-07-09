@@ -95,4 +95,5 @@ health.Update = function(self, frame)
         generalDB.statusBarTexture
 
     health:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
+    health.bg:SetTexture(LSM:Fetch('statusbar', statusBarTexture))
 end
