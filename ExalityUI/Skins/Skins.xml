@@ -5,6 +5,7 @@
     <Script file="WorldMap.lua"/>
     <Script file="PlayerSpells.lua"/>
     <Script file="ProfessionsBook.lua"/>
+    <Script file="EncounterJournal.lua"/>
     <Script file="QuestLog.lua"/>
     <Script file="BigWigs.lua"/>
 </Ui>

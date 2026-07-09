@@ -404,6 +404,43 @@ local function IsExuiDropdownMenuOwner(region)
     return false
 end
 
+local function IsExuiDropdownMenu(menu)
+    if (not menu) then return false end
+
+    local current = menu
+    while (current) do
+        local menuFrame = current.ToProxy and current:ToProxy()
+        if (menuFrame and IsExuiDropdownMenuOwner(menuFrame:GetOwnerRegion())) then
+            return true
+        end
+        current = current.parentMenu
+    end
+
+    return false
+end
+
+local function IsExuiDropdownMenuFrame(menuFrame)
+    if (not menuFrame) then return false end
+
+    if (IsExuiDropdownMenuOwner(menuFrame:GetOwnerRegion())) then
+        return true
+    end
+
+    if (Menu and Menu.GetManager) then
+        local manager = Menu.GetManager()
+        if (manager and manager.menus) then
+            for _, menu in manager.menus:Enumerate() do
+                local proxy = menu.ToProxy and menu:ToProxy()
+                if (proxy == menuFrame and IsExuiDropdownMenu(menu)) then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
 local function StyleModernDropdownMenuFont(fontString, enabled, hovered)
     if (not fontString or not fontString.SetFontObject) then return end
 
@@ -472,25 +509,42 @@ local function SkinModernDropdownMenuHighlight(element)
         MODERN_DROPDOWN_MENU_HIGHLIGHT_ALPHA)
 end
 
+local function IsMenuElementEnabled(element)
+    if (element.IsEnabled) then
+        return element:IsEnabled()
+    end
+    return true
+end
+
 local function WrapModernDropdownMenuHover(element)
+    if (not element) then return end
+
     local onEnter = element:GetScript('OnEnter')
-    if (onEnter and element.exuiWrappingEnter ~= onEnter) then
-        element.exuiWrappingEnter = onEnter
-        element:SetScript('OnEnter', function(button)
-            onEnter(button)
-            StyleModernDropdownMenuFont(button.Text, button:IsEnabled(), true)
-            StyleModernDropdownMenuFont(button.fontString, button:IsEnabled(), true)
-        end)
+    if (onEnter and onEnter ~= element.exuiHoverEnterWrapper and type(onEnter) == 'function') then
+        local originalOnEnter = onEnter
+        local wrapper = function(button)
+            if (type(originalOnEnter) == 'function') then
+                originalOnEnter(button)
+            end
+            StyleModernDropdownMenuFont(button.Text, IsMenuElementEnabled(button), true)
+            StyleModernDropdownMenuFont(button.fontString, IsMenuElementEnabled(button), true)
+        end
+        element.exuiHoverEnterWrapper = wrapper
+        element:SetScript('OnEnter', wrapper)
     end
 
     local onLeave = element:GetScript('OnLeave')
-    if (onLeave and element.exuiWrappingLeave ~= onLeave) then
-        element.exuiWrappingLeave = onLeave
-        element:SetScript('OnLeave', function(button)
-            onLeave(button)
-            StyleModernDropdownMenuFont(button.Text, button:IsEnabled(), false)
-            StyleModernDropdownMenuFont(button.fontString, button:IsEnabled(), false)
-        end)
+    if (onLeave and onLeave ~= element.exuiHoverLeaveWrapper and type(onLeave) == 'function') then
+        local originalOnLeave = onLeave
+        local wrapper = function(button)
+            if (type(originalOnLeave) == 'function') then
+                originalOnLeave(button)
+            end
+            StyleModernDropdownMenuFont(button.Text, IsMenuElementEnabled(button), false)
+            StyleModernDropdownMenuFont(button.fontString, IsMenuElementEnabled(button), false)
+        end
+        element.exuiHoverLeaveWrapper = wrapper
+        element:SetScript('OnLeave', wrapper)
     end
 end
 
@@ -512,14 +566,6 @@ local function SkinModernDropdownMenuElement(element)
         element.arrow:SetVertexColor(unpack(GetTheme().textMuted))
     end
 
-    for _, key in ipairs({ 'leftTexture1', 'leftTexture2' }) do
-        local texture = element[key]
-        if (texture and texture:IsShown()) then
-            texture:SetDesaturated(true)
-            texture:SetVertexColor(unpack(GetTheme().accent))
-        end
-    end
-
     for _, region in ipairs({ element:GetRegions() }) do
         if (region:IsObjectType('Texture')) then
             local file = region.GetTexture and region:GetTexture()
@@ -536,10 +582,9 @@ end
 
 local function RestyleModernDropdownMenu(menu)
     if (not menu or not menu.ToProxy) then return end
+    if (not IsExuiDropdownMenu(menu)) then return end
 
     local menuFrame = menu:ToProxy()
-    if (not IsExuiDropdownMenuOwner(menuFrame:GetOwnerRegion())) then return end
-
     SkinModernDropdownMenuPanel(menuFrame)
 
     if (menu.frames) then
@@ -607,7 +652,7 @@ local function InstallModernDropdownHooks()
 
     if (MenuStyle1Mixin) then
         hooksecurefunc(MenuStyle1Mixin, 'Generate', function(menuFrame)
-            if (IsExuiDropdownMenuOwner(menuFrame:GetOwnerRegion())) then
+            if (IsExuiDropdownMenuFrame(menuFrame)) then
                 SkinModernDropdownMenuPanel(menuFrame)
             end
         end)
