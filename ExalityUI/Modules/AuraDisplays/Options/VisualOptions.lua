@@ -284,7 +284,7 @@ function visualOptions:GetOptions(displayID, groupID)
         },
         {
             type = 'toggle',
-            label = 'Force New Row',
+            label = 'Group Starts on New Row',
             name = 'forceNewRow',
             width = 100,
             currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'forceNewRow') end,
@@ -444,22 +444,7 @@ function visualOptions:GetOptions(displayID, groupID)
                     displayID)
             end,
         },
-        {
-            type = 'toggle',
-            label = 'Show Dispel Symbol',
-            name = 'showDispelSymbol',
-            width = 100,
-            currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelSymbol') end,
-            onChange = function(v)
-                auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelSymbol', v); auraDisplays:RefreshDisplay(
-                    displayID); optionsFields:RefreshOptions()
-            end,
-        },
     })
-
-    if auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelSymbol') then
-        append(fields, self:MakeTextFields(displayID, groupID, 'dispelSymbol', 'Dispel Symbol', { skipTitle = true }))
-    end
 
     if auraDisplays:GetGroupConditions(displayID, groupID, 'groupType') == 'slot' then
         append(fields, {

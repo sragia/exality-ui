@@ -139,17 +139,6 @@ defaults.GROUP_VISUAL = {
     dispelBorderShowIcon = true,
     dispelBorderHarmful = true,
     dispelBorderHelpful = false,
-    showDispelSymbol = false,
-    dispelSymbolHarmful = true,
-    dispelSymbolHelpful = false,
-    dispelSymbolFont = 'DMSans',
-    dispelSymbolFontSize = 10,
-    dispelSymbolFontFlag = 'OUTLINE',
-    dispelSymbolColor = { r = 1, g = 1, b = 1, a = 1 },
-    dispelSymbolAnchorPoint = 'TOP',
-    dispelSymbolRelativePoint = 'BOTTOM',
-    dispelSymbolXOff = 0,
-    dispelSymbolYOff = 2,
 }
 
 defaults.CONTAINER = {

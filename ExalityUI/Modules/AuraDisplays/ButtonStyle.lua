@@ -78,6 +78,18 @@ function buttonStyle:EnsureTextOverlay(button)
     return overlay
 end
 
+function buttonStyle:EnsureIconBorderOverlay(button)
+    if button.IconBorderOverlay then
+        return button.IconBorderOverlay
+    end
+    local parent = self:GetAuraButtonFrame(button)
+    local overlay = CreateFrame('Frame', nil, parent)
+    overlay:EnableMouse(false)
+    overlay:SetAllPoints(parent)
+    button.IconBorderOverlay = overlay
+    return overlay
+end
+
 function buttonStyle:EnsureDispelBorderOverlay(button)
     if button.DispelBorderOverlay then
         return button.DispelBorderOverlay
@@ -110,8 +122,11 @@ function buttonStyle:ApplyLayering(button)
     if cooldown and cooldown.SetFrameLevel then
         cooldown:SetFrameLevel(base + 1)
     end
+    if button.IconBorderOverlay then
+        button.IconBorderOverlay:SetFrameLevel(base + 2)
+    end
     if button.DispelBorderOverlay then
-        button.DispelBorderOverlay:SetFrameLevel(base + 2)
+        button.DispelBorderOverlay:SetFrameLevel(base + 3)
     end
     if button.TextOverlay then
         button.TextOverlay:SetFrameLevel(base + 5)
@@ -225,17 +240,22 @@ function buttonStyle:ApplyIconBorder(button, visual)
         return
     end
 
-    if button.IconBorderOverlay then
-        button.IconBorderOverlay:Hide()
-    end
-
     if visual.showIconBorder == false then
         self:SetIconBorderVisibility(button.IconPPBorder, false)
+        if button.IconBorderOverlay then
+            button.IconBorderOverlay:Hide()
+        end
         return
     end
 
-    if not button.IconPPBorder then
-        button.IconPPBorder = EXUI:AddPixelPerfectBorder(parent, 1, { register = false, layer = 'OVERLAY' })
+    local borderParent = self:EnsureIconBorderOverlay(button)
+    borderParent:Show()
+
+    if not button.IconPPBorder or button.IconPPBorder.anchor ~= borderParent then
+        if button.IconPPBorder then
+            self:SetIconBorderVisibility(button.IconPPBorder, false)
+        end
+        button.IconPPBorder = EXUI:AddPixelPerfectBorder(borderParent, 1, { register = false, layer = 'OVERLAY' })
         for _, edge in ipairs({ 'Top', 'Bottom', 'Left', 'Right' }) do
             local texture = button.IconPPBorder[edge]
             if texture and texture.SetDrawLayer then
@@ -331,16 +351,7 @@ function buttonStyle:Apply(button, visual)
         button:ClearAuraBorder()
     end
 
-    if visual.showDispelSymbol and button.SetAuraSymbol then
-        local symbol = self:CreateFontString(button, 'AuraSymbolText', 'dispelSymbol', visual, {
-            font = 'DMSans', size = 10, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'TOP', relative = 'BOTTOM',
-        })
-        button:SetAuraSymbol(symbol, {
-            showWhenHarmful = visual.dispelSymbolHarmful,
-            showWhenHelpful = visual.dispelSymbolHelpful,
-        })
-        self:RaiseTextLayer(button, symbol)
-    elseif button.ClearAuraSymbol then
+    if button.ClearAuraSymbol then
         button:ClearAuraSymbol()
     end
 

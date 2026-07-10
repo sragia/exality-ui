@@ -77,6 +77,8 @@ function groupNav:GetFields(displayID)
             label = 'Remove',
             name = 'removeGroup',
             width = 20,
+            color = EXUI.EXFrames.Theme.danger,
+            hoverColor = EXUI.EXFrames.Theme.dangerHover,
             onClick = function()
                 if #display.groupOrder <= 1 then
                     return
@@ -92,6 +94,8 @@ function groupNav:GetFields(displayID)
             label = 'Duplicate',
             name = 'duplicateGroup',
             width = 20,
+            color = { 2 / 255, 145 / 255, 227 / 255, 1 },
+            hoverColor = { 32 / 255, 165 / 255, 240 / 255, 1 },
             onClick = function()
                 local newGroupID = auraDisplays:DuplicateGroup(displayID, auraDisplays.currGroupID)
                 auraDisplays.currGroupID = newGroupID

@@ -571,10 +571,18 @@ EXUI.utils = {
                 prev = child
             end
 
-            -- center child in row vertically
+            -- vertically align children within the row (default: center)
             for _, child in ipairs(row) do
                 local childHeight = child:GetHeight()
-                local topPad = (rowMaxHeight - childHeight) / 2
+                local align = child.optionData and child.optionData.align or 'CENTER'
+                local topPad = 0
+                if align == 'BOTTOM' then
+                    topPad = rowMaxHeight - childHeight
+                elseif align == 'TOP' then
+                    topPad = 0
+                else
+                    topPad = (rowMaxHeight - childHeight) / 2
+                end
                 child:SetPoint('TOP', 0, -topPad)
             end
             rowFrame:SetHeight(rowMaxHeight)

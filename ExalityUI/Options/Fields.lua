@@ -573,9 +573,17 @@ optionsFields.GetField = function(self, field)
             local f = EXFrames:GetFrame('description'):Create()
             return f
         end,
+        ['disclaimer'] = function()
+            local f = EXFrames:GetFrame('disclaimer'):Create()
+            return f
+        end,
         ['edit-box'] = function()
             local f = EXFrames:GetFrame('edit-box-input'):Create({})
             f:SetHeight(40)
+            return f
+        end,
+        ['spell-id-input'] = function()
+            local f = EXFrames:GetFrame('spell-id-input'):Create({})
             return f
         end,
         ['checkbox'] = function()

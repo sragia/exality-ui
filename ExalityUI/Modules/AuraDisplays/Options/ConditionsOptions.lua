@@ -41,6 +41,13 @@ function conditionsOptions:GetFilterPreviewText(displayID, groupID)
     return EscapeFontString(self:GetFilterPreview(displayID, groupID))
 end
 
+function conditionsOptions:ShouldShowSpellIdNotice(displayID, groupID)
+    local display = auraDisplays:GetDisplay(displayID)
+    local resolvedUnit = select(1, unitResolver:Resolve(display and display.container))
+    local filterString = self:GetFilterPreview(displayID, groupID)
+    return not resolver:CanApplySpellIDFilters(resolvedUnit, filterString)
+end
+
 function conditionsOptions:ToggleFilterToken(displayID, groupID, token, negated)
     local tokens = auraDisplays:GetGroupConditions(displayID, groupID, 'filterTokens') or {}
     for _, entry in ipairs(tokens) do
@@ -102,16 +109,6 @@ function conditionsOptions:SetFilterTokenState(displayID, groupID, token, state)
     end
 end
 
-function conditionsOptions:UpdateFilterPreview(displayID, groupID)
-    local preview = 'Filter Preview: ' .. self:GetFilterPreviewText(displayID, groupID)
-    for _, field in ipairs(optionsFields.fields or {}) do
-        if field.optionData and field.optionData.name == 'filterPreview' and field.descriptionText then
-            field.descriptionText:SetText(preview)
-            return
-        end
-    end
-end
-
 function conditionsOptions:GetFilterFields(displayID, groupID)
     local fields = {
         { type = 'title', label = 'Filter Tokens', width = 100 }
@@ -128,7 +125,7 @@ function conditionsOptions:GetFilterFields(displayID, groupID)
             onChange = function(state)
                 self:SetFilterTokenState(displayID, groupID, token, state)
                 auraDisplays:RefreshDisplay(displayID)
-                self:UpdateFilterPreview(displayID, groupID)
+                optionsFields:RefreshOptions()
             end,
         })
     end
@@ -217,26 +214,25 @@ function conditionsOptions:GetOptions(displayID, groupID)
 
     append(fields, self:GetFilterFields(displayID, groupID))
 
-    local display = auraDisplays:GetDisplay(displayID)
-    local resolvedUnit = select(1, unitResolver:Resolve(display and display.container))
-    local filterString = self:GetFilterPreview(displayID, groupID)
-    if not resolver:CanApplySpellIDFilters(resolvedUnit, filterString) then
-        table.insert(fields, {
-            type = 'description',
+    append(fields, {
+        { type = 'title', label = 'Spell IDs', width = 100 },
+        {
+            type = 'disclaimer',
             label =
             'Spell ID filters are inactive for this unit/filter combination. They only apply to HELPFUL on friendly units and HARMFUL on enemy units.',
             name = 'spellIdNotice',
             width = 100,
-        })
-    end
-
-    append(fields, {
-        { type = 'title', label = 'Spell IDs',  width = 100 },
+            depends = function()
+                return conditionsOptions:ShouldShowSpellIdNotice(displayID, groupID)
+            end,
+        },
         {
-            type = 'edit-box',
-            label = 'Include (comma separated)',
+            type = 'spell-id-input',
+            label = 'Include SpellIDs',
             name = 'includeSpellIDs',
             width = 50,
+            align = 'TOP',
+            getFilterString = function() return conditionsOptions:GetFilterPreview(displayID, groupID) end,
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'includeSpellIDs') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'includeSpellIDs', v); auraDisplays
@@ -244,10 +240,12 @@ function conditionsOptions:GetOptions(displayID, groupID)
             end,
         },
         {
-            type = 'edit-box',
-            label = 'Exclude (comma separated)',
+            type = 'spell-id-input',
+            label = 'Exclude SpellIDs',
             name = 'excludeSpellIDs',
             width = 50,
+            align = 'TOP',
+            getFilterString = function() return conditionsOptions:GetFilterPreview(displayID, groupID) end,
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'excludeSpellIDs') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'excludeSpellIDs', v); auraDisplays

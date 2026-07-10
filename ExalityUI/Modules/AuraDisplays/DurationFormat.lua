@@ -50,12 +50,18 @@ function durationFormat:BuildMMSSFormatter()
             },
         },
         {
-            threshold = 5,
+            threshold = 60,
             format = '%d:%02d',
             components = {
                 { div = 60, rounding = roundingDown },
                 { mod = 60, rounding = roundingDown },
             },
+        },
+        {
+            threshold = 5,
+            format = '%.0f',
+            step = 1,
+            rounding = roundingDown,
         },
         {
             threshold = 0,

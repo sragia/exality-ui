@@ -7,6 +7,9 @@ local defaults = EXUI:GetModule('aura-displays-defaults')
 ---@class EXUIAuraDisplaysConfigResolver
 local resolver = EXUI:GetModule('aura-displays-config-resolver')
 
+---@class EXUIAuraDisplaysSpellIndex
+local spellIndex = EXUI:GetModule('aura-displays-spell-index')
+
 local SORT_METHOD_MAP = {
     Default = 0,
     BigDefensive = 1,
@@ -37,8 +40,8 @@ function resolver:ParseSpellIDList(text)
     if not text or text == '' then
         return nil
     end
-    for token in string.gmatch(text, '[^,%s]+') do
-        local spellID = tonumber(token)
+    for token in string.gmatch(text, '[^,]+') do
+        local spellID = spellIndex:ResolveToken(token)
         if spellID then
             map[spellID] = true
         end

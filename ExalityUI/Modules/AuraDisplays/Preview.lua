@@ -430,8 +430,11 @@ function preview:FormatDuration(remaining, visual)
         if remaining >= 180 then
             return string.format('%dm', math.floor(remaining / 60))
         end
-        if remaining >= 5 then
+        if remaining >= 60 then
             return string.format('%d:%02d', math.floor(remaining / 60), math.floor(remaining % 60))
+        end
+        if remaining >= 5 then
+            return string.format('%d', math.floor(remaining))
         end
         return string.format('%.1f', remaining)
     end
