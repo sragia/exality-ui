@@ -7,10 +7,11 @@ EXUI.changelog = [[
 - Visual update for options.
 - Added minimap styling.
 - Pixel Perfect improvements.
-- [Skins] Skin Game Menu.
+- [Skins] Multiple blizzard windows are now skinned.
 - [Raid Tools] Battle Res rewrite — masked icon, configurable timer position, visibility modes.
 - [Character Frame] Fix stats issue with secrets.
 - [Action Bars] Implemented Action Bar initial version. Might have some bugs, so be aware of it.
+- [Aura Displays] New module for displaying auras anywhere on your screen. Apply filters and modify their look however you want.
 
 # |cffdb49000.2.8|r
 
