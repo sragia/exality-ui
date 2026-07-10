@@ -31,26 +31,52 @@ local microMenuOptions = EXUI:GetModule('action-bars-micro-menu-options')
 ---@class EXUIActionBarsBagsOptions
 local bagsOptions = EXUI:GetModule('action-bars-bags-options')
 
+---@class EXUIActionBarsConfigResolver
+local configResolver = EXUI:GetModule('action-bars-config-resolver')
+
 ---@class EXUIActionBarsModule
 local actionBars = EXUI:GetModule('action-bars')
 
-actionBars.Data = data:GetControlsForKey('action-bars')
+actionBars.dbRevision = 0
 actionBars.enabled = false
 actionBars.useTabs = false
 actionBars.useSplitView = true
 actionBars.useInnerTabs = true
 
+local dataControls = data:GetControlsForKey('action-bars')
+local originalSetDB = dataControls.SetDB
+dataControls.SetDB = function(controls, db)
+    originalSetDB(controls, db)
+    actionBars:InvalidateConfigCache()
+end
+actionBars.Data = dataControls
+
+actionBars.InvalidateConfigCache = function(self)
+    self.dbRevision = self.dbRevision + 1
+    configResolver:ClearCache()
+end
+
 actionBars.GetDB = function(self)
-    local db = self.Data:GetDB()
+    return self.Data:GetDB()
+end
+
+actionBars.EnsureDB = function(self, db)
+    db = db or self:GetDB()
+    if db.__exuiDefaultsVersion == barDefaults.SCHEMA_VERSION then
+        return db
+    end
     barDefaults:MergeIntoDB(db)
     self.Data:SetDB(db)
     return db
 end
 
+actionBars.SetDB = function(self, db)
+    self.Data:SetDB(db)
+end
+
 actionBars.Init = function(self)
     self.Data:UpdateDefaults({ enable = false })
-    local db = self:GetDB()
-    self.Data:SetDB(db)
+    self:EnsureDB()
 
     manager:Init()
     optionsController:RegisterModule(self)
@@ -105,6 +131,7 @@ end
 ---@param currTabID string Section tab (layout, module, etc.)
 ---@param currItemID string Split view item (general, bar1, etc.)
 actionBars.GetOptions = function(self, currTabID, currItemID)
+    self:EnsureDB()
     local itemId = currItemID or 'general'
     local section = currTabID
 
@@ -132,6 +159,7 @@ end
 actionBars.Disable = function(self)
     if not self.enabled then return end
     self.enabled = false
+    configResolver:ClearCache()
     manager:Disable()
 end
 

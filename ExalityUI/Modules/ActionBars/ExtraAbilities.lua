@@ -21,6 +21,7 @@ extraAbilities.applyingLayout = false
 extraAbilities.cachedConfig = nil
 extraAbilities.pendingStyle = false
 extraAbilities.pendingClickThrough = false
+extraAbilities.refreshScheduled = false
 ---@type boolean|nil desired anchor shown state deferred until combat ends
 extraAbilities.pendingShown = nil
 
@@ -267,6 +268,35 @@ extraAbilities.ApplyStyle = function(self, config)
     self:HookAbilityButtonHover()
 end
 
+extraAbilities.ScheduleDeferredRefresh = function(self, withLayout)
+    if not manager.enabled or not self.cachedConfig then
+        return
+    end
+    self.pendingStyle = true
+    if withLayout then
+        self.pendingLayout = true
+    end
+    if self.refreshScheduled then
+        return
+    end
+    self.refreshScheduled = true
+    C_Timer.After(0, function()
+        extraAbilities.refreshScheduled = false
+        if not manager.enabled or not self.cachedConfig then
+            return
+        end
+        if InCombatLockdown() then
+            return
+        end
+        if extraAbilities.pendingStyle then
+            extraAbilities:ApplyStyle(extraAbilities.cachedConfig)
+        end
+        if extraAbilities.pendingLayout then
+            extraAbilities:ApplyLayout()
+        end
+    end)
+end
+
 extraAbilities.UpdateVisibilityAlpha = function(self, config, isHovering)
     local frame = self.anchorFrame
     if not frame then
@@ -314,6 +344,7 @@ extraAbilities.Apply = function(self, db)
 
     local config = configResolver:GetBarConfig(db, 'extra')
     local frame = self:GetAnchorFrame()
+    frame.exuiBarConfig = config
 
     if not config.enable then
         if InCombatLockdown() then
@@ -378,8 +409,6 @@ extraAbilities.SetupHover = function(self)
     self.hoverHooked = true
     frame.isHovering = false
 
-    local actionBars = EXUI:GetModule('action-bars')
-
     local function targetsMouseOver()
         if ExtraActionBarFrame and ExtraActionBarFrame.button and ExtraActionBarFrame.button:IsMouseOver() then
             return true
@@ -399,8 +428,10 @@ extraAbilities.SetupHover = function(self)
             return
         end
         frame.isHovering = state
-        local config = configResolver:GetBarConfig(actionBars:GetDB(), 'extra')
-        self:UpdateVisibilityAlpha(config, state)
+        local config = frame.exuiBarConfig
+        if config then
+            self:UpdateVisibilityAlpha(config, state)
+        end
     end
 
     local function onEnter()
@@ -468,31 +499,19 @@ extraAbilities.InitHooks = function(self)
 
     if ZoneAbilityFrame and ZoneAbilityFrame.UpdateDisplayedZoneAbilities then
         hooksecurefunc(ZoneAbilityFrame, 'UpdateDisplayedZoneAbilities', function()
-            C_Timer.After(0, function()
-                if not manager.enabled or not extraAbilities.cachedConfig then
-                    return
-                end
-                extraAbilities:ApplyStyle(extraAbilities.cachedConfig)
-                extraAbilities:ApplyLayout()
-            end)
+            extraAbilities:ScheduleDeferredRefresh(true)
         end)
     end
 
     if ZoneAbilityFrameSpellButtonMixin and ZoneAbilityFrameSpellButtonMixin.Refresh then
         hooksecurefunc(ZoneAbilityFrameSpellButtonMixin, 'Refresh', function()
-            if manager.enabled and extraAbilities.cachedConfig then
-                extraAbilities:ApplyStyle(extraAbilities.cachedConfig)
-            end
+            extraAbilities:ScheduleDeferredRefresh(false)
         end)
     end
 
     if ExtraActionBar_Update then
         hooksecurefunc('ExtraActionBar_Update', function()
-            C_Timer.After(0, function()
-                if manager.enabled and extraAbilities.cachedConfig then
-                    extraAbilities:ApplyStyle(extraAbilities.cachedConfig)
-                end
-            end)
+            extraAbilities:ScheduleDeferredRefresh(true)
         end)
     end
 end

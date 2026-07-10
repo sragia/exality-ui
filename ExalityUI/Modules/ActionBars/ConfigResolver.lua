@@ -7,6 +7,14 @@ local barDefaults = EXUI:GetModule('action-bars-defaults')
 ---@class EXUIActionBarsConfigResolver
 local resolver = EXUI:GetModule('action-bars-config-resolver')
 
+resolver.cache = {}
+resolver.cacheRevision = -1
+
+resolver.ClearCache = function(self)
+    self.cache = {}
+    self.cacheRevision = -1
+end
+
 local function resolveField(globalValue, barValue, useGlobalKey, barConfig)
     if barConfig[useGlobalKey] ~= false and barConfig[useGlobalKey] ~= nil then
         if barConfig[useGlobalKey] then
@@ -43,6 +51,16 @@ local function resolveTextBlock(globalBlock, barBlock)
 end
 
 resolver.GetBarConfig = function(self, db, barId)
+    local revision = EXUI:GetModule('action-bars').dbRevision
+    if self.cacheRevision ~= revision then
+        self.cache = {}
+        self.cacheRevision = revision
+    end
+
+    if self.cache[barId] then
+        return self.cache[barId]
+    end
+
     local global = db.global or barDefaults.GLOBAL
     local bar = db.bars and db.bars[barId] or barDefaults:BuildBarDefaults(barId)
 
@@ -60,6 +78,7 @@ resolver.GetBarConfig = function(self, db, barId)
         masqueSkin = useGlobalAppearance and global.masqueSkin or bar.masqueSkin,
         showCooldownSwipe = useGlobalAppearance and global.showCooldownSwipe or bar.showCooldownSwipe,
         showCooldownText = useGlobalAppearance and global.showCooldownText or bar.showCooldownText,
+        hideCooldownCharge = useGlobalAppearance and global.hideCooldownCharge == true,
         visibility = bar.visibility or global.visibility or 'always',
         anchorPoint = bar.anchorPoint or 'BOTTOM',
         relativeAnchor = bar.relativeAnchor or 'BOTTOM',
@@ -85,6 +104,7 @@ resolver.GetBarConfig = function(self, db, barId)
         resolved.states = bar.states
     end
 
+    self.cache[barId] = resolved
     return resolved
 end
 

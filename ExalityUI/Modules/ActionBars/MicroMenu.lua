@@ -179,6 +179,7 @@ microMenu.ApplyBags = function(self, db)
     })
 
     BagsBar:SetScale(bagsConfig.scale or 1)
+    BagsBar.exuiBagsConfig = bagsConfig
     self:ConfigureBagsMouse(bagsConfig)
     self:UpdateBagsVisibilityAlpha(bagsConfig, BagsBar.isHovering)
 
@@ -235,6 +236,7 @@ microMenu.Apply = function(self, db)
         self:ConfigureMicroMouse(config)
 
         MicroMenuContainer:SetScale(config.scale or 1)
+        MicroMenuContainer.exuiMicroConfig = config
         self:UpdateMicroVisibilityAlpha(config, MicroMenuContainer.isHovering)
     end
 
@@ -315,7 +317,7 @@ microMenu.SetupHover = function(self, db)
             return
         end
         MicroMenuContainer.isHovering = state
-        local cfg = actionBars:GetDB().microMenu
+        local cfg = MicroMenuContainer.exuiMicroConfig
         if cfg then
             self:UpdateMicroVisibilityAlpha(cfg, state)
         end
@@ -328,7 +330,7 @@ microMenu.SetupHover = function(self, db)
         if BagsBar then
             BagsBar.isHovering = state
         end
-        local cfg = actionBars:GetDB().bags
+        local cfg = BagsBar and BagsBar.exuiBagsConfig
         if cfg then
             self:UpdateBagsVisibilityAlpha(cfg, state)
         end

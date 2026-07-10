@@ -50,7 +50,7 @@ manager.CreateBars = function(self)
         return
     end
 
-    local db = self:GetDB()
+    local db = EXUI:GetModule('action-bars'):EnsureDB()
     for _, barId in ipairs(definitions.ALL_BAR_IDS) do
         if barId ~= 'extra' then
             if not barMod:Get(barId) then
@@ -91,7 +91,7 @@ manager.ApplyMicroMenu = function(self)
 end
 
 manager.RefreshAll = function(self)
-    local db = self:GetDB()
+    local db = EXUI:GetModule('action-bars'):EnsureDB()
     for barId, frame in pairs(barMod.instances) do
         barMod:Configure(frame, db)
     end

@@ -233,7 +233,9 @@ special.CreatePossessButton = function(self, barId, index, header, barConfig)
         end
 
         self:SetChecked(false)
-        self:Enable()
+        if (not InCombatLockdown()) then
+            self:Enable()
+        end
     end
     button.UpdateAction = button.Update
 

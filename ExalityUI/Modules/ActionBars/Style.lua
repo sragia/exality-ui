@@ -8,8 +8,16 @@ local LAB = LibStub('LibActionButton-1.0')
 ---@class EXUIActionBarsStyle
 local style = EXUI:GetModule('action-bars-style')
 
+---@class EXUIActionBarsDefinitions
+local definitions = EXUI:GetModule('action-bars-definitions')
+
+---@class EXUIActionBarsButton
+local buttonMod = EXUI:GetModule('action-bars-button')
+
 style.masqueGroups = {}
 style.initialized = false
+style.pendingSlotRefresh = false
+style.pendingSlotChanges = {}
 
 style.Init = function(self)
     if self.initialized then return end
@@ -23,9 +31,83 @@ style.Init = function(self)
 
     local eventFrame = CreateFrame('Frame')
     eventFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
-    eventFrame:SetScript('OnEvent', function()
+    eventFrame:SetScript('OnEvent', function(_, _, slot)
         if EXUI:GetModule('action-bars-manager').enabled then
-            self:RefreshAllSlotBackdrops()
+            if slot then
+                style:QueueSlotBackdropRefresh(slot)
+            else
+                style:RefreshAllSlotBackdrops()
+            end
+        end
+    end)
+end
+
+style.FindButtonForSlot = function(self, slot)
+    if not slot or slot < 1 then
+        return nil, nil, nil
+    end
+
+    local barMod = EXUI:GetModule('action-bars-bar')
+
+    for _, barId in ipairs(definitions.PLAYER_BAR_IDS) do
+        local def = definitions:Get(barId)
+        if def and def.baseSlot and def.barType == 'action' then
+            local index = slot - def.baseSlot + 1
+            if index >= 1 and index <= (def.numButtons or 12) then
+                local frame = barMod:Get(barId)
+                if frame and frame.buttons and frame.buttons[index] then
+                    return frame, frame.buttons[index], barId
+                end
+            end
+        end
+    end
+
+    for page = 1, buttonMod.RETAIL_PAGES do
+        local index = slot - (page - 1) * 12
+        if index >= 1 and index <= 12 then
+            local frame = barMod:Get('bar1')
+            if frame and frame.buttons and frame.buttons[index] then
+                return frame, frame.buttons[index], 'bar1'
+            end
+        end
+    end
+
+    return nil, nil, nil
+end
+
+style.RefreshSlotBackdrop = function(self, slot)
+    local frame, button, barId = self:FindButtonForSlot(slot)
+    if not frame or not button or not barId then
+        return false
+    end
+
+    local resolver = EXUI:GetModule('action-bars-config-resolver')
+    local db = EXUI:GetModule('action-bars'):GetDB()
+    local config = resolver:GetBarConfig(db, barId)
+    button.exuiBarConfig = config
+    self:OnButtonUpdated(button, config)
+    return true
+end
+
+style.QueueSlotBackdropRefresh = function(self, slot)
+    if slot then
+        self.pendingSlotChanges[slot] = true
+    end
+    if self.pendingSlotRefresh then
+        return
+    end
+    self.pendingSlotRefresh = true
+    C_Timer.After(0, function()
+        style.pendingSlotRefresh = false
+        local needsFullRefresh = false
+        for changedSlot in pairs(style.pendingSlotChanges) do
+            if not style:RefreshSlotBackdrop(changedSlot) then
+                needsFullRefresh = true
+            end
+        end
+        wipe(style.pendingSlotChanges)
+        if needsFullRefresh then
+            style:RefreshAllSlotBackdrops()
         end
     end)
 end
@@ -178,8 +260,14 @@ style.ApplyCooldownSettings = function(self, button, barConfig)
 
     self:ApplyCooldownText(button.cooldown, button, barConfig)
 
-    if button.chargeCooldown and button.chargeCooldown.SetHideCountdownNumbers then
-        button.chargeCooldown:SetHideCountdownNumbers(true)
+    if button.chargeCooldown then
+        if barConfig.hideCooldownCharge then
+            if button.chargeCooldown.SetHideCountdownNumbers then
+                button.chargeCooldown:SetHideCountdownNumbers(true)
+            end
+        else
+            self:ApplyCooldownText(button.chargeCooldown, button, barConfig)
+        end
     end
 end
 
@@ -296,7 +384,8 @@ style.ApplyButtonHighlight = function(self, button)
         end
         pushed:ClearAllPoints()
         pushed:SetAllPoints(button)
-        pushed:SetVertexColor(EXUI.const.theme.accentDark[1], EXUI.const.theme.accentDark[2], EXUI.const.theme.accentDark[3], 0.65)
+        pushed:SetVertexColor(EXUI.const.theme.accentDark[1], EXUI.const.theme.accentDark[2],
+            EXUI.const.theme.accentDark[3], 0.65)
     end
 
     local checked = button.GetCheckedTexture and button:GetCheckedTexture()
@@ -638,7 +727,9 @@ style.ApplyAbilityCooldowns = function(self, button, barConfig)
             end
             local isCharge = cooldown == button.chargeCooldown or cooldown == button.ChargeCooldown
             local isLossOfControl = cooldown == button.lossOfControlCooldown
-            if isCharge or isLossOfControl then
+            local hideChargeCooldown = barConfig.hideCooldownCharge == true
+
+            if (isCharge and hideChargeCooldown) or isLossOfControl then
                 if cooldown.SetHideCountdownNumbers then
                     cooldown:SetHideCountdownNumbers(true)
                 end

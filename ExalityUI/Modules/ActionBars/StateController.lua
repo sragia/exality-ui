@@ -16,6 +16,12 @@ local specialButton = EXUI:GetModule('action-bars-special-button')
 ---@class EXUIActionBarsStateController
 local state = EXUI:GetModule('action-bars-state')
 
+---@class EXUIActionBarsModule
+local actionBars = EXUI:GetModule('action-bars')
+
+---@class EXUIActionBarsConfigResolver
+local configResolver = EXUI:GetModule('action-bars-config-resolver')
+
 state.EVENTS = {
     'PLAYER_ENTERING_WORLD',
     'ACTIONBAR_PAGE_CHANGED',
@@ -48,14 +54,14 @@ state.IsOverrideBarActive = function(self)
         or (C_ActionBar.HasOverrideActionBar() and C_ActionBar.GetOverrideBarSkin() and C_ActionBar.GetOverrideBarSkin() ~= 0)
 end
 
-state.UpdateBar1Visibility = function(self)
+state.UpdateBar1Visibility = function(self, db)
     local frame = barMod:Get('bar1')
     if not frame then
         return
     end
 
-    local db = EXUI:GetModule('action-bars'):GetDB()
-    local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'bar1')
+    db = db or actionBars:GetDB()
+    local config = configResolver:GetBarConfig(db, 'bar1')
 
     if not config.enable or config.visibility == 'hidden' then
         self:TrySetFrameShown(frame, false)
@@ -70,7 +76,7 @@ state.UpdateBar1Visibility = function(self)
     self:TrySetFrameShown(frame, true)
 end
 
-state.UpdateOverrideBar = function(self)
+state.UpdateOverrideBar = function(self, db)
     local frame = barMod:Get('override')
     if not frame then
         return
@@ -89,25 +95,25 @@ state.UpdateOverrideBar = function(self)
         buttonMod:SetActionSlot(button, slot)
     end
 
-    local db = EXUI:GetModule('action-bars'):GetDB()
-    local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'override')
+    db = db or actionBars:GetDB()
+    local config = configResolver:GetBarConfig(db, 'override')
     if config.enable then
         self:TrySetFrameShown(frame, true)
     end
 end
 
-state.UpdateStanceBar = function(self)
+state.UpdateStanceBar = function(self, db)
     local frame = barMod:Get('stance')
     if not frame then
         return
     end
 
-    local db = EXUI:GetModule('action-bars'):GetDB()
-    local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'stance')
+    db = db or actionBars:GetDB()
+    local config = configResolver:GetBarConfig(db, 'stance')
     specialButton:UpdateStanceButtons(frame, config)
 end
 
-state.UpdatePetBar = function(self)
+state.UpdatePetBar = function(self, db)
     local frame = barMod:Get('pet')
     if not frame then
         return
@@ -116,8 +122,8 @@ state.UpdatePetBar = function(self)
     local shouldShow = PetHasActionBar and PetHasActionBar()
     if shouldShow then
         specialButton:UpdateAll(frame)
-        local db = EXUI:GetModule('action-bars'):GetDB()
-        local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'pet')
+        db = db or actionBars:GetDB()
+        local config = configResolver:GetBarConfig(db, 'pet')
         if config.enable then
             self:TrySetFrameShown(frame, true)
         end
@@ -126,7 +132,7 @@ state.UpdatePetBar = function(self)
     end
 end
 
-state.UpdatePossessBar = function(self)
+state.UpdatePossessBar = function(self, db)
     local frame = barMod:Get('possess')
     if not frame then
         return
@@ -134,8 +140,8 @@ state.UpdatePossessBar = function(self)
 
     if C_ActionBar.IsPossessBarVisible() then
         specialButton:UpdateAll(frame)
-        local db = EXUI:GetModule('action-bars'):GetDB()
-        local config = EXUI:GetModule('action-bars-config-resolver'):GetBarConfig(db, 'possess')
+        db = db or actionBars:GetDB()
+        local config = configResolver:GetBarConfig(db, 'possess')
         if config.enable then
             self:TrySetFrameShown(frame, true)
         end
@@ -202,12 +208,13 @@ state.ApplyPendingSlots = function(self)
     self.pendingSlots = false
 end
 
-state.ApplyAll = function(self)
-    self:UpdateBar1Visibility()
-    self:UpdateOverrideBar()
-    self:UpdateStanceBar()
-    self:UpdatePetBar()
-    self:UpdatePossessBar()
+state.ApplyAll = function(self, db)
+    db = db or actionBars:GetDB()
+    self:UpdateBar1Visibility(db)
+    self:UpdateOverrideBar(db)
+    self:UpdateStanceBar(db)
+    self:UpdatePetBar(db)
+    self:UpdatePossessBar(db)
 end
 
 state.UpdateAll = function(self, event)

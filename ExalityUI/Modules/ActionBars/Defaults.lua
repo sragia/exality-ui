@@ -7,6 +7,9 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 ---@class EXUIActionBarsDefaults
 local defaults = EXUI:GetModule('action-bars-defaults')
 
+defaults.SCHEMA_VERSION = 1
+defaults._barTemplates = {}
+
 local function textDefaults()
     return {
         useGlobal = true,
@@ -33,6 +36,7 @@ defaults.GLOBAL = {
     masqueSkin = 'ExalityUI Square',
     showCooldownSwipe = true,
     showCooldownText = true,
+    hideCooldownCharge = false,
     visibility = 'always',
     hotkey = textDefaults(),
     count = {
@@ -181,31 +185,46 @@ defaults.BuildFullDefaults = function(self)
     for _, barId in ipairs(definitions.ALL_BAR_IDS) do
         db.bars[barId] = self:BuildBarDefaults(barId)
     end
+    db.__exuiDefaultsVersion = self.SCHEMA_VERSION
     return db
 end
 
-defaults.MergeIntoDB = function(self, db)
-    local template = self:BuildFullDefaults()
-    if not db.global then
-        db.global = template.global
-    else
-        for key, value in pairs(template.global) do
-            if db.global[key] == nil then
-                db.global[key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
-            end
+defaults.GetBarTemplate = function(self, barId)
+    if not self._barTemplates[barId] then
+        self._barTemplates[barId] = self:BuildBarDefaults(barId)
+    end
+    return self._barTemplates[barId]
+end
+
+local function mergeMissingKeys(target, template)
+    for key, value in pairs(template) do
+        if target[key] == nil then
+            target[key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
         end
     end
+end
+
+defaults.MergeIntoDB = function(self, db)
+    if db.__exuiDefaultsVersion == self.SCHEMA_VERSION then
+        return db
+    end
+
+    if db.enable == nil then
+        db.enable = false
+    end
+
+    if not db.global then
+        db.global = EXUI.utils.deepCloneTable(self.GLOBAL)
+    else
+        mergeMissingKeys(db.global, self.GLOBAL)
+    end
+
     db.bars = db.bars or {}
     for _, barId in ipairs(definitions.ALL_BAR_IDS) do
         if not db.bars[barId] then
             db.bars[barId] = self:BuildBarDefaults(barId)
         else
-            local templateBar = self:BuildBarDefaults(barId)
-            for key, value in pairs(templateBar) do
-                if db.bars[barId][key] == nil then
-                    db.bars[barId][key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
-                end
-            end
+            mergeMissingKeys(db.bars[barId], self:GetBarTemplate(barId))
             if barId == 'bar1' and not db.bars[barId].states then
                 db.bars[barId].states = EXUI.utils.deepCloneTable(self.BAR1_STATES)
             end
@@ -214,23 +233,19 @@ defaults.MergeIntoDB = function(self, db)
             end
         end
     end
+
     if not db.microMenu then
-        db.microMenu = template.microMenu
+        db.microMenu = EXUI.utils.deepCloneTable(self.MICRO_MENU)
     else
-        for key, value in pairs(template.microMenu) do
-            if db.microMenu[key] == nil then
-                db.microMenu[key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
-            end
-        end
+        mergeMissingKeys(db.microMenu, self.MICRO_MENU)
     end
+
     if not db.bags then
-        db.bags = template.bags
+        db.bags = EXUI.utils.deepCloneTable(self.BAGS)
     else
-        for key, value in pairs(template.bags) do
-            if db.bags[key] == nil then
-                db.bags[key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
-            end
-        end
+        mergeMissingKeys(db.bags, self.BAGS)
     end
+
+    db.__exuiDefaultsVersion = self.SCHEMA_VERSION
     return db
 end

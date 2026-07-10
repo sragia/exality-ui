@@ -145,6 +145,7 @@ barMod.Configure = function(self, frame, db)
     if not frame then return end
     local barId = frame.barId
     local config = configResolver:GetBarConfig(db, barId)
+    frame.exuiBarConfig = config
 
     if not config.enable then
         frame:Hide()
@@ -229,11 +230,10 @@ barMod.SetupVisibility = function(self, frame, config)
             return
         end
         frame.isHovering = state
-        local cfg = configResolver:GetBarConfig(
-            EXUI:GetModule('action-bars'):GetDB(),
-            frame.barId
-        )
-        barMod:UpdateVisibilityAlpha(frame, cfg, state)
+        local cfg = frame.exuiBarConfig
+        if cfg then
+            barMod:UpdateVisibilityAlpha(frame, cfg, state)
+        end
     end
 
     frame:HookScript('OnEnter', function() setHover(true) end)

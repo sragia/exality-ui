@@ -339,6 +339,14 @@ globalOptions.GetOptions = function(self, mod, section)
                 onChange = function(v) db.global.showCooldownText = v; mod.Data:SetDB(db); mod:RefreshBars() end,
             },
             {
+                type = 'toggle',
+                label = 'Hide Cooldown Charge',
+                name = 'global_hideCooldownCharge',
+                width = 100,
+                currentValue = function() return db.global.hideCooldownCharge == true end,
+                onChange = function(v) db.global.hideCooldownCharge = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+            },
+            {
                 type = 'dropdown',
                 label = 'Default Visibility',
                 name = 'global_visibility',
