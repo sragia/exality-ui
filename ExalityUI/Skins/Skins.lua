@@ -625,6 +625,56 @@ local function BlockDropdownStateTexture(texture)
     texture:Hide()
 end
 
+---Re-anchor dropdown chrome so 1px borders land on the pixel grid and stay inside clip rects.
+local function RefreshModernDropdownChrome(dropdown)
+    if (not dropdown or not dropdown.exuiSkinned) then return end
+
+    local borderWidth = EXUI:ScalePixel(1, dropdown, 1)
+    local outward = EXUI:ScalePixels(1, dropdown)
+
+    if (dropdown.exuiBg) then
+        dropdown.exuiBg:ClearAllPoints()
+        dropdown.exuiBg:SetPoint('TOPLEFT', dropdown, 'TOPLEFT', borderWidth, -borderWidth)
+        dropdown.exuiBg:SetPoint('BOTTOMRIGHT', dropdown, 'BOTTOMRIGHT', -borderWidth, borderWidth)
+        dropdown.exuiBg:Show()
+    end
+
+    local overlay = dropdown.exuiBorderOverlay
+    if (not overlay) then return end
+
+    overlay:ClearAllPoints()
+    overlay:SetAllPoints(dropdown)
+
+    local border = overlay.PPBorder
+    if (not border) then return end
+
+    border.Top:SetHeight(borderWidth)
+    border.Top:ClearAllPoints()
+    border.Top:SetPoint('TOPLEFT', overlay, 'TOPLEFT', 0, 0)
+    border.Top:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', 0, 0)
+
+    border.Left:SetWidth(borderWidth)
+    border.Left:ClearAllPoints()
+    border.Left:SetPoint('TOPLEFT', overlay, 'TOPLEFT', -outward, 0)
+    border.Left:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', -outward, 0)
+
+    border.Right:SetWidth(borderWidth)
+    border.Right:ClearAllPoints()
+    border.Right:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', outward, 0)
+    border.Right:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', outward, 0)
+
+    border.Bottom:SetHeight(borderWidth)
+    border.Bottom:SetSnapToPixelGrid(false)
+    border.Bottom:ClearAllPoints()
+    border.Bottom:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', 0, -outward)
+    border.Bottom:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', 0, -outward)
+
+    border.Top:Show()
+    border.Left:Show()
+    border.Right:Show()
+    border.Bottom:Show()
+end
+
 local function InstallModernDropdownHooks()
     if (modernDropdownHooksInstalled) then return end
     if (not WowStyle1DropdownMixin or not MenuMixin or not MenuStyle1Mixin or not DropdownButtonMixin) then return end
@@ -647,6 +697,12 @@ local function InstallModernDropdownHooks()
             else
                 text:SetTextColor(unpack(th.textMuted))
             end
+        end)
+
+        hooksecurefunc(WowStyle1DropdownMixin, 'OnShow', function(dropdown)
+            if (not dropdown.exuiSkinned) then return end
+            RefreshModernDropdownChrome(dropdown)
+            ApplyModernDropdownArrow(dropdown)
         end)
     end
 
@@ -690,7 +746,6 @@ skins.SkinModernDropdown = function(self, dropdown)
     if (not dropdown.exuiBg) then
         local bg = dropdown:CreateTexture(nil, 'BACKGROUND', nil, 0)
         bg:SetTexture(EXUI.const.textures.frame.solidBg)
-        bg:SetAllPoints()
         dropdown.exuiBg = bg
     end
 
@@ -702,6 +757,8 @@ skins.SkinModernDropdown = function(self, dropdown)
         overlay.PPBorder = EXUI:AddPixelPerfectBorder(overlay, 1, { register = false, layer = 'OVERLAY' })
         dropdown.exuiBorderOverlay = overlay
     end
+
+    RefreshModernDropdownChrome(dropdown)
 
     if (not dropdown.exuiChevron) then
         local chevron = dropdown:CreateTexture(nil, 'OVERLAY', nil, 2)
@@ -749,10 +806,11 @@ skins.SkinModernDropdown = function(self, dropdown)
         ApplyModernDropdownArrow(dropdown)
     end)
     dropdown:HookScript('OnShow', function()
-        if (dropdown.exuiBg) then
-            dropdown.exuiBg:Show()
-        end
+        RefreshModernDropdownChrome(dropdown)
         ApplyModernDropdownArrow(dropdown)
+    end)
+    dropdown:HookScript('OnSizeChanged', function()
+        RefreshModernDropdownChrome(dropdown)
     end)
 end
 
