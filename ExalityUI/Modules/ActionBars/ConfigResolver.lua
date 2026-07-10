@@ -93,7 +93,8 @@ resolver.GetBarConfig = function(self, db, barId)
         growVertical = bar.growVertical or 'up',
         showBackdrop = useGlobalAppearance and (global.showBackdrop ~= false) or (bar.showBackdrop ~= false),
         showBlizzardArtwork = bar.showBlizzardArtwork == true,
-        backdropColor = useGlobalAppearance and global.backdropColor or bar.backdropColor or { r = 0, g = 0, b = 0, a = 0.5 },
+        backdropColor = useGlobalAppearance and global.backdropColor or bar.backdropColor or
+            { r = 0, g = 0, b = 0, a = 0.5 },
         hotkey = resolveTextBlock(global.hotkey, bar.hotkey),
         count = resolveTextBlock(global.count, bar.count),
         macro = resolveTextBlock(global.macro, bar.macro),

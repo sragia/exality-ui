@@ -122,7 +122,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         width = 100,
         depends = depends,
         currentValue = function() return getText().enabled ~= false end,
-        onChange = function(v) setText('enabled', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('enabled', v); mod:RefreshBars()
+        end,
     })
     table.insert(fields, {
         type = 'dropdown',
@@ -133,7 +135,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         depends = depends,
         getOptions = function() return self:GetFontOptions() end,
         currentValue = function() return getText().font end,
-        onChange = function(v) setText('font', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('font', v); mod:RefreshBars()
+        end,
     })
     table.insert(fields, {
         type = 'range',
@@ -144,7 +148,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         max = 32,
         depends = depends,
         currentValue = function() return getText().fontSize end,
-        onChange = function(v) setText('fontSize', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('fontSize', v); mod:RefreshBars()
+        end,
     })
     table.insert(fields, {
         type = 'dropdown',
@@ -154,7 +160,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         depends = depends,
         getOptions = function() return EXUI.const.fontFlags end,
         currentValue = function() return getText().fontFlag end,
-        onChange = function(v) setText('fontFlag', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('fontFlag', v); mod:RefreshBars()
+        end,
     })
     table.insert(fields, {
         type = 'title',
@@ -174,7 +182,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         width = 23,
         depends = depends,
         currentValue = function() return getText().anchorPoint end,
-        onChange = function(v) setText('anchorPoint', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('anchorPoint', v); mod:RefreshBars()
+        end,
     })
     table.insert(fields, {
         type = 'anchor-point',
@@ -183,7 +193,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         width = 23,
         depends = depends,
         currentValue = function() return getText().relativePoint end,
-        onChange = function(v) setText('relativePoint', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('relativePoint', v); mod:RefreshBars()
+        end,
     })
     table.insert(fields, { type = 'spacer', width = 54, depends = depends })
     table.insert(fields, {
@@ -196,7 +208,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         step = 1,
         depends = depends,
         currentValue = function() return getText().xOffset or 0 end,
-        onChange = function(v) setText('xOffset', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('xOffset', v); mod:RefreshBars()
+        end,
     })
     table.insert(fields, {
         type = 'range',
@@ -208,7 +222,9 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         step = 1,
         depends = depends,
         currentValue = function() return getText().yOffset or 0 end,
-        onChange = function(v) setText('yOffset', v); mod:RefreshBars() end,
+        onChange = function(v)
+            setText('yOffset', v); mod:RefreshBars()
+        end,
     })
 
     return fields
@@ -256,7 +272,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 min = 16,
                 max = 80,
                 currentValue = function() return db.global.width end,
-                onChange = function(v) db.global.width = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.width = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'range',
@@ -266,7 +284,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 min = 16,
                 max = 80,
                 currentValue = function() return db.global.height end,
-                onChange = function(v) db.global.height = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.height = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'range',
@@ -276,7 +296,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 min = 0,
                 max = 30,
                 currentValue = function() return db.global.zoom end,
-                onChange = function(v) db.global.zoom = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.zoom = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'toggle',
@@ -284,7 +306,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 name = 'global_showBorder',
                 width = 100,
                 currentValue = function() return db.global.showBorder end,
-                onChange = function(v) db.global.showBorder = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.showBorder = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'toggle',
@@ -292,7 +316,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 name = 'global_showBackdrop',
                 width = 100,
                 currentValue = function() return db.global.showBackdrop ~= false end,
-                onChange = function(v) db.global.showBackdrop = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.showBackdrop = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'color-picker',
@@ -301,7 +327,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 width = 50,
                 depends = function() return db.global.showBackdrop ~= false and db.global.showBorder end,
                 currentValue = function() return db.global.backdropColor end,
-                onChange = function(v) db.global.backdropColor = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.backdropColor = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'toggle',
@@ -310,7 +338,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 width = 100,
                 depends = function() return self:IsMasqueAvailable() end,
                 currentValue = function() return db.global.useMasque end,
-                onChange = function(v) db.global.useMasque = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.useMasque = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'dropdown',
@@ -320,7 +350,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 depends = function() return self:IsMasqueAvailable() end,
                 getOptions = function() return self:GetMasqueSkins() end,
                 currentValue = function() return db.global.masqueSkin end,
-                onChange = function(v) db.global.masqueSkin = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.masqueSkin = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'toggle',
@@ -328,7 +360,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 name = 'global_showCooldownSwipe',
                 width = 100,
                 currentValue = function() return db.global.showCooldownSwipe end,
-                onChange = function(v) db.global.showCooldownSwipe = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.showCooldownSwipe = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'toggle',
@@ -336,7 +370,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 name = 'global_showCooldownText',
                 width = 100,
                 currentValue = function() return db.global.showCooldownText end,
-                onChange = function(v) db.global.showCooldownText = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.showCooldownText = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'toggle',
@@ -344,7 +380,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 name = 'global_hideCooldownCharge',
                 width = 100,
                 currentValue = function() return db.global.hideCooldownCharge == true end,
-                onChange = function(v) db.global.hideCooldownCharge = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.hideCooldownCharge = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
             {
                 type = 'dropdown',
@@ -353,7 +391,9 @@ globalOptions.GetOptions = function(self, mod, section)
                 width = 50,
                 getOptions = function() return VISIBILITY end,
                 currentValue = function() return db.global.visibility end,
-                onChange = function(v) db.global.visibility = v; mod.Data:SetDB(db); mod:RefreshBars() end,
+                onChange = function(v)
+                    db.global.visibility = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
             },
         }
     end

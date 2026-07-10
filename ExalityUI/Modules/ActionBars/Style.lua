@@ -269,6 +269,14 @@ style.ApplyCooldownSettings = function(self, button, barConfig)
             self:ApplyCooldownText(button.chargeCooldown, button, barConfig)
         end
     end
+
+    if (not barConfig.hideCooldownCharge) then
+        C_Timer.After(0.1, function()
+            if (button.cooldown:IsShown() and button.chargeCooldown:IsShown()) then
+                button.cooldown:SetHideCountdownNumbers(true)
+            end
+        end)
+    end
 end
 
 style.ApplyDefaultBorder = function(self, button, alpha)
