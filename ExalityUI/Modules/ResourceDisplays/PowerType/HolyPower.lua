@@ -4,259 +4,94 @@ local EXUI = select(2, ...)
 ---@class EXUIResourceDisplaysCore
 local core = EXUI:GetModule('resource-displays-core')
 
-local holyPower = EXUI:GetModule('resource-displays-holy-power')
+---@class EXUIResourceDisplaysPreview
+local preview = EXUI:GetModule('resource-displays-preview')
 
----@class EXUIResourceDisplaysCore
+---@class EXUIResourceDisplaysHelpers
+local helpers = EXUI:GetModule('resource-displays-helpers')
+
+---@class EXUIResourceDisplaysSegmentBase
+local segmentBase = EXUI:GetModule('resource-displays-segment-base')
+
+local holyPower = EXUI:GetModule('resource-displays-holy-power')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
-local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
-local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
-
-holyPower.CreateSinglePower = function(self, parent)
-    local frame = CreateFrame('Frame', nil, parent, 'BackdropTemplate')
-    EXUI:SetSize(frame, 30, 16)
-
-    local statusBar = CreateFrame('StatusBar', nil, frame)
-    statusBarElement:ApplyInsets(statusBar, frame)
-    statusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
-    statusBar:SetMinMaxValues(0, 1)
-    statusBar:SetValue(0)
-    statusBar:SetStatusBarColor(1, 0, 0, 1)
-
-    frame.StatusBar = statusBar
-
-    return frame
-end
+local SEGMENT_CONFIG = {
+    prefix = 'hp',
+    label = 'Holy Power',
+    poolKey = 'HolyPowerFrames',
+    widthKey = 'hpWidth',
+    heightKey = 'hpHeight',
+    spacingKey = 'hpSpacing',
+    textureKey = 'hpBarTexture',
+    colorKey = 'hpColor',
+    colorsKey = 'hpColors',
+    backgroundKey = 'hpBackgroundColor',
+    borderKey = 'hpBorderColor',
+    capColorKey = 'hpCapColor',
+    individualColorCount = 5,
+}
 
 holyPower.Create = function(self, frame)
     frame.IsActive = function(self) return holyPower:IsActive(self) end
-
     frame.HolyPowerFrames = {}
     frame.ActiveFrames = {}
 
-    frame:RegisterUnitEvent('UNIT_POWER_UPDATE', 'player')
-    frame:RegisterEvent('PLAYER_ENTERING_WORLD')
-    frame:RegisterEvent('TRAIT_CONFIG_UPDATED')
-
-    frame.OnEvent = function(self, event, unit, powerType)
-        if ((unit == 'player' and powerType == 'HOLY_POWER') or event == 'TRAIT_CONFIG_UPDATED') then
-            local maxHolyPower = UnitPowerMax('player', Enum.PowerType.HolyPower)
-            if (maxHolyPower ~= #self.ActiveFrames) then
+    frame._segmentOnEvent = function(self, event, unit, powerType)
+        if preview:ApplySegmentPreview(self, 'Holy Power', SEGMENT_CONFIG) then
+            return
+        end
+        if (unit == 'player' and powerType == 'HOLY_POWER') or event == 'TRAIT_CONFIG_UPDATED' then
+            local maxHP = UnitPowerMax('player', Enum.PowerType.HolyPower)
+            if maxHP ~= #self.ActiveFrames then
                 self:Update()
-                return;
+                return
             end
-            local hpCount = UnitPower('player', Enum.PowerType.HolyPower)
-            for _, powerFrame in ipairs_reverse(frame.ActiveFrames) do
-                local value = powerFrame.index <= hpCount and 1 or 0
-                local isChanging = powerFrame.StatusBar:GetValue() ~= value
-                if (isChanging) then
-                    powerFrame.StatusBar:SetValue(value,
-                        powerFrame.FillAnimation and Enum.StatusBarInterpolation.ExponentialEaseOut or
-                        Enum.StatusBarInterpolation.Immediate)
-                end
-            end
+            local count = UnitPower('player', Enum.PowerType.HolyPower)
+            segmentBase:SetSegmentValues(self.ActiveFrames, count, nil, self.db, SEGMENT_CONFIG)
         end
     end
+
+    frame.OnEvent = frame._segmentOnEvent
+    helpers:WireSegmentEnableDisable(frame, { 'UNIT_POWER_UPDATE', 'TRAIT_CONFIG_UPDATED', 'PLAYER_ENTERING_WORLD' })
     frame:SetScript('OnEvent', function(self, event, unit, powerType)
         self:OnEvent(event, unit, powerType)
-    end)
-
-    C_Timer.After(0.5, function()
-        if (frame:IsActive() and frame.Update) then
-            frame:Update()
-        end
     end)
 end
 
 holyPower.Update = function(frame)
-    local maxHolyPower = UnitPowerMax('player', Enum.PowerType.HolyPower)
-    local db = frame.db
-
-    for _, holyPowerFrame in pairs(frame.HolyPowerFrames) do
-        holyPowerFrame:Hide()
+    if preview:ApplySegmentPreview(frame, 'Holy Power', SEGMENT_CONFIG) then
+        return
     end
 
-    wipe(frame.ActiveFrames)
-    for i = 1, maxHolyPower do
-        local powerFrame = frame.HolyPowerFrames[i]
-        -- Create frames
-        if (not powerFrame) then
-            powerFrame = holyPower:CreateSinglePower(frame)
-            frame.HolyPowerFrames[i] = powerFrame
-        end
-        powerFrame.index = i
-        table.insert(frame.ActiveFrames, powerFrame)
-        powerFrame:Show()
-        EXUI:SetSize(powerFrame, db.hpWidth, db.hpHeight)
-        powerFrame.StatusBar:SetStatusBarColor(db.hpColor.r, db.hpColor.g, db.hpColor.b, db.hpColor.a)
-        powerFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.hpBarTexture))
-        core:ApplySegmentChrome(powerFrame, db.hpBackgroundColor, db.hpBorderColor)
-        powerFrame.FillAnimation = db.fillAnimation
-    end
-
-    local prev = nil
-    for _, activeFrame in ipairs(frame.ActiveFrames) do
-        activeFrame:ClearAllPoints()
-        if (prev) then
-            EXUI:SetPoint(activeFrame, 'LEFT', prev, 'RIGHT', db.hpSpacing, 0)
-        else
-            EXUI:SetPoint(activeFrame, 'LEFT', frame, 'LEFT', 0, 0)
-        end
-        prev = activeFrame
-    end
-
-    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.hpWidth, db.hpHeight, #frame.ActiveFrames, db.hpSpacing)
-    EXUI:SetSize(frame, groupWidth, groupHeight)
-
-    frame:OnEvent('UNIT_POWER_UPDATE', 'player', 'HOLY_POWER') -- Trigger Update
+    segmentBase:UpdateSegmentRow(frame, SEGMENT_CONFIG, function()
+        return UnitPowerMax('player', Enum.PowerType.HolyPower)
+    end, Enum.PowerType.HolyPower, function(f)
+        local count = UnitPower('player', Enum.PowerType.HolyPower)
+        segmentBase:SetSegmentValues(f.ActiveFrames, count, nil, f.db, SEGMENT_CONFIG)
+    end)
 end
 
 holyPower.IsActive = function(self, frame)
     local db = frame.db
-    local enabled = db.enable
-    return enabled and UnitPowerMax('player', Enum.PowerType.HolyPower) > 0
+    return db.enable and UnitPowerMax('player', Enum.PowerType.HolyPower) > 0
 end
 
 holyPower.GetOptions = function(self, displayID)
-    local options = {
-        {
-            type = 'title',
-            size = 14,
-            width = 100,
-            label = 'Holy Power'
-        },
-        {
-            type = 'range',
-            label = 'Width',
-            name = 'hpWidth',
-            min = 1,
-            max = 300,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpWidth')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpWidth', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end
-        },
-        {
-            type = 'range',
-            label = 'Height',
-            name = 'hpHeight',
-            min = 1,
-            max = 100,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpHeight')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpHeight', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end
-        },
-        {
-            type = 'range',
-            label = 'Spacing',
-            name = 'hpSpacing',
-            min = -3,
-            max = 100,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpSpacing')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpSpacing', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end
-        },
-        {
-            type = 'spacer',
-            width = 40
-        },
-        {
-            type = 'dropdown',
-            label = 'Bar Texture',
-            name = 'hpBarTexture',
-            getOptions = function()
-                local list = LSM:List('statusbar')
-                local options = {}
-                for _, texture in pairs(list) do
-                    options[texture] = texture
-                end
-                return options
-            end,
-            isTextureDropdown = true,
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpBarTexture')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpBarTexture', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end,
-            width = 40
-        },
-        {
-            type = 'spacer',
-            width = 60
-        },
-        {
-            type = 'color-picker',
-            label = 'Color',
-            name = 'hpColor',
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpColor')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpColor', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end,
-            width = 10
-        },
-        {
-            type = 'color-picker',
-            label = 'Background Color',
-            name = 'hpBackgroundColor',
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpBackgroundColor')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpBackgroundColor', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end,
-            width = 26
-        },
-        {
-            type = 'color-picker',
-            label = 'Border Color',
-            name = 'hpBorderColor',
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'hpBorderColor')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'hpBorderColor', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end,
-            width = 16
-        },
-        {
-            type = 'toggle',
-            label = 'Use Fill Animation',
-            name = 'fillAnimation',
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'fillAnimation')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'fillAnimation', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end,
-            width = 100
-        }
-    }
-
+    local options = segmentBase:GetCommonOptions(displayID, SEGMENT_CONFIG, RDCore)
+    table.insert(options, {
+        type = 'color-picker',
+        label = 'Cap Color',
+        name = 'hpCapColor',
+        currentValue = function()
+            return RDCore:GetValueForDisplay(displayID, 'hpCapColor')
+        end,
+        onChange = function(value)
+            RDCore:UpdateValueForDisplay(displayID, 'hpCapColor', value)
+            RDCore:RefreshDisplayByID(displayID)
+        end,
+        width = 16,
+    })
     return options
 end
 
@@ -266,15 +101,17 @@ holyPower.UpdateDefault = function(self, displayID)
         hpHeight = 16,
         hpSpacing = 2,
         hpColor = { r = 1, g = 204 / 255, b = 0, a = 1 },
+        hpCapColor = { r = 1, g = 0.8, b = 0, a = 1 },
         hpBackgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
         hpBorderColor = { r = 0, g = 0, b = 0, a = 1 },
         fillAnimation = false,
-        hpBarTexture = 'ExalityUI Status Bar'
+        hpBarTexture = 'ExalityUI Status Bar',
     })
 end
 
 core:RegisterPowerType({
     name = 'Holy Power',
     control = holyPower,
-    selfControlledSize = true
+    selfControlledSize = true,
+    class = 'PALADIN',
 })

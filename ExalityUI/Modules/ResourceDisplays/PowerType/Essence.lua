@@ -10,18 +10,20 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIResourceDisplaysCore
 local RDCore = EXUI:GetModule('resource-displays-core')
 
-local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
-local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
+---@class EXUIResourceDisplaysHelpers
+local helpers = EXUI:GetModule('resource-displays-helpers')
 
-------------------
+local LSM = LibStub:GetLibrary('LibSharedMedia-3.0', true)
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
 
 ---@class EXUIResourceDisplaysEssence
 local essence = EXUI:GetModule('resource-displays-essence')
 
 essence.cache = { {}, {}, {}, {}, {}, {} }
 essence.handler = nil
+
 essence.EnableUpdates = function(self, frame)
-    if (not self.handler) then
+    if not self.handler then
         self.handler = CreateFrame('Frame')
         self.handler.frames = {}
         self.handler.lastTime = 0
@@ -29,7 +31,7 @@ essence.EnableUpdates = function(self, frame)
 
         -- Credit to WeakAuras team for this cuz Evokers stupid and I dont wanna figure this out
         self.handler.OnEvent = function(self, event, unit, powerType)
-            if (powerType and powerType ~= 'ESSENCE') then
+            if powerType and powerType ~= 'ESSENCE' then
                 return
             end
 
@@ -37,25 +39,18 @@ essence.EnableUpdates = function(self, frame)
             if self.lastTime == now then
                 return
             end
-            local power = UnitPower("player", Enum.PowerType.Essence)
-            local total = UnitPowerMax("player", Enum.PowerType.Essence)
+            local power = UnitPower('player', Enum.PowerType.Essence)
+            local total = UnitPowerMax('player', Enum.PowerType.Essence)
             local peace = GetPowerRegenForPowerType(Enum.PowerType.Essence)
             if peace == nil or peace == 0 then
                 peace = 0.2
             end
             local duration = 1 / peace
-            local partial = UnitPartialPower("player", Enum.PowerType.Essence) / 1000
+            local partial = UnitPartialPower('player', Enum.PowerType.Essence) / 1000
 
-            if (partial == 0) then
+            if partial == 0 then
                 self.lastFullValue = now
             elseif power ~= total then
-                -- UnitPartialPower is a rather poor api, which returns incorrect values
-                -- This almost mirrors what the default ui does, in that the default ui
-                -- starts an animation and only uses UnitPartialPower when that animation's
-                -- progress differs from UnitPartialPower by 0.1
-                -- This here uses a similar logic. We sync whenever partial is 0
-                -- and then estimate based on that. And as long as that
-                -- estimate is within 0.1 of UnitPartialPower we prefer the estimate
                 local estimatedPartial = (now - self.lastFullValue) / duration
                 estimatedPartial = estimatedPartial - floor(estimatedPartial)
                 if abs(estimatedPartial - partial) < 0.1 then
@@ -64,28 +59,25 @@ essence.EnableUpdates = function(self, frame)
             end
 
             for i = 1, 6 do
-                local essence = essence.cache[i]
-                if (essence) then
+                local cacheEntry = essence.cache[i]
+                if cacheEntry then
                     if power >= i then
-                        -- Is full essence
-                        essence.isFull = true
+                        cacheEntry.isFull = true
                     elseif power + 1 == i then
-                        -- Recharging essence
-                        essence.duration = duration
-                        essence.expirationTime = GetTime() + (1 - partial) * duration
-                        essence.isFull = false
-                        essence.isEmpty = false
+                        cacheEntry.duration = duration
+                        cacheEntry.expirationTime = GetTime() + (1 - partial) * duration
+                        cacheEntry.isFull = false
+                        cacheEntry.isEmpty = false
                     else
-                        -- Not recharging right now - empty
-                        essence.isEmpty = true
-                        essence.isFull = false
+                        cacheEntry.isEmpty = true
+                        cacheEntry.isFull = false
                     end
                 end
             end
             self.lastTime = now
 
             for _, f in ipairs(self.frames) do
-                if (f.OnEvent) then
+                if f.OnEvent then
                     f:OnEvent()
                 end
             end
@@ -95,36 +87,35 @@ essence.EnableUpdates = function(self, frame)
 
     local found = false
     for _, f in ipairs(self.handler.frames) do
-        if (frame == f) then
+        if frame == f then
             found = true
             break
         end
     end
-    if (not found) then
+    if not found then
         table.insert(self.handler.frames, frame)
     end
-    if (not self.handler.enabled) then
-        -- Register Events
-        self.handler:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
-        self.handler:RegisterUnitEvent("UNIT_MAXPOWER", "player")
-        self.handler:RegisterEvent("PLAYER_ENTERING_WORLD")
-        self.handler:RegisterEvent("PLAYER_LEAVING_WORLD")
+    if not self.handler.enabled then
+        self.handler:RegisterUnitEvent('UNIT_POWER_FREQUENT', 'player')
+        self.handler:RegisterUnitEvent('UNIT_MAXPOWER', 'player')
+        self.handler:RegisterEvent('PLAYER_ENTERING_WORLD')
+        self.handler:RegisterEvent('PLAYER_LEAVING_WORLD')
+        self.handler.enabled = true
     end
 
-    self.enabled = true
     self.handler:OnEvent()
 end
 
 essence.DisableUpdates = function(self, frame)
-    if (self.handler and self.handler.frames) then
+    if self.handler and self.handler.frames then
         for i, f in ipairs(self.handler.frames) do
-            if (frame == f) then
+            if frame == f then
                 table.remove(self.handler.frames, i)
                 break
             end
         end
 
-        if (#self.handler.frames == 0) then
+        if #self.handler.frames == 0 then
             self.handler:UnregisterAllEvents()
             self.handler.enabled = false
         end
@@ -154,7 +145,7 @@ essence.CreateSingleEssence = function(self, parent)
     text:Hide()
 
     frame.OnUpdate = function(self, elapsed)
-        if (self.DurationObject) then
+        if self.DurationObject then
             self.Text:SetText(string.format('%.1f', self.DurationObject:GetRemainingDuration()))
         end
     end
@@ -166,74 +157,76 @@ end
 
 essence.Create = function(self, frame)
     frame.IsActive = function(self) return essence:IsActive(self) end
-
     frame.ActiveFrames = {}
     frame.EssenceFrames = {}
 
     frame.OnEvent = function(self, event)
-        if (event == 'TRAIT_CONFIG_UPDATED') then
+        if event == 'TRAIT_CONFIG_UPDATED' then
             local maxEssence = UnitPowerMax('player', Enum.PowerType.Essence)
-            if (maxEssence ~= #self.ActiveFrames) then
+            if maxEssence ~= #self.ActiveFrames then
                 self:Update()
-                return;
+                return
             end
         end
         for i = 1, UnitPowerMax('player', Enum.PowerType.Essence) do
-            local essenceFrame = frame.ActiveFrames[i]
+            local essenceFrame = self.ActiveFrames[i]
             local cache = essence.cache[i]
-            if (essenceFrame and cache) then
-                if (cache.isFull) then
+            if essenceFrame and cache then
+                if cache.isFull then
                     essenceFrame.StatusBar:SetValue(1)
                     essenceFrame.StatusBar:SetMinMaxValues(0, 1)
-                    essenceFrame.StatusBar:SetStatusBarColor(
-                        frame.EssenceColor.r,
-                        frame.EssenceColor.g,
-                        frame.EssenceColor.b,
-                        frame.EssenceColor.a
-                    )
+                    local color = helpers:GetSegmentColor(self.db, i, 'essenceColor', 'essenceColors', nil, false)
+                    if color then
+                        essenceFrame.StatusBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
+                    end
                     essenceFrame.Text:SetText('')
-                    if (essenceFrame:GetScript('OnUpdate')) then
+                    if essenceFrame:GetScript('OnUpdate') then
                         essenceFrame:SetScript('OnUpdate', nil)
                     end
-                elseif (cache.isEmpty) then
+                elseif cache.isEmpty then
                     essenceFrame.StatusBar:SetValue(0)
                     essenceFrame.StatusBar:SetMinMaxValues(0, 1)
                     essenceFrame.Text:SetText('')
-                    if (essenceFrame:GetScript('OnUpdate')) then
+                    if essenceFrame:GetScript('OnUpdate') then
                         essenceFrame:SetScript('OnUpdate', nil)
                     end
-                elseif (cache.duration) then
+                elseif cache.duration then
                     local durationObject = essenceFrame.DurationObject or C_DurationUtil.CreateDuration()
                     durationObject:SetTimeFromEnd(cache.expirationTime, cache.duration)
                     essenceFrame.DurationObject = durationObject
-                    if (self.db.essenceShowText and not essenceFrame:GetScript('OnUpdate')) then
+                    if self.db.essenceShowText and not essenceFrame:GetScript('OnUpdate') then
                         essenceFrame:SetScript('OnUpdate', essenceFrame.OnUpdate)
+                    elseif not self.db.essenceShowText and essenceFrame:GetScript('OnUpdate') then
+                        essenceFrame:SetScript('OnUpdate', nil)
                     end
-                    essenceFrame.StatusBar:SetTimerDuration(durationObject,
-                        Enum.StatusBarInterpolation.ExponentialEaseOut)
+                    essenceFrame.StatusBar:SetTimerDuration(durationObject, Enum.StatusBarInterpolation.ExponentialEaseOut)
                     essenceFrame.StatusBar:SetStatusBarColor(
-                        frame.EssenceOnCDColor.r,
-                        frame.EssenceOnCDColor.g,
-                        frame.EssenceOnCDColor.b,
-                        frame.EssenceOnCDColor.a
+                        self.EssenceOnCDColor.r,
+                        self.EssenceOnCDColor.g,
+                        self.EssenceOnCDColor.b,
+                        self.EssenceOnCDColor.a
                     )
                 end
             end
         end
     end
-    frame:SetScript('OnEvent', function(self, ...)
-        self:OnEvent(...)
-    end)
 
     frame.Enable = function(self)
         self:RegisterUnitEvent('UNIT_POWER_FREQUENT', 'player')
         self:RegisterEvent('TRAIT_CONFIG_UPDATED')
+        self:SetScript('OnEvent', function(f, ...)
+            f:OnEvent(...)
+        end)
         essence:EnableUpdates(self)
     end
 
     frame.Disable = function(self)
         self:UnregisterAllEvents()
+        self:SetScript('OnEvent', nil)
         essence:DisableUpdates(self)
+        for _, essenceFrame in ipairs(self.ActiveFrames) do
+            essenceFrame:SetScript('OnUpdate', nil)
+        end
     end
 end
 
@@ -248,50 +241,44 @@ essence.Update = function(frame)
 
     for i = 1, UnitPowerMax('player', Enum.PowerType.Essence) do
         local essenceFrame = frame.EssenceFrames[i]
-        if (not essenceFrame) then
+        if not essenceFrame then
             essenceFrame = essence:CreateSingleEssence(frame)
             frame.EssenceFrames[i] = essenceFrame
-            frame.EssenceIndex = i
         end
         frame.EssenceColor = db.essenceColor
         frame.EssenceOnCDColor = db.essenceOnCDColor
         table.insert(frame.ActiveFrames, essenceFrame)
         EXUI:SetSize(essenceFrame, db.essenceWidth, db.essenceHeight)
+        local color = helpers:GetSegmentColor(db, i, 'essenceColor', 'essenceColors', nil, false)
+        if color then
+            essenceFrame.StatusBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
+        end
         essenceFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.essenceBarTexture))
-        essenceFrame.StatusBar:SetStatusBarColor(db.essenceColor.r, db.essenceColor.g, db.essenceColor.b,
-            db.essenceColor.a)
         core:ApplySegmentChrome(essenceFrame, db.essenceBackgroundColor, db.essenceBorderColor)
         essenceFrame.Text:SetFont(LSM:Fetch('font', db.essenceFont), db.essenceFontSize, db.essenceFontFlag)
-        essenceFrame.Text:SetVertexColor(db.essenceTextColor.r, db.essenceTextColor.g, db.essenceTextColor.b,
-            db.essenceTextColor.a)
+        essenceFrame.Text:SetVertexColor(db.essenceTextColor.r, db.essenceTextColor.g, db.essenceTextColor.b, db.essenceTextColor.a)
         essenceFrame.Text:ClearAllPoints()
-        essenceFrame.Text:SetPoint(db.essenceTextAnchorPoint, essenceFrame, db.essenceTextRelativeAnchorPoint,
-            db.essenceTextXOff,
-            db.essenceTextYOff)
-    end
-
-    local prev = nil
-    for _, activeFrame in ipairs(frame.ActiveFrames) do
-        activeFrame:ClearAllPoints()
-        if (prev) then
-            EXUI:SetPoint(activeFrame, 'LEFT', prev, 'RIGHT', db.essenceSpacing, 0)
+        essenceFrame.Text:SetPoint(db.essenceTextAnchorPoint, essenceFrame, db.essenceTextRelativeAnchorPoint, db.essenceTextXOff, db.essenceTextYOff)
+        if db.essenceShowText then
+            essenceFrame.Text:Show()
         else
-            EXUI:SetPoint(activeFrame, 'LEFT', frame, 'LEFT', 0, 0)
+            essenceFrame.Text:Hide()
+            essenceFrame:SetScript('OnUpdate', nil)
         end
-        activeFrame:Show()
-        prev = activeFrame
     end
 
-    local groupWidth, groupHeight = core:GetSegmentGroupSize(db.essenceWidth, db.essenceHeight, #frame.ActiveFrames, db.essenceSpacing)
+    local groupWidth, groupHeight = helpers:LayoutSegments(frame, frame.ActiveFrames, db, 'essenceWidth', 'essenceHeight', 'essenceSpacing')
     EXUI:SetSize(frame, groupWidth, groupHeight)
+    for _, activeFrame in ipairs(frame.ActiveFrames) do
+        activeFrame:Show()
+    end
     frame:OnEvent()
 end
 
 essence.IsActive = function(self, frame)
     local db = frame.db
-    local enabled = db.enable
     local _, class = UnitClass('player')
-    return enabled and class == 'EVOKER'
+    return db.enable and class == 'EVOKER'
 end
 
 essence.GetOptions = function(self, displayID)
@@ -300,7 +287,7 @@ essence.GetOptions = function(self, displayID)
             type = 'title',
             size = 14,
             width = 100,
-            label = 'Essence'
+            label = 'Essence',
         },
         {
             type = 'range',
@@ -316,7 +303,7 @@ essence.GetOptions = function(self, displayID)
             onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceWidth', value)
                 RDCore:RefreshDisplayByID(displayID)
-            end
+            end,
         },
         {
             type = 'range',
@@ -332,7 +319,7 @@ essence.GetOptions = function(self, displayID)
             onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceHeight', value)
                 RDCore:RefreshDisplayByID(displayID)
-            end
+            end,
         },
         {
             type = 'range',
@@ -348,11 +335,43 @@ essence.GetOptions = function(self, displayID)
             onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceSpacing', value)
                 RDCore:RefreshDisplayByID(displayID)
-            end
+            end,
+        },
+        {
+            type = 'dropdown',
+            label = 'Layout',
+            name = 'segmentLayout',
+            getOptions = function()
+                return {
+                    horizontal = 'Horizontal',
+                    vertical = 'Vertical',
+                }
+            end,
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, 'segmentLayout') or 'horizontal'
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, 'segmentLayout', value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 25,
+        },
+        {
+            type = 'toggle',
+            label = 'Reverse Order',
+            name = 'segmentReverse',
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, 'segmentReverse')
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, 'segmentReverse', value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 100,
         },
         {
             type = 'spacer',
-            width = 40
+            width = 40,
         },
         {
             type = 'dropdown',
@@ -360,11 +379,11 @@ essence.GetOptions = function(self, displayID)
             name = 'essenceBarTexture',
             getOptions = function()
                 local list = LSM:List('statusbar')
-                local options = {}
+                local textureOptions = {}
                 for _, texture in pairs(list) do
-                    options[texture] = texture
+                    textureOptions[texture] = texture
                 end
-                return options
+                return textureOptions
             end,
             isTextureDropdown = true,
             currentValue = function()
@@ -374,11 +393,11 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceBarTexture', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 40
+            width = 40,
         },
         {
             type = 'spacer',
-            width = 60
+            width = 60,
         },
         {
             type = 'color-picker',
@@ -391,7 +410,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 16,
         },
         {
             type = 'color-picker',
@@ -404,7 +423,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceOnCDColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 16,
         },
         {
             type = 'color-picker',
@@ -417,7 +436,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceBackgroundColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 16,
         },
         {
             type = 'color-picker',
@@ -430,13 +449,13 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceBorderColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
+            width = 16,
         },
         {
             type = 'title',
             size = 12,
             width = 100,
-            label = 'Essence Countdown Text'
+            label = 'Essence Countdown Text',
         },
         {
             type = 'toggle',
@@ -448,9 +467,9 @@ essence.GetOptions = function(self, displayID)
             onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceShowText', value)
                 RDCore:RefreshDisplayByID(displayID)
-                optionsFields:RefreshOptions()
+                optionsFields:RefreshOptionsDelayed()
             end,
-            width = 100
+            width = 100,
         },
         {
             type = 'dropdown',
@@ -458,11 +477,11 @@ essence.GetOptions = function(self, displayID)
             name = 'essenceFont',
             getOptions = function()
                 local fonts = LSM:List('font')
-                local options = {}
+                local fontOptions = {}
                 for _, font in ipairs(fonts) do
-                    options[font] = font
+                    fontOptions[font] = font
                 end
-                return options
+                return fontOptions
             end,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'essenceShowText')
@@ -475,7 +494,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceFont', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 25
+            width = 25,
         },
         {
             type = 'dropdown',
@@ -494,7 +513,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceFontFlag', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 25
+            width = 25,
         },
         {
             type = 'range',
@@ -513,11 +532,11 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceFontSize', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 20
+            width = 20,
         },
         {
             type = 'spacer',
-            width = 30
+            width = 30,
         },
         {
             type = 'anchor-point',
@@ -533,7 +552,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceTextAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 23
+            width = 23,
         },
         {
             type = 'anchor-point',
@@ -549,11 +568,11 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceTextRelativeAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 23
+            width = 23,
         },
         {
             type = 'spacer',
-            width = 54
+            width = 54,
         },
         {
             type = 'range',
@@ -572,7 +591,7 @@ essence.GetOptions = function(self, displayID)
             onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceTextXOff', value)
                 RDCore:RefreshDisplayByID(displayID)
-            end
+            end,
         },
         {
             type = 'range',
@@ -591,7 +610,7 @@ essence.GetOptions = function(self, displayID)
             onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceTextYOff', value)
                 RDCore:RefreshDisplayByID(displayID)
-            end
+            end,
         },
         {
             type = 'color-picker',
@@ -607,9 +626,14 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceTextColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16
-        }
+            width = 16,
+        },
     }
+
+    local colorFields = helpers:BuildIndividualColorOptions(displayID, 'essence', 6, 'essenceColor', 'essenceColors', RDCore)
+    for _, field in ipairs(colorFields) do
+        table.insert(options, field)
+    end
 
     return options
 end
@@ -632,12 +656,12 @@ essence.UpdateDefault = function(self, displayID)
         essenceTextYOff = 0,
         essenceTextColor = { r = 1, g = 1, b = 1, a = 1 },
         essenceShowText = false,
-        essenceBarTexture = 'ExalityUI Status Bar'
+        essenceBarTexture = 'ExalityUI Status Bar',
     })
 end
 
 core:RegisterPowerType({
     name = 'Essence',
     control = essence,
-    selfControlledSize = true
+    selfControlledSize = true,
 })

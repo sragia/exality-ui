@@ -58,6 +58,7 @@ EXUI.const = {
             resizeBtnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Frames/expand-highlight]],
             closeBtn = [[Interface/Addons/ExalityUI/Assets/Images/Frames/close-btn]],
             closeIcon = [[Interface/Addons/ExalityUI/Assets/Images/Icons/x.png]],
+            copyIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/copy.png]],
             statusBar = [[Interface/Addons/ExalityUI/Assets/Images/Frames/statusBar]],
             iconMask = [[Interface/Addons/ExalityUI/Assets/Images/Frames/icon-mask]],
             titleBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/title-bg.png]],

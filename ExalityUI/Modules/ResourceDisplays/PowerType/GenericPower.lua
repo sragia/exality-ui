@@ -4,7 +4,12 @@ local EXUI = select(2, ...)
 ---@class EXUIResourceDisplaysCore
 local core = EXUI:GetModule('resource-displays-core')
 
+---@class EXUIResourceDisplaysPreview
+local preview = EXUI:GetModule('resource-displays-preview')
+
 local genericPower = EXUI:GetModule('resource-displays-generic-power')
+local statusBarElement = EXUI:GetModule('resource-displays-elements-status-bar')
+local textElement = EXUI:GetModule('resource-displays-elements-text')
 
 genericPower.Types = {
     ['Energy'] = Enum.PowerType.Energy,
@@ -20,59 +25,76 @@ genericPower.Types = {
 
 genericPower.Create = function(self, frame)
     frame.IsActive = function(self) return genericPower:IsActive(self) end
-    frame.StatusBar = EXUI:GetModule('resource-displays-elements-status-bar'):Create(frame)
-    frame.Text = EXUI:GetModule('resource-displays-elements-text'):Create(frame)
+    frame.StatusBar = statusBarElement:Create(frame)
+    frame.Text = textElement:Create(frame)
 
-    frame:RegisterUnitEvent('UNIT_POWER_FREQUENT', 'player')
-    frame:RegisterEvent('PLAYER_ENTERING_WORLD')
-    frame:RegisterEvent('TRAIT_CONFIG_UPDATED')
     frame.OnChange = function(self, event)
-        if (self.powerType == '') then
+        if preview:ApplyBarPreview(self, self.db.resourceType) then
+            return
+        end
+        if self.powerType == '' then
             self.powerType = nil
         end
-        if (event == 'UNIT_POWER_FREQUENT' or event == 'TRAIT_CONFIG_UPDATED') then
+        if event == 'UNIT_POWER_FREQUENT' or event == 'TRAIT_CONFIG_UPDATED' or event == 'UNIT_DISPLAYPOWER' then
             local power = UnitPower('player', self.powerType)
-            self.StatusBar:SetValue(power, Enum.StatusBarInterpolation.ExponentialEaseOut)
-            self.StatusBar:SetMinMaxValues(0, UnitPowerMax('player', self.powerType))
-            self.Text:SetText(AbbreviateNumbers(power))
+            local maxPower = UnitPowerMax('player', self.powerType)
+            statusBarElement:ApplyPowerValue(self, power, maxPower)
+            textElement:SetPowerText(self, power, maxPower)
         end
-
-        if (event == 'PLAYER_ENTERING_WORLD') then
+        if event == 'PLAYER_ENTERING_WORLD' then
             C_Timer.After(0.1, function()
-                self:OnChange('UNIT_POWER_FREQUENT') -- fake event with small delay
+                if self.OnChange then
+                    self:OnChange('UNIT_POWER_FREQUENT')
+                end
             end)
         end
     end
-    frame:SetScript('OnEvent', frame.OnChange)
-    frame:OnChange('UNIT_POWER_FREQUENT')
+
+    frame.Enable = function(self)
+        self:RegisterUnitEvent('UNIT_POWER_FREQUENT', 'player')
+        self:RegisterUnitEvent('UNIT_DISPLAYPOWER', 'player')
+        self:RegisterEvent('PLAYER_ENTERING_WORLD')
+        self:RegisterEvent('TRAIT_CONFIG_UPDATED')
+        self:SetScript('OnEvent', self.OnChange)
+        self:OnChange('UNIT_POWER_FREQUENT')
+    end
+
+    frame.Disable = function(self)
+        self:UnregisterAllEvents()
+        self:SetScript('OnEvent', nil)
+    end
 end
 
 genericPower.Update = function(frame)
     local db = frame.db
     frame.powerType = genericPower.Types[db.resourceType]
-    frame.StatusBar:SetMinMaxValues(0, UnitPowerMax('player', frame.powerType))
-    frame:OnChange('UNIT_POWER_FREQUENT') -- Fake event to update
+    if preview:ApplyBarPreview(frame, db.resourceType) then
+        return
+    end
+    local maxPower = UnitPowerMax('player', frame.powerType)
+    statusBarElement:ApplyPowerValue(frame, UnitPower('player', frame.powerType), maxPower)
+    textElement:SetPowerText(frame, UnitPower('player', frame.powerType), maxPower)
 end
 
 genericPower.IsActive = function(self, frame)
     local db = frame.db
-    local enabled = db.enable
+    if not db.enable then
+        return false
+    end
     local powerType = self.Types[db.resourceType]
     if not powerType then
         return false
     end
     local unitPowerType = UnitPowerType('player')
     local isPrimaryResource = unitPowerType == powerType or powerType == Enum.PowerType.ArcaneCharges
-
     local maxPower = UnitPowerMax('player', powerType)
-    return enabled and maxPower > 0 and (isPrimaryResource or db.showOverride)
+    return maxPower > 0 and (isPrimaryResource or db.showOverride)
 end
 
 genericPower.GetOptions = function(self, displayID)
     local options = {}
-
-    tAppendAll(options, EXUI:GetModule('resource-displays-elements-status-bar'):GetOptions(displayID))
-    tAppendAll(options, EXUI:GetModule('resource-displays-elements-text'):GetOptions(displayID))
+    tAppendAll(options, statusBarElement:GetOptions(displayID))
+    tAppendAll(options, textElement:GetOptions(displayID))
     return options
 end
 
@@ -89,42 +111,15 @@ genericPower.UpdateDefault = function(self, displayID)
         textYOff = 0,
         textColor = { r = 1, g = 1, b = 1, a = 1 },
         showText = true,
+        textFormat = 'current',
+        textJustify = 'CENTER',
+        smoothFill = true,
     })
 end
 
-core:RegisterPowerType({
-    name = 'Energy',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Mana',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Rage',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Focus',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Runic Power',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Fury',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Insanity',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Astral Power',
-    control = genericPower
-})
-core:RegisterPowerType({
-    name = 'Arcane Charges',
-    control = genericPower
-})
+local genericTypes = {
+    'Energy', 'Mana', 'Rage', 'Focus', 'Runic Power', 'Fury', 'Insanity', 'Astral Power', 'Arcane Charges',
+}
+for _, name in ipairs(genericTypes) do
+    core:RegisterPowerType({ name = name, control = genericPower, class = 'ANY' })
+end

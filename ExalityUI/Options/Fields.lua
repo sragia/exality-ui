@@ -102,6 +102,10 @@ optionsFields.HasInnerTabs = function(self, module, itemId)
 end
 
 optionsFields.ClearInnerTabs = function(self)
+    local selected = optionsController:GetSelectedModule()
+    if selected and selected.module and selected.module.TeardownOptionsChrome then
+        selected.module:TeardownOptionsChrome()
+    end
     if self.innerTabs then
         self.innerTabs:Destroy()
         self.innerTabs = nil
@@ -119,6 +123,11 @@ optionsFields.UseSplitViewContainer = function(self)
 end
 
 optionsFields.AddInnerTabs = function(self, module)
+    local selected = optionsController:GetSelectedModule()
+    if selected and selected.module and selected.module.TeardownOptionsChrome then
+        selected.module:TeardownOptionsChrome()
+    end
+
     if (self.innerTabs) then
         self.innerTabs:Destroy()
         self.innerTabs = nil
@@ -156,6 +165,10 @@ optionsFields.AddInnerTabs = function(self, module)
         self.splitView.scrollFrame:Hide()
     end
     self.container = self.innerTabs.container
+
+    if module.UpdateOptionsChrome then
+        module:UpdateOptionsChrome(self)
+    end
 end
 
 optionsFields.RefreshSplitViewForTab = function(self)
@@ -225,6 +238,9 @@ optionsFields.Refresh = function(self)
 
     self:InvalidateFieldCache()
     for _, module in pairs(optionsController:GetAllModules()) do
+        if module.module and module.module.TeardownOptionsChrome then
+            module.module:TeardownOptionsChrome()
+        end
         if (module.optionHandler) then
             module.optionHandler(self.container, true)
         end
@@ -279,6 +295,17 @@ end
 optionsFields.RefreshOptions = function(self)
     self:InvalidateFieldCache(self:GetFieldCacheKey())
     self:RefreshFields()
+end
+
+optionsFields.RefreshOptionsDelayed = function(self, delay)
+    delay = delay or 0.2
+    if self._refreshOptionsTimer then
+        self._refreshOptionsTimer:Cancel()
+    end
+    self._refreshOptionsTimer = C_Timer.NewTimer(delay, function()
+        self._refreshOptionsTimer = nil
+        self:RefreshOptions()
+    end)
 end
 
 optionsFields.GetFieldCacheKey = function(self)
@@ -427,6 +454,10 @@ optionsFields.RefreshFields = function(self)
     local currentModule = module.module
     if (not currentModule or not currentModule.GetOptions) then
         return
+    end
+
+    if currentModule.UpdateOptionsChrome then
+        currentModule:UpdateOptionsChrome(self)
     end
 
     local oldFields = self.fields or {}
@@ -596,6 +627,10 @@ optionsFields.GetField = function(self, field)
         end,
         ['custom-texts-list-item'] = function()
             local f = EXUI:GetModule('custom-texts-list-item'):Create()
+            return f
+        end,
+        ['resource-color-curve'] = function()
+            local f = EXUI:GetModule('options-resource-color-curve'):Create()
             return f
         end,
         ['anchor-point'] = function()

@@ -46,6 +46,7 @@ Options/NavIcons.lua
 Options/Editor.lua
 Options/Main.lua
 Options/ModuleSelector.lua
+Options/Frames/ResourceColorCurve.lua
 Options/Fields.lua
 
 # UF Options

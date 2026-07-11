@@ -4,7 +4,7 @@ local EXUI = select(2, ...)
 ---@class EXUIAuraDisplaysDefaults
 local defaults = EXUI:GetModule('aura-displays-defaults')
 
-defaults.SCHEMA_VERSION = 1
+defaults.SCHEMA_VERSION = 2
 
 defaults.FILTER_TOKENS = {
     'HELPFUL',
