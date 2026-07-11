@@ -2,6 +2,7 @@
 ## Title: ExalityUI
 ## Notes: TBD
 ## Author: Exality
+## X-License: GPL v2
 ## SavedVariables: ExalityUIData
 ## SavedVariablesPerCharacter: ExalityUICharData
 ## Version: @project-version@

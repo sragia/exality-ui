@@ -4,7 +4,7 @@ local EXUI = select(2, ...)
 ---@class EXUIAuraDisplaysDefaults
 local defaults = EXUI:GetModule('aura-displays-defaults')
 
-defaults.SCHEMA_VERSION = 2
+defaults.SCHEMA_VERSION = 3
 
 defaults.FILTER_TOKENS = {
     'HELPFUL',
@@ -84,6 +84,18 @@ defaults.GROUP_CONDITIONS = {
 }
 
 defaults.GROUP_VISUAL = {
+    displayStyle = 'icon',
+    barWidth = 160,
+    barHeight = 20,
+    barColor = { r = 0.2, g = 0.6, b = 1, a = 1 },
+    barBackgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
+    barBorderColor = { r = 0, g = 0, b = 0, a = 1 },
+    barBorderThickness = 1,
+    barTexture = 'ExalityUI Status Bar',
+    barTimerDirection = 'RemainingTime',
+    showBarIcon = true,
+    barIconPosition = 'LEFT',
+    barIconGap = 0,
     iconWidth = 32,
     iconHeight = 32,
     iconZoom = 0,
@@ -124,7 +136,6 @@ defaults.GROUP_VISUAL = {
     durationZeroText = '',
     durationUpdateInterval = 0,
     showDurationCooldown = true,
-    showDurationBar = false,
     showSpellName = false,
     spellNameFont = 'DMSans',
     spellNameFontSize = 10,

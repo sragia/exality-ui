@@ -314,6 +314,10 @@ optionsMain.CreateWindow = function(self)
 end
 
 optionsMain.Show = function(self)
+    if InCombatLockdown() then
+        EXUI.utils.printOut('You cannot open options during combat.')
+        return
+    end
     if (not self.window) then
         self.window = self:CreateWindow()
     end

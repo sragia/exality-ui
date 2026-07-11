@@ -69,8 +69,17 @@ function containerModule:GetPlaceholderSize(display)
         local group = display.groups and display.groups[groupID]
         if group and group.conditions and group.conditions.enable and loadConditions:ShouldLoad(group.load) then
             local visual = group.visual or {}
-            width = visual.iconWidth or 32
-            height = visual.iconHeight or 32
+            if visual.displayStyle == 'bar' then
+                local barWidth = visual.barWidth or 160
+                local barHeight = visual.barHeight or 20
+                local iconSize = visual.showBarIcon ~= false and barHeight or 0
+                local iconGap = iconSize > 0 and (visual.barIconGap or 0) or 0
+                width = barWidth + iconSize + iconGap
+                height = barHeight
+            else
+                width = visual.iconWidth or 32
+                height = visual.iconHeight or 32
+            end
             break
         end
     end

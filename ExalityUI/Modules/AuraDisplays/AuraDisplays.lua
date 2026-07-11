@@ -199,6 +199,24 @@ function auraDisplays:DeleteDisplay(displayID)
     end
 end
 
+function auraDisplays:DuplicateDisplay(displayID)
+    local db = self:EnsureDB()
+    local source = db.displays and db.displays[displayID]
+    if not source then return end
+
+    local newDisplayID = EXUI.utils.generateRandomString(12)
+    local display = EXUI.utils.deepCloneTable(source)
+    display.name = (display.name or 'Aura Display') .. ' Copy'
+    display.createdAt = time()
+
+    db.displays[newDisplayID] = display
+    self:SaveDB(db)
+    self.currGroupID = display.groupOrder and display.groupOrder[1]
+    self:RefreshAll()
+
+    return newDisplayID
+end
+
 function auraDisplays:AddGroup(displayID)
     local display = self:GetDisplay(displayID)
     if not display then return end
@@ -243,6 +261,17 @@ function auraDisplays:GetSplitViewItems()
             ID = displayID,
             label = display.name or 'Aura Display',
             contextMenuItems = {
+                {
+                    label = 'Duplicate',
+                    color = { 2 / 255, 145 / 255, 227 / 255, 1 },
+                    onClick = function(itemID)
+                        local newID = self:DuplicateDisplay(itemID)
+                        if newID then
+                            optionsFields:Refresh()
+                            optionsFields:SetItemID(newID)
+                        end
+                    end,
+                },
                 {
                     label = 'Delete',
                     color = EXUI.EXFrames.Theme.danger,

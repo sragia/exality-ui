@@ -136,14 +136,29 @@ function resolver:GetSortDirection(conditions)
 end
 
 function resolver:GetGroupLayout(visual)
+    visual = visual or {}
+    local elementWidth, elementHeight
+
+    if visual.displayStyle == 'bar' then
+        local barWidth = visual.barWidth or 160
+        local barHeight = visual.barHeight or 20
+        local iconSize = visual.showBarIcon ~= false and barHeight or 0
+        local iconGap = iconSize > 0 and (visual.barIconGap or 0) or 0
+        elementWidth = barWidth + iconSize + iconGap
+        elementHeight = barHeight
+    else
+        elementWidth = visual.elementWidth and visual.elementWidth > 0 and visual.elementWidth or nil
+        elementHeight = visual.elementHeight and visual.elementHeight > 0 and visual.elementHeight or nil
+    end
+
     return {
         elementSpacingX = visual.elementSpacingX or 0,
         elementSpacingY = visual.elementSpacingY or 0,
         gapX = visual.gapX or 0,
         gapY = visual.gapY or 0,
         forceNewRow = visual.forceNewRow or false,
-        elementWidth = visual.elementWidth and visual.elementWidth > 0 and visual.elementWidth or nil,
-        elementHeight = visual.elementHeight and visual.elementHeight > 0 and visual.elementHeight or nil,
+        elementWidth = elementWidth,
+        elementHeight = elementHeight,
     }
 end
 

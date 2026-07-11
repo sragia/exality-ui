@@ -118,6 +118,15 @@ local PREVIEW_SCENARIOS = {
         total = 12,
         expired = true,
     },
+    {
+        spellID = 465,
+        spellName = 'Devotion Aura',
+        isHelpful = true,
+        stacks = 0,
+        remaining = 0,
+        total = 0,
+        permanent = true,
+    },
 }
 
 preview.activeDisplayID = nil
@@ -403,6 +412,7 @@ function preview:CreatePreviewButton(parent)
     end
 
     local btn = resolveButton(button)
+    btn.exuiIsPreview = true
     if btn.EnableMouse then
         btn:EnableMouse(false)
     end
@@ -483,7 +493,7 @@ function preview:ApplyDuration(btn, scenario, visual)
     local total = scenario.total or 60
     local now = GetTime()
 
-    if visual.showDurationCooldown then
+    if visual.showDurationCooldown and visual.displayStyle ~= 'bar' then
         local cooldown = btn.GetDurationCooldown and btn:GetDurationCooldown() or btn.DurationCooldownFrame
         if cooldown then
             if scenario.expired then
@@ -510,6 +520,12 @@ function preview:ApplyDuration(btn, scenario, visual)
         return
     end
 
+    if scenario.permanent then
+        durationText:SetText(visual.durationZeroText or '')
+        durationText:Show()
+        return
+    end
+
     if btn.DurationTextBinding and C_DurationUtil then
         local duration = C_DurationUtil.CreateDuration()
         duration:SetTimeFromEnd(now + remaining, total, 1)
@@ -521,8 +537,42 @@ function preview:ApplyDuration(btn, scenario, visual)
     durationText:Show()
 end
 
+function preview:ApplyDurationBar(btn, scenario, visual)
+    if visual.displayStyle ~= 'bar' then
+        return
+    end
+
+    local statusBar = btn.BarStatusBar
+    if not statusBar and btn.GetDurationBar then
+        statusBar = btn:GetDurationBar()
+    end
+    if not statusBar or not statusBar.SetTimerDuration or not C_DurationUtil then
+        return
+    end
+
+    if scenario.expired then
+        return
+    end
+
+    local remaining = scenario.remaining or 0
+    local total = scenario.total or 60
+    local now = GetTime()
+    local duration = C_DurationUtil.CreateDuration()
+
+    if scenario.permanent or (remaining == 0 and total == 0) then
+        duration:SetTimeSpan(0, 0)
+    else
+        duration:SetTimeFromEnd(now + remaining, total, 1)
+    end
+
+    local direction = visual.barTimerDirection == 'ElapsedTime'
+        and Enum.StatusBarTimerDirection.ElapsedTime
+        or Enum.StatusBarTimerDirection.RemainingTime
+    statusBar:SetTimerDuration(duration, Enum.StatusBarInterpolation.Immediate, direction)
+end
+
 function preview:ApplyDispelBorder(btn, scenario, visual)
-    if not visual.showDispelBorder or not scenario.dispelName then
+    if visual.displayStyle == 'bar' or not visual.showDispelBorder or not scenario.dispelName then
         local border = btn.GetAuraBorder and btn:GetAuraBorder() or btn.AuraBorder or btn.AuraBorderTexture
         if border then
             border:Hide()
@@ -573,6 +623,7 @@ function preview:ApplyScenario(button, scenario, visual, state, index)
         preview:ApplyIcon(btn, scenario, visual, state, index)
         preview:ApplyStacks(btn, scenario, visual)
         preview:ApplyDuration(btn, scenario, visual)
+        preview:ApplyDurationBar(btn, scenario, visual)
         preview:ApplyDispelBorder(btn, scenario, visual)
         preview:ApplySpellName(btn, scenario, visual)
     end

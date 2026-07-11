@@ -7,6 +7,9 @@ local editor = EXUI:GetModule('editor')
 ---@class EXUIAuraDisplaysContainer
 local containerModule = EXUI:GetModule('aura-displays-container')
 
+---@class EXUIAuraDisplaysUnitResolver
+local unitResolver = EXUI:GetModule('aura-displays-unit-resolver')
+
 ---@class EXUIAuraDisplaysDisplay
 local displayModule = EXUI:GetModule('aura-displays-display')
 
@@ -85,14 +88,39 @@ function displayModule:SyncAllFrameSizes()
     end
 end
 
-function displayModule:SyncCoTankUnits()
+function displayModule:ShouldSyncDisplayUnit(containerUnit, unitKeys)
+    if not containerUnit then
+        return false
+    end
+
+    for _, key in ipairs(unitKeys) do
+        if containerUnit == key then
+            return true
+        end
+    end
+
+    return containerUnit == unitResolver.CUSTOM
+end
+
+function displayModule:SyncUnitsForKeys(unitKeys)
+    if not unitKeys or #unitKeys == 0 then
+        return
+    end
+
     local db = auraDisplays:GetDB()
     for displayID, frame in pairs(self.frames) do
         local display = db.displays and db.displays[displayID]
-        if display and display.container and display.container.unit == 'coTank' then
-            containerModule:SyncUnit(frame, display)
+        if display and display.enable and display.container then
+            local containerUnit = display.container.unit or 'player'
+            if self:ShouldSyncDisplayUnit(containerUnit, unitKeys) then
+                containerModule:SyncUnit(frame, display)
+            end
         end
     end
+end
+
+function displayModule:SyncCoTankUnits()
+    self:SyncUnitsForKeys({ unitResolver.CO_TANK })
 end
 
 function displayModule:Refresh(displayID, display)

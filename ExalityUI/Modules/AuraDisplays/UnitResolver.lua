@@ -91,6 +91,19 @@ function unitResolver:GetContainerUnitSelection(containerConfig)
     return self.CUSTOM
 end
 
+function unitResolver:GetUnitsToSyncForEvent(event, eventUnit)
+    if event == 'PLAYER_TARGET_CHANGED' then
+        return { 'target', 'targettarget', self.CUSTOM }
+    elseif event == 'PLAYER_FOCUS_CHANGED' then
+        return { 'focus', self.CUSTOM }
+    elseif event == 'UPDATE_MOUSEOVER_UNIT' then
+        return { 'mouseover', self.CUSTOM }
+    elseif event == 'UNIT_TARGET' and eventUnit == 'target' then
+        return { 'targettarget', self.CUSTOM }
+    end
+    return nil
+end
+
 function unitResolver:Init()
     if self.eventFrame then
         return
@@ -100,14 +113,27 @@ function unitResolver:Init()
     self.eventFrame:RegisterEvent('GROUP_ROSTER_UPDATE')
     self.eventFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
     self.eventFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
-    self.eventFrame:SetScript('OnEvent', function()
-        if InCombatLockdown() then
+    self.eventFrame:RegisterEvent('PLAYER_TARGET_CHANGED')
+    self.eventFrame:RegisterEvent('PLAYER_FOCUS_CHANGED')
+    self.eventFrame:RegisterEvent('UPDATE_MOUSEOVER_UNIT')
+    self.eventFrame:RegisterUnitEvent('UNIT_TARGET', 'target')
+    self.eventFrame:SetScript('OnEvent', function(_, event, eventUnit)
+        local displayModule = EXUI:GetModule('aura-displays-display')
+        if not displayModule then
             return
         end
-        self:ScanCoTank()
-        local displayModule = EXUI:GetModule('aura-displays-display')
-        if displayModule and displayModule.SyncCoTankUnits then
-            displayModule:SyncCoTankUnits()
+
+        if event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' or event == 'PLAYER_REGEN_ENABLED' then
+            if not InCombatLockdown() then
+                self:ScanCoTank()
+                displayModule:SyncCoTankUnits()
+            end
+            return
+        end
+
+        local unitKeys = self:GetUnitsToSyncForEvent(event, eventUnit)
+        if unitKeys then
+            displayModule:SyncUnitsForKeys(unitKeys)
         end
     end)
 end

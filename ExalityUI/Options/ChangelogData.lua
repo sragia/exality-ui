@@ -12,6 +12,7 @@ EXUI.changelog = [[
 - [Character Frame] Fix stats issue with secrets.
 - [Action Bars] Implemented Action Bar initial version. Might have some bugs, so be aware of it.
 - [Aura Displays] New module for displaying auras anywhere on your screen. Apply filters and modify their look however you want.
+- [Aura Displays] Added bar display style per group with configurable fill, track, border, side icon, spell name, and duration text.
 - [Resource Displays] Updated resource display configs. Way more options to customize
 
 # |cffdb49000.2.8|r
