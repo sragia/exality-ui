@@ -1,7 +1,13 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
-	<!-- Core Module File -->
-	<Script file="Cooldowns.lua"/> 
-
-	<!-- Display Module File -->
+	<Script file="Defaults.lua"/>
+	<Script file="SpellIndex.lua"/>
+	<Script file="ItemIndex.lua"/>
+	<Script file="Options/Inputs/SpellIdInput.lua"/>
+	<Script file="Options/Inputs/ItemIdInput.lua"/>
+	<Script file="Options/GeneralOptions.lua"/>
+	<Script file="Options/SourceOptions.lua"/>
+	<Script file="Options/DisplayOptions.lua"/>
+	<Script file="Options/LoadOptions.lua"/>
+	<Script file="Cooldowns.lua"/>
 	<Script file="CooldownDisplay.lua"/>
 </Ui>

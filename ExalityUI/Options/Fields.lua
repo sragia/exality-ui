@@ -617,6 +617,14 @@ optionsFields.GetField = function(self, field)
             local f = EXFrames:GetFrame('spell-id-input'):Create({})
             return f
         end,
+        ['cooldowns-spell-id-input'] = function()
+            local f = EXUI:GetModule('cooldowns-spell-id-input'):Create({})
+            return f
+        end,
+        ['cooldowns-item-id-input'] = function()
+            local f = EXUI:GetModule('cooldowns-item-id-input'):Create({})
+            return f
+        end,
         ['checkbox'] = function()
             local f = EXFrames:GetFrame('checkbox'):Create()
             return f
