@@ -4,6 +4,7 @@
     <Script file="ConfigResolver.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Style.lua"/>
+    <Script file="Glow.lua"/>
     <Script file="CooldownDebug.lua"/>
     <Script file="Button.lua"/>
     <Script file="SpecialButton.lua"/>

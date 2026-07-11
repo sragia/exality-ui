@@ -19,6 +19,9 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 ---@class EXUIActionBarsManager
 local manager = EXUI:GetModule('action-bars-manager')
 
+---@class EXUIActionBarsGlow
+local glow = EXUI:GetModule('action-bars-glow')
+
 ---@class EXUIActionBarsGlobalOptions
 local globalOptions = EXUI:GetModule('action-bars-global-options')
 
@@ -78,6 +81,7 @@ actionBars.Init = function(self)
     self.Data:UpdateDefaults({ enable = false })
     self:EnsureDB()
 
+    glow:Init()
     manager:Init()
     optionsController:RegisterModule(self)
 
@@ -127,7 +131,7 @@ actionBars.GetSectionTabs = function(self, itemId)
         return {}
     end
     if definitions:Get(itemId) then
-        return barOptions:GetSectionTabs(itemId)
+        return barOptions.GetSectionTabs(itemId)
     end
     return {}
 end
