@@ -923,6 +923,10 @@ minimap.GetOrder = function(self)
     return 60
 end
 
+minimap.GetProfileExportSpec = function(self)
+    return { id = 'minimap', keys = { 'minimap' } }
+end
+
 minimap.GetTabs = function(self)
     return {
         { ID = 'general', label = 'General' },

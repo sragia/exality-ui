@@ -91,6 +91,10 @@ xpBar.GetOrder = function(self)
     return 20
 end
 
+xpBar.GetProfileExportSpec = function(self)
+    return { id = 'xp-bar', keys = { 'xpBar' } }
+end
+
 xpBar.GetOptions = function(self)
     return {
         {

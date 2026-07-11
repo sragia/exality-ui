@@ -58,6 +58,10 @@ dataBrokers.GetOrder = function(self)
     return 70
 end
 
+dataBrokers.GetProfileExportSpec = function(self)
+    return { id = 'data-brokers', keys = { 'data-brokers' } }
+end
+
 dataBrokers.GetSplitViewItems = function(self)
     local items = {}
     local db = dataBrokers.Data:GetBaseDB()

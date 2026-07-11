@@ -214,7 +214,9 @@ core.GetOrder = function(self)
 
 end
 
-
+core.GetProfileExportSpec = function(self)
+    return { id = 'resource-displays', keys = { 'resource-displays' } }
+end
 
 core.IsGenericResourceType = function(self, resourceType)
 

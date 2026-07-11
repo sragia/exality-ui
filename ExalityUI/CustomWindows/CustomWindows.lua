@@ -32,6 +32,10 @@ customWindows.GetOrder = function(self)
     return 100
 end
 
+customWindows.GetProfileExportSpec = function(self)
+    return { id = 'custom-windows', keys = { 'custom-windows' } }
+end
+
 customWindows.GetDefaults = function(self)
     return {}
 end

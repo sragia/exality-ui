@@ -14,6 +14,7 @@ EXUI.changelog = [[
 - [Aura Displays] New module for displaying auras anywhere on your screen. Apply filters and modify their look however you want.
 - [Aura Displays] Added bar display style per group with configurable fill, track, border, side icon, spell name, and duration text.
 - [Resource Displays] Updated resource display configs. Way more options to customize
+- Profile management moved to the Profiles window (gear icon in options). Export and import now support selecting individual modules.
 
 # |cffdb49000.2.8|r
 

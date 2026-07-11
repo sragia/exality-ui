@@ -39,6 +39,16 @@ generalModule.GetOrder = function(self)
     return 10
 end
 
+generalModule.GetProfileExportSpec = function(self)
+    local keys = {}
+    for k in pairs(self:GetDefaults()) do
+        keys[#keys + 1] = k
+    end
+    table.insert(keys, 'showMinimap')
+    table.insert(keys, 'minimapIcon')
+    return { id = 'general', keys = keys }
+end
+
 generalModule.GetDefaults = function(self)
     return {
         uiScale = defaultUIScale,

@@ -42,6 +42,10 @@ tweaksAndBugfixes.GetOrder = function(self)
     return 90
 end
 
+tweaksAndBugfixes.GetProfileExportSpec = function(self)
+    return { id = 'tweaks-and-bugfixes', keys = { 'tweaks-and-bugfixes' } }
+end
+
 tweaksAndBugfixes.GetOptions = function(self)
     local options = {
         {

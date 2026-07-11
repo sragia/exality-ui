@@ -94,6 +94,10 @@ actionBars.GetOrder = function()
     return 30
 end
 
+actionBars.GetProfileExportSpec = function()
+    return { id = 'action-bars', keys = { 'action-bars' } }
+end
+
 actionBars.GetSplitViewItems = function(self)
     local items = {
         { ID = 'general', label = 'General' },

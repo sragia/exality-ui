@@ -89,6 +89,10 @@ core.GetOrder = function(self)
     return 20
 end
 
+core.GetProfileExportSpec = function(self)
+    return { id = 'unit-frames', keys = { 'UF' } }
+end
+
 core.ToggleOptionPreview = function(self)
     local _, tab = FindInTableIf(self.options, function(tab) return tab.id == self.currTabId end)
     local _, item = FindInTableIf(tab.menu, function(item) return item.id == self.currItemId end)

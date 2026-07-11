@@ -104,6 +104,10 @@ cooldowns.GetOrder = function(self)
     return 50
 end
 
+cooldowns.GetProfileExportSpec = function(self)
+    return { id = 'cooldowns', keys = { 'cooldowns' } }
+end
+
 cooldowns.GetSplitViewItems = function(self)
     local items = {}
     local db = cooldowns:GetBaseDB()

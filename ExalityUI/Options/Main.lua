@@ -10,9 +10,6 @@ local data = EXUI:GetModule('data')
 ---@class ExalityFramesPanelFrame
 local panel = EXFrames:GetFrame('panel-frame')
 
----@class ExalityFramesSlimDropdownInput
-local slimDropdown = EXFrames:GetFrame('slim-dropdown-input')
-
 ---@class ExalityFramesButton
 local button = EXFrames:GetFrame('button')
 
@@ -177,47 +174,21 @@ optionsMain.CreateWindow = function(self)
 
     self.isNavCompact = isCompact
 
-    -- Profile Selector
-    local profilePanel = panel:Create()
-    profilePanel:SetWidth(230)
-    profilePanel:SetParent(window)
-    profilePanel:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
-    profilePanel:SetPoint('BOTTOMRIGHT', window.close, 'BOTTOMLEFT', -5, 0)
-    profilePanel:Show()
-
-    local profileLabel = profilePanel:CreateFontString(nil, 'OVERLAY')
-    profileLabel:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
-    profileLabel:SetPoint('LEFT', 5, 0)
-    profileLabel:SetWidth(0)
-    profileLabel:SetText('Profile:')
-    profileLabel:Show()
-
-    local profileSelector = slimDropdown:Create({
-        initial = data:GetCurrentProfile(),
-        onChange = function(value)
-            data:SetCurrentProfile(value)
-            ReloadUI()
-        end,
-        height = 25,
-        width = 150,
-        options = data:GetAllProfiles()
-    }, profilePanel)
-    profileSelector:SetPoint('LEFT', profileLabel, 'RIGHT', 5, 0)
-
+    -- Profiles (gear opens Profiles window)
     local profileSettingsButton = button:Create({
         text = '',
         onClick = function()
             profiles:Show()
         end,
         color = { 0.19, 0.19, 0.19, 1 },
-        size = { 25, 25 },
+        size = { 28, 28 },
         icon = {
             texture = EXUI.const.textures.frame.settingsIcon,
             width = 18,
             height = 18
         }
-    }, profilePanel)
-    profileSettingsButton:SetPoint('LEFT', profileSelector, 'RIGHT', 5, 0)
+    }, window)
+    profileSettingsButton:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
 
     local modulesPanel = panel:Create()
     modulesPanel:SetParent(window.container)
@@ -308,7 +279,7 @@ optionsMain.CreateWindow = function(self)
         size = { 86, 28 },
         color = EXUI.const.theme.faded
     }, configPanel)
-    editModeBtn:SetPoint('RIGHT', profilePanel, 'LEFT', -5, 0)
+    editModeBtn:SetPoint('RIGHT', profileSettingsButton, 'LEFT', -5, 0)
 
     return window
 end

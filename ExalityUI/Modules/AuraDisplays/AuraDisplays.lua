@@ -78,6 +78,10 @@ function auraDisplays:GetOrder()
     return 45
 end
 
+function auraDisplays:GetProfileExportSpec()
+    return { id = 'aura-displays', keys = { 'aura-displays' } }
+end
+
 function auraDisplays:GetDB()
     local db = data:GetDataByKey('aura-displays')
     if not db then

@@ -79,6 +79,24 @@ data.GetData = function(self)
     return self.data.profiles[self.currentProfile]
 end
 
+data.ExtractProfileKeys = function(self, keys)
+    local source = self:GetData()
+    local result = {}
+    for _, key in ipairs(keys) do
+        if source[key] ~= nil then
+            result[key] = CopyTable(source[key])
+        end
+    end
+    return result
+end
+
+data.MergeProfileData = function(self, importData)
+    local profile = self:GetData()
+    for key, value in pairs(importData) do
+        profile[key] = CopyTable(value)
+    end
+end
+
 data.Save = function(self)
     ExalityUIData = self.data
     ExalityUICharData.currentProfile = self.currentProfile

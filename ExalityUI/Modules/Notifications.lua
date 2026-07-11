@@ -63,6 +63,10 @@ notifications.GetOrder = function(self)
     return 80
 end
 
+notifications.GetProfileExportSpec = function(self)
+    return { id = 'notifications', keys = { 'notifications' } }
+end
+
 notifications.GetOptions = function(self)
     return {
         {
