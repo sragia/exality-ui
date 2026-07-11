@@ -335,7 +335,7 @@ generalFrame.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'damageAbsorbColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 30
         },
         {
             type = 'color-picker',
