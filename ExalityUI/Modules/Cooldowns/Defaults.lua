@@ -4,13 +4,15 @@ local EXUI = select(2, ...)
 ---@class EXUICooldownsDefaults
 local defaults = EXUI:GetModule('cooldowns-defaults')
 
-defaults.SCHEMA_VERSION = 3
+defaults.SCHEMA_VERSION = 5
 
 defaults.DISPLAY = {
     enable = true,
     name = 'New Cooldown',
     showStacks = false,
     cooldownSource = 'spell',
+    ignoreGlobalCooldown = true,
+    desaturateOnCooldown = false,
     isItem = false, -- legacy compatibility
     spellID = nil,
     itemID = nil,

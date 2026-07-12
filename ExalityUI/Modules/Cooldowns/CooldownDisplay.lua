@@ -5,60 +5,16 @@ local LSM = LibStub:GetLibrary('LibSharedMedia-3.0', true)
 
 ---@class EXUICooldownDisplay
 local cooldownDisplay = EXUI:GetModule('cooldown-display')
+---@class EXUIAuraDisplaysDurationFormat
+local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 
-local function formatCooldownDuration(remaining, formatKey)
-    if remaining <= 0 then
-        return ''
-    end
+local ZERO_DURATION_OBJECT = C_DurationUtil.CreateDuration()
+ZERO_DURATION_OBJECT:SetTimeSpan(0, 0)
 
-    if formatKey == 'default' then
-        if remaining >= 3600 then
-            return string.format('%dh', math.floor(remaining / 3600))
-        end
-        if remaining >= 180 then
-            return string.format('%dm', math.floor(remaining / 60))
-        end
-        if remaining >= 60 then
-            return string.format('%d:%02d', math.floor(remaining / 60), math.floor(remaining % 60))
-        end
-        if remaining >= 5 then
-            return string.format('%d', math.floor(remaining))
-        end
-        return string.format('%.1f', remaining)
-    end
-
-    -- MM:SS (<3m) variant used by Aura Displays
-    if remaining >= 3600 then
-        return string.format('%dh', math.floor(remaining / 3600))
-    end
-    if remaining >= 180 then
-        return string.format('%dm', math.floor(remaining / 60))
-    end
-    if remaining >= 60 then
-        return string.format('%d:%02d', math.floor(remaining / 60), math.floor(remaining % 60))
-    end
-    if remaining >= 10 then
-        return string.format('%d', math.floor(remaining + 0.5))
-    end
-    return string.format('%.1f', remaining)
-end
-
-local function isSecret(value)
-    return issecretvalue and issecretvalue(value)
-end
-
-local function isTrue(value)
-    if value == nil or isSecret(value) then
-        return false
-    end
-    return value and true or false
-end
-
-local function safeNumber(value)
-    if value == nil or isSecret(value) then
-        return nil
-    end
-    return tonumber(value)
+local function createDurationObject(start, duration, modRate)
+    local durationObject = C_DurationUtil.CreateDuration()
+    durationObject:SetTimeFromStart(start or 0, duration or 0, modRate or 1)
+    return durationObject
 end
 
 local function getCooldownSource(db)
@@ -69,134 +25,61 @@ local function getCooldownSource(db)
     return db.isItem and 'item' or 'spell'
 end
 
-local function shouldHideSpellCooldown(spellID)
-    if C_Secrets and C_Secrets.ShouldSpellCooldownBeSecret then
-        local ok, hidden = pcall(C_Secrets.ShouldSpellCooldownBeSecret, spellID)
-        if ok and hidden then
-            return true
-        end
-    end
-    if C_Secrets and C_Secrets.ShouldCooldownsBeSecret then
-        local ok, hidden = pcall(C_Secrets.ShouldCooldownsBeSecret)
-        if ok and hidden then
-            return true
-        end
-    end
-    return false
-end
-
 function cooldownDisplay:GetSpellChargeData(spellID)
-    local ok, chargeInfo = pcall(C_Spell.GetSpellCharges, spellID)
-    if not ok or not chargeInfo then
+    local chargeInfo = C_Spell.GetSpellCharges(spellID)
+    local chargeDuration = C_Spell.GetSpellChargeDuration(spellID)
+    if not chargeInfo and not chargeDuration then
         return nil
     end
 
-    local cooldownStartTimeRaw = chargeInfo.cooldownStartTime
-    local cooldownDurationRaw = chargeInfo.cooldownDuration
-    local chargeModRateRaw = chargeInfo.chargeModRate
-
-    local currentCharges = safeNumber(chargeInfo.currentCharges)
-    local cooldownStartTime = safeNumber(cooldownStartTimeRaw)
-    local cooldownDuration = safeNumber(cooldownDurationRaw)
-    local chargeModRate = safeNumber(chargeModRateRaw) or 1
-
-    if not currentCharges or cooldownStartTime == nil or cooldownDuration == nil then
-        return {
-            charges = nil,
-            start = cooldownStartTimeRaw,
-            duration = cooldownDurationRaw,
-            modRate = chargeModRateRaw,
-            remaining = nil,
-            isSecret = true,
-        }
-    end
-
     return {
-        charges = currentCharges,
-        start = cooldownStartTimeRaw,
-        duration = cooldownDurationRaw,
-        modRate = chargeModRateRaw,
-        remaining = math.max(0, (cooldownStartTime + cooldownDuration) - GetTime()),
-        isSecret = false,
+        charges = chargeInfo and chargeInfo.currentCharges or nil,
+        durationObject = chargeDuration or ZERO_DURATION_OBJECT,
     }
 end
 
-function cooldownDisplay:GetSpellCooldownData(spellID)
-    local ok, info = pcall(C_Spell.GetSpellCooldown, spellID)
-    if not ok or not info then
+function cooldownDisplay:GetSpellCooldownData(spellID, ignoreGCD)
+    local duration = C_Spell.GetSpellCooldownDuration(unpack({ spellID, ignoreGCD and true or false }))
+    if not duration then
         return nil
     end
 
-    local startRaw = info.startTime
-    local durationRaw = info.duration
-    local modRateRaw = info.modRate or 1
+    return {
+        durationObject = duration,
+    }
+end
 
-    local start = safeNumber(startRaw)
-    local duration = safeNumber(durationRaw)
-    local modRate = safeNumber(modRateRaw) or 1
-    if start == nil or duration == nil then
-        return {
-            start = startRaw,
-            duration = durationRaw,
-            modRate = modRateRaw,
-            remaining = nil,
-            isOnCooldown = false,
-            isSecret = shouldHideSpellCooldown(spellID),
-        }
+function cooldownDisplay:GetSpellCooldownState(spellID)
+    ---@diagnostic disable-next-line:undefined-field
+    local info = C_Spell.GetSpellCooldown(spellID)
+    if not info then
+        return false, false
     end
 
-    local remaining = math.max(0, (start + duration) - GetTime())
-    local isOnGCD = isTrue(info.isOnGCD)
-    local isOnCooldown = duration > 0 and remaining > 0 and not isOnGCD
-
-    return {
-        start = startRaw,
-        duration = durationRaw,
-        modRate = modRateRaw,
-        remaining = remaining,
-        isOnCooldown = isOnCooldown,
-        isSecret = false,
-    }
+    ---@diagnostic disable-next-line:undefined-field
+    return info.isActive and true or false, info.isOnGCD and true or false
 end
 
 function cooldownDisplay:GetItemCooldownData(itemID)
-    local start, duration, enable = C_Item.GetItemCooldown(itemID)
-    start = safeNumber(start)
-    duration = safeNumber(duration)
-    local isEnabled = isTrue(enable)
-    local count = safeNumber(C_Item.GetItemCount(itemID, false, true)) or 0
+    local start, duration = C_Item.GetItemCooldown(itemID)
+    local count = C_Item.GetItemCount(itemID, false, true)
 
     if start == nil or duration == nil then
         local legacyStart, legacyDuration = C_Container.GetItemCooldown(itemID)
-        start = safeNumber(legacyStart) or 0
-        duration = safeNumber(legacyDuration) or 0
+        start = legacyStart
+        duration = legacyDuration
     end
 
-    local remaining = math.max(0, ((start or 0) + (duration or 0)) - GetTime())
     return {
-        start = start or 0,
-        duration = duration or 0,
-        modRate = 1,
+        durationObject = createDurationObject(start, duration, 1),
         count = count,
-        remaining = remaining,
-        isOnCooldown = isEnabled and duration and duration > 0 and remaining > 0,
     }
 end
 
 function cooldownDisplay:GetEquipmentCooldownData(slotID)
-    local start, duration, enable = GetInventoryItemCooldown('player', slotID)
-    start = safeNumber(start) or 0
-    duration = safeNumber(duration) or 0
-    enable = safeNumber(enable) or 1
-
-    local remaining = math.max(0, (start + duration) - GetTime())
+    local start, duration = GetInventoryItemCooldown('player', slotID)
     return {
-        start = start,
-        duration = duration,
-        modRate = 1,
-        count = nil,
-        remaining = remaining,
-        isOnCooldown = enable > 0 and duration > 0 and remaining > 0,
+        durationObject = createDurationObject(start, duration, 1),
     }
 end
 
@@ -244,6 +127,7 @@ function cooldownDisplay:RenderCooldown(frame, db)
     local source = getCooldownSource(db)
     local cooldownInfo = nil
     local sourceID = nil
+    local shouldDesaturate = false
 
     if source == 'spell' then
         sourceID = tonumber(db.spellID)
@@ -252,18 +136,14 @@ function cooldownDisplay:RenderCooldown(frame, db)
                 local chargeInfo = self:GetSpellChargeData(sourceID)
                 if chargeInfo then
                     cooldownInfo = {
-                        start = chargeInfo.start,
-                        duration = chargeInfo.duration,
-                        modRate = chargeInfo.modRate,
-                        remaining = chargeInfo.remaining,
-                        isOnCooldown = chargeInfo.remaining > 0,
+                        durationObject = chargeInfo.durationObject,
                     }
                     frame.StackText:SetText(chargeInfo.charges or '')
                 else
                     frame.StackText:SetText('')
                 end
             else
-                cooldownInfo = self:GetSpellCooldownData(sourceID)
+                cooldownInfo = self:GetSpellCooldownData(sourceID, db.ignoreGlobalCooldown ~= false)
             end
         end
     elseif source == 'item' then
@@ -283,7 +163,11 @@ function cooldownDisplay:RenderCooldown(frame, db)
 
     if not cooldownInfo then
         frame.currentCooldownInfo = nil
-        frame.Cooldown:SetCooldown(0, 0)
+        frame.Cooldown:SetCooldownFromDurationObject(ZERO_DURATION_OBJECT, true)
+        if frame.CooldownTextBinding then
+            frame.CooldownTextBinding:SetDuration(ZERO_DURATION_OBJECT)
+        end
+        frame.Texture:SetDesaturated(false)
         frame.Texture:SetVertexColor(1, 1, 1, 1)
         if source ~= 'item' or not db.showStacks then
             frame.StackText:SetText('')
@@ -291,14 +175,21 @@ function cooldownDisplay:RenderCooldown(frame, db)
         return
     end
 
-    local ok = false
-    if cooldownInfo.start ~= nil and cooldownInfo.duration ~= nil then
-        ok = pcall(frame.Cooldown.SetCooldown, frame.Cooldown, cooldownInfo.start, cooldownInfo.duration, cooldownInfo.modRate)
+    if db.desaturateOnCooldown and source == 'spell' and sourceID then
+        local isOnCooldown, isOnGCD = self:GetSpellCooldownState(sourceID)
+        if db.ignoreGlobalCooldown ~= false then
+            shouldDesaturate = isOnCooldown and not isOnGCD
+        else
+            shouldDesaturate = isOnCooldown
+        end
     end
-    if not ok then
-        frame.Cooldown:SetCooldown(0, 0)
+
+    frame.Cooldown:SetCooldownFromDurationObject(cooldownInfo.durationObject, true)
+    if frame.CooldownTextBinding then
+        frame.CooldownTextBinding:SetDuration(cooldownInfo.durationObject)
     end
     frame.currentCooldownInfo = cooldownInfo
+    frame.Texture:SetDesaturated(shouldDesaturate)
     frame.Texture:SetVertexColor(1, 1, 1, 1)
 end
 
@@ -339,8 +230,13 @@ function cooldownDisplay:Create(frame)
     CooldownText:SetPoint('CENTER', ElementFrame, 'CENTER', 0, 0)
     CooldownText:SetText('')
     frame.CooldownText = CooldownText
-    frame.cooldownTextElapsed = 0
     frame.readyPollElapsed = 0
+    frame.CooldownTextBinding = C_DurationUtil.CreateDurationTextBinding()
+    frame.CooldownTextBinding:SetFontString(CooldownText)
+    frame.CooldownTextBinding:SetExpiredText('')
+    frame.CooldownTextBinding:SetZeroDurationText('')
+    frame.CooldownTextBinding:SetDuration(ZERO_DURATION_OBJECT)
+    frame.CooldownTextBinding:SetEnabled(false)
 
     frame.Events = {
         'ITEM_DATA_LOAD_RESULT',
@@ -397,42 +293,9 @@ function cooldownDisplay:Create(frame)
             cooldownDisplay:RenderCooldown(selfRef, db)
         end
 
-        if not db.showCooldownText then
-            if selfRef.CooldownText then
-                selfRef.CooldownText:SetText('')
-            end
-            return
-        end
-
-        local interval = tonumber(db.cooldownTextUpdateInterval) or 0.05
-        selfRef.cooldownTextElapsed = (selfRef.cooldownTextElapsed or 0) + elapsed
-        if selfRef.cooldownTextElapsed < interval then
-            return
-        end
-        selfRef.cooldownTextElapsed = 0
-
-        local info = selfRef.currentCooldownInfo
-        if not info then
+        if not db.showCooldownText and selfRef.CooldownText then
             selfRef.CooldownText:SetText('')
-            return
         end
-
-        local start = safeNumber(info.start)
-        local duration = safeNumber(info.duration)
-        local modRate = safeNumber(info.modRate)
-        if start == nil or duration == nil then
-            selfRef.CooldownText:SetText('')
-            return
-        end
-        modRate = modRate and modRate > 0 and modRate or 1
-        local remaining = math.max(0, ((start + duration) - GetTime()) / modRate)
-
-        if remaining <= 0 then
-            selfRef.CooldownText:SetText('')
-            return
-        end
-
-        selfRef.CooldownText:SetText(formatCooldownDuration(remaining, db.cooldownTextFormat or 'mmss'))
     end)
 end
 
@@ -467,8 +330,15 @@ function cooldownDisplay:Update(frame)
         frame.CooldownText:Hide()
         frame.CooldownText:SetText('')
     end
+    frame.CooldownTextBinding:SetFontString(frame.CooldownText)
+    local formatter = durationFormat and durationFormat.GetFormatter and
+        durationFormat:GetFormatter(db.cooldownTextFormat or 'mmss')
+    if formatter then
+        frame.CooldownTextBinding:SetFormatter(formatter)
+    end
+    frame.CooldownTextBinding:SetUpdateInterval(tonumber(db.cooldownTextUpdateInterval) or 0.05)
+    frame.CooldownTextBinding:SetEnabled(db.showCooldownText)
     frame.readyPollElapsed = 0
-    frame.cooldownTextElapsed = 0
 
     local texture, isCorrect = self:GetTexture(db)
     frame.Texture:SetTexture(texture)

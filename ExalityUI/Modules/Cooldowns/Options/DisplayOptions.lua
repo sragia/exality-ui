@@ -220,6 +220,40 @@ function displayOptions:GetOptions(cdID)
         },
         {
             type = 'toggle',
+            label = 'Desaturate Icon On CD',
+            name = 'desaturateOnCooldown',
+            tooltip = { text = 'Spell source only. Grays out icon while spell cooldown is active.' },
+            depends = function()
+                return cooldowns:GetValueForCD(cdID, 'cooldownSource') == 'spell'
+            end,
+            currentValue = function()
+                return cooldowns:GetValueForCD(cdID, 'desaturateOnCooldown')
+            end,
+            onChange = function(value)
+                cooldowns:UpdateValueForCD(cdID, 'desaturateOnCooldown', value)
+                cooldowns:UpdateById(cdID)
+            end,
+            width = 50,
+        },
+        {
+            type = 'toggle',
+            label = 'Ignore GCD',
+            name = 'ignoreGlobalCooldown',
+            tooltip = { text = 'Spell source only. When enabled, global cooldown does not trigger this cooldown display.' },
+            depends = function()
+                return cooldowns:GetValueForCD(cdID, 'cooldownSource') == 'spell'
+            end,
+            currentValue = function()
+                return cooldowns:GetValueForCD(cdID, 'ignoreGlobalCooldown')
+            end,
+            onChange = function(value)
+                cooldowns:UpdateValueForCD(cdID, 'ignoreGlobalCooldown', value)
+                cooldowns:UpdateById(cdID)
+            end,
+            width = 50,
+        },
+        {
+            type = 'toggle',
             label = 'Show Cooldown Text',
             name = 'showCooldownText',
             currentValue = function()
