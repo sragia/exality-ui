@@ -16,6 +16,7 @@ EXUI.changelog = [[
 - [Resource Displays] Updated resource display configs. Way more options to customize
 - [Profiles] Profile management moved to the Profiles window (gear icon in options). Export and import now support selecting individual modules.
 - [Cooldowns] Updated cooldown configs.
+- [Objective Tracker] New module that replaces default Blizzard objective tracker. Adds a bit more options to customize it more.
 
 # |cffdb49000.2.8|r
 

@@ -17,6 +17,7 @@ local icons = {
     ['Quality of Life'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/quality-of-life.png]],
     ['Raid Tools'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/raid-tools.png]],
     ['XP Bar'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/xp-bar.png]],
+    ['Objective Tracker'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/notifications.png]],
     ['Notifications'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/notifications.png]],
     ['Tweaks/Bugfixes'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/tweaks-bugfixes.png]],
     ['Custom Windows'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/custom-windows.png]],

@@ -964,11 +964,23 @@ generalModule.fonts = {
     UpdateFonts = function(self)
         local defaultFont = LSM:Fetch('font', data:GetDataByKey('font'))
         if (not defaultFont) then return end
+        local objectiveTrackerModule = EXUI:GetModule('objective-tracker')
+        local otModuleActive = objectiveTrackerModule.ManagesObjectiveTrackerFonts
+            and objectiveTrackerModule:ManagesObjectiveTrackerFonts()
         for _, font in ipairs(self.fontsToReplace) do
             if (type(font) == 'string') then
-                font = _G[font]
-            end
-            if (type(font) == 'table') then
+                if (otModuleActive and font:find('ObjectiveTracker')) then
+                    -- Objective Tracker module owns these fonts
+                else
+                    font = _G[font]
+                    if (type(font) == 'table') then
+                        local _, size, style = font:GetFont()
+                        if (size > 0) then
+                            font:SetFont(defaultFont, size, style)
+                        end
+                    end
+                end
+            elseif (type(font) == 'table') then
                 local _, size, style = font:GetFont()
                 if (size > 0) then
                     font:SetFont(defaultFont, size, style)

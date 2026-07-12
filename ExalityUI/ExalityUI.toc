@@ -63,6 +63,7 @@ Modules/ResourceDisplays/ResourceDisplays.xml
 Modules/Cooldowns/Cooldowns.xml
 Modules/AuraDisplays/AuraDisplays.xml
 Modules/XPBar.lua
+Modules/ObjectiveTracker/ObjectiveTracker.xml
 Modules/ActionBars/ActionBars.xml
 Modules/TweaksAndBugfixes.lua
 
