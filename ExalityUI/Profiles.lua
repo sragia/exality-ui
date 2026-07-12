@@ -315,7 +315,7 @@ profiles.SetupWindow = function(self)
     local exportBottom = CreateFrame('Frame', nil, exportPanel)
     exportBottom:SetPoint('BOTTOMLEFT', exportPanel, 'BOTTOMLEFT', PANEL_INSET, PANEL_INSET)
     exportBottom:SetPoint('BOTTOMRIGHT', exportPanel, 'BOTTOMRIGHT', -PANEL_INSET, PANEL_INSET)
-    exportBottom:SetHeight(300)
+    exportBottom:SetHeight(280)
 
     local exportButton = EXFrames:GetFrame('button'):Create({
         text = 'Export',

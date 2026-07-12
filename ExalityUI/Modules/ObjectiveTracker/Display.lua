@@ -31,6 +31,7 @@ display.linePool = CreateFramePool('Frame', UIParent)
 display.progressBarPool = CreateFramePool('Frame', UIParent)
 display.poiPool = nil
 display.scrollTarget = nil
+display.updateScheduled = false
 
 display.POI_TEMPLATE = 'ObjectiveTrackerPOIButtonTemplate'
 display.POI_ICON_OFFSET = 22
@@ -59,6 +60,7 @@ display.EVENTS = {
     'QUEST_TURNED_IN',
     'QUEST_REMOVED',
     'QUEST_POI_UPDATE',
+    'TASK_PROGRESS_UPDATE',
     'CONTENT_TRACKING_UPDATE',
     'TRACKED_ACHIEVEMENT_LIST_CHANGED',
     'TRACKED_ACHIEVEMENT_UPDATE',
@@ -1671,12 +1673,25 @@ function display:FilterCategoriesForEncounter(categories, db)
     return {}
 end
 
+function display:IsSuppressedByMythicPlusTimer()
+    local mythicPlusTimer = EXUI:GetModule('mythic-plus-timer')
+    if mythicPlusTimer and mythicPlusTimer.ShouldSuppressObjectiveTracker then
+        return mythicPlusTimer:ShouldSuppressObjectiveTracker()
+    end
+    return false
+end
+
 function display:ApplyTrackerVisibility(db, categories)
     if not self.frame then
         return
     end
 
     self.frame:SetAlpha(1)
+
+    if self:IsSuppressedByMythicPlusTimer() then
+        self.frame:Hide()
+        return
+    end
 
     if self:ShouldHideInMythicPlus(db) then
         self.frame:Hide()
@@ -1691,12 +1706,39 @@ function display:ApplyTrackerVisibility(db, categories)
     self.frame:Show()
 end
 
+function display:CancelPendingUpdate()
+    self.updateScheduled = false
+end
+
+function display:RequestUpdate()
+    if not objectiveTracker.enabled then
+        return
+    end
+    if self.updateScheduled then
+        return
+    end
+    self.updateScheduled = true
+    EXUI.utils.nextFrame(function()
+        display.updateScheduled = false
+        if not objectiveTracker.enabled then
+            return
+        end
+        display:Update()
+    end)
+end
+
 function display:Update()
     if not objectiveTracker.enabled or not self.frame then
         return
     end
 
     local db = objectiveTracker.Data:GetDB()
+
+    if self:IsSuppressedByMythicPlusTimer() then
+        self.frame:Hide()
+        self:StopChallengeModeTimerWatch()
+        return
+    end
 
     if self:ShouldHideInMythicPlus(db) then
         self.frame:Hide()
@@ -1733,6 +1775,7 @@ function display:Show()
 end
 
 function display:Hide()
+    self:CancelPendingUpdate()
     self:StopChallengeModeTimerWatch()
     self:StopSmoothScroll()
     self.scrollTarget = nil
@@ -1743,33 +1786,12 @@ function display:Hide()
 end
 
 function display:SyncBlizzardWorldQuestState()
+    if objectiveTracker.enabled then
+        return
+    end
     if ObjectiveTrackerManager and ObjectiveTrackerManager.UpdateAll then
         ObjectiveTrackerManager:UpdateAll()
     end
-end
-
-function display:StartWorldQuestProximityWatch()
-    self:StopWorldQuestProximityWatch()
-    self.worldQuestProximityKey = trackerData:GetWorldQuestProximitySignature()
-
-    self.worldQuestProximityTicker = C_Timer.NewTicker(0.35, function()
-        if not objectiveTracker.enabled then
-            return
-        end
-        local signature = trackerData:GetWorldQuestProximitySignature()
-        if signature ~= display.worldQuestProximityKey then
-            display.worldQuestProximityKey = signature
-            objectiveTracker:Update()
-        end
-    end)
-end
-
-function display:StopWorldQuestProximityWatch()
-    if self.worldQuestProximityTicker then
-        self.worldQuestProximityTicker:Cancel()
-        self.worldQuestProximityTicker = nil
-    end
-    self.worldQuestProximityKey = nil
 end
 
 function display:RegisterEvents()
@@ -1792,9 +1814,8 @@ function display:RegisterEvents()
         elseif event == 'ZONE_CHANGED' or event == 'ZONE_CHANGED_NEW_AREA' or event == 'PLAYER_ENTERING_WORLD' then
             display:SyncEncounterState()
             display:SyncBlizzardWorldQuestState()
-            display.worldQuestProximityKey = nil
         end
-        objectiveTracker:Update()
+        display:RequestUpdate()
     end)
 end
 
@@ -1840,13 +1861,11 @@ function display:Enable()
     self:CreateMainFrame()
     self:RegisterEvents()
     self:HideBlizzardTracker()
-    self:SyncBlizzardWorldQuestState()
-    self:StartWorldQuestProximityWatch()
     self:Show()
 end
 
 function display:Disable()
-    self:StopWorldQuestProximityWatch()
+    self:CancelPendingUpdate()
     self:UnregisterEvents()
     self:Hide()
     self:ShowBlizzardTracker()

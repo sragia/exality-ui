@@ -2,7 +2,7 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
-# |cffdb49000.3.0|r
+# |cffdb49000.5.0|r
 
 - Visual update for options.
 - Added minimap styling.
@@ -17,6 +17,7 @@ EXUI.changelog = [[
 - [Profiles] Profile management moved to the Profiles window (gear icon in options). Export and import now support selecting individual modules.
 - [Cooldowns] Updated cooldown configs.
 - [Objective Tracker] New module that replaces default Blizzard objective tracker. Adds a bit more options to customize it more.
+- [Mythic Plus Timer] New Module for displaying timer. Fairly basic, mostly meant to be as something to use while using Objective Tracker functionality as other M+ Timers will not be able to hide them easily. However there's option to hide my Objective Tracker in M+ setting.
 
 # |cffdb49000.2.8|r
 

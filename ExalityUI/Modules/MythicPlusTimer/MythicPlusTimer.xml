@@ -1,0 +1,9 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Defaults.lua"/>
+	<Script file="Data.lua"/>
+	<Script file="Preview.lua"/>
+	<Script file="Display.lua"/>
+	<Script file="Options/GeneralOptions.lua"/>
+	<Script file="Options/StyleOptions.lua"/>
+	<Script file="MythicPlusTimer.lua"/>
+</Ui>

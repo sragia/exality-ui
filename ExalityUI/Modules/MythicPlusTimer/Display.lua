@@ -1,0 +1,715 @@
+---@class ExalityUI
+local EXUI = select(2, ...)
+
+---@class EXUIMythicPlusTimerModule
+local mythicPlusTimer = EXUI:GetModule('mythic-plus-timer')
+
+---@class EXUIMythicPlusTimerDefaults
+local defaults = EXUI:GetModule('mythic-plus-timer-defaults')
+
+---@class EXUIMythicPlusTimerData
+local timerData = EXUI:GetModule('mythic-plus-timer-data')
+
+---@class EXUIMythicPlusTimerPreview
+local preview = EXUI:GetModule('mythic-plus-timer-preview')
+
+---@class EXUIObjectiveTrackerModule
+local objectiveTracker = EXUI:GetModule('objective-tracker')
+
+---@class EXUIObjectiveTrackerDisplay
+local objectiveTrackerDisplay = EXUI:GetModule('objective-tracker-display')
+
+local LSM = LibStub('LibSharedMedia-3.0', true)
+
+---@class EXUIMythicPlusTimerDisplay
+local display = EXUI:GetModule('mythic-plus-timer-display')
+
+display.frame = nil
+display.bossLines = {}
+display.lastShouldSuppressObjectiveTracker = nil
+display.suppressionTarget = nil
+display.blizzardShowHooked = false
+
+function display:GetFont(fontKey, sizeKey, flagKey, db)
+    local fontName = db[fontKey] or 'DMSans'
+    local fontPath = (LSM and LSM:Fetch('font', fontName)) or EXUI.EXFrames.assets.font.default()
+    local fontSize = db[sizeKey] or 12
+    local fontFlag = db[flagKey] or 'OUTLINE'
+    return fontPath, fontSize, fontFlag
+end
+
+function display:GetBarTexture(db)
+    local textureName = (db and db.barTexture) or defaults.BAR_TEXTURE
+    if LSM and LSM:Fetch('statusbar', textureName) then
+        return LSM:Fetch('statusbar', textureName)
+    end
+    return [[Interface/Addons/ExalityUI/Assets/Images/StatusBar/noisy.tga]]
+end
+
+function display:FormatClock(seconds)
+    seconds = math.max(0, math.floor(seconds or 0))
+    if SecondsToClock then
+        return SecondsToClock(seconds)
+    end
+    local minutes = math.floor(seconds / 60)
+    local secs = seconds % 60
+    return string.format('%d:%02d', minutes, secs)
+end
+
+function display:FormatPenalty(seconds)
+    return '+' .. self:FormatClock(seconds)
+end
+
+function display:FormatPercent(value)
+    return string.format('%.2f%%', value or 0)
+end
+
+function display:ApplyFontString(text, fontKey, sizeKey, flagKey, db, color, verticalAlign)
+    local fontPath, fontSize, fontFlag = self:GetFont(fontKey, sizeKey, flagKey, db)
+    text:SetFont(fontPath, fontSize, fontFlag)
+    if color then
+        text:SetTextColor(color.r, color.g, color.b, color.a or 1)
+    end
+    if verticalAlign == 'bottom' then
+        EXUI:SetHeight(text, fontSize)
+        text:SetJustifyV('BOTTOM')
+    elseif verticalAlign == 'top' then
+        EXUI:SetHeight(text, fontSize)
+        text:SetJustifyV('TOP')
+    else
+        text:SetHeight(0)
+    end
+end
+
+function display:CreateBar(parent, name)
+    local barFrame = CreateFrame('Frame', nil, parent)
+    barFrame:SetFrameLevel(1)
+    barFrame.border = CreateFrame('Frame', nil, barFrame, 'BackdropTemplate')
+    barFrame.border.bg = barFrame.border:CreateTexture(nil, 'BACKGROUND')
+    barFrame.border.bg:SetTexture(EXUI.const.textures.frame.solidBg)
+    barFrame.border.bg:SetAllPoints()
+
+    barFrame.bar = CreateFrame('StatusBar', nil, barFrame.border)
+    barFrame.bar:SetMinMaxValues(0, 100)
+    barFrame.bar:SetStatusBarTexture(self:GetBarTexture())
+
+    barFrame.spark1 = barFrame.border:CreateTexture(nil, 'OVERLAY')
+    barFrame.spark2 = barFrame.border:CreateTexture(nil, 'OVERLAY')
+    barFrame.spark1:SetColorTexture(1, 1, 1, 1)
+    barFrame.spark2:SetColorTexture(1, 1, 1, 1)
+
+    return barFrame
+end
+
+function display:GetTimerBarHeight(db)
+    return db.timerBarHeight or db.barHeight or 20
+end
+
+function display:GetForcesBarHeight(db)
+    return db.forcesBarHeight or db.barHeight or 15
+end
+
+function display:GetBarOuterHeight(db, barHeight)
+    return barHeight + (db.barBorderThickness or 1) * 2
+end
+
+function display:ApplyBarContentInsets(barFrame, borderThickness)
+    local border = barFrame.border
+    borderThickness = math.max(0, borderThickness or 0)
+    local contentInset = borderThickness > 0 and EXUI:GetBorderInset(border, borderThickness) or 0
+
+    barFrame.bar:ClearAllPoints()
+    barFrame.bar:SetPoint('TOPLEFT', border, 'TOPLEFT', contentInset, -contentInset)
+    barFrame.bar:SetPoint('BOTTOMRIGHT', border, 'BOTTOMRIGHT', -contentInset, 0)
+end
+
+function display:ApplyBarStyle(barFrame, settings, db, barHeight)
+    local borderThickness = math.max(0, db.barBorderThickness or 1)
+    local barWidth = db.barWidth or 220
+    local totalHeight = self:GetBarOuterHeight(db, barHeight)
+
+    EXUI:SetSize(barFrame, barWidth, totalHeight)
+    barFrame.border:ClearAllPoints()
+    barFrame.border:SetAllPoints()
+
+    local bg = settings.background
+    barFrame.border.bg:SetVertexColor(bg.r, bg.g, bg.b, bg.a or 1)
+
+    if borderThickness > 0 then
+        if not barFrame.border.PPBorder then
+            barFrame.border.PPBorder = EXUI:AddPixelPerfectBorder(barFrame.border, borderThickness, { register = false })
+        end
+        local borderColor = settings.border
+        barFrame.border.PPBorder:SetBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
+        barFrame.border.PPBorder.Top:Show()
+        barFrame.border.PPBorder.Bottom:Show()
+        barFrame.border.PPBorder.Left:Show()
+        barFrame.border.PPBorder.Right:Show()
+    elseif barFrame.border.PPBorder then
+        barFrame.border.PPBorder.Top:Hide()
+        barFrame.border.PPBorder.Bottom:Hide()
+        barFrame.border.PPBorder.Left:Hide()
+        barFrame.border.PPBorder.Right:Hide()
+    end
+
+    EXUI:SnapFrameToPixels(barFrame)
+    EXUI:SnapFrameToPixels(barFrame.border)
+
+    if barFrame.border.PPBorder and borderThickness > 0 then
+        barFrame.border.PPBorder:SetBorderThickness(borderThickness)
+    end
+
+    self:ApplyBarContentInsets(barFrame, borderThickness)
+
+    local fill = settings.fill
+    barFrame.bar:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a or 1)
+    barFrame.bar:SetStatusBarTexture(self:GetBarTexture(db))
+end
+
+function display:PositionSparks(barFrame, db, elapsedPercent)
+    local sparkWidth = EXUI:ScalePixel(defaults.SPARK_WIDTH, barFrame.border)
+    local barWidth = barFrame.border:GetWidth()
+    local thresholds = defaults.UPGRADE_THRESHOLDS
+
+    local function placeSpark(spark, fraction)
+        local x = barWidth * fraction - (sparkWidth / 2)
+        spark:ClearAllPoints()
+        spark:SetPoint('TOPLEFT', barFrame.border, 'TOPLEFT', x, 0)
+        spark:SetPoint('BOTTOMLEFT', barFrame.border, 'BOTTOMLEFT', x, 0)
+        EXUI:SetWidth(spark, sparkWidth)
+        spark:Show()
+    end
+
+    local function updateSpark(spark, fraction)
+        if not spark then
+            return
+        end
+        if elapsedPercent and elapsedPercent >= fraction then
+            spark:Hide()
+            return
+        end
+        placeSpark(spark, fraction)
+    end
+
+    updateSpark(barFrame.spark1, thresholds.plus3)
+    updateSpark(barFrame.spark2, thresholds.plus2)
+end
+
+function display:EnsureTextLayer(section)
+    if not section.textLayer then
+        section.textLayer = CreateFrame('Frame', nil, section)
+        section.textLayer:SetAllPoints(section)
+    end
+    section.textLayer:SetFrameLevel(10)
+    return section.textLayer
+end
+
+function display:ApplyTextLayer(section, bar, texts)
+    local textLayer = self:EnsureTextLayer(section)
+    bar:SetFrameLevel(1)
+    for _, text in ipairs(texts) do
+        if text and text:GetParent() ~= textLayer then
+            text:SetParent(textLayer)
+        end
+    end
+    return textLayer
+end
+
+function display:CreateMainFrame()
+    if self.frame then
+        return self.frame
+    end
+
+    local frame = CreateFrame('Frame', 'EXUIMythicPlusTimerFrame', UIParent, 'BackdropTemplate')
+    frame:SetClampedToScreen(true)
+
+    frame.deathRow = CreateFrame('Frame', nil, frame)
+    frame.deathCount = frame.deathRow:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    frame.deathSkull = frame.deathRow:CreateTexture(nil, 'ARTWORK')
+    frame.deathSkull:SetTexture(defaults.SKULL_TEXTURE)
+
+    frame.timerSection = CreateFrame('Frame', nil, frame)
+    frame.timerBar = self:CreateBar(frame.timerSection, 'timer')
+    local timerTextLayer = self:EnsureTextLayer(frame.timerSection)
+    frame.maxTimer = timerTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    frame.elapsed = timerTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    frame.deathPenalty = timerTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    frame.keyLevel = timerTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    frame.milestoneTimer = timerTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+
+    frame.forcesSection = CreateFrame('Frame', nil, frame)
+    frame.forcesBar = self:CreateBar(frame.forcesSection, 'forces')
+    local forcesTextLayer = self:EnsureTextLayer(frame.forcesSection)
+    frame.forcesPercent = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    frame.forcesRaw = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+
+    frame.bossSection = CreateFrame('Frame', nil, frame)
+    frame.bossSection.lines = {}
+
+    self.frame = frame
+    return frame
+end
+
+function display:GetBossLine(index)
+    if not self.frame then
+        return nil
+    end
+
+    local lines = self.frame.bossSection.lines
+    if not lines[index] then
+        lines[index] = self.frame.bossSection:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    end
+    return lines[index]
+end
+
+function display:HideExtraBossLines(visibleCount)
+    if not self.frame then
+        return
+    end
+
+    for index = visibleCount + 1, #self.frame.bossSection.lines do
+        self.frame.bossSection.lines[index]:Hide()
+    end
+end
+
+function display:GetTimerTopTextHeight(db)
+    local height = db.elapsedFontSize
+    if db.showMaxTimer then
+        height = height + db.maxTimerFontSize + 2
+    end
+    return height
+end
+
+function display:GetTimerSectionHeight(db)
+    local milestoneBelowBar = math.ceil((db.milestoneFontSize or 11) / 2)
+    return self:GetTimerTopTextHeight(db)
+        + self:GetBarOuterHeight(db, self:GetTimerBarHeight(db))
+        + milestoneBelowBar
+end
+
+function display:GetForcesSectionHeight(db)
+    local labelHeight = math.max(db.forcesPercentFontSize, db.forcesRawFontSize)
+    return self:GetBarOuterHeight(db, self:GetForcesBarHeight(db))
+        + labelHeight
+end
+
+function display:ApplyLayout(db)
+    local frame = self.frame
+    if not frame then
+        return
+    end
+
+    local spacing = defaults.SPACING
+    local barWidth = db.barWidth or 220
+    local isRight = db.bossAlign == 'RIGHT'
+
+    frame:ClearAllPoints()
+    EXUI:SetPoint(frame, db.anchorPoint, UIParent, db.relativeAnchor, db.xOffset, db.yOffset)
+    frame:SetFrameStrata(db.frameStrata or 'MEDIUM')
+    frame:SetFrameLevel(db.frameLevel or 10)
+    EXUI:SetWidth(frame, barWidth)
+
+    local yOffset = 0
+
+    local function stackRow(rowFrame, height, gap)
+        rowFrame:ClearAllPoints()
+        rowFrame:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, yOffset)
+        rowFrame:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, yOffset)
+        EXUI:SetHeight(rowFrame, height)
+        yOffset = yOffset - height - (gap or spacing.section)
+    end
+
+    if db.showDeathCounter then
+        local deathHeight = db.deathFontSize + 2
+        stackRow(frame.deathRow, deathHeight)
+        frame.deathCount:ClearAllPoints()
+        frame.deathSkull:ClearAllPoints()
+        frame.deathCount:SetPoint('BOTTOMRIGHT', frame.deathSkull, 'BOTTOMLEFT', -2, 0)
+        frame.deathSkull:SetPoint('BOTTOMRIGHT', frame.deathRow, 'BOTTOMRIGHT', 0, 0)
+        local skullSize = EXUI:ScalePixel(db.deathFontSize + 2, frame.deathRow)
+        frame.deathSkull:SetSize(skullSize, skullSize)
+        frame.deathRow:Show()
+    else
+        frame.deathRow:Hide()
+    end
+
+    local topTextHeight = self:GetTimerTopTextHeight(db)
+    stackRow(frame.timerSection, self:GetTimerSectionHeight(db), spacing.bar)
+
+    self:ApplyTextLayer(frame.timerSection, frame.timerBar, {
+        frame.maxTimer,
+        frame.elapsed,
+        frame.deathPenalty,
+        frame.keyLevel,
+        frame.milestoneTimer,
+    })
+    self:ApplyTextLayer(frame.forcesSection, frame.forcesBar, {
+        frame.forcesPercent,
+        frame.forcesRaw,
+    })
+
+    frame.timerBar:ClearAllPoints()
+    frame.timerBar:SetPoint('TOPLEFT', frame.timerSection, 'TOPLEFT', 0, -topTextHeight)
+    frame.timerBar:SetPoint('TOPRIGHT', frame.timerSection, 'TOPRIGHT', 0, -topTextHeight)
+
+    frame.elapsed:ClearAllPoints()
+    frame.elapsed:SetPoint('BOTTOMRIGHT', frame.timerBar, 'TOPRIGHT', 0, 0)
+    frame.elapsed:SetJustifyH('RIGHT')
+
+    frame.keyLevel:ClearAllPoints()
+    frame.keyLevel:SetPoint('LEFT', frame.timerBar, 'TOPLEFT', 2, 0)
+    frame.keyLevel:SetJustifyH('LEFT')
+
+    frame.deathPenalty:ClearAllPoints()
+    frame.deathPenalty:SetPoint('BOTTOMRIGHT', frame.elapsed, 'BOTTOMLEFT', -2, 2)
+    frame.deathPenalty:SetJustifyH('RIGHT')
+
+    if db.showMaxTimer then
+        frame.maxTimer:ClearAllPoints()
+        frame.maxTimer:SetPoint('BOTTOMRIGHT', frame.elapsed, 'TOPRIGHT', 0, 2)
+        frame.maxTimer:SetJustifyH('RIGHT')
+        frame.maxTimer:Show()
+    else
+        frame.maxTimer:Hide()
+    end
+
+    frame.milestoneTimer:ClearAllPoints()
+    frame.milestoneTimer:SetJustifyH('CENTER')
+
+    stackRow(frame.forcesSection, self:GetForcesSectionHeight(db), spacing.bar)
+
+    frame.forcesBar:ClearAllPoints()
+    frame.forcesBar:SetPoint('TOPLEFT', frame.forcesSection, 'TOPLEFT', 0, 0)
+    frame.forcesBar:SetPoint('TOPRIGHT', frame.forcesSection, 'TOPRIGHT', 0, 0)
+
+    frame.forcesPercent:ClearAllPoints()
+    frame.forcesPercent:SetPoint('LEFT', frame.forcesBar, 'BOTTOMLEFT', 2, 0)
+    frame.forcesPercent:SetJustifyH('LEFT')
+
+    frame.forcesRaw:ClearAllPoints()
+    frame.forcesRaw:SetPoint('RIGHT', frame.forcesBar, 'BOTTOMRIGHT', -2, 0)
+    frame.forcesRaw:SetJustifyH('RIGHT')
+
+    if db.showBossNames then
+        frame.bossSection:ClearAllPoints()
+        frame.bossSection:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, yOffset)
+        frame.bossSection:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, yOffset)
+        frame.bossSection:Show()
+    else
+        frame.bossSection:Hide()
+    end
+end
+
+function display:ApplyStyles(db)
+    local frame = self.frame
+    if not frame then
+        return
+    end
+
+    local danger = EXUI.const.theme.danger
+
+    self:ApplyFontString(frame.deathCount, 'deathFont', 'deathFontSize', 'deathFontFlag', db, {
+        r = danger[1], g = danger[2], b = danger[3], a = danger[4] or 1,
+    })
+    frame.deathSkull:SetVertexColor(danger[1], danger[2], danger[3], danger[4] or 1)
+
+    self:ApplyFontString(frame.maxTimer, 'maxTimerFont', 'maxTimerFontSize', 'maxTimerFontFlag', db, db.maxTimerColor,
+        'bottom')
+    self:ApplyFontString(frame.deathPenalty, 'deathPenaltyFont', 'deathPenaltyFontSize', 'deathPenaltyFontFlag', db, {
+        r = danger[1], g = danger[2], b = danger[3], a = danger[4] or 1,
+    }, 'bottom')
+    self:ApplyFontString(frame.elapsed, 'elapsedFont', 'elapsedFontSize', 'elapsedFontFlag', db, db.elapsedColor,
+        'bottom')
+    self:ApplyFontString(frame.keyLevel, 'keyLevelFont', 'keyLevelFontSize', 'keyLevelFontFlag', db, db.elapsedColor)
+    self:ApplyFontString(frame.milestoneTimer, 'milestoneFont', 'milestoneFontSize', 'milestoneFontFlag', db,
+        db.elapsedColor)
+    self:ApplyFontString(frame.forcesPercent, 'forcesPercentFont', 'forcesPercentFontSize', 'forcesPercentFontFlag', db,
+        db.elapsedColor)
+    self:ApplyFontString(frame.forcesRaw, 'forcesRawFont', 'forcesRawFontSize', 'forcesRawFontFlag', db, db.elapsedColor)
+
+    self:ApplyBarStyle(frame.timerBar, db.timerBar, db, self:GetTimerBarHeight(db))
+    self:ApplyBarStyle(frame.forcesBar, db.forcesBar, db, self:GetForcesBarHeight(db))
+    self:PositionSparks(frame.timerBar, db)
+end
+
+function display:UpdateBossList(snapshot, db)
+    if not self.frame or not db.showBossNames then
+        return 0
+    end
+
+    local bosses = snapshot and snapshot.bosses or {}
+    local isRight = db.bossAlign == 'RIGHT'
+    local lineSpacing = defaults.SPACING.bossLine
+    local lineHeight = db.bossFontSize + lineSpacing
+    local y = 0
+
+    for index, boss in ipairs(bosses) do
+        local line = self:GetBossLine(index)
+        if line then
+            line:ClearAllPoints()
+            line:SetPoint('TOPRIGHT', self.frame.bossSection, 'TOPRIGHT', 0, y)
+            line:SetPoint('TOPLEFT', self.frame.bossSection, 'TOPLEFT', 0, y)
+            line:SetJustifyH(isRight and 'RIGHT' or 'LEFT')
+            self:ApplyFontString(line, 'bossFont', 'bossFontSize', 'bossFontFlag', db)
+
+            if boss.killTime then
+                line:SetTextColor(db.bossKilledColor.r, db.bossKilledColor.g, db.bossKilledColor.b,
+                    db.bossKilledColor.a or 1)
+                line:SetText(string.format('%s %s', boss.name, self:FormatClock(boss.killTime)))
+            else
+                line:SetTextColor(db.bossPendingColor.r, db.bossPendingColor.g, db.bossPendingColor.b,
+                    db.bossPendingColor.a or 1)
+                line:SetText(boss.name)
+            end
+            line:Show()
+            y = y - lineHeight
+        end
+    end
+
+    self:HideExtraBossLines(#bosses)
+    return math.abs(y)
+end
+
+function display:PositionMilestoneTimer(barFrame, milestoneIndex, db)
+    local timerText = self.frame and self.frame.milestoneTimer
+    if not timerText then
+        return
+    end
+
+    if not milestoneIndex then
+        timerText:Hide()
+        return
+    end
+
+    local barWidth = barFrame.border:GetWidth()
+    local thresholds = defaults.UPGRADE_THRESHOLDS
+    local fractions = { thresholds.plus3, thresholds.plus2, thresholds.plus1 }
+    local fraction = fractions[milestoneIndex] or thresholds.plus1
+
+    timerText:ClearAllPoints()
+    if milestoneIndex == 3 then
+        timerText:SetPoint('RIGHT', barFrame, 'BOTTOMRIGHT', -2, 0)
+        timerText:SetJustifyH('RIGHT')
+    else
+        timerText:SetPoint('CENTER', barFrame, 'BOTTOM', (fraction - 0.5) * barWidth, 0)
+        timerText:SetJustifyH('CENTER')
+    end
+    timerText:Show()
+end
+
+function display:RenderSnapshot(snapshot, db)
+    local frame = self.frame
+    if not frame or not snapshot then
+        return
+    end
+
+    if db.showDeathCounter then
+        frame.deathCount:SetText(tostring(snapshot.deathCount or 0))
+    end
+
+    if db.showMaxTimer then
+        frame.maxTimer:SetText(self:FormatClock(snapshot.timeLimit))
+    end
+
+    if snapshot.showDeathPenalty then
+        frame.deathPenalty:SetText(self:FormatPenalty(snapshot.timeLost))
+        frame.deathPenalty:Show()
+    else
+        frame.deathPenalty:Hide()
+    end
+
+    frame.elapsed:SetText(self:FormatClock(snapshot.elapsed))
+
+    frame.keyLevel:SetText(snapshot.levelText or '')
+
+    local elapsedPercent = (snapshot.elapsedPercent or 0) * 100
+    frame.timerBar.bar:SetValue(math.min(100, elapsedPercent))
+    self:PositionSparks(frame.timerBar, db, snapshot.elapsedPercent)
+
+    if snapshot.milestoneIndex and snapshot.milestoneRemaining then
+        frame.milestoneTimer:SetText(self:FormatClock(snapshot.milestoneRemaining))
+        self:PositionMilestoneTimer(frame.timerBar, snapshot.milestoneIndex, db)
+    else
+        frame.milestoneTimer:Hide()
+    end
+
+    local forces = snapshot.forces
+    if forces then
+        frame.forcesBar.bar:SetValue(forces.percent or 0)
+        frame.forcesPercent:SetText(self:FormatPercent(forces.percent))
+        frame.forcesRaw:SetText(string.format('%d/%d', forces.current or 0, forces.total or 0))
+    else
+        frame.forcesBar.bar:SetValue(0)
+        frame.forcesPercent:SetText('0.00%')
+        frame.forcesRaw:SetText('0/0')
+    end
+
+    local bossHeight = self:UpdateBossList(snapshot, db)
+    if db.showBossNames and bossHeight > 0 then
+        EXUI:SetHeight(frame.bossSection, bossHeight)
+    end
+    local totalHeight = self:CalculateTotalHeight(db, #snapshot.bosses, bossHeight)
+    EXUI:SetHeight(frame, totalHeight)
+end
+
+function display:CalculateTotalHeight(db, bossCount, bossSectionHeight)
+    local spacing = defaults.SPACING
+    local height = 0
+
+    if db.showDeathCounter then
+        height = height + db.deathFontSize + 2 + spacing.section
+    end
+
+    height = height + self:GetTimerSectionHeight(db) + spacing.bar
+    height = height + self:GetForcesSectionHeight(db) + spacing.bar
+
+    if db.showBossNames and bossCount > 0 then
+        height = height + (bossSectionHeight or 0)
+    end
+
+    return math.max(height, 20)
+end
+
+function display:ShouldShow()
+    if not mythicPlusTimer.enabled then
+        return false
+    end
+    if preview:IsActive() then
+        return true
+    end
+    return timerData:IsActive()
+end
+
+function display:ForceRestoreObjectiveTracker()
+    if not self.lastShouldSuppressObjectiveTracker then
+        return
+    end
+
+    local target = self.suppressionTarget
+    self.lastShouldSuppressObjectiveTracker = false
+    self.suppressionTarget = nil
+
+    if target == 'exality' then
+        objectiveTracker:Update()
+    elseif target == 'blizzard' then
+        self:ShowBlizzardTracker()
+    end
+end
+
+function display:SyncObjectiveTrackerSuppression()
+    local shouldSuppress = mythicPlusTimer:ShouldSuppressObjectiveTracker()
+    if shouldSuppress == self.lastShouldSuppressObjectiveTracker then
+        return
+    end
+
+    local wasSuppressing = self.lastShouldSuppressObjectiveTracker == true
+    self.lastShouldSuppressObjectiveTracker = shouldSuppress
+
+    if shouldSuppress then
+        if objectiveTracker.enabled and objectiveTrackerDisplay.frame then
+            self.suppressionTarget = 'exality'
+            objectiveTrackerDisplay.frame:Hide()
+        else
+            self.suppressionTarget = 'blizzard'
+            self:HideBlizzardTracker()
+        end
+        return
+    end
+
+    if wasSuppressing then
+        local target = self.suppressionTarget
+        self.suppressionTarget = nil
+        if target == 'exality' then
+            objectiveTracker:Update()
+        elseif target == 'blizzard' then
+            self:ShowBlizzardTracker()
+        end
+    end
+end
+
+function display:HideBlizzardTracker()
+    if not ObjectiveTrackerFrame then
+        return
+    end
+
+    if not self.blizzardShowHooked then
+        self.blizzardShowHooked = true
+        hooksecurefunc(ObjectiveTrackerFrame, 'Show', function()
+            if mythicPlusTimer:ShouldSuppressObjectiveTracker() then
+                ObjectiveTrackerFrame:Hide()
+            end
+        end)
+    end
+
+    ObjectiveTrackerFrame:Hide()
+end
+
+function display:ShowBlizzardTracker()
+    if ObjectiveTrackerFrame then
+        ObjectiveTrackerFrame:Show()
+        if ObjectiveTrackerManager then
+            ObjectiveTrackerManager:UpdateAll()
+        end
+    end
+end
+
+function display:Update()
+    local db = mythicPlusTimer.Data:GetDB()
+    self:CreateMainFrame()
+    self:ApplyLayout(db)
+    self:ApplyStyles(db)
+    self:SyncObjectiveTrackerSuppression()
+
+    if not self:ShouldShow() then
+        self.frame:Hide()
+        return
+    end
+
+    local snapshot = preview:GetSnapshot()
+    if not snapshot then
+        snapshot = timerData:GetTimerSnapshot()
+    end
+
+    if not snapshot then
+        self.frame:Hide()
+        return
+    end
+
+    self:RenderSnapshot(snapshot, db)
+    self.frame:Show()
+end
+
+function display:Enable()
+    self:CreateMainFrame()
+    timerData:RegisterEvents(function()
+        display:Update()
+    end)
+    timerData:StartTicker(function()
+        if display:ShouldShow() then
+            display:Update()
+        end
+    end)
+    if timerData:IsActive() then
+        timerData:OnChallengeActivated()
+    end
+    self:Update()
+end
+
+function display:Disable()
+    timerData:StopTicker()
+    timerData:UnregisterEvents()
+    self:ForceRestoreObjectiveTracker()
+    if self.frame then
+        self.frame:Hide()
+    end
+end
+
+function display:Show()
+    self:Update()
+end
+
+function display:Hide()
+    if self.frame then
+        self.frame:Hide()
+    end
+end

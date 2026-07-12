@@ -116,13 +116,6 @@ local function isWorldQuestOnBanner(questID)
     return false
 end
 
-local function isWorldQuestInPlayerArea(questID)
-    if not GetTaskInfo then
-        return false
-    end
-    return GetTaskInfo(questID)
-end
-
 local function getTaskQuestObjectiveCount(questID, knownCount)
     if knownCount and knownCount > 0 then
         return knownCount
@@ -688,31 +681,6 @@ function trackerData:CollectWorldBlocks()
     end
 
     return blocks
-end
-
-function trackerData:GetWorldQuestProximitySignature()
-    local mapID = 0
-    if C_Map and C_Map.GetBestMapForUnit then
-        mapID = C_Map.GetBestMapForUnit('player') or 0
-    end
-
-    local parts = { tostring(mapID) }
-    for _, questID in ipairs(collectAutomaticWorldQuestCandidates()) do
-        if not isQuestWatched(questID) then
-            parts[#parts + 1] = string.format('%s:%s', questID, isWorldQuestInPlayerArea(questID) and '1' or '0')
-        end
-    end
-
-    if C_QuestLog.GetNumWorldQuestWatches then
-        for i = 1, C_QuestLog.GetNumWorldQuestWatches() do
-            local questID = C_QuestLog.GetQuestIDForWorldQuestWatchIndex(i)
-            if questID then
-                parts[#parts + 1] = string.format('t%s:1', questID)
-            end
-        end
-    end
-
-    return table.concat(parts, ',')
 end
 
 local COLLECTORS = {

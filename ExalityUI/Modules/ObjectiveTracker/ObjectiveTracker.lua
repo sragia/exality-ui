@@ -54,10 +54,6 @@ objectiveTracker.GetOrder = function(self)
     return 30
 end
 
-objectiveTracker.GetIcon = function(self)
-    return [[Interface/QUESTFRAME/QuestType-PVP]]
-end
-
 objectiveTracker.GetProfileExportSpec = function(self)
     return { id = 'objective-tracker', keys = { 'objectiveTracker' } }
 end
