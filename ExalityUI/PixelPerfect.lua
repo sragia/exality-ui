@@ -206,14 +206,15 @@ local function applyBorderThickness(border, thickness, region)
     border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
 end
 
-function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor)
+function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor, options)
     borderSize = borderSize or 1
+    options = options or {}
     frame:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
     if bgColor then
         frame:SetBackdropColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
     end
     if not frame.PPBorder then
-        frame.PPBorder = self:AddPixelPerfectBorder(frame, borderSize)
+        frame.PPBorder = self:AddPixelPerfectBorder(frame, borderSize, { register = options.register })
     else
         frame.PPBorder:SetBorderThickness(borderSize)
     end

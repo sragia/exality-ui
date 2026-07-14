@@ -9,6 +9,55 @@ local editor = EXUI:GetModule('editor')
 editor.frames = {}
 editor.activeFrame = nil
 
+editor.SyncEditorOverlay = function(self, frame)
+    if not frame or not frame.editor then
+        return
+    end
+    frame.editor:ClearAllPoints()
+    frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+    frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
+end
+
+editor.RefreshEditorOverlayBorder = function(self, frame)
+    local overlay = frame and frame.editor
+    if not overlay or not overlay.PPBorder then
+        return
+    end
+    overlay.PPBorder:SetBorderThickness(1)
+    overlay.PPBorder:SetBorderColor(1, 1, 1, 1)
+end
+
+editor.FinalizeFrameMove = function(self, frame)
+    if not frame then
+        return
+    end
+
+    local ufCore = EXUI:GetModule('uf-core')
+    if ufCore and ufCore.SnapUnitFrame and frame.ElementFrame then
+        ufCore:SnapUnitFrame(frame)
+    elseif frame:GetNumPoints() == 1 then
+        EXUI:SnapFrameToPixels(frame)
+    end
+
+    if frame.PPBorder then
+        frame.PPBorder:SetBorderThickness(frame.PPBorder.thicknessPixels or 1)
+    end
+    if frame.EditPlaceholder and frame.EditPlaceholder.PPBorder then
+        frame.EditPlaceholder.PPBorder:SetBorderThickness(1)
+    end
+
+    self:SyncEditorOverlay(frame)
+    self:RefreshEditorOverlayBorder(frame)
+
+    C_Timer.After(0, function()
+        if not frame.editor or not frame.editor:IsShown() then
+            return
+        end
+        self:SyncEditorOverlay(frame)
+        self:RefreshEditorOverlayBorder(frame)
+    end)
+end
+
 editor.RegisterFrameForEditor = function(self, frame, label, onChange, onShow, onHide)
     table.insert(self.frames, {
         label = label,
@@ -82,12 +131,10 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
             local point, relativeTo, relativePoint, xOfs, yOfs = self:GetPoint(1)
             owner:ClearAllPoints()
             owner:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs)
-            self:ClearAllPoints()
-            self:SetPoint('TOPLEFT', owner, 'TOPLEFT', 0, 0)
-            self:SetPoint('BOTTOMRIGHT', owner, 'BOTTOMRIGHT', 0, 0)
             if self.onChange then
                 self.onChange(owner)
             end
+            editor:FinalizeFrameMove(owner)
         end)
     end
 
@@ -103,14 +150,17 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     frame:SetScript('OnDragStop', function(self)
         if (frame.isMovable) then
             self:StopMovingOrSizing()
-            self.editor.onChange(self)
+            if self.editor.onChange then
+                self.editor.onChange(self)
+            end
+            editor:FinalizeFrameMove(self)
         end
     end)
 
     frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
     frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     frame.editor:SetFrameStrata('FULLSCREEN_DIALOG')
-    EXUI:ApplySolidBorder(frame.editor, 1, { 1, 1, 1, 1 }, { 0, 0, 0, 0.7 })
+    EXUI:ApplySolidBorder(frame.editor, 1, { 1, 1, 1, 1 }, { 0, 0, 0, 0.7 }, { register = false })
 
     frame.editor:SetPropagateMouseClicks(true)
     frame.editor:SetScript('OnMouseDown', function(self)
@@ -183,18 +233,18 @@ editor.AddOffsetArrow = function(self, frame, direction, sign)
 
     arrow:SetScript('OnClick', function(self)
         local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(1)
+        local nudge = EXUI:ScalePixel(1, frame)
         frame:ClearAllPoints()
         if (direction == 'X') then
-            frame:SetPoint(point, relativeTo, relativePoint, xOfs + sign * 1, yOfs)
-            frame.editor:SetPoint(point, relativeTo, relativePoint, xOfs + sign * 1, yOfs)
+            frame:SetPoint(point, relativeTo, relativePoint, xOfs + sign * nudge, yOfs)
         else
-            frame:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs + 1 * sign)
-            frame.editor:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs + 1 * sign)
+            frame:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs + sign * nudge)
         end
 
         if (frame.editor.onChange) then
             frame.editor.onChange(frame)
         end
+        editor:FinalizeFrameMove(frame)
     end)
 
     arrow:Hide()
@@ -212,13 +262,7 @@ editor.EnableEditor = function(self)
         end
         f.frame.editor:Show()
         f.frame.editor:EnableMouse(true)
-        f.frame.editor:ClearAllPoints()
-        f.frame.editor:SetPoint('TOPLEFT', f.frame, 'TOPLEFT', 0, 0)
-        f.frame.editor:SetPoint('BOTTOMRIGHT', f.frame, 'BOTTOMRIGHT', 0, 0)
-        if f.frame.editor.PPBorder then
-            f.frame.editor.PPBorder:SetBorderThickness(1)
-            f.frame.editor.PPBorder:SetBorderColor(1, 1, 1, 1)
-        end
+        editor:FinalizeFrameMove(f.frame)
         if (not f.frame.editorMoveOverride) then
             f.frame.isMovable = true
             f.frame:SetMovable(true)

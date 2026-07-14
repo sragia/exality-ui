@@ -221,9 +221,7 @@ function cooldowns:CreateFrame()
         cooldowns.framePool:Release(selfRef)
     end
 
-    frame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
-    frame:SetBackdropColor(0, 0, 0, 0.4)
-    frame:SetBackdropBorderColor(0, 0, 0, 1)
+    EXUI:ApplySolidBorder(frame, 1, { 0, 0, 0, 1 }, { 0, 0, 0, 0.4 }, { register = false })
     return frame
 end
 

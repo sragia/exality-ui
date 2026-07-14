@@ -92,9 +92,7 @@ function containerModule:EnsureEditPlaceholder(frame, display)
     end
 
     local placeholder = CreateFrame('Frame', nil, frame, 'BackdropTemplate')
-    placeholder:SetBackdrop(EXUI.const.backdrop.DEFAULT)
-    placeholder:SetBackdropColor(0.15, 0.35, 0.65, 0.45)
-    placeholder:SetBackdropBorderColor(1, 1, 1, 0.75)
+    EXUI:ApplySolidBorder(placeholder, 1, { 1, 1, 1, 0.75 }, { 0.15, 0.35, 0.65, 0.45 }, { register = false })
 
     local icon = placeholder:CreateTexture(nil, 'ARTWORK')
     icon:SetTexture(134400)
@@ -111,12 +109,15 @@ function containerModule:IsEditMode(frame)
 end
 
 function containerModule:SyncEditorOverlay(frame)
-    if not frame or not frame.editor then
-        return
+    local editor = EXUI:GetModule('editor')
+    if editor and editor.SyncEditorOverlay then
+        editor:SyncEditorOverlay(frame)
+        editor:RefreshEditorOverlayBorder(frame)
+    elseif frame and frame.editor then
+        frame.editor:ClearAllPoints()
+        frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+        frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     end
-    frame.editor:ClearAllPoints()
-    frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
-    frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
 end
 
 function containerModule:SetEditMode(frame, display, enabled)
@@ -138,6 +139,10 @@ function containerModule:SetEditMode(frame, display, enabled)
         placeholder:ClearAllPoints()
         placeholder:SetPoint(anchor, frame, anchor, 0, 0)
         placeholder:Show()
+        if placeholder.PPBorder then
+            placeholder.PPBorder:SetBorderThickness(1)
+        end
+        self:SyncEditorOverlay(frame)
         return
     end
 

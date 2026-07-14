@@ -171,6 +171,14 @@ generalModule.UpdateUIScale = function(self)
     if ufCore and ufCore.UpdateAllFrames then
         ufCore:UpdateAllFrames()
     end
+    local editor = EXUI:GetModule('editor')
+    if editor and editor.frames then
+        for _, entry in ipairs(editor.frames) do
+            if entry.frame.editor and entry.frame.editor:IsShown() then
+                editor:FinalizeFrameMove(entry.frame)
+            end
+        end
+    end
 end
 
 -- Only called on load
