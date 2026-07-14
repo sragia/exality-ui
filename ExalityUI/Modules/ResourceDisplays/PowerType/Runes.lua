@@ -169,24 +169,25 @@ runes.Create = function(self, frame)
                             runeFrame.ReadyGlow:Hide()
                         end
                     else
-                    local durationObject = C_DurationUtil.CreateDuration()
-                    durationObject:SetTimeFromStart(startTime, duration)
-                    runeFrame.DurationObject = durationObject
-                    if self.db.runeShowText and not runeFrame:GetScript('OnUpdate') then
-                        runeFrame:SetScript('OnUpdate', runeFrame.OnUpdate)
-                    elseif not self.db.runeShowText and runeFrame:GetScript('OnUpdate') then
-                        runeFrame:SetScript('OnUpdate', nil)
-                    end
-                    runeFrame.StatusBar:SetTimerDuration(durationObject, Enum.StatusBarInterpolation.ExponentialEaseOut)
-                    runeFrame.StatusBar:SetStatusBarColor(
-                        self.RuneOnCDColor.r,
-                        self.RuneOnCDColor.g,
-                        self.RuneOnCDColor.b,
-                        self.RuneOnCDColor.a
-                    )
-                    if runeFrame.ReadyGlow then
-                        runeFrame.ReadyGlow:Hide()
-                    end
+                        local durationObject = C_DurationUtil.CreateDuration()
+                        durationObject:SetTimeFromStart(startTime, duration)
+                        runeFrame.DurationObject = durationObject
+                        if self.db.runeShowText and not runeFrame:GetScript('OnUpdate') then
+                            runeFrame:SetScript('OnUpdate', runeFrame.OnUpdate)
+                        elseif not self.db.runeShowText and runeFrame:GetScript('OnUpdate') then
+                            runeFrame:SetScript('OnUpdate', nil)
+                        end
+                        runeFrame.StatusBar:SetTimerDuration(durationObject,
+                            Enum.StatusBarInterpolation.ExponentialEaseOut)
+                        runeFrame.StatusBar:SetStatusBarColor(
+                            self.RuneOnCDColor.r,
+                            self.RuneOnCDColor.g,
+                            self.RuneOnCDColor.b,
+                            self.RuneOnCDColor.a
+                        )
+                        if runeFrame.ReadyGlow then
+                            runeFrame.ReadyGlow:Hide()
+                        end
                     end
                 end
             end
@@ -229,7 +230,8 @@ runes.Update = function(frame)
         runeFrame.Text:SetFont(LSM:Fetch('font', db.runeFont), db.runeFontSize, db.runeFontFlag)
         runeFrame.Text:SetVertexColor(db.runeTextColor.r, db.runeTextColor.g, db.runeTextColor.b, db.runeTextColor.a)
         runeFrame.Text:ClearAllPoints()
-        runeFrame.Text:SetPoint(db.runeTextAnchorPoint, runeFrame, db.runeTextRelativeAnchorPoint, db.runeTextXOff, db.runeTextYOff)
+        runeFrame.Text:SetPoint(db.runeTextAnchorPoint, runeFrame, db.runeTextRelativeAnchorPoint, db.runeTextXOff,
+            db.runeTextYOff)
         if db.runeShowText then
             runeFrame.Text:Show()
         else
@@ -245,7 +247,8 @@ runes.Update = function(frame)
         end
     end
 
-    local groupWidth, groupHeight = helpers:LayoutSegments(frame, frame.ActiveFrames, db, 'runeWidth', 'runeHeight', 'runeSpacing')
+    local groupWidth, groupHeight = helpers:LayoutSegments(frame, frame.ActiveFrames, db, 'runeWidth', 'runeHeight',
+        'runeSpacing')
     EXUI:SetSize(frame, groupWidth, groupHeight)
     if preview:ShouldUsePreview(frame) then
         runes:ApplyPreview(frame)
@@ -349,10 +352,6 @@ runes.GetOptions = function(self, displayID)
             width = 100,
         },
         {
-            type = 'spacer',
-            width = 40,
-        },
-        {
             type = 'dropdown',
             label = 'Bar Texture',
             name = 'runeBarTexture',
@@ -402,7 +401,7 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeOnCDColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16,
+            width = 18,
         },
         {
             type = 'color-picker',
@@ -415,7 +414,7 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeBackgroundColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 26,
+            width = 24,
         },
         {
             type = 'color-picker',
@@ -505,6 +504,10 @@ runes.GetOptions = function(self, displayID)
             width = 25,
         },
         {
+            type = 'spacer',
+            width = 50,
+        },
+        {
             type = 'dropdown',
             label = 'Font',
             name = 'runeFont',
@@ -565,11 +568,23 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeFontSize', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 20,
+            width = 25,
         },
         {
-            type = 'spacer',
-            width = 30,
+            type = 'color-picker',
+            label = 'Text Color',
+            name = 'runeTextColor',
+            depends = function()
+                return RDCore:GetValueForDisplay(displayID, 'runeShowText')
+            end,
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, 'runeTextColor')
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, 'runeTextColor', value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 25,
         },
         {
             type = 'anchor-point',
@@ -585,7 +600,7 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeTextAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 23,
+            width = 25,
         },
         {
             type = 'anchor-point',
@@ -601,11 +616,11 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeTextRelativeAnchorPoint', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 23,
+            width = 25,
         },
         {
             type = 'spacer',
-            width = 54,
+            width = 50,
         },
         {
             type = 'range',
@@ -614,7 +629,7 @@ runes.GetOptions = function(self, displayID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 23,
+            width = 25,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeShowText')
             end,
@@ -633,7 +648,7 @@ runes.GetOptions = function(self, displayID)
             min = -1000,
             max = 1000,
             step = 1,
-            width = 23,
+            width = 25,
             depends = function()
                 return RDCore:GetValueForDisplay(displayID, 'runeShowText')
             end,
@@ -644,22 +659,6 @@ runes.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'runeTextYOff', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-        },
-        {
-            type = 'color-picker',
-            label = 'Text Color',
-            name = 'runeTextColor',
-            depends = function()
-                return RDCore:GetValueForDisplay(displayID, 'runeShowText')
-            end,
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'runeTextColor')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'runeTextColor', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end,
-            width = 16,
         },
     }
 

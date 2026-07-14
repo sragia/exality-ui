@@ -187,10 +187,6 @@ function segmentBase:GetCommonOptions(displayID, config, RDCore)
             width = 100,
         },
         {
-            type = 'spacer',
-            width = 30,
-        },
-        {
             type = 'dropdown',
             label = 'Bar Texture',
             name = config.textureKey,
@@ -212,6 +208,7 @@ function segmentBase:GetCommonOptions(displayID, config, RDCore)
             end,
             width = 40,
         },
+        { type = 'spacer', width = 60 },
         {
             type = 'color-picker',
             label = 'Color',
@@ -223,7 +220,7 @@ function segmentBase:GetCommonOptions(displayID, config, RDCore)
                 RDCore:UpdateValueForDisplay(displayID, config.colorKey, value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 10,
+            width = 15,
         },
         {
             type = 'color-picker',
@@ -236,7 +233,7 @@ function segmentBase:GetCommonOptions(displayID, config, RDCore)
                 RDCore:UpdateValueForDisplay(displayID, config.backgroundKey, value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16,
+            width = 25,
         },
         {
             type = 'color-picker',
@@ -249,7 +246,7 @@ function segmentBase:GetCommonOptions(displayID, config, RDCore)
                 RDCore:UpdateValueForDisplay(displayID, config.borderKey, value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16,
+            width = 25,
         },
         {
             type = 'toggle',
@@ -266,10 +263,11 @@ function segmentBase:GetCommonOptions(displayID, config, RDCore)
         },
     }
 
+    local colorExtras = {}
     if config.chargedColorKey then
-        table.insert(options, {
+        table.insert(colorExtras, {
             type = 'color-picker',
-            label = 'Charged Color',
+            label = config.chargedColorLabel or 'Charged Color',
             name = config.chargedColorKey,
             currentValue = function()
                 return RDCore:GetValueForDisplay(displayID, config.chargedColorKey)
@@ -278,8 +276,33 @@ function segmentBase:GetCommonOptions(displayID, config, RDCore)
                 RDCore:UpdateValueForDisplay(displayID, config.chargedColorKey, value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16,
+            width = 20,
         })
+    end
+    if config.partialColorKey then
+        table.insert(colorExtras, {
+            type = 'color-picker',
+            label = config.partialColorLabel or 'Color (Partial)',
+            name = config.partialColorKey,
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, config.partialColorKey)
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, config.partialColorKey, value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 20,
+        })
+    end
+    if #colorExtras > 0 then
+        for i, option in ipairs(options) do
+            if option.name == config.backgroundKey then
+                for j = #colorExtras, 1, -1 do
+                    table.insert(options, i, colorExtras[j])
+                end
+                break
+            end
+        end
     end
 
     if config.individualColorCount then
@@ -307,7 +330,8 @@ function segmentBase:SetSegmentValues(activeFrames, count, chargedPoints, db, co
     for _, segment in ipairs(activeFrames) do
         local value = segment.index <= count and 1 or 0
         local isCharged = helpers:IsChargedSegment(segment.index, chargedPoints)
-        local color = helpers:GetSegmentColor(db, segment.index, config.colorKey, config.colorsKey or (config.prefix .. 'Colors'), config.capColorKey, value == 1 and isAtCap)
+        local color = helpers:GetSegmentColor(db, segment.index, config.colorKey,
+            config.colorsKey or (config.prefix .. 'Colors'), config.capColorKey, value == 1 and isAtCap)
         if isCharged and db.chargedColor then
             color = db.chargedColor
         end

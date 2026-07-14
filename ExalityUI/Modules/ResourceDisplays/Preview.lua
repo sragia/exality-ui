@@ -4,6 +4,9 @@ local EXUI = select(2, ...)
 ---@class EXUIOptionsFields
 local optionsFields = EXUI:GetModule('options-fields')
 
+---@class EXUIOptionsMain
+local optionsMain = EXUI:GetModule('options-main')
+
 ---@class EXUIResourceDisplaysCore
 local core = EXUI:GetModule('resource-displays-core')
 
@@ -136,4 +139,37 @@ function preview:ApplySegmentPreview(frame, resourceType, config)
         segmentBase:SetSegmentValues(f.ActiveFrames, count, nil, f.db, config)
     end)
     return true
+end
+
+function preview:Init()
+    if self.initialized then
+        return
+    end
+
+    if optionsMain.window then
+        self:HookOptionsWindow(optionsMain.window)
+    end
+
+    hooksecurefunc(optionsMain, 'CreateWindow', function(self)
+        if self.window then
+            preview:HookOptionsWindow(self.window)
+        end
+    end)
+
+    self.initialized = true
+end
+
+function preview:HookOptionsWindow(window)
+    if window.exuiResourceDisplaysPreviewHooked then
+        return
+    end
+    window.exuiResourceDisplaysPreviewHooked = true
+
+    local previousOnClose = window.onClose
+    window.onClose = function()
+        core:TeardownOptionsChrome()
+        if previousOnClose then
+            previousOnClose()
+        end
+    end
 end

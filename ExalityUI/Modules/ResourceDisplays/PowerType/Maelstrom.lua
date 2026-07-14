@@ -111,7 +111,20 @@ maelstrom.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'capHighlightColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16,
+            width = 25,
+        },
+        {
+            type = 'color-picker',
+            label = 'Stack Threshold Color',
+            name = 'stackThresholdColor',
+            currentValue = function()
+                return RDCore:GetValueForDisplay(displayID, 'stackThresholdColor')
+            end,
+            onChange = function(value)
+                RDCore:UpdateValueForDisplay(displayID, 'stackThresholdColor', value)
+                RDCore:RefreshDisplayByID(displayID)
+            end,
+            width = 25,
         },
         {
             type = 'range',
@@ -127,20 +140,7 @@ maelstrom.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'stackThreshold', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 20,
-        },
-        {
-            type = 'color-picker',
-            label = 'Stack Threshold Color',
-            name = 'stackThresholdColor',
-            currentValue = function()
-                return RDCore:GetValueForDisplay(displayID, 'stackThresholdColor')
-            end,
-            onChange = function(value)
-                RDCore:UpdateValueForDisplay(displayID, 'stackThresholdColor', value)
-                RDCore:RefreshDisplayByID(displayID)
-            end,
-            width = 16,
+            width = 25,
         },
     })
     return options

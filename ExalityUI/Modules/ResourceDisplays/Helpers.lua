@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@type EXUIOptionsFields
+local optionsFields = EXUI:GetModule('options-fields')
+
 ---@class EXUIResourceDisplaysHelpers
 local helpers = EXUI:GetModule('resource-displays-helpers')
 
@@ -343,6 +346,7 @@ function helpers:BuildIndividualColorOptions(displayID, prefix, count, sharedCol
             onChange = function(value)
                 RDCore:UpdateValueForDisplay(displayID, 'individualSegmentColors', value)
                 RDCore:RefreshDisplayByID(displayID)
+                optionsFields:RefreshOptionsDelayed()
             end,
             width = 100,
         },
@@ -388,4 +392,3 @@ function helpers:WireSegmentEnableDisable(frame, events)
         self:UnregisterAllEvents()
     end
 end
-

@@ -276,6 +276,7 @@ function generalOptions:GetOptions()
             onChange = function(value)
                 selfModule.Data:SetValue('showBackground', value)
                 selfModule:Configure()
+                optionsFields:RefreshOptionsDelayed()
             end,
             currentValue = function()
                 return selfModule.Data:GetValue('showBackground')

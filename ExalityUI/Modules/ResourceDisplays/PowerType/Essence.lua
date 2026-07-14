@@ -199,7 +199,8 @@ essence.Create = function(self, frame)
                     elseif not self.db.essenceShowText and essenceFrame:GetScript('OnUpdate') then
                         essenceFrame:SetScript('OnUpdate', nil)
                     end
-                    essenceFrame.StatusBar:SetTimerDuration(durationObject, Enum.StatusBarInterpolation.ExponentialEaseOut)
+                    essenceFrame.StatusBar:SetTimerDuration(durationObject,
+                        Enum.StatusBarInterpolation.ExponentialEaseOut)
                     essenceFrame.StatusBar:SetStatusBarColor(
                         self.EssenceOnCDColor.r,
                         self.EssenceOnCDColor.g,
@@ -256,9 +257,11 @@ essence.Update = function(frame)
         essenceFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.essenceBarTexture))
         core:ApplySegmentChrome(essenceFrame, db.essenceBackgroundColor, db.essenceBorderColor)
         essenceFrame.Text:SetFont(LSM:Fetch('font', db.essenceFont), db.essenceFontSize, db.essenceFontFlag)
-        essenceFrame.Text:SetVertexColor(db.essenceTextColor.r, db.essenceTextColor.g, db.essenceTextColor.b, db.essenceTextColor.a)
+        essenceFrame.Text:SetVertexColor(db.essenceTextColor.r, db.essenceTextColor.g, db.essenceTextColor.b,
+            db.essenceTextColor.a)
         essenceFrame.Text:ClearAllPoints()
-        essenceFrame.Text:SetPoint(db.essenceTextAnchorPoint, essenceFrame, db.essenceTextRelativeAnchorPoint, db.essenceTextXOff, db.essenceTextYOff)
+        essenceFrame.Text:SetPoint(db.essenceTextAnchorPoint, essenceFrame, db.essenceTextRelativeAnchorPoint,
+            db.essenceTextXOff, db.essenceTextYOff)
         if db.essenceShowText then
             essenceFrame.Text:Show()
         else
@@ -267,7 +270,8 @@ essence.Update = function(frame)
         end
     end
 
-    local groupWidth, groupHeight = helpers:LayoutSegments(frame, frame.ActiveFrames, db, 'essenceWidth', 'essenceHeight', 'essenceSpacing')
+    local groupWidth, groupHeight = helpers:LayoutSegments(frame, frame.ActiveFrames, db, 'essenceWidth', 'essenceHeight',
+        'essenceSpacing')
     EXUI:SetSize(frame, groupWidth, groupHeight)
     for _, activeFrame in ipairs(frame.ActiveFrames) do
         activeFrame:Show()
@@ -370,10 +374,6 @@ essence.GetOptions = function(self, displayID)
             width = 100,
         },
         {
-            type = 'spacer',
-            width = 40,
-        },
-        {
             type = 'dropdown',
             label = 'Bar Texture',
             name = 'essenceBarTexture',
@@ -436,7 +436,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceBackgroundColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16,
+            width = 25,
         },
         {
             type = 'color-picker',
@@ -449,7 +449,7 @@ essence.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'essenceBorderColor', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 16,
+            width = 25,
         },
         {
             type = 'title',
@@ -537,6 +537,9 @@ essence.GetOptions = function(self, displayID)
         {
             type = 'spacer',
             width = 30,
+            depends = function()
+                return RDCore:GetValueForDisplay(displayID, 'essenceShowText')
+            end,
         },
         {
             type = 'anchor-point',
@@ -573,6 +576,9 @@ essence.GetOptions = function(self, displayID)
         {
             type = 'spacer',
             width = 54,
+            depends = function()
+                return RDCore:GetValueForDisplay(displayID, 'essenceShowText')
+            end,
         },
         {
             type = 'range',
@@ -630,7 +636,8 @@ essence.GetOptions = function(self, displayID)
         },
     }
 
-    local colorFields = helpers:BuildIndividualColorOptions(displayID, 'essence', 6, 'essenceColor', 'essenceColors', RDCore)
+    local colorFields = helpers:BuildIndividualColorOptions(displayID, 'essence', 6, 'essenceColor', 'essenceColors',
+        RDCore)
     for _, field in ipairs(colorFields) do
         table.insert(options, field)
     end

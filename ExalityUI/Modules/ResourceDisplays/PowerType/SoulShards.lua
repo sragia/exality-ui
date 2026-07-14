@@ -29,6 +29,7 @@ local SEGMENT_CONFIG = {
     colorsKey = 'ssColors',
     backgroundKey = 'ssBackgroundColor',
     borderKey = 'ssBorderColor',
+    partialColorKey = 'ssPartialColor',
     individualColorCount = 5,
 }
 
@@ -148,19 +149,6 @@ end
 
 soulShards.GetOptions = function(self, displayID)
     local options = segmentBase:GetCommonOptions(displayID, SEGMENT_CONFIG, RDCore)
-    table.insert(options, {
-        type = 'color-picker',
-        label = 'Color (Partial)',
-        name = 'ssPartialColor',
-        currentValue = function()
-            return RDCore:GetValueForDisplay(displayID, 'ssPartialColor')
-        end,
-        onChange = function(value)
-            RDCore:UpdateValueForDisplay(displayID, 'ssPartialColor', value)
-            RDCore:RefreshDisplayByID(displayID)
-        end,
-        width = 20,
-    })
     table.insert(options, {
         type = 'dropdown',
         label = 'Shard Text Format',

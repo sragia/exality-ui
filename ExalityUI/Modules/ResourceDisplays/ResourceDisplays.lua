@@ -152,6 +152,8 @@ core.Init = function(self)
 
     visibility:Init()
 
+    preview:Init()
+
     optionsController:RegisterModule(self)
 
 end
