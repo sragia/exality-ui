@@ -46,6 +46,7 @@ Options/ReloadDialog.lua
 Options/Controller.lua
 Options/NavIcons.lua
 Options/Editor.lua
+Options/EditorOptionBar.lua
 Options/Main.lua
 Options/ModuleSelector.lua
 Options/Frames/ResourceColorCurve.lua

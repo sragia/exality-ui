@@ -41,6 +41,8 @@ core.POWER_COLORS = {
 }
 
 local MAX_GROUPS = 8
+local RAID_MEMBERS_PER_GROUP = 5
+local PARTY_MEMBERS = 5
 
 core.Init = function(self)
     tags:RegisterCustomTags()
@@ -221,13 +223,8 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
     header:Show()
 
     self:UpdateHeader(unit)
-    editor:RegisterFrameForEditor(header, unit .. ' Frames', function(frame)
-        local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
-        self:UpdateValueForUnit(unit, 'positionAnchorPoint', point)
-        self:UpdateValueForUnit(unit, 'positionRelativePoint', relativePoint)
-        self:UpdateValueForUnit(unit, 'positionXOff', xOfs)
-        self:UpdateValueForUnit(unit, 'positionYOff', yOfs)
-        self:UpdateHeader(unit)
+    editor:RegisterFrameForEditor(header, EXUI.utils.capitalize(unit) .. ' Frames', function(frame)
+        core:PersistEditorFramePosition(frame, unit)
     end, function(frame)
         frame.editor:SetEditorAsMovable()
     end)
@@ -242,16 +239,24 @@ core.SnapUnitFrame = function(self, frame)
 end
 
 core.ApplyUnitFrameLayout = function(self, frame, db)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled and frame.editor then
+        return
+    end
     frame:ClearAllPoints()
-    EXUI:SetPoint(frame, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    frame:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
     self:SnapUnitFrame(frame)
 end
 
 core.ApplyContainerLayout = function(self, container, db, width, height)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled and container.editor then
+        return
+    end
     container:ClearAllPoints()
     EXUI:SetSize(container, width, height)
-    EXUI:SetPoint(container, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    container:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     EXUI:SnapFrameToPixels(container)
 end
 
@@ -454,7 +459,35 @@ core.DisableHeader = function(self, header)
     header:Hide()
 end
 
+core.PersistEditorFramePosition = function(self, frame, unit)
+    if not frame or frame:GetNumPoints() == 0 then
+        return
+    end
+
+    local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
+    self:UpdateValueForUnit(unit, 'positionAnchorPoint', point)
+    self:UpdateValueForUnit(unit, 'positionRelativePoint', relativePoint)
+    self:UpdateValueForUnit(unit, 'positionXOff', xOfs or 0)
+    self:UpdateValueForUnit(unit, 'positionYOff', yOfs or 0)
+
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled then
+        return
+    end
+
+    if unit == 'party' or unit == 'raid' then
+        self:UpdateHeader(unit)
+    else
+        self:UpdateFrameForUnit(unit)
+    end
+end
+
 core.UpdateHeader = function(self, unit)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled then
+        return
+    end
+
     local header = core.headers[unit]
     if (not header) then return end
 
@@ -489,16 +522,48 @@ core.UpdateHeader = function(self, unit)
     header.isDisabled = false
 
     header:ClearAllPoints()
-    EXUI:SetPoint(header, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    header:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
 
     if (header.groupHeaders) then
         -- Raid
         self:UpdateRaidLayout(header)
-        EXUI:SnapFrameToPixels(header)
+        local editorModule = EXUI:GetModule('editor')
+        if not (editorModule and editorModule.enabled) then
+            EXUI:SnapFrameToPixels(header)
+        end
     else
         -- Party
         header:SetAttribute('yOffset', -EXUI:ScalePixel(db.spacing, header))
-        EXUI:SnapFrameToPixels(header)
+        local editorModule = EXUI:GetModule('editor')
+        if not (editorModule and editorModule.enabled) then
+            EXUI:SnapFrameToPixels(header)
+        end
+    end
+end
+
+core.UpdatePartyLayout = function(self, header)
+    if not header then
+        return
+    end
+
+    local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
+    local unitHeight = self:GetValueForUnit('party', 'sizeHeight')
+    local spacing = EXUI:ScalePixel(self:GetValueForUnit('party', 'spacing'), header)
+    header:SetAttribute('yOffset', -spacing)
+    local containerHeight = unitHeight * PARTY_MEMBERS + spacing * math.max(0, PARTY_MEMBERS - 1)
+    EXUI:SetSize(header, unitWidth, containerHeight)
+end
+
+core.ApplyEditorGroupLayout = function(self, unit)
+    local header = self.headers[unit]
+    if not header then
+        return
+    end
+
+    if unit == 'party' then
+        self:UpdatePartyLayout(header)
+    elseif unit == 'raid' then
+        self:UpdateRaidLayout(header)
     end
 end
 
@@ -508,13 +573,13 @@ core.UpdateRaidLayout = function(self, container)
     local unitHeight = self:GetValueForUnit('raid', 'sizeHeight')
     local spacingX = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingX'), container)
     local spacingY = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingY'), container)
-    local numGroups = #container.groupHeaders
-    local totalHeight = unitHeight * numGroups + spacingY * (numGroups - 1)
-    EXUI:SetSize(container, unitWidth * 8 + spacingX * 7, totalHeight)
-    EXUI:SetPoint(container, 'CENTER', 0, 0)
+    local maxGroups = MAX_GROUPS
+    local columnCount = math.min(maxGroups, #container.groupHeaders)
+    local containerWidth = unitWidth * columnCount + spacingX * math.max(0, columnCount - 1)
+    local containerHeight = unitHeight * RAID_MEMBERS_PER_GROUP + spacingY * math.max(0, RAID_MEMBERS_PER_GROUP - 1)
+    EXUI:SetSize(container, containerWidth, containerHeight)
 
     local groupDirection = self:GetValueForUnit('raid', 'groupDirection') -- LEFT / RIGHT
-    local maxGroups = MAX_GROUPS
     for i = 1, #container.groupHeaders do
         container.groupHeaders[i]:SetAttribute('yOffset', -spacingY)
         container.groupHeaders[i]:ClearAllPoints()
@@ -686,10 +751,11 @@ core.DisableElementForFrame = function(self, frame, element)
 end
 
 -- For Options. Force Show frames for editting
-core.ForceShow = function(self, unit)
+core.ForceShow = function(self, unit, options)
+    options = options or {}
     if (InCombatLockdown()) then return end
     if (unit == 'party') then
-        if (IsInGroup() and not IsInRaid()) then return end
+        if not options.editorPreview and IsInGroup() and not IsInRaid() then return end
         local header = core.headers[unit]
         if (not header) then return end
         header:SetAttribute('EXUI-forcedUnit', 'party')
@@ -709,7 +775,7 @@ core.ForceShow = function(self, unit)
             end
         end)
     elseif (unit == 'raid') then
-        if (IsInRaid()) then return end
+        if not options.editorPreview and IsInRaid() then return end
         local header = core.headers[unit]
         if (not header) then return end
         for _, groupHeader in ipairs(header.groupHeaders) do

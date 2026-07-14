@@ -186,14 +186,24 @@ microMenu.ApplyBags = function(self, db)
     if not self.bagsEditorRegistered then
         local actionBars = EXUI:GetModule('action-bars')
         editor:RegisterFrameForEditor(BagsBar, 'Bag Bar', function(movedFrame)
+            if movedFrame:GetNumPoints() == 0 then
+                return
+            end
             local point, _, relativePoint, xOfs, yOfs = movedFrame:GetPoint(1)
+            if not point then
+                return
+            end
+            xOfs = xOfs or 0
+            yOfs = yOfs or 0
             local currentDb = actionBars:GetDB()
             currentDb.bags.anchorPoint = point
             currentDb.bags.relativeAnchor = relativePoint
             currentDb.bags.xOffset = xOfs
             currentDb.bags.yOffset = yOfs
             actionBars.Data:SetDB(currentDb)
-            self:ApplyBags(currentDb)
+            if not editor.enabled then
+                self:ApplyBags(currentDb)
+            end
         end, function()
             if BagsBar.Layout then
                 BagsBar:Layout()
@@ -245,14 +255,24 @@ microMenu.Apply = function(self, db)
     if not self.editorRegistered and config.enable ~= false then
         local actionBars = EXUI:GetModule('action-bars')
         editor:RegisterFrameForEditor(MicroMenuContainer, 'Micro Menu', function(movedFrame)
+            if movedFrame:GetNumPoints() == 0 then
+                return
+            end
             local point, _, relativePoint, xOfs, yOfs = movedFrame:GetPoint(1)
+            if not point then
+                return
+            end
+            xOfs = xOfs or 0
+            yOfs = yOfs or 0
             local currentDb = actionBars:GetDB()
             currentDb.microMenu.anchorPoint = point
             currentDb.microMenu.relativeAnchor = relativePoint
             currentDb.microMenu.xOffset = xOfs
             currentDb.microMenu.yOffset = yOfs
             actionBars.Data:SetDB(currentDb)
-            self:Apply(currentDb)
+            if not editor.enabled then
+                self:Apply(currentDb)
+            end
         end, function()
             self:ApplyLayout()
             MicroMenuContainer.editor:SetEditorAsMovable()

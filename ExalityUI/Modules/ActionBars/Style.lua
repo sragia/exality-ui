@@ -334,9 +334,23 @@ style.ApplyIconLayout = function(self, button, barConfig)
         button.IconMask:SetAllPoints(button.icon)
     end
 
-    if button.cooldown then
-        button.cooldown:ClearAllPoints()
-        button.cooldown:SetAllPoints(button.icon)
+    local cooldowns = {
+        button.cooldown,
+        button.Cooldown,
+        button.chargeCooldown,
+        button.ChargeCooldown,
+        button.lossOfControlCooldown,
+    }
+    for _, cooldown in ipairs(cooldowns) do
+        if cooldown then
+            cooldown:ClearAllPoints()
+            cooldown:SetAllPoints(button.icon)
+        end
+    end
+
+    if button.AutoCastOverlay then
+        button.AutoCastOverlay:ClearAllPoints()
+        button.AutoCastOverlay:SetAllPoints(button)
     end
 
     if button.Flash then
@@ -355,10 +369,11 @@ style.ApplyIconMask = function(self, button, barConfig)
     if not button.IconMask then
         return
     end
-    if barConfig.width ~= barConfig.height then
-        button.IconMask:Hide()
-    else
+    -- SmallActionButtonTemplate masks clip icons inward; only keep for Blizzard artwork mode.
+    if barConfig.showBlizzardArtwork and barConfig.width == barConfig.height then
         button.IconMask:Show()
+    else
+        button.IconMask:Hide()
     end
 end
 

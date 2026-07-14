@@ -82,6 +82,14 @@ manager.RefreshBar = function(self, barId)
         barMod:Configure(frame, self:GetDB())
         if barId == 'stance' then
             stateController:UpdateStanceBar()
+        elseif barMod:IsStateControlledBar(barId) and not barMod:IsBarEditorActive(frame) then
+            if barId == 'pet' then
+                stateController:UpdatePetBar()
+            elseif barId == 'override' then
+                stateController:UpdateOverrideBar()
+            elseif barId == 'possess' then
+                stateController:UpdatePossessBar()
+            end
         end
     end
 end

@@ -371,7 +371,15 @@ extraAbilities.Apply = function(self, db)
     if not self.editorRegistered then
         local actionBars = EXUI:GetModule('action-bars')
         editor:RegisterFrameForEditor(frame, config.name or 'Extra Abilities', function(movedFrame)
+            if movedFrame:GetNumPoints() == 0 then
+                return
+            end
             local point, _, relativePoint, xOfs, yOfs = movedFrame:GetPoint(1)
+            if not point then
+                return
+            end
+            xOfs = xOfs or 0
+            yOfs = yOfs or 0
             local currentDb = actionBars:GetDB()
             local barDb = currentDb.bars.extra
             barDb.anchorPoint = point
@@ -379,7 +387,9 @@ extraAbilities.Apply = function(self, db)
             barDb.xOffset = xOfs
             barDb.yOffset = yOfs
             actionBars.Data:SetDB(currentDb)
-            self:Apply(currentDb)
+            if not editor.enabled then
+                self:Apply(currentDb)
+            end
         end, function()
             frame._exuiSavedAlpha = frame:GetAlpha()
             frame:SetAlpha(1)

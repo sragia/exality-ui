@@ -523,9 +523,15 @@ end
 
 notifications.UpdatePosition = function(self)
     if (not self.anchor) then return end
+    if editor:IsEditorEnabled() then return end
     self.anchor:ClearAllPoints()
-    EXUI:SetPoint(self.anchor, self.Data:GetValue('anchor'), UIParent, self.Data:GetValue('relativeAnchor'),
-        self.Data:GetValue('XOff'), self.Data:GetValue('YOff'))
+    self.anchor:SetPoint(
+        self.Data:GetValue('anchor'),
+        UIParent,
+        self.Data:GetValue('relativeAnchor'),
+        self.Data:GetValue('XOff'),
+        self.Data:GetValue('YOff')
+    )
 end
 
 notifications.Enable = function(self)
@@ -540,13 +546,14 @@ notifications.Enable = function(self)
 
     if (not editor:IsFrameRegistered(self.anchor)) then
         editor:RegisterFrameForEditor(self.anchor, 'Notifications', function(f)
-            local point, _, relativePoint, xOfs, yOfs = f:GetPoint(1)
-            self.Data:SetValue('anchor', point)
-            self.Data:SetValue('relativeAnchor', relativePoint)
-            self.Data:SetValue('XOff', xOfs)
-            self.Data:SetValue('YOff', yOfs)
-
-            self:UpdatePosition()
+            editor:PersistAnchoredPosition(f, function(point, relativePoint, xOff, yOff)
+                self.Data:SetValue('anchor', point)
+                self.Data:SetValue('relativeAnchor', relativePoint)
+                self.Data:SetValue('XOff', xOff)
+                self.Data:SetValue('YOff', yOff)
+            end, function()
+                self:UpdatePosition()
+            end)
         end)
     end
 

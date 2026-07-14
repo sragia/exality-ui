@@ -44,7 +44,6 @@ local menuItemFrame = EXFrames:GetFrame('menu-item')
 
 optionsMain.window = nil
 optionsMain.profileSwitcher = nil
-optionsMain.editModeDialog = nil
 optionsMain.isNavCompact = false
 optionsMain.LAYOUT = LAYOUT
 
@@ -167,7 +166,9 @@ optionsMain.CreateWindow = function(self)
         size = layout.window,
         title = '',
         onClose = function()
-            EXUI:GetModule('uf-core'):UnforceAll()
+            if not editor:IsEditorEnabled() then
+                EXUI:GetModule('uf-core'):UnforceAll()
+            end
             optionsModuleSelector:HideFlyout()
         end
     })
@@ -252,28 +253,16 @@ optionsMain.CreateWindow = function(self)
         optionsModuleSelector:SetCompactMode(true)
     end
 
-    self.editModeDialog = EXFrames:GetFrame('dialog-frame'):Create()
-    self.editModeDialog:SetText(
-        'You are now in edit mode. You can now edit the UI by dragging and dropping elements. Exit edit mode to save your changes.')
-    self.editModeDialog:SetButtons({
-        {
-            text = 'Exit Edit Mode',
-            onClick = function()
-                editor:DisableEditor()
-                self.editModeDialog:HideDialog()
-                self:Show()
-                local optionsController = EXUI:GetModule('options-controller')
-                optionsController:SetSelectedModule(optionsController:GetSelectedModuleName())
-            end,
-            color = { 158 / 255, 0, 32 / 255, 1 }
-        }
-    })
+    editor.onExitEditMode = function()
+        optionsMain:Show()
+        local optionsController = EXUI:GetModule('options-controller')
+        optionsController:SetSelectedModule(optionsController:GetSelectedModuleName())
+    end
 
     local editModeBtn = button:Create({
         text = 'Edit Mode',
         onClick = function()
             editor:EnableEditor()
-            self.editModeDialog:ShowDialog()
             self.window:HideWindow()
         end,
         size = { 86, 28 },

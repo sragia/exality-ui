@@ -512,7 +512,7 @@ xpBar.ApplyContentInsets = function(self)
     local inset = EXUI:ScalePixels(1, self.frame)
     self.frame.StatusBarContainer:ClearAllPoints()
     self.frame.StatusBarContainer:SetPoint('TOPLEFT', self.frame, 'TOPLEFT', inset, -inset)
-    self.frame.StatusBarContainer:SetPoint('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', -inset, inset)
+    self.frame.StatusBarContainer:SetPoint('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', -inset, 0)
 
     self.frame.ElementFrame:ClearAllPoints()
     self.frame.ElementFrame:SetPoint('TOPLEFT', self.frame, 'TOPLEFT', inset, -inset)

@@ -269,12 +269,7 @@ targettarget.Create = function(self, frame)
     frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'TargetTarget', function(frame)
-        local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
-        core:UpdateValueForUnit(self.unit, 'positionAnchorPoint', point)
-        core:UpdateValueForUnit(self.unit, 'positionRelativePoint', relativePoint)
-        core:UpdateValueForUnit(self.unit, 'positionXOff', xOfs)
-        core:UpdateValueForUnit(self.unit, 'positionYOff', yOfs)
-        core:UpdateFrameForUnit(self.unit)
+        core:PersistEditorFramePosition(frame, self.unit)
     end, function(frame)
         frame.editor:SetEditorAsMovable()
     end)
@@ -294,7 +289,7 @@ targettarget.Update = function(self, frame)
     frame.generalDB = generalDB
 
     frame:ClearAllPoints()
-    EXUI:SetPoint(frame, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    frame:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
     core:SnapUnitFrame(frame)
 

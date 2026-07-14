@@ -372,8 +372,12 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
 
     for i = 1, numForms do
         local button = frame.buttons[i]
-        if button and button.Update then
-            button:Update()
+        if button then
+            EXUI:SetSize(button, barConfig.width, barConfig.height)
+            self:ApplyStyle(button, 'stance', barConfig)
+            if button.Update then
+                button:Update()
+            end
         end
     end
     for i = numForms + 1, #frame.buttons do

@@ -36,6 +36,7 @@ EXUI.const = {
 
         border       = { 61 / 255, 53 / 255, 48 / 255, 1 },    -- #3D3530  warm neutral border
         borderActive = { 217 / 255, 69 / 255, 16 / 255, 1 },   -- #D94510  selected border
+        borderInactive = { 168 / 255, 158 / 255, 148 / 255, 0.8 }, -- #A89E94  editor unselected
         text         = { 237 / 255, 230 / 255, 223 / 255, 1 }, -- #EDE6DF  warm off-white
         textMuted    = { 138 / 255, 128 / 255, 118 / 255, 1 }, -- #8A8076
         danger       = { 232 / 255, 48 / 255, 80 / 255, 1 },   -- #E83050  close / destructive

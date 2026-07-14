@@ -168,9 +168,9 @@ end
 
 function EXUI:SetPoint(frame, point, arg2, arg3, arg4, arg5)
     if (type(arg2) == 'number') then
-        frame:SetPoint(point, self:ScalePixel(arg2, frame), self:ScalePixel(arg3, frame))
+        frame:SetPoint(point, self:ScalePixel(arg2 or 0, frame), self:ScalePixel(arg3 or 0, frame))
     else
-        frame:SetPoint(point, arg2, arg3, self:ScalePixel(arg4, frame), self:ScalePixel(arg5, frame))
+        frame:SetPoint(point, arg2, arg3, self:ScalePixel(arg4 or 0, frame), self:ScalePixel(arg5 or 0, frame))
     end
 end
 
