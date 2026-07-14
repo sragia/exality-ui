@@ -22,7 +22,7 @@ sizeAndPosition.GetOptions = function(self, unit)
             min = 1,
             max = 1000,
             step = 1,
-            width = 20,
+            width = 40,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'sizeWidth')
             end,
@@ -38,7 +38,7 @@ sizeAndPosition.GetOptions = function(self, unit)
             min = 1,
             max = 100,
             step = 1,
-            width = 20,
+            width = 40,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'sizeHeight')
             end,
