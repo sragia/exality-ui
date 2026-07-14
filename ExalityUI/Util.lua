@@ -510,7 +510,10 @@ EXUI.utils = {
         end
     end,
     organizeFramesInGrid = function(gridId, children, gap, parentContainer, startOffsetX, startOffsetY)
-        local maxWidth = math.max(1, parentContainer:GetWidth() - startOffsetX * 2)
+        gap = EXUI:ScalePixel(gap, parentContainer)
+        startOffsetX = EXUI:ScalePixel(startOffsetX or 0, parentContainer)
+        startOffsetY = EXUI:ScalePixel(startOffsetY or 0, parentContainer)
+        local maxWidth = EXUI:ScalePixel(math.max(1, parentContainer:GetWidth() - startOffsetX * 2), parentContainer)
 
         if (rowFrames[gridId]) then
             for _, frame in ipairs(rowFrames[gridId]) do
@@ -549,8 +552,8 @@ EXUI.utils = {
                 rowFrame:SetPoint('TOPLEFT', startOffsetX, -startOffsetY)
                 rowFrame:SetPoint('TOPRIGHT', -startOffsetX, -startOffsetY)
             end
-            local rowFrames = #row
-            local rowMaxWidth = maxWidth - (rowFrames * gap)
+            local numCols = #row
+            local rowMaxWidth = maxWidth - (numCols * gap)
             local rowMaxHeight = 0
             local prev = nil
             for _, child in ipairs(row) do
@@ -571,6 +574,8 @@ EXUI.utils = {
                 prev = child
             end
 
+            rowMaxHeight = EXUI:ScalePixel(rowMaxHeight, parentContainer)
+
             -- vertically align children within the row (default: center)
             for _, child in ipairs(row) do
                 local childHeight = child:GetHeight()
@@ -581,8 +586,9 @@ EXUI.utils = {
                 elseif align == 'TOP' then
                     topPad = 0
                 else
-                    topPad = (rowMaxHeight - childHeight) / 2
+                    topPad = math.floor((rowMaxHeight - childHeight) / 2)
                 end
+                topPad = EXUI:ScalePixel(topPad, parentContainer)
                 child:SetPoint('TOP', 0, -topPad)
             end
             rowFrame:SetHeight(rowMaxHeight)
@@ -595,7 +601,7 @@ EXUI.utils = {
         end
 
         if parentContainer and parentContainer.exuiAutoSizeHeight then
-            parentContainer:SetHeight(totalHeight + startOffsetY)
+            parentContainer:SetHeight(EXUI:ScalePixel(totalHeight + startOffsetY, parentContainer))
         end
     end,
     getPowerTypeColor = function(powerType)

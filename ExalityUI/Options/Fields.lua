@@ -471,7 +471,11 @@ optionsFields.RefreshFields = function(self)
     if cacheKey and self.fieldCache[cacheKey] then
         for _, fieldFrame in ipairs(self.fieldCache[cacheKey]) do
             fieldFrame:SetParent(self.container)
-            if fieldFrame.GetState and fieldFrame.SetState and fieldFrame.optionData then
+            if fieldFrame.SetOptionData and fieldFrame.optionData then
+                fieldFrame.suppressOnChange = true
+                fieldFrame:SetOptionData(fieldFrame.optionData)
+                fieldFrame.suppressOnChange = false
+            elseif fieldFrame.GetState and fieldFrame.SetState and fieldFrame.optionData then
                 fieldFrame.suppressOnChange = true
                 local value = 0
                 if fieldFrame.optionData.currentValue then
@@ -541,6 +545,12 @@ optionsFields.RefreshFields = function(self)
     elseif self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
         self.splitView:UpdateScroll()
     end
+
+    C_Timer.After(0, function()
+        if EXFrames.RefreshPixelPerfect then
+            EXFrames:RefreshPixelPerfect()
+        end
+    end)
 end
 
 optionsFields.RefreshItemList = function(self)
