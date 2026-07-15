@@ -19,6 +19,25 @@ defaults.FILTER_TOKENS = {
     'RAID_IN_COMBAT',
     'RAID_PLAYER_DISPELLABLE',
     'BIG_DEFENSIVE',
+    'IMPORTANT',
+    'DISPELLABLE',
+}
+
+defaults.FILTER_TOKEN_TOOLTIPS = {
+    HELPFUL = 'Include only helpful auras (buffs).',
+    HARMFUL = 'Include only harmful auras (debuffs).',
+    RAID = 'Include only helpful auras the player can apply and harmful auras the player can dispel.',
+    PLAYER = 'Include only auras cast by the player, pet, or vehicle.',
+    CANCELABLE = 'Include only auras the player can cancel.',
+    INCLUDE_NAME_PLATE_ONLY = 'When set, nameplate-only auras are included. When unset, they are filtered out. Not negatable.',
+    MAW = 'When set, only Torghast auras are returned. When unset, Torghast auras are filtered out. Not negatable.',
+    EXTERNAL_DEFENSIVE = 'Include only external defensive auras.',
+    CROWD_CONTROL = 'Include only crowd control auras (stun, fear, etc.).',
+    RAID_IN_COMBAT = 'Include only auras flagged for raid frames in combat. Combine with PLAYER and HELPFUL for self-cast HoTs.',
+    RAID_PLAYER_DISPELLABLE = 'Include only auras someone in the player\'s raid can dispel, including helpful auras on enemies that are dispellable or stealable by a raid member.',
+    BIG_DEFENSIVE = 'Include only big defensive auras.',
+    IMPORTANT = 'Include only auras flagged as important (helpful auras on enemy nameplates even if non-stealable).',
+    DISPELLABLE = 'Include only auras with any dispel type, regardless of whether the raid can dispel them.',
 }
 
 defaults.DISPEL_TYPES = { 'Magic', 'Curse', 'Disease', 'Poison', 'Bleed', 'None' }

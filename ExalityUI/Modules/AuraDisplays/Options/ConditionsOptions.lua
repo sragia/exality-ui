@@ -119,6 +119,9 @@ function conditionsOptions:GetFilterFields(displayID, groupID)
             label = token,
             name = 'filter_' .. token,
             width = 33,
+            tooltip = {
+                text = defaults.FILTER_TOKEN_TOOLTIPS[token],
+            },
             currentValue = function()
                 return self:GetFilterTokenState(displayID, groupID, token)
             end,
