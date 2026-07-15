@@ -2,13 +2,6 @@
 local EXUI = select(2, ...)
 
 ---@class EXUIUnitFramesCore
-local core = EXUI:GetModule('uf-core')
-
-
----@class EXUIUnitFramesOptionsCore
-local optionsCore = EXUI:GetModule('uf-options-core')
-
----@class EXUIUnitFramesCore
 local UFCore = EXUI:GetModule('uf-core')
 
 ---@class EXUIUnitFramesOptionsDispelOverlay
@@ -27,12 +20,42 @@ dispelOverlay.GetOptions = function(self, unit)
             name = 'dispelOverlayEnable',
             onChange = function(value)
                 UFCore:UpdateValueForUnit(unit, 'dispelOverlayEnable', value)
+                if unit == 'party' or unit == 'raid' then
+                    EXUI:GetModule('uf-auras-apply'):EnsureHeaderContainers(unit)
+                end
                 UFCore:UpdateFrameForUnit(unit)
             end,
             currentValue = function()
                 return UFCore:GetValueForUnit(unit, 'dispelOverlayEnable')
             end,
             width = 100
+        },
+        {
+            type = 'dropdown',
+            label = 'Show When',
+            name = 'dispelOverlayFilter',
+            getOptions = function()
+                return {
+                    RAID = 'I can dispel',
+                    RAID_PLAYER_DISPELLABLE = 'Anyone in Raid can dispel',
+                    DISPELLABLE = 'Has dispellable debuff',
+                }
+            end,
+            currentValue = function()
+                return UFCore:GetValueForUnit(unit, 'dispelOverlayFilter') or 'RAID'
+            end,
+            depends = function()
+                return UFCore:GetValueForUnit(unit, 'dispelOverlayEnable')
+            end,
+            onChange = function(value)
+                UFCore:UpdateValueForUnit(unit, 'dispelOverlayFilter', value)
+                UFCore:UpdateFrameForUnit(unit)
+            end,
+            width = 50
+        },
+        {
+            type = 'spacer',
+            width = 50
         },
         {
             type = 'range',

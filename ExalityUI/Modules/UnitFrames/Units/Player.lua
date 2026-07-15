@@ -129,6 +129,7 @@ player.Init = function(self)
         ['powerHeight'] = 5,
         -- Dispel Overlay
         ['dispelOverlayEnable'] = false,
+        ['dispelOverlayFilter'] = 'RAID',
         ['dispelOverlayAlpha'] = 1
     })
 end

@@ -378,6 +378,22 @@ end
 
 function ufAuras:GetUnitTypeForFrame(frame)
     if not frame then return nil end
+
+    -- Party/raid header children keep this even when showPlayer sets unit to "player".
+    if frame.exuiUnitType then
+        return frame.exuiUnitType
+    end
+    for _, partyFrame in ipairs(ufCore.partyFrames or {}) do
+        if partyFrame == frame then
+            return 'party'
+        end
+    end
+    for _, raidFrame in ipairs(ufCore.raidFrames or {}) do
+        if raidFrame == frame then
+            return 'raid'
+        end
+    end
+
     -- ForceShow remaps frame.unit to 'player'; prefer the real unit token.
     local unit = (frame.isFake and frame.originalUnit) or frame.unit or frame.originalUnit
     if not unit then return nil end

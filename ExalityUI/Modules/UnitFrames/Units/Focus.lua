@@ -128,6 +128,7 @@ focus.Init = function(self)
         ['ressurectScale'] = 1,
         -- Dispel Overlay
         ['dispelOverlayEnable'] = true,
+        ['dispelOverlayFilter'] = 'RAID',
         ['dispelOverlayAlpha'] = 1
     })
 end

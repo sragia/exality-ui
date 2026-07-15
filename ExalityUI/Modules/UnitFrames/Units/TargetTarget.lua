@@ -120,6 +120,7 @@ targettarget.Init = function(self)
         ['summonScale'] = 1,
         -- Dispel Overlay
         ['dispelOverlayEnable'] = false,
+        ['dispelOverlayFilter'] = 'RAID',
         ['dispelOverlayAlpha'] = 1
     })
 end

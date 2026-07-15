@@ -111,6 +111,16 @@ function preview:GetFramesForUnit(unitType)
     return frames
 end
 
+function preview:HasNaturalGroupFrames(unitType)
+    if unitType == 'party' then
+        return IsInGroup() and not IsInRaid()
+    end
+    if unitType == 'raid' then
+        return IsInRaid()
+    end
+    return false
+end
+
 function preview:EnsureForceShow(unitType)
     if not unitType or InCombatLockdown() then
         return
@@ -119,6 +129,15 @@ function preview:EnsureForceShow(unitType)
     if self.forcedUnit and self.forcedUnit ~= unitType then
         ufCore:Unforce(self.forcedUnit)
         self.forcedUnit = nil
+    end
+
+    -- Already in party/raid: keep real frames and only overlay scenario auras.
+    if self:HasNaturalGroupFrames(unitType) then
+        if self.forcedUnit == unitType then
+            ufCore:Unforce(unitType)
+            self.forcedUnit = nil
+        end
+        return
     end
 
     ufCore:ForceShow(unitType, { editorPreview = true })
@@ -156,14 +175,24 @@ function preview:SetContext(unitType)
 end
 
 function preview:Clear()
+    local unitType = self.contextUnit
+    local forcedUnit = self.forcedUnit
+
     self:ClearPreviewStates()
     self.activeDisplayID = nil
-
-    if self.forcedUnit and not InCombatLockdown() then
-        ufCore:Unforce(self.forcedUnit)
-    end
     self.forcedUnit = nil
     self.contextUnit = nil
+
+    if InCombatLockdown() then
+        return
+    end
+
+    if forcedUnit then
+        ufCore:Unforce(forcedUnit)
+    elseif unitType then
+        -- Natural party/raid frames: recreate live auras after preview suppress.
+        ufCore:UpdateFrameForUnit(unitType)
+    end
 end
 
 function preview:Refresh(displayID)
@@ -262,7 +291,7 @@ function preview:Sync(displayID)
     end
 
     -- Party ForceShow creates child frames next frame; wait one more so they are forced.
-    if unitType == 'party' then
+    if unitType == 'party' and not self:HasNaturalGroupFrames('party') then
         if self._pendingSync then
             return
         end

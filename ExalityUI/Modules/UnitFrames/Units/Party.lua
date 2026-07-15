@@ -141,6 +141,7 @@ party.Init = function(self)
         ['groupRoleIndicatorHideDamager'] = true,
         -- Dispel Overlay
         ['dispelOverlayEnable'] = true,
+        ['dispelOverlayFilter'] = 'RAID',
         ['dispelOverlayAlpha'] = 1
     })
 end

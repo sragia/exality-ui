@@ -83,6 +83,7 @@ core.SharedStyle = function(frame, unit)
 
 
     if (unit == 'party') then
+        frame.exuiUnitType = 'party'
         table.insert(core.partyFrames, frame)
         if (frame.Update) then
             -- Update on next frame to update with correct unit
@@ -92,6 +93,7 @@ core.SharedStyle = function(frame, unit)
         end
     end
     if (unit == 'raid') then
+        frame.exuiUnitType = 'raid'
         table.insert(core.raidFrames, frame)
         if (frame.Update) then
             -- Update on next frame to update with correct unit
@@ -188,7 +190,7 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
                 header.originalVisibility = data.visibility
                 header:SetVisibility(data.visibility)
             end
-            local auraCount = EXUI:GetModule('uf-auras'):GetMaxDisplaysForUnitType('party')
+            local auraCount = EXUI:GetModule('uf-auras-apply'):GetRequiredAuraContainerCount('party')
             if header.SetNumAuraContainers then
                 header:SetNumAuraContainers(auraCount)
             end
@@ -206,7 +208,7 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
             header.groupHeaders = {}
 
             -- Spawnheader for each raid group
-            local auraCount = EXUI:GetModule('uf-auras'):GetMaxDisplaysForUnitType('raid')
+            local auraCount = EXUI:GetModule('uf-auras-apply'):GetRequiredAuraContainerCount('raid')
             for i = 1, 8 do
                 local groupHeader = oUF:SpawnHeader(nil, nil, {
                     groupFilter = i,

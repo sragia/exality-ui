@@ -57,11 +57,20 @@ function apply:QueueFrame(frame)
     self.pendingFrames[frame] = true
 end
 
+function apply:GetRequiredAuraContainerCount(unitType)
+    local num = ufAuras:GetMaxDisplaysForUnitType(unitType)
+    local db = ufCore:GetDBForUnit(unitType)
+    if db and db.dispelOverlayEnable then
+        num = num + 1
+    end
+    return num
+end
+
 function apply:EnsureHeaderContainers(unitType)
     local headers = ufCore.headers
     if not headers then return end
 
-    local num = ufAuras:GetMaxDisplaysForUnitType(unitType)
+    local num = self:GetRequiredAuraContainerCount(unitType)
     if unitType == 'party' then
         local header = headers.party
         if header and header.SetNumAuraContainers then
@@ -291,10 +300,32 @@ function apply:ConfigureContainer(frame, displayID, display, container)
     end
 end
 
+function apply:SuppressLiveAurasOnFakeFrame(frame)
+    if not frame.UFAuraContainers then
+        frame.UFAuraContainers = {}
+        return
+    end
+    local ids = {}
+    for displayID in pairs(frame.UFAuraContainers) do
+        table.insert(ids, displayID)
+    end
+    for _, displayID in ipairs(ids) do
+        self:DiscardContainer(frame, displayID)
+    end
+end
+
 function apply:UpdateFrame(frame)
     if not frame then return end
 
     frame.UFAuraContainers = frame.UFAuraContainers or {}
+
+    -- ForceShow remaps fake frames to player; without this, party/raid preview
+    -- shows your helpful auras on every slot. UF Aura Editor uses its own
+    -- scenario preview instead of live containers.
+    if frame.isFake then
+        self:SuppressLiveAurasOnFakeFrame(frame)
+        return
+    end
 
     local unitType = ufAuras:GetUnitTypeForFrame(frame)
     if not unitType then
