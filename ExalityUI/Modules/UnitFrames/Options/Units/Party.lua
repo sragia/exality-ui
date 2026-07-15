@@ -138,46 +138,19 @@ core:AddOption({
             }
         },
         {
-            name = 'Buffs',
-            id = 'buffs',
-            allowPreview = true,
-            options = {
-                function()
-                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('party', 'buffs', true)
-                end
-            }
-        },
-        {
-            name = 'Debuffs',
-            id = 'debuffs',
-            allowPreview = true,
-            options = {
-                function()
-                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('party', 'debuffs', false)
-                end
-            }
-        },
-        {
-            name = 'Custom Auras',
+            name = 'Auras',
             id = 'auras',
-            allowPreview = true,
             options = {
-                function()
-                    return EXUI:GetModule('uf-options-generic-auras'):GetOptions('party', 'auras', false, true)
-                end
-            }
-        },
-        {
-            name = 'Private Auras',
-            id = 'privateauras',
-            allowPreview = true,
-            options = {
-                function()
-                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('party', 'privateAuras')
-                end,
-                function()
-                    return EXUI:GetModule('uf-options-private-auras'):GetOptions('party')
-                end
+                {
+                    type = 'button',
+                    label = 'Open Aura Editor',
+                    name = 'openAuraEditor',
+                    width = 100,
+                    color = { 249 / 255, 95 / 255, 9 / 255, 1 },
+                    onClick = function()
+                        EXUI:GetModule('uf-aura-editor'):Show('party')
+                    end,
+                },
             }
         },
         {

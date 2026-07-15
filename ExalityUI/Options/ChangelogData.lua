@@ -20,6 +20,13 @@ EXUI.changelog = [[
 - [Mythic Plus Timer] New Module for displaying timer. Fairly basic, mostly meant to be as something to use while using Objective Tracker functionality as other M+ Timers will not be able to hide them easily. However there's option to hide my Objective Tracker in M+ setting.
 - [Edit Mode] Improved Edit Mode. Added X/Y offset editor. Improve selecting frames that are overlapping. Add Snap mode. Nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.
 
+## UF Aura rework
+12.1 adds new Aura system. This brings a lot of nice changes that we can use.
+As such whole Aura system has been rewritten, and unfortunately what this means is that all auras settings have been nuked.
+You will need to redo them, sorry. But there's way more adjustments you can do now.
+
+For example, you can make as many different displays on the Unit Frames as you want. You can re-use same display for multiple units. You can apply more powerful filters. And much more...
+
 # |cffdb49000.2.8|r
 
 - [Unit Frames] Update oUF to 13.4.5.

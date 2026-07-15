@@ -1,0 +1,6 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Defaults.lua"/>
+	<Script file="Auras.lua"/>
+	<Script file="Apply.lua"/>
+	<Script file="Preview.lua"/>
+</Ui>

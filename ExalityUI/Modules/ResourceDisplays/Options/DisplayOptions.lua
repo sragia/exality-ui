@@ -185,21 +185,13 @@ function displayOptions:GetOptions(displayID)
             name = 'frameStrata',
 
             getOptions = function()
-
                 return {
-
-                    BACKGROUND = 'Background',
-
-                    LOW = 'Low',
-
-                    MEDIUM = 'Medium',
-
-                    HIGH = 'High',
-
-                    DIALOG = 'Dialog',
-
+                    BACKGROUND = { label = 'Background', order = 1 },
+                    LOW = { label = 'Low', order = 2 },
+                    MEDIUM = { label = 'Medium', order = 3 },
+                    HIGH = { label = 'High', order = 4 },
+                    DIALOG = { label = 'Dialog', order = 5 },
                 }
-
             end,
 
             currentValue = function()

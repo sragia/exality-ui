@@ -188,6 +188,10 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
                 header.originalVisibility = data.visibility
                 header:SetVisibility(data.visibility)
             end
+            local auraCount = EXUI:GetModule('uf-auras'):GetMaxDisplaysForUnitType('party')
+            if header.SetNumAuraContainers then
+                header:SetNumAuraContainers(auraCount)
+            end
             core.headers[unit] = header
         end
     elseif (unit == 'raid') then
@@ -202,6 +206,7 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
             header.groupHeaders = {}
 
             -- Spawnheader for each raid group
+            local auraCount = EXUI:GetModule('uf-auras'):GetMaxDisplaysForUnitType('raid')
             for i = 1, 8 do
                 local groupHeader = oUF:SpawnHeader(nil, nil, {
                     groupFilter = i,
@@ -209,6 +214,9 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
                     showPlayer = true,
                     showParty = false
                 })
+                if groupHeader.SetNumAuraContainers then
+                    groupHeader:SetNumAuraContainers(auraCount)
+                end
                 table.insert(header.groupHeaders, groupHeader)
                 groupHeader.group = i
                 groupHeader:SetPoint('TOPLEFT', header, 'TOPLEFT', 0, 0) --  Adjust later
@@ -334,17 +342,7 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-cast-bar'):Update(frame)
     end
 
-    if (frame.Buffs) then
-        EXUI:GetModule('uf-element-buffs'):Update(frame)
-    end
-
-    if (frame.Debuffs) then
-        EXUI:GetModule('uf-element-debuffs'):Update(frame)
-    end
-
-    if (frame.Auras) then
-        EXUI:GetModule('uf-element-auras'):Update(frame)
-    end
+    EXUI:GetModule('uf-auras-apply'):UpdateFrame(frame)
 
     if (frame.Offline) then
         EXUI:GetModule('uf-element-offline'):Update(frame)
@@ -356,10 +354,6 @@ core.UpdateFrame = function(self, frame)
 
     if (frame.SummonIndicator) then
         EXUI:GetModule('uf-element-summon-indicator'):Update(frame)
-    end
-
-    if (frame.PrivateAuras) then
-        EXUI:GetModule('uf-element-private-auras'):Update(frame)
     end
 
     if (frame.CustomTexts) then

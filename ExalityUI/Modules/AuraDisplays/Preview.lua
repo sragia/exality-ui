@@ -174,15 +174,27 @@ local function resolveButton(button)
     return button
 end
 
-local function ensureState(displayID)
-    preview.states[displayID] = preview.states[displayID] or {
+function preview:EnsureState(stateKey)
+    self.states[stateKey] = self.states[stateKey] or {
         container = nil,
         buttons = {},
         previewIcons = nil,
         savedStrata = nil,
         savedLevel = nil,
     }
-    return preview.states[displayID]
+    return self.states[stateKey]
+end
+
+local function ensureState(displayID)
+    return preview:EnsureState(displayID)
+end
+
+function preview:GetScenarios()
+    return PREVIEW_SCENARIOS
+end
+
+function preview:PickRandomIcons(count)
+    return pickRandomPreviewIcons(count)
 end
 
 function preview:IsOptionsOpen()
@@ -358,10 +370,15 @@ function preview:PositionPreviewContainer(container, frame, display)
     container:SetPoint(anchor, frame, anchor, 0, 0)
 end
 
-function preview:EnsurePreviewContainer(frame, display)
-    local state = ensureState(frame.displayID)
+function preview:EnsurePreviewContainer(stateKey, frame, display, positionFn)
+    local state = self:EnsureState(stateKey)
     if state.container then
-        self:PositionPreviewContainer(state.container, frame, display)
+        state.container:SetParent(frame)
+        if positionFn then
+            positionFn(state.container, frame, display)
+        else
+            self:PositionPreviewContainer(state.container, frame, display)
+        end
         return state.container
     end
 
@@ -384,7 +401,11 @@ function preview:EnsurePreviewContainer(frame, display)
 
     container:Show()
     state.container = container
-    self:PositionPreviewContainer(container, frame, display)
+    if positionFn then
+        positionFn(container, frame, display)
+    else
+        self:PositionPreviewContainer(container, frame, display)
+    end
     return container
 end
 
@@ -639,8 +660,8 @@ function preview:LayoutButtons(container, buttons, display, visual)
     layout:ApplyPreviewFlowLayout(container, display, buttons, visual)
 end
 
-function preview:HidePreview(displayID)
-    local state = self.states[displayID]
+function preview:HidePreview(stateKey)
+    local state = self.states[stateKey]
     if not state then
         return
     end
@@ -651,6 +672,89 @@ function preview:HidePreview(displayID)
     if state.container then
         state.container:Hide()
     end
+end
+
+function preview:GetPreviewCount(group)
+    local conditions = group and group.conditions
+    if not conditions then
+        return #PREVIEW_SCENARIOS
+    end
+    if conditions.groupType == 'slot' then
+        return 1
+    end
+    local maxCount = conditions.maxFrameCount
+    if not maxCount or maxCount <= 0 then
+        return #PREVIEW_SCENARIOS
+    end
+    return math.min(#PREVIEW_SCENARIOS, maxCount)
+end
+
+--- Build fake aura buttons on any parent frame (Aura Displays or Unit Frames).
+---@param stateKey string
+---@param frame Frame parent unit/display frame
+---@param display table display config (layout/growth/rowWidth)
+---@param visual table group visual config
+---@param positionFn function|nil optional (container, frame, display) anchor helper
+---@param maxCount number|nil optional cap (Max Auras / slot); defaults to all scenarios
+function preview:BuildPreviewOnFrame(stateKey, frame, display, visual, positionFn, maxCount)
+    if not frame or not display or not visual then
+        return
+    end
+
+    local needed = #PREVIEW_SCENARIOS
+    if maxCount and maxCount > 0 then
+        needed = math.min(needed, maxCount)
+    end
+    if needed <= 0 then
+        self:HidePreview(stateKey)
+        return
+    end
+
+    local state = self:EnsureState(stateKey)
+    if not state.previewIcons or #state.previewIcons < needed then
+        state.previewIcons = pickRandomPreviewIcons(#PREVIEW_SCENARIOS)
+    end
+
+    local container = self:EnsurePreviewContainer(stateKey, frame, display, positionFn)
+    if not container then
+        return
+    end
+
+    while #state.buttons < needed do
+        local button = self:CreatePreviewButton(container)
+        if button then
+            table.insert(state.buttons, button)
+        else
+            break
+        end
+    end
+    while #state.buttons > needed do
+        local button = table.remove(state.buttons)
+        local btn = resolveButton(button)
+        if btn.ClearAuraInstance then
+            btn:ClearAuraInstance()
+        end
+        buttonStyle:Clear(btn)
+        button:Hide()
+        button:SetParent(nil)
+    end
+
+    for index = 1, needed do
+        local button = state.buttons[index]
+        local scenario = PREVIEW_SCENARIOS[index]
+        if button and scenario then
+            button:SetParent(container)
+            self:ApplyScenario(button, scenario, visual, state, index)
+        end
+    end
+
+    if #state.buttons == 0 then
+        container:Hide()
+        return
+    end
+
+    self:LayoutButtons(container, state.buttons, display, visual)
+    container:Show()
 end
 
 function preview:Refresh(displayID)
@@ -684,49 +788,5 @@ function preview:Refresh(displayID)
     end
 
     local visual = group.visual or {}
-    local state = ensureState(displayID)
-    if not state.previewIcons then
-        state.previewIcons = pickRandomPreviewIcons(#PREVIEW_SCENARIOS)
-    end
-
-    local container = self:EnsurePreviewContainer(frame, display)
-    if not container then
-        return
-    end
-
-    local needed = #PREVIEW_SCENARIOS
-    while #state.buttons < needed do
-        local button = self:CreatePreviewButton(container)
-        if button then
-            table.insert(state.buttons, button)
-        else
-            break
-        end
-    end
-    while #state.buttons > needed do
-        local button = table.remove(state.buttons)
-        local btn = resolveButton(button)
-        if btn.ClearAuraInstance then
-            btn:ClearAuraInstance()
-        end
-        buttonStyle:Clear(btn)
-        button:Hide()
-        button:SetParent(nil)
-    end
-
-    for index, scenario in ipairs(PREVIEW_SCENARIOS) do
-        local button = state.buttons[index]
-        if button then
-            button:SetParent(container)
-            self:ApplyScenario(button, scenario, visual, state, index)
-        end
-    end
-
-    if #state.buttons == 0 then
-        container:Hide()
-        return
-    end
-
-    self:LayoutButtons(container, state.buttons, display, visual)
-    container:Show()
+    self:BuildPreviewOnFrame(displayID, frame, display, visual, nil, self:GetPreviewCount(group))
 end

@@ -3,6 +3,13 @@
 
 	<Script file="CustomTexts/ListItem.lua"/>
 	<Script file="CustomTexts/Editor.lua"/>
+
+	<Script file="AuraEditor/GroupNav.lua"/>
+	<Script file="AuraEditor/ContainerOptions.lua"/>
+	<Script file="AuraEditor/VisualOptions.lua"/>
+	<Script file="AuraEditor/ConditionsOptions.lua"/>
+	<Script file="AuraEditor/LoadOptions.lua"/>
+	<Script file="AuraEditor/Editor.lua"/>
 	
 	<Script file="Core.lua"/>
 	<Script file="Elements/SizeAndPosition.lua"/>
@@ -11,10 +18,8 @@
 	<Script file="Elements/GenericEnable.lua"/>
 	<Script file="Elements/GenericPosition.lua"/>
 	<Script file="Elements/CastBar.lua"/>
-	<Script file="Elements/GenericAuras.lua"/>
 	<Script file="Elements/GenericShowPreview.lua"/>
 	<Script file="Elements/GeneralFrame.lua"/>
-	<Script file="Elements/PrivateAuras.lua"/>
 	<Script file="Elements/Absorbs.lua"/>
 	<Script file="Elements/CustomTexts.lua"/>
 	<Script file="Elements/DisplelOverlay.lua"/>

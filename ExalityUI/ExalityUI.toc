@@ -52,9 +52,6 @@ Options/ModuleSelector.lua
 Options/Frames/ResourceColorCurve.lua
 Options/Fields.lua
 
-# UF Options
-Modules/UnitFrames/Options/UFOptions.xml
-
 # Modules
 Modules/Notifications.lua
 Modules/Minimap.lua
@@ -63,11 +60,15 @@ Modules/RaidTools.lua
 Modules/ResourceDisplays/ResourceDisplays.xml
 Modules/Cooldowns/Cooldowns.xml
 Modules/AuraDisplays/AuraDisplays.xml
+Modules/UnitFrames/Auras/Auras.xml
 Modules/XPBar.lua
 Modules/ObjectiveTracker/ObjectiveTracker.xml
 Modules/MythicPlusTimer/MythicPlusTimer.xml
 Modules/ActionBars/ActionBars.xml
 Modules/TweaksAndBugfixes.lua
+
+# UF Options
+Modules/UnitFrames/Options/UFOptions.xml
 
 # UnitFrames
 Modules/UnitFrames/Core.lua

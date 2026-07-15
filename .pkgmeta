@@ -12,7 +12,8 @@ externals:
   ExalityUI/Libs/LibDBIcon-1.0: https://repos.curseforge.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
   ExalityUI/Libs/oUF:
     url: https://github.com/oUF-wow/oUF
-    tag: 13.4.5
+    branch: aurapocalypse
+    # tag: 13.4.5
   ExalityUI/ExalityFrames:
     url: https://github.com/sragia/ExalityFrames
     tag: 1.1.6
