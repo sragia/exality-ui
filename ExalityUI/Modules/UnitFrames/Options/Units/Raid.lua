@@ -62,7 +62,7 @@ core:AddOption({
                 },
                 {
                     type = 'spacer',
-                    width = 60
+                    width = 14
                 },
                 {
                     type = 'dropdown',

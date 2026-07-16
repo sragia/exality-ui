@@ -79,12 +79,19 @@ data.GetData = function(self)
     return self.data.profiles[self.currentProfile]
 end
 
+local function CopyProfileValue(value)
+    if type(value) == 'table' then
+        return CopyTable(value)
+    end
+    return value
+end
+
 data.ExtractProfileKeys = function(self, keys)
     local source = self:GetData()
     local result = {}
     for _, key in ipairs(keys) do
         if source[key] ~= nil then
-            result[key] = CopyTable(source[key])
+            result[key] = CopyProfileValue(source[key])
         end
     end
     return result
@@ -93,7 +100,7 @@ end
 data.MergeProfileData = function(self, importData)
     local profile = self:GetData()
     for key, value in pairs(importData) do
-        profile[key] = CopyTable(value)
+        profile[key] = CopyProfileValue(value)
     end
 end
 
