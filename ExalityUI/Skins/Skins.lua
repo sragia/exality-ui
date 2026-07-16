@@ -308,20 +308,26 @@ skins.StylePanelButtonText = function(self, button, fontSize)
 end
 
 skins.ApplyPanelButtonHighlight = function(self, button)
-    if (button.exuiHighlightConfigured) then return end
-    button.exuiHighlightConfigured = true
+    if (not button.exuiHighlightConfigured) then
+        button.exuiHighlightConfigured = true
 
-    if (button.SetHighlightAtlas and not button.exuiHighlightAtlasBlocked) then
-        button.exuiHighlightAtlasBlocked = true
-        button.SetHighlightAtlas = function()
-            -- keep custom SetHighlightTexture
+        if (button.SetHighlightAtlas and not button.exuiHighlightAtlasBlocked) then
+            button.exuiHighlightAtlasBlocked = true
+            button.SetHighlightAtlas = function()
+                -- keep custom SetHighlightTexture
+            end
         end
+
+        button:SetHighlightTexture(EXUI.const.textures.skins.btnHighlight, 'BLEND')
     end
 
-    button:SetHighlightTexture(EXUI.const.textures.skins.btnHighlight, 'BLEND')
     local highlight = button:GetHighlightTexture()
     if (not highlight) then return end
 
+    -- Force full-button coverage so sliced end-caps (rounded corners) are not clipped.
+    highlight:ClearAllPoints()
+    highlight:SetAllPoints(button)
+    highlight:SetTexCoord(0, 1, 0, 1)
     highlight:SetTextureSliceMargins(PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS,
         PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS)
     highlight:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
@@ -331,6 +337,38 @@ skins.ApplyPanelButtonHighlight = function(self, button)
 end
 
 local PANEL_BUTTON_STRIP_OPTIONS = { keepHighlight = true, blockHighlightAtlas = true }
+
+local function StripClassicDialogButtonTextures(button)
+    skins:StripTexture(button:GetNormalTexture())
+    skins:StripTexture(button:GetPushedTexture())
+    if (button.GetDisabledTexture) then
+        skins:StripTexture(button:GetDisabledTexture())
+    end
+end
+
+local function HookPanelButtonState(button, fontSize)
+    if (button.exuiStateHooked) then return end
+    button.exuiStateHooked = true
+
+    button:HookScript('OnMouseDown', function(btn)
+        if (btn:IsEnabled()) then skins:ApplyPanelButtonState(btn, 'PUSHED') end
+    end)
+    button:HookScript('OnMouseUp', function(btn)
+        skins:ApplyPanelButtonState(btn)
+    end)
+    button:HookScript('OnDisable', function(btn)
+        skins:ApplyPanelButtonState(btn, 'DISABLED')
+        skins:StylePanelButtonText(btn, fontSize)
+    end)
+    button:HookScript('OnEnable', function(btn)
+        skins:ApplyPanelButtonState(btn, 'NORMAL')
+        skins:StylePanelButtonText(btn, fontSize)
+    end)
+    button:HookScript('OnShow', function(btn)
+        skins:ApplyPanelButtonState(btn)
+        skins:StylePanelButtonText(btn, fontSize)
+    end)
+end
 
 ---Full flat treatment for UIPanelButtonTemplate-style three-slice buttons.
 ---@param options? { fontSize?: number }
@@ -343,29 +381,22 @@ skins.SkinPanelButton = function(self, button, options)
     self:ApplyPanelButtonHighlight(button)
     self:StylePanelButtonText(button, options.fontSize)
     self:ApplyPanelButtonState(button, 'NORMAL')
+    HookPanelButtonState(button, options.fontSize)
+end
 
-    if (not button.exuiStateHooked) then
-        button.exuiStateHooked = true
-        local fontSize = options.fontSize
-        button:HookScript('OnMouseDown', function(btn)
-            if (btn:IsEnabled()) then skins:ApplyPanelButtonState(btn, 'PUSHED') end
-        end)
-        button:HookScript('OnMouseUp', function(btn)
-            skins:ApplyPanelButtonState(btn)
-        end)
-        button:HookScript('OnDisable', function(btn)
-            skins:ApplyPanelButtonState(btn, 'DISABLED')
-            skins:StylePanelButtonText(btn, fontSize)
-        end)
-        button:HookScript('OnEnable', function(btn)
-            skins:ApplyPanelButtonState(btn, 'NORMAL')
-            skins:StylePanelButtonText(btn, fontSize)
-        end)
-        button:HookScript('OnShow', function(btn)
-            skins:ApplyPanelButtonState(btn)
-            skins:StylePanelButtonText(btn, fontSize)
-        end)
-    end
+---Flat treatment for classic dialog buttons (StaticPopupButtonTemplate / UI-DialogBox-Button-*).
+---Leaves Flash / PulseAnim intact. Does not use three-slice stripping.
+---@param options? { fontSize?: number }
+skins.SkinDialogButton = function(self, button, options)
+    if (not button) then return end
+    options = options or {}
+
+    StripClassicDialogButtonTextures(button)
+    self:ApplyPanelButtonBackground(button)
+    self:ApplyPanelButtonHighlight(button)
+    self:StylePanelButtonText(button, options.fontSize)
+    self:ApplyPanelButtonState(button, 'NORMAL')
+    HookPanelButtonState(button, options.fontSize)
 end
 
 ---Modern WowStyle1DropdownTemplate: flat dark box, 1px border, themed text and arrow.
@@ -728,10 +759,13 @@ local function InstallModernDropdownHooks()
     end
 end
 
-skins.SkinModernDropdown = function(self, dropdown)
+---@param options? { fontSize?: number }
+skins.SkinModernDropdown = function(self, dropdown, options)
     if (not dropdown or dropdown.exuiSkinned) then return end
     dropdown.exuiSkinned = true
+    options = options or {}
     local th = GetTheme()
+    local fontSize = options.fontSize or MODERN_DROPDOWN_FONT_SIZE
 
     InstallModernDropdownHooks()
 
@@ -775,7 +809,7 @@ skins.SkinModernDropdown = function(self, dropdown)
     ApplyModernDropdownArrow(dropdown)
 
     if (dropdown.Text) then
-        dropdown.Text:SetFont(EXUI.const.fonts.DEFAULT, MODERN_DROPDOWN_FONT_SIZE, '')
+        dropdown.Text:SetFont(EXUI.const.fonts.DEFAULT, fontSize, '')
         dropdown.Text:ClearAllPoints()
         dropdown.Text:SetPoint('LEFT', dropdown, 'LEFT', MODERN_DROPDOWN_TEXT_LEFT_PAD, 0)
         dropdown.Text:SetPoint('RIGHT', dropdown.exuiChevron, 'LEFT', -6, 0)
@@ -814,57 +848,165 @@ skins.SkinModernDropdown = function(self, dropdown)
     end)
 end
 
+---Shared chrome for search/edit/input-scroll fields (same edge math as modern dropdowns).
+local function BlockInputBoxSideTextures(editBox)
+    for _, key in ipairs({ 'Left', 'Right', 'Middle' }) do
+        local texture = editBox[key]
+        if (texture and not texture.exuiStateTextureBlocked) then
+            texture.exuiStateTextureBlocked = true
+            skins:StripTexture(texture)
+            texture.SetAtlas = function() end
+            texture.SetTexture = function() end
+            texture:Hide()
+        end
+    end
+end
+
+local function EnsureInputFieldChrome(frame, bgColor)
+    local th = GetTheme()
+    if (not frame.exuiBg) then
+        local bg = frame:CreateTexture(nil, 'BACKGROUND', nil, 0)
+        bg:SetTexture(EXUI.const.textures.frame.solidBg)
+        frame.exuiBg = bg
+    end
+
+    if (not frame.exuiBorderOverlay) then
+        local overlay = CreateFrame('Frame', nil, frame)
+        overlay:EnableMouse(false)
+        overlay:SetFrameLevel((frame:GetFrameLevel() or 1) + 5)
+        overlay.PPBorder = EXUI:AddPixelPerfectBorder(overlay, 1, { register = false, layer = 'OVERLAY' })
+        frame.exuiBorderOverlay = overlay
+    end
+
+    frame.exuiBg:SetVertexColor(unpack(bgColor or th.background))
+    frame.exuiBorderOverlay.PPBorder:SetBorderColor(unpack(th.border))
+end
+
+local function RefreshInputFieldChrome(frame)
+    if (not frame or not frame.exuiSkinned) then return end
+
+    local borderWidth = EXUI:ScalePixel(1, frame, 1)
+    local outward = EXUI:ScalePixels(1, frame)
+
+    if (frame.exuiBg) then
+        frame.exuiBg:ClearAllPoints()
+        frame.exuiBg:SetPoint('TOPLEFT', frame, 'TOPLEFT', borderWidth, -borderWidth)
+        frame.exuiBg:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -borderWidth, borderWidth)
+        frame.exuiBg:Show()
+    end
+
+    local overlay = frame.exuiBorderOverlay
+    if (not overlay or not overlay.PPBorder) then return end
+
+    overlay:ClearAllPoints()
+    overlay:SetAllPoints(frame)
+
+    local border = overlay.PPBorder
+    border.Top:SetHeight(borderWidth)
+    border.Top:ClearAllPoints()
+    border.Top:SetPoint('TOPLEFT', overlay, 'TOPLEFT', 0, 0)
+    border.Top:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', 0, 0)
+
+    border.Left:SetWidth(borderWidth)
+    border.Left:ClearAllPoints()
+    border.Left:SetPoint('TOPLEFT', overlay, 'TOPLEFT', -outward, 0)
+    border.Left:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', -outward, 0)
+
+    border.Right:SetWidth(borderWidth)
+    border.Right:ClearAllPoints()
+    border.Right:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', outward, 0)
+    border.Right:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', outward, 0)
+
+    border.Bottom:SetHeight(borderWidth)
+    border.Bottom:SetSnapToPixelGrid(false)
+    border.Bottom:ClearAllPoints()
+    border.Bottom:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', 0, -outward)
+    border.Bottom:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', 0, -outward)
+
+    border.Top:Show()
+    border.Left:Show()
+    border.Right:Show()
+    border.Bottom:Show()
+end
+
+local function HookInputFieldChromeRefresh(frame)
+    if (frame.exuiChromeHooks) then return end
+    frame.exuiChromeHooks = true
+    frame:HookScript('OnShow', function(self)
+        RefreshInputFieldChrome(self)
+    end)
+    frame:HookScript('OnSizeChanged', function(self)
+        RefreshInputFieldChrome(self)
+    end)
+end
+
+local function ApplyInputFieldBorderState(frame, active)
+    local border = frame.exuiBorderOverlay and frame.exuiBorderOverlay.PPBorder
+    if (border) then
+        border:SetBorderColor(unpack(active and GetTheme().accent or GetTheme().border))
+    end
+end
+
+---Flat panel/inset chrome: solid fill + pixel-perfect 1px border (same math as input fields).
+---@param options? { color?: number[], alpha?: number }
+skins.ApplyFlatChrome = function(self, frame, options)
+    if (not frame) then return end
+    options = options or {}
+    local th = GetTheme()
+    local color = options.color or th.backgroundDeep
+    local alpha = options.alpha
+    local bgColor = color
+    if (alpha and color) then
+        bgColor = { color[1], color[2], color[3], alpha }
+    end
+
+    frame.exuiSkinned = true
+    EnsureInputFieldChrome(frame, bgColor)
+    if (frame.exuiBg and alpha) then
+        frame.exuiBg:SetVertexColor(color[1], color[2], color[3], alpha)
+    end
+    HookInputFieldChromeRefresh(frame)
+    RefreshInputFieldChrome(frame)
+end
+
+local function HookInputFieldFocusBorder(frame)
+    if (frame.exuiFocusBorderHooks) then return end
+    frame.exuiFocusBorderHooks = true
+
+    frame:HookScript('OnEditFocusGained', function(self)
+        ApplyInputFieldBorderState(self, true)
+    end)
+    frame:HookScript('OnEditFocusLost', function(self)
+        if (not self:IsMouseOver()) then
+            ApplyInputFieldBorderState(self, false)
+        end
+    end)
+    frame:HookScript('OnEnter', function(self)
+        ApplyInputFieldBorderState(self, true)
+    end)
+    frame:HookScript('OnLeave', function(self)
+        if (not self.HasFocus or not self:HasFocus()) then
+            ApplyInputFieldBorderState(self, false)
+        end
+    end)
+end
+
 ---SearchBoxTemplate: flat dark input matching Exality edit boxes.
 local SEARCH_BOX_FONT_SIZE = 10
 local SEARCH_BOX_ICON_LEFT_PAD = 8
 local SEARCH_BOX_ICON_SIZE = 10
 local SEARCH_BOX_TEXT_LEFT_INSET = SEARCH_BOX_ICON_LEFT_PAD + SEARCH_BOX_ICON_SIZE + 6
 
-local function RefreshSearchBoxChrome(searchBox)
-    if (searchBox.exuiBg) then
-        searchBox.exuiBg:Show()
-    end
-
-    local overlay = searchBox.exuiBorderOverlay
-    if (overlay and overlay.PPBorder) then
-        overlay:SetAllPoints()
-        overlay.PPBorder:SetBorderThickness(1)
-    end
-end
-
 skins.SkinSearchBox = function(self, searchBox)
     if (not searchBox or searchBox.exuiSkinned) then return end
+    searchBox.exuiSkinned = true
     local th = GetTheme()
 
-    self:StripRegions(searchBox, { 'Left', 'Right', 'Middle' })
-
-    if (not searchBox.exuiBg) then
-        local bg = searchBox:CreateTexture(nil, 'BACKGROUND', nil, 0)
-        bg:SetTexture(EXUI.const.textures.frame.solidBg)
-        bg:SetAllPoints()
-        searchBox.exuiBg = bg
-    end
-
-    if (not searchBox.exuiBorderOverlay) then
-        local overlay = CreateFrame('Frame', nil, searchBox)
-        overlay:SetAllPoints()
-        overlay:SetFrameLevel(500)
-        overlay:EnableMouse(false)
-        overlay.PPBorder = EXUI:AddPixelPerfectBorder(overlay, 1, { register = false, layer = 'OVERLAY' })
-        searchBox.exuiBorderOverlay = overlay
-    end
-
-    searchBox.exuiBg:SetVertexColor(unpack(th.background))
-    searchBox.exuiBorderOverlay.PPBorder:SetBorderColor(unpack(th.border))
-    RefreshSearchBoxChrome(searchBox)
-
-    local function ApplyBorderState(active)
-        local border = searchBox.exuiBorderOverlay and searchBox.exuiBorderOverlay.PPBorder
-        if (border) then
-            local color = active and GetTheme().accent or GetTheme().border
-            border:SetBorderColor(unpack(color))
-        end
-    end
+    BlockInputBoxSideTextures(searchBox)
+    EnsureInputFieldChrome(searchBox, th.background)
+    HookInputFieldChromeRefresh(searchBox)
+    HookInputFieldFocusBorder(searchBox)
+    RefreshInputFieldChrome(searchBox)
 
     if (searchBox.SetFont) then
         searchBox:SetFont(EXUI.const.fonts.DEFAULT, SEARCH_BOX_FONT_SIZE, '')
@@ -904,27 +1046,220 @@ skins.SkinSearchBox = function(self, searchBox)
             clearButton.Icon:SetVertexColor(unpack(GetTheme().textMuted))
         end)
     end
+end
 
-    searchBox:HookScript('OnShow', RefreshSearchBoxChrome)
-    searchBox:HookScript('OnSizeChanged', RefreshSearchBoxChrome)
-    searchBox:HookScript('OnEditFocusGained', function()
-        ApplyBorderState(true)
-    end)
-    searchBox:HookScript('OnEditFocusLost', function()
-        if (not searchBox:IsMouseOver()) then
-            ApplyBorderState(false)
+local EDIT_BOX_FONT_SIZE = 11
+local EDIT_BOX_TEXT_INSET = 8
+
+local CHECKBOX_BASE_SIZE = 15
+local CHECKBOX_MARK_WIDTH = 20
+local CHECKBOX_MARK_HEIGHT = 15
+local CHECKBOX_MARK_OFFSET_X = 2
+local CHECKBOX_MARK_OFFSET_Y = 1
+
+local function GetCheckboxTextures()
+    local EXFrames = EXUI.EXFrames
+    return EXFrames and EXFrames.assets and EXFrames.assets.textures.input.checkbox
+end
+
+local function LayoutCheckButtonTextures(checkButton)
+    local normal = checkButton:GetNormalTexture()
+    if (normal) then
+        normal:SetSize(CHECKBOX_BASE_SIZE, CHECKBOX_BASE_SIZE)
+        normal:ClearAllPoints()
+        normal:SetPoint('CENTER')
+        normal:SetTexCoord(0, 1, 0, 1)
+        normal:SetAlpha(1)
+    end
+
+    local pushed = checkButton:GetPushedTexture()
+    if (pushed) then
+        pushed:SetSize(CHECKBOX_BASE_SIZE, CHECKBOX_BASE_SIZE)
+        pushed:ClearAllPoints()
+        pushed:SetPoint('CENTER')
+        pushed:SetTexCoord(0, 1, 0, 1)
+        pushed:SetAlpha(1)
+    end
+
+    local disabled = checkButton.GetDisabledTexture and checkButton:GetDisabledTexture()
+    if (disabled) then
+        disabled:SetSize(CHECKBOX_BASE_SIZE, CHECKBOX_BASE_SIZE)
+        disabled:ClearAllPoints()
+        disabled:SetPoint('CENTER')
+        disabled:SetTexCoord(0, 1, 0, 1)
+        disabled:SetDesaturated(true)
+        disabled:SetAlpha(0.5)
+    end
+
+    local highlight = checkButton:GetHighlightTexture()
+    if (highlight) then
+        highlight:SetSize(CHECKBOX_BASE_SIZE, CHECKBOX_BASE_SIZE)
+        highlight:ClearAllPoints()
+        highlight:SetPoint('CENTER')
+        highlight:SetTexCoord(0, 1, 0, 1)
+        highlight:SetBlendMode('BLEND')
+        highlight:SetAlpha(1)
+    end
+
+    local checked = checkButton:GetCheckedTexture()
+    if (checked) then
+        checked:SetSize(CHECKBOX_MARK_WIDTH, CHECKBOX_MARK_HEIGHT)
+        checked:ClearAllPoints()
+        checked:SetPoint('CENTER', checkButton, 'CENTER', CHECKBOX_MARK_OFFSET_X, CHECKBOX_MARK_OFFSET_Y)
+        checked:SetTexCoord(0, 1, 0, 1)
+        checked:SetAlpha(1)
+    end
+
+    local disabledChecked = checkButton:GetDisabledCheckedTexture()
+    if (disabledChecked) then
+        disabledChecked:SetSize(CHECKBOX_MARK_WIDTH, CHECKBOX_MARK_HEIGHT)
+        disabledChecked:ClearAllPoints()
+        disabledChecked:SetPoint('CENTER', checkButton, 'CENTER', CHECKBOX_MARK_OFFSET_X, CHECKBOX_MARK_OFFSET_Y)
+        disabledChecked:SetTexCoord(0, 1, 0, 1)
+        disabledChecked:SetDesaturated(true)
+        disabledChecked:SetAlpha(0.5)
+    end
+end
+
+local function ApplyCheckButtonSkin(checkButton, tex)
+    if (checkButton.exuiApplyingCheckSkin) then return end
+    checkButton.exuiApplyingCheckSkin = true
+
+    checkButton:SetNormalTexture(tex.base)
+    checkButton:SetPushedTexture(tex.base)
+    if (checkButton.SetDisabledTexture) then
+        checkButton:SetDisabledTexture(tex.base)
+    end
+    checkButton:SetHighlightTexture(tex.hover, 'BLEND')
+    checkButton:SetCheckedTexture(tex.mark)
+    checkButton:SetDisabledCheckedTexture(tex.mark)
+    LayoutCheckButtonTextures(checkButton)
+
+    checkButton.exuiApplyingCheckSkin = false
+end
+
+---Blizzard CheckButton → ExalityFrames options checkbox art (base / hover / mark).
+skins.SkinCheckButton = function(self, checkButton)
+    if (not checkButton or checkButton.exuiSkinned) then return end
+    local tex = GetCheckboxTextures()
+    if (not tex) then return end
+    checkButton.exuiSkinned = true
+
+    ApplyCheckButtonSkin(checkButton, tex)
+
+    -- LFG dungeon list swaps multi-check / checkbox art on update; keep our mark.
+    hooksecurefunc(checkButton, 'SetCheckedTexture', function(btn)
+        if (btn.exuiSkinned and not btn.exuiApplyingCheckSkin) then
+            ApplyCheckButtonSkin(btn, tex)
         end
     end)
-    searchBox:HookScript('OnEnter', function()
-        ApplyBorderState(true)
-    end)
-    searchBox:HookScript('OnLeave', function()
-        if (not searchBox:HasFocus()) then
-            ApplyBorderState(false)
+    hooksecurefunc(checkButton, 'SetDisabledCheckedTexture', function(btn)
+        if (btn.exuiSkinned and not btn.exuiApplyingCheckSkin) then
+            ApplyCheckButtonSkin(btn, tex)
         end
     end)
+    hooksecurefunc(checkButton, 'SetNormalTexture', function(btn)
+        if (btn.exuiSkinned and not btn.exuiApplyingCheckSkin) then
+            ApplyCheckButtonSkin(btn, tex)
+        end
+    end)
+end
 
-    searchBox.exuiSkinned = true
+---InputBox / LFGListEditBoxTemplate: flat dark field with 1px border (no search icon).
+---@param options? { fontSize?: number, textInset?: number }
+skins.SkinEditBox = function(self, editBox, options)
+    if (not editBox or editBox.exuiSkinned) then return end
+    editBox.exuiSkinned = true
+    options = options or {}
+    local th = GetTheme()
+    local fontSize = options.fontSize or EDIT_BOX_FONT_SIZE
+    local textInset = options.textInset or EDIT_BOX_TEXT_INSET
+
+    BlockInputBoxSideTextures(editBox)
+    EnsureInputFieldChrome(editBox, th.background)
+    HookInputFieldChromeRefresh(editBox)
+    HookInputFieldFocusBorder(editBox)
+    RefreshInputFieldChrome(editBox)
+
+    if (editBox.SetFont) then
+        editBox:SetFont(EXUI.const.fonts.DEFAULT, fontSize, '')
+    end
+    if (editBox.SetTextColor) then
+        editBox:SetTextColor(unpack(th.text))
+    end
+    if (editBox.SetTextInsets) then
+        editBox:SetTextInsets(textInset, textInset, 0, 0)
+    end
+
+    if (editBox.Instructions) then
+        editBox.Instructions:SetFont(EXUI.const.fonts.DEFAULT, fontSize, '')
+        editBox.Instructions:SetTextColor(unpack(th.textMuted))
+        editBox.Instructions:ClearAllPoints()
+        editBox.Instructions:SetPoint('TOPLEFT', editBox, 'LEFT', textInset, 0)
+        editBox.Instructions:SetPoint('BOTTOMRIGHT', editBox, 'RIGHT', -textInset, 0)
+    end
+end
+
+local INPUT_SCROLL_BORDER_KEYS = {
+    'TopLeftTex', 'TopRightTex', 'TopTex',
+    'BottomLeftTex', 'BottomRightTex', 'BottomTex',
+    'LeftTex', 'RightTex', 'MiddleTex',
+}
+
+---InputScrollFrameTemplate: flat multiline description box.
+---@param options? { fontSize?: number, textInset?: number }
+skins.SkinInputScrollFrame = function(self, scrollFrame, options)
+    if (not scrollFrame or scrollFrame.exuiSkinned) then return end
+    scrollFrame.exuiSkinned = true
+    options = options or {}
+    local th = GetTheme()
+    local fontSize = options.fontSize or EDIT_BOX_FONT_SIZE
+    local textInset = options.textInset or EDIT_BOX_TEXT_INSET
+
+    self:StripRegions(scrollFrame, INPUT_SCROLL_BORDER_KEYS)
+    EnsureInputFieldChrome(scrollFrame, th.background)
+    HookInputFieldChromeRefresh(scrollFrame)
+    RefreshInputFieldChrome(scrollFrame)
+
+    local editBox = scrollFrame.EditBox
+    if (editBox) then
+        if (editBox.SetFont) then
+            editBox:SetFont(EXUI.const.fonts.DEFAULT, fontSize, '')
+        end
+        if (editBox.SetTextColor) then
+            editBox:SetTextColor(unpack(th.text))
+        end
+        if (editBox.SetTextInsets) then
+            editBox:SetTextInsets(textInset, textInset, textInset, textInset)
+        end
+        if (editBox.Instructions) then
+            -- Blizzard defaults to TOPLEFT 0,0; pull off the chrome edge.
+            editBox.Instructions:SetFont(EXUI.const.fonts.DEFAULT, fontSize, '')
+            editBox.Instructions:SetTextColor(unpack(th.textMuted))
+            editBox.Instructions:ClearAllPoints()
+            editBox.Instructions:SetPoint('TOPLEFT', editBox, 'TOPLEFT', textInset, -textInset)
+            editBox.Instructions:SetPoint('TOPRIGHT', editBox, 'TOPRIGHT', -textInset, -textInset)
+        end
+
+        if (not editBox.exuiFocusBorderHooks) then
+            editBox.exuiFocusBorderHooks = true
+            editBox:HookScript('OnEditFocusGained', function()
+                ApplyInputFieldBorderState(scrollFrame, true)
+            end)
+            editBox:HookScript('OnEditFocusLost', function()
+                ApplyInputFieldBorderState(scrollFrame, false)
+            end)
+        end
+    end
+
+    if (scrollFrame.CharCount) then
+        scrollFrame.CharCount:SetFont(EXUI.const.fonts.DEFAULT, 10, '')
+        scrollFrame.CharCount:SetTextColor(unpack(th.textMuted))
+    end
+
+    if (scrollFrame.ScrollBar) then
+        self:SkinMinimalScrollBar(scrollFrame.ScrollBar)
+    end
 end
 
 ---SpellSearchPreviewContainerTemplate: flat dropdown under spell/talent search boxes.

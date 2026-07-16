@@ -32,8 +32,25 @@ local function GetPreviewColor()
     return DEBUFF_TYPE_MAGIC_COLOR
 end
 
+-- Preview lives on ElementFrame (always safe). Live border lives on the AuraButton
+-- and inherits DenyTaintedAccessWhenAurasAreSecret — never assume method calls succeed.
 local function IsOverlayTexture(overlay)
-    return overlay and overlay.GetObjectType and overlay:GetObjectType() == 'Texture'
+    if not overlay or type(overlay.GetObjectType) ~= 'function' then
+        return false
+    end
+    local ok, objectType = pcall(overlay.GetObjectType, overlay)
+    return ok and objectType == 'Texture'
+end
+
+local function SafeCall(object, methodName, ...)
+    if not object then
+        return false
+    end
+    local method = object[methodName]
+    if type(method) ~= 'function' then
+        return false
+    end
+    return pcall(method, object, ...)
 end
 
 function dispelOverlay:DiscardContainer(frame)
@@ -41,12 +58,10 @@ function dispelOverlay:DiscardContainer(frame)
     if not container then
         return
     end
-    if container.SetEnabled then
-        container:SetEnabled(false)
-    end
-    container:Hide()
-    container:ClearAllPoints()
-    container:SetParent(nil)
+    SafeCall(container, 'SetEnabled', false)
+    SafeCall(container, 'Hide')
+    SafeCall(container, 'ClearAllPoints')
+    SafeCall(container, 'SetParent', nil)
     frame.DispelOverlayContainer = nil
     frame.DispelOverlayLive = nil
 end
@@ -82,9 +97,10 @@ function dispelOverlay:EnsureContainer(frame)
     local cover = frame.ElementFrame or frame
     local alpha = (frame.db and frame.db.dispelOverlayAlpha) or 1
 
-    -- AuraButton regions passed to SetAuraBorder must be parented+anchored to the
-    -- button (forbidden parent/layout aspects). Size the button to the unit frame.
-    local auraButton = container:AddAuraSlot(SLOT_KEY, filterString, {
+    -- Size/anchor the button only in initializeFrame: AddAuraSlot applies access
+    -- restrictions and UpdateAllAuras before returning, so post-return layout is
+    -- denied when auras are secret (e.g. reload inside M+).
+    container:AddAuraSlot(SLOT_KEY, filterString, {
         initializeFrame = function(button)
             if button.EnableMouse then
                 button:EnableMouse(false)
@@ -116,17 +132,17 @@ function dispelOverlay:EnsureContainer(frame)
         end,
     })
 
-    if auraButton then
-        auraButton:ClearAllPoints()
-        auraButton:SetAllPoints(cover)
+    SafeCall(container, 'ClearAllPoints')
+    SafeCall(container, 'SetAllPoints', cover)
+    -- Above health/power, below ElementFrame so name/health text stay readable.
+    local health = frame.Health
+    local baseLevel = (health and health.GetFrameLevel and health:GetFrameLevel()) or frame:GetFrameLevel()
+    local elementLevel = cover.GetFrameLevel and cover:GetFrameLevel()
+    local level = baseLevel + 10
+    if elementLevel and level >= elementLevel then
+        level = elementLevel - 1
     end
-
-    container:ClearAllPoints()
-    container:SetAllPoints(cover)
-    local baseLevel = cover.GetFrameLevel and cover:GetFrameLevel() or frame:GetFrameLevel()
-    if container.SetFrameLevel then
-        container:SetFrameLevel(baseLevel + 10)
-    end
+    SafeCall(container, 'SetFrameLevel', level)
     container._dispelOverlayFilter = filterString
 
     frame.DispelOverlayContainer = container
@@ -141,8 +157,7 @@ function dispelOverlay:ApplyFilter(container, mode)
     if container._dispelOverlayFilter == filterString then
         return
     end
-    if container.SetAuraSlotFilterString then
-        container:SetAuraSlotFilterString(SLOT_KEY, filterString)
+    if SafeCall(container, 'SetAuraSlotFilterString', SLOT_KEY, filterString) then
         container._dispelOverlayFilter = filterString
     end
 end
@@ -161,9 +176,7 @@ function dispelOverlay:ApplyPreview(frame, enabled)
         preview.isPreview = true
         -- Pause live container so it doesn't fight preview; preview texture is on
         -- ElementFrame and is not tied to AuraButton visibility.
-        if container and container.SetEnabled then
-            container:SetEnabled(false)
-        end
+        SafeCall(container, 'SetEnabled', false)
         local color = GetPreviewColor()
         local r, g, b = color:GetRGB()
         preview:SetVertexColor(r, g, b, 1)
@@ -175,12 +188,8 @@ function dispelOverlay:ApplyPreview(frame, enabled)
         preview:SetAlpha(alpha)
         preview:Hide()
         if container then
-            if container.SetEnabled then
-                container:SetEnabled(true)
-            end
-            if container.UpdateAllAuras then
-                container:UpdateAllAuras()
-            end
+            SafeCall(container, 'SetEnabled', true)
+            SafeCall(container, 'UpdateAllAuras')
         end
     end
 end
@@ -188,7 +197,8 @@ end
 dispelOverlay.Create = function(self, frame)
     -- Preview-only texture on ElementFrame. Live overlay must live on the AuraButton
     -- (SetAuraBorder forbidden aspects), so preview stays separate.
-    local preview = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
+    -- ARTWORK (sublevel -8) keeps preview under OVERLAY texts on ElementFrame.
+    local preview = frame.ElementFrame:CreateTexture(nil, 'ARTWORK', nil, -8)
     preview:SetAllPoints()
     preview:SetTexture(EXUI.const.textures.unitFrames.dispelOverlay)
     preview:SetVertexColor(0, 0, 0, 0)
@@ -220,9 +230,8 @@ dispelOverlay.Update = function(self, frame)
     if IsOverlayTexture(preview) then
         preview:SetAlpha(alpha)
     end
-    if IsOverlayTexture(frame.DispelOverlayLive) then
-        frame.DispelOverlayLive:SetAlpha(alpha)
-    end
+    -- Live border may be secret-restricted; skip alpha if access is denied.
+    SafeCall(frame.DispelOverlayLive, 'SetAlpha', alpha)
 
     local previewEnabled = frame:IsElementPreviewEnabled('dispeloverlay')
     if previewEnabled then
@@ -234,15 +243,11 @@ dispelOverlay.Update = function(self, frame)
 
     if container then
         self:ApplyFilter(container, db.dispelOverlayFilter)
-        if container.SetUnit and frame.unit then
-            container:SetUnit(frame.unit)
+        if frame.unit then
+            SafeCall(container, 'SetUnit', frame.unit)
         end
-        if container.SetEnabled then
-            container:SetEnabled(true)
-        end
-        container:Show()
-        if container.UpdateAllAuras then
-            container:UpdateAllAuras()
-        end
+        SafeCall(container, 'SetEnabled', true)
+        SafeCall(container, 'Show')
+        SafeCall(container, 'UpdateAllAuras')
     end
 end

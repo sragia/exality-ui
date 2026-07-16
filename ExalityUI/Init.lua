@@ -151,6 +151,8 @@ EXUI.const = {
         },
         skins = {
             btnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Skins/btn-highlight.png]],
+            lfgLeftBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-bg.jpg]],
+            lfgLeftBtnBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-btn-bg.png]],
         }
     },
     masque = {

@@ -232,10 +232,24 @@ function cooldownDisplay:RenderCooldown(frame, db)
     applyCooldownVisual(frame, cooldownInfo.durationObject, shouldDesaturate, chargesText)
 end
 
+local function applyContentInsets(frame)
+    if frame.PPBorder then
+        frame.PPBorder:SetBorderThickness(1)
+    end
+
+    -- Bottom PP border is nudged 1px outside the frame; keep bottom flush (inset 0).
+    local inset = EXUI:GetBorderInset(frame, 1)
+    frame.Texture:ClearAllPoints()
+    frame.Texture:SetPoint('TOPLEFT', inset, -inset)
+    frame.Texture:SetPoint('BOTTOMRIGHT', -inset, 0)
+    frame.Cooldown:ClearAllPoints()
+    frame.Cooldown:SetPoint('TOPLEFT', inset, -inset)
+    frame.Cooldown:SetPoint('BOTTOMRIGHT', -inset, 0)
+end
+
 function cooldownDisplay:Create(frame)
     local Cooldown = CreateFrame('Cooldown', nil, frame, 'CooldownFrameTemplate')
-    Cooldown:SetPoint('TOPLEFT', -1, 1)
-    Cooldown:SetPoint('BOTTOMRIGHT', 1, -1)
+    Cooldown:SetAllPoints()
     Cooldown:SetHideCountdownNumbers(true)
     Cooldown:SetDrawSwipe(true)
     Cooldown:SetDrawBling(false)
@@ -253,9 +267,9 @@ function cooldownDisplay:Create(frame)
     frame.ElementFrame = ElementFrame
 
     local Texture = frame:CreateTexture(nil, 'BACKGROUND')
-    Texture:SetPoint('TOPLEFT', 1, -1)
-    Texture:SetPoint('BOTTOMRIGHT', -1, 1)
+    Texture:SetAllPoints()
     frame.Texture = Texture
+    frame.ApplyContentInsets = applyContentInsets
 
     local StackText = ElementFrame:CreateFontString(nil, 'OVERLAY')
     StackText:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
@@ -332,15 +346,19 @@ function cooldownDisplay:Update(frame)
     frame:RegisterFrameEvents()
     self:CacheSourceIDs(frame, db)
 
-    frame:SetSize(db.width, db.height)
+    EXUI:SetSize(frame, db.width, db.height)
     frame:ClearAllPoints()
     frame:SetPoint(db.anchorPoint, UIParent, db.relativePoint, db.XOff, db.YOff)
+    EXUI:SnapFrameToPixels(frame)
     frame:SetFrameStrata(db.frameStrata)
     frame:SetFrameLevel(db.frameLevel)
     frame.Cooldown:SetFrameLevel(frame:GetFrameLevel() + 1)
     frame.ElementFrame:SetFrameLevel(frame.Cooldown:GetFrameLevel() + 10)
-    frame:SetBackdropBorderColor(db.borderColor.r, db.borderColor.g, db.borderColor.b, db.borderColor.a)
+    if frame.PPBorder then
+        frame.PPBorder:SetBorderColor(db.borderColor.r, db.borderColor.g, db.borderColor.b, db.borderColor.a)
+    end
     frame:SetBackdropColor(0, 0, 0, 0)
+    applyContentInsets(frame)
 
     frame.CooldownFont:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)
     frame.Cooldown:SetHideCountdownNumbers(true)

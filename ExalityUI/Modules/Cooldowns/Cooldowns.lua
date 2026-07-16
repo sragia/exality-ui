@@ -222,6 +222,7 @@ function cooldowns:CreateFrame()
     end
 
     EXUI:ApplySolidBorder(frame, 1, { 0, 0, 0, 1 }, { 0, 0, 0, 0.4 }, { register = false })
+    EXUI:RegisterSnapFrame(frame)
     return frame
 end
 

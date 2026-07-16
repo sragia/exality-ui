@@ -2,6 +2,8 @@
     <Script file="Skins.lua"/>
     <Script file="GameTooltip.lua"/>
     <Script file="GameMenu.lua"/>
+    <Script file="StaticPopup.lua"/>
+    <Script file="DeathRecap.lua"/>
     <Script file="WorldMap.lua"/>
     <Script file="PlayerSpells.lua"/>
     <Script file="ProfessionsBook.lua"/>
