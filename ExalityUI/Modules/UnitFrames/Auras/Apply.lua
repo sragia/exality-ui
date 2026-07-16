@@ -81,7 +81,7 @@ function apply:EnsureHeaderContainers(unitType)
 
     local num = self:GetRequiredAuraContainerCount(unitType)
     if unitType == 'party' then
-        local header = headers.party
+        local header = ufCore:GetPartySecureHeader(headers.party)
         if header and header.SetNumAuraContainers then
             header:SetNumAuraContainers(num)
         end

@@ -203,36 +203,31 @@ editor.SyncUnitFrameEditVisibility = function(self, enabled)
 
     if not enabled then
         ufCore:UnforceAll()
+        if ufCore.RestoreGroupHeadersAfterEditor then
+            ufCore:RestoreGroupHeadersAfterEditor()
+        end
         return
     end
 
     local editorPreview = { editorPreview = true }
 
+    -- Single units are cheap; force-show so target/focus/etc. are visible while editing.
     for _, unit in ipairs(ufCore.units or {}) do
         if isUnitFrameEnabled(ufCore, unit) then
             ufCore:ForceShow(unit, editorPreview)
         end
     end
 
+    -- Party/raid: never ForceShow (startingIndex=-4 spawns ~40 secure children).
+    -- Size the edit overlay to the real grid and only flip visibility if needed.
     for _, unit in ipairs({ 'party', 'raid' }) do
         if isUnitFrameEnabled(ufCore, unit) then
-            ufCore:ForceShow(unit, editorPreview)
-            ufCore:ApplyEditorGroupLayout(unit)
+            if ufCore.PrepareGroupHeaderForEditor then
+                ufCore:PrepareGroupHeaderForEditor(unit)
+            end
+            ufCore:ApplyEditorGroupLayout(unit, { sizeOnly = true })
         end
     end
-
-    C_Timer.After(0, function()
-        if not editor.enabled then
-            return
-        end
-        for _, unit in ipairs({ 'party', 'raid' }) do
-            local header = ufCore.headers and ufCore.headers[unit]
-            if header and header.editor and header.editor:IsShown() then
-                editor:SyncEditorOverlay(header)
-                editor:RefreshEditorOverlayBorder(header)
-            end
-        end
-    end)
 end
 
 editor.HandleSelectionClick = function(self, x, y)
