@@ -34,6 +34,9 @@ local ITEM_ENCHANT_SLOT = {
 apply.pendingFrames = {}
 
 function apply:Init()
+    if not ufAuras:IsSupported() then
+        return
+    end
     self.eventHandler = CreateFrame('Frame')
     self.eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
     self.eventHandler:SetScript('OnEvent', function(_, event)
@@ -58,6 +61,9 @@ function apply:QueueFrame(frame)
 end
 
 function apply:GetRequiredAuraContainerCount(unitType)
+    if not ufAuras:IsSupported() then
+        return 0
+    end
     local num = ufAuras:GetMaxDisplaysForUnitType(unitType)
     local db = ufCore:GetDBForUnit(unitType)
     if db and db.dispelOverlayEnable then
@@ -67,6 +73,9 @@ function apply:GetRequiredAuraContainerCount(unitType)
 end
 
 function apply:EnsureHeaderContainers(unitType)
+    if not ufAuras:IsSupported() then
+        return
+    end
     local headers = ufCore.headers
     if not headers then return end
 
@@ -243,7 +252,7 @@ function apply:RebuildGroups(container, displayID, display, frame)
 end
 
 function apply:CreateContainer(frame, display)
-    if not frame.CreateAuras then
+    if not ufAuras:IsSupported() or not frame.CreateAuras then
         return nil
     end
 
@@ -315,7 +324,9 @@ function apply:SuppressLiveAurasOnFakeFrame(frame)
 end
 
 function apply:UpdateFrame(frame)
-    if not frame then return end
+    if not frame or not ufAuras:IsSupported() then
+        return
+    end
 
     frame.UFAuraContainers = frame.UFAuraContainers or {}
 
@@ -382,6 +393,9 @@ function apply:UpdateFrame(frame)
 end
 
 function apply:RefreshDisplay(displayID)
+    if not ufAuras:IsSupported() then
+        return
+    end
     local display = ufAuras:GetDisplay(displayID)
     if not display then
         self:RefreshAll()
@@ -395,6 +409,9 @@ function apply:RefreshDisplay(displayID)
 end
 
 function apply:RefreshAll()
+    if not ufAuras:IsSupported() then
+        return
+    end
     for _, unitType in ipairs(defaults.UNIT_ORDER) do
         self:EnsureHeaderContainers(unitType)
     end

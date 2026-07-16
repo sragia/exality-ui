@@ -436,6 +436,9 @@ function editor:Refresh(selectID)
 end
 
 function editor:Show(contextUnit)
+    if not ufAuras:IsSupported() then
+        return
+    end
     if not self.window then
         self.window = self:CreateWindow()
     end

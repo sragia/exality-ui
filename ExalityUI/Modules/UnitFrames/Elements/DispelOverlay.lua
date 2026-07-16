@@ -201,7 +201,7 @@ end
 dispelOverlay.Update = function(self, frame)
     local db = frame.db
     local preview = frame.DispelOverlay
-    if not preview then
+    if not preview or not ufAuras:IsSupported() then -- Temp block until we are in 12.1
         return
     end
 

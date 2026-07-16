@@ -19,11 +19,21 @@ local ufCore = EXUI:GetModule('uf-core')
 ---@class EXUIUnitFramesAuras
 local ufAuras = EXUI:GetModule('uf-auras')
 
+-- Unit-frame aura containers (CreateAuras) ship in 12.1+.
+local MIN_SUPPORTED_BUILD = 120100
+
 ufAuras.currGroupID = nil
 ufAuras.contextUnit = nil
 ufAuras.skipScreenPosition = true
 
+function ufAuras:IsSupported()
+    return select(4, GetBuildInfo()) >= MIN_SUPPORTED_BUILD
+end
+
 function ufAuras:Init()
+    if not self:IsSupported() then
+        return
+    end
     self:EnsureDB()
     EXUI:GetModule('uf-auras-apply'):Init()
     EXUI:GetModule('uf-auras-preview'):Init()
