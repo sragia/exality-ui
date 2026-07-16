@@ -653,12 +653,28 @@ function display:ShowBlizzardTracker()
     end
 end
 
-function display:Update()
+function display:InvalidateStyleCache()
+    self._stylesApplied = false
+    self._layoutApplied = false
+end
+
+function display:Update(opts)
+    opts = opts or {}
     local db = mythicPlusTimer.Data:GetDB()
+
     self:CreateMainFrame()
-    self:ApplyLayout(db)
-    self:ApplyStyles(db)
-    self:SyncObjectiveTrackerSuppression()
+
+    -- Layout/styles only when cache is cold (options/configure) or first show.
+    if not self._layoutApplied or not self._stylesApplied then
+        self:ApplyLayout(db)
+        self:ApplyStyles(db)
+        self:SyncObjectiveTrackerSuppression()
+        self._layoutApplied = true
+        self._stylesApplied = true
+    elseif not opts.ticker then
+        -- Event-driven updates may still need OT suppression sync.
+        self:SyncObjectiveTrackerSuppression()
+    end
 
     if not self:ShouldShow() then
         self.frame:Hide()
@@ -681,12 +697,13 @@ end
 
 function display:Enable()
     self:CreateMainFrame()
+    self:InvalidateStyleCache()
     timerData:RegisterEvents(function()
         display:Update()
     end)
     timerData:StartTicker(function()
         if display:ShouldShow() then
-            display:Update()
+            display:Update({ ticker = true })
         end
     end)
     if timerData:IsActive() then

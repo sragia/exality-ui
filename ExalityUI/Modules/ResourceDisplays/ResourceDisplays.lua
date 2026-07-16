@@ -46,6 +46,12 @@ local visibility = EXUI:GetModule('resource-displays-visibility')
 
 
 
+---@class EXUIResourceDisplaysHelpers
+
+local helpers = EXUI:GetModule('resource-displays-helpers')
+
+
+
 ---@class EXUIResourceDisplaysPreview
 
 local preview = EXUI:GetModule('resource-displays-preview')
@@ -826,6 +832,32 @@ end
 
 
 
+core.RefreshFramesForVisibility = function(self, combatChanged, targetChanged)
+
+    if not combatChanged and not targetChanged then
+
+        return
+
+    end
+
+
+
+    for displayID in pairs(self.frames) do
+
+        local displayDB = self:GetDBByDisplayID(displayID)
+
+        if visibility:DisplayNeedsVisibilityRefresh(displayDB, combatChanged, targetChanged) then
+
+            self:RefreshDisplayByID(displayID)
+
+        end
+
+    end
+
+end
+
+
+
 EXUI:RegisterEventHandler({ 'PLAYER_SPECIALIZATION_CHANGED', 'UPDATE_SHAPESHIFT_FORM' }, 'resource-displays-core', function()
 
     core:RefreshAllFrames()
@@ -1200,6 +1232,14 @@ core.UpdateValueForDisplay = function(self, displayID, key, value)
     displayDB[displayID] = displayDB[displayID] or {}
 
     displayDB[displayID][key] = value
+
+    if key == 'resourceColorCurve'
+        or key == 'resourceColorCurveEnabled'
+        or key == 'barColor'
+        or key == 'useClassColor'
+        or key == 'lowResourceColor' then
+        helpers:InvalidateResourceColorCurveCache(displayDB[displayID])
+    end
 
     data:SetDataByKey('resource-displays', displayDB)
 

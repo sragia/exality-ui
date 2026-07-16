@@ -345,13 +345,7 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
     end
 
     for i, button in ipairs(frame.buttons) do
-        if i <= numForms then
-            EXUI:SetSize(button, barConfig.width, barConfig.height)
-            if button.Update then
-                button:Update()
-            end
-            self:ApplyStyle(button, 'stance', barConfig)
-        else
+        if i > numForms then
             button:Hide()
         end
     end

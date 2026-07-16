@@ -11,18 +11,35 @@ local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 local ZERO_DURATION_OBJECT = C_DurationUtil.CreateDuration()
 ZERO_DURATION_OBJECT:SetTimeSpan(0, 0)
 
-local function createDurationObject(start, duration, modRate)
-    local durationObject = C_DurationUtil.CreateDuration()
-    durationObject:SetTimeFromStart(start or 0, duration or 0, modRate or 1)
-    return durationObject
-end
-
 local function getCooldownSource(db)
     local source = db.cooldownSource
     if source == 'spell' or source == 'item' or source == 'equipment' then
         return source
     end
     return db.isItem and 'item' or 'spell'
+end
+
+local function ensureDurationObject(frame)
+    if not frame._durationObject then
+        frame._durationObject = C_DurationUtil.CreateDuration()
+    end
+    return frame._durationObject
+end
+
+local function setDurationFromStart(frame, start, duration, modRate)
+    local durationObject = ensureDurationObject(frame)
+    -- Only replace missing returns; never branch on present values (may be secret).
+    if start == nil then
+        start = 0
+    end
+    if duration == nil then
+        duration = 0
+    end
+    if modRate == nil then
+        modRate = 1
+    end
+    durationObject:SetTimeFromStart(start, duration, modRate)
+    return durationObject
 end
 
 function cooldownDisplay:GetSpellChargeData(spellID)
@@ -39,7 +56,7 @@ function cooldownDisplay:GetSpellChargeData(spellID)
 end
 
 function cooldownDisplay:GetSpellCooldownData(spellID, ignoreGCD)
-    local duration = C_Spell.GetSpellCooldownDuration(unpack({ spellID, ignoreGCD and true or false }))
+    local duration = C_Spell.GetSpellCooldownDuration(spellID, ignoreGCD and true or false)
     if not duration then
         return nil
     end
@@ -49,44 +66,31 @@ function cooldownDisplay:GetSpellCooldownData(spellID, ignoreGCD)
     }
 end
 
-function cooldownDisplay:GetSpellCooldownState(spellID)
-    ---@diagnostic disable-next-line:undefined-field
-    local info = C_Spell.GetSpellCooldown(spellID)
-    if not info then
-        return false, false
-    end
-
-    ---@diagnostic disable-next-line:undefined-field
-    return info.isActive and true or false, info.isOnGCD and true or false
-end
-
-function cooldownDisplay:GetItemCooldownData(itemID)
+function cooldownDisplay:GetItemCooldownData(frame, itemID)
     local start, duration = C_Item.GetItemCooldown(itemID)
     local count = C_Item.GetItemCount(itemID, false, true)
 
     if start == nil or duration == nil then
-        local legacyStart, legacyDuration = C_Container.GetItemCooldown(itemID)
-        start = legacyStart
-        duration = legacyDuration
+        start, duration = C_Container.GetItemCooldown(itemID)
     end
 
     return {
-        durationObject = createDurationObject(start, duration, 1),
+        durationObject = setDurationFromStart(frame, start, duration, 1),
         count = count,
     }
 end
 
-function cooldownDisplay:GetEquipmentCooldownData(slotID)
+function cooldownDisplay:GetEquipmentCooldownData(frame, slotID)
     local start, duration = GetInventoryItemCooldown('player', slotID)
     return {
-        durationObject = createDurationObject(start, duration, 1),
+        durationObject = setDurationFromStart(frame, start, duration, 1),
     }
 end
 
-function cooldownDisplay:GetTexture(db)
+function cooldownDisplay:GetTexture(db, cachedSourceID)
     local source = getCooldownSource(db)
     if source == 'spell' then
-        local spellID = tonumber(db.spellID)
+        local spellID = cachedSourceID or tonumber(db.spellID)
         if spellID then
             local texture = C_Spell.GetSpellTexture(spellID)
             if texture then
@@ -94,7 +98,7 @@ function cooldownDisplay:GetTexture(db)
             end
         end
     elseif source == 'item' then
-        local itemID = tonumber(db.itemID)
+        local itemID = cachedSourceID or tonumber(db.itemID)
         if itemID then
             local _, _, _, _, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemID)
             if itemTexture then
@@ -111,7 +115,7 @@ function cooldownDisplay:GetTexture(db)
             end
         end
     elseif source == 'equipment' then
-        local slotID = tonumber(db.equipmentSlot)
+        local slotID = cachedSourceID or tonumber(db.equipmentSlot)
         if slotID then
             local texture = GetInventoryItemTexture('player', slotID)
             if texture then
@@ -123,74 +127,109 @@ function cooldownDisplay:GetTexture(db)
     return 'Interface\\Icons\\INV_Misc_QuestionMark', false
 end
 
-function cooldownDisplay:RenderCooldown(frame, db)
+local function applyCooldownVisual(frame, durationObject, shouldDesaturate, chargesText)
+    frame.Cooldown:SetCooldownFromDurationObject(durationObject, true)
+    if frame.CooldownTextBinding then
+        frame.CooldownTextBinding:SetDuration(durationObject)
+    end
+    -- Pass desaturate straight through (may be a secret boolean).
+    frame.Texture:SetDesaturated(shouldDesaturate)
+    frame.Texture:SetVertexColor(1, 1, 1, 1)
+    if chargesText ~= nil then
+        frame.StackText:SetText(chargesText)
+    end
+end
+
+local function clearCooldownVisual(frame, clearStacks)
+    frame.Cooldown:SetCooldownFromDurationObject(ZERO_DURATION_OBJECT, true)
+    if frame.CooldownTextBinding then
+        frame.CooldownTextBinding:SetDuration(ZERO_DURATION_OBJECT)
+    end
+    frame.Texture:SetDesaturated(false)
+    frame.Texture:SetVertexColor(1, 1, 1, 1)
+    if clearStacks then
+        frame.StackText:SetText('')
+    end
+    frame.currentCooldownInfo = nil
+end
+
+function cooldownDisplay:CacheSourceIDs(frame, db)
     local source = getCooldownSource(db)
+    frame._cooldownSource = source
+    if source == 'spell' then
+        frame._sourceID = tonumber(db.spellID)
+    elseif source == 'item' then
+        frame._sourceID = tonumber(db.itemID)
+    elseif source == 'equipment' then
+        frame._sourceID = tonumber(db.equipmentSlot)
+    else
+        frame._sourceID = nil
+    end
+end
+
+function cooldownDisplay:RenderCooldown(frame, db)
+    local source = frame._cooldownSource or getCooldownSource(db)
+    local sourceID = frame._sourceID
+    if sourceID == nil then
+        if source == 'spell' then
+            sourceID = tonumber(db.spellID)
+        elseif source == 'item' then
+            sourceID = tonumber(db.itemID)
+        elseif source == 'equipment' then
+            sourceID = tonumber(db.equipmentSlot)
+        end
+        frame._sourceID = sourceID
+        frame._cooldownSource = source
+    end
+
     local cooldownInfo = nil
-    local sourceID = nil
     local shouldDesaturate = false
+    local chargesText = nil
 
     if source == 'spell' then
-        sourceID = tonumber(db.spellID)
         if sourceID then
             if db.showStacks then
                 local chargeInfo = self:GetSpellChargeData(sourceID)
                 if chargeInfo then
-                    cooldownInfo = {
-                        durationObject = chargeInfo.durationObject,
-                    }
-                    frame.StackText:SetText(chargeInfo.charges or '')
+                    cooldownInfo = chargeInfo
+                    chargesText = chargeInfo.charges
                 else
-                    frame.StackText:SetText('')
+                    chargesText = ''
                 end
             else
                 cooldownInfo = self:GetSpellCooldownData(sourceID, db.ignoreGlobalCooldown ~= false)
             end
         end
     elseif source == 'item' then
-        sourceID = tonumber(db.itemID)
         if sourceID then
-            cooldownInfo = self:GetItemCooldownData(sourceID)
+            cooldownInfo = self:GetItemCooldownData(frame, sourceID)
             if db.showStacks then
-                frame.StackText:SetText(cooldownInfo.count or '')
+                chargesText = cooldownInfo.count
             end
         end
     elseif source == 'equipment' then
-        sourceID = tonumber(db.equipmentSlot)
         if sourceID then
-            cooldownInfo = self:GetEquipmentCooldownData(sourceID)
+            cooldownInfo = self:GetEquipmentCooldownData(frame, sourceID)
         end
     end
 
     if not cooldownInfo then
-        frame.currentCooldownInfo = nil
-        frame.Cooldown:SetCooldownFromDurationObject(ZERO_DURATION_OBJECT, true)
-        if frame.CooldownTextBinding then
-            frame.CooldownTextBinding:SetDuration(ZERO_DURATION_OBJECT)
-        end
-        frame.Texture:SetDesaturated(false)
-        frame.Texture:SetVertexColor(1, 1, 1, 1)
-        if source ~= 'item' or not db.showStacks then
-            frame.StackText:SetText('')
-        end
+        clearCooldownVisual(frame, source ~= 'item' or not db.showStacks)
         return
     end
 
     if db.desaturateOnCooldown and source == 'spell' and sourceID then
-        local isOnCooldown, isOnGCD = self:GetSpellCooldownState(sourceID)
-        if db.ignoreGlobalCooldown ~= false then
-            shouldDesaturate = isOnCooldown and not isOnGCD
-        else
-            shouldDesaturate = isOnCooldown
+        ---@diagnostic disable-next-line:undefined-field
+        local info = C_Spell.GetSpellCooldown(sourceID)
+        if info then
+            -- Pass secret boolean through to SetDesaturated; do not AND/NOT/branch on it.
+            ---@diagnostic disable-next-line:undefined-field
+            shouldDesaturate = info.isActive
         end
     end
 
-    frame.Cooldown:SetCooldownFromDurationObject(cooldownInfo.durationObject, true)
-    if frame.CooldownTextBinding then
-        frame.CooldownTextBinding:SetDuration(cooldownInfo.durationObject)
-    end
     frame.currentCooldownInfo = cooldownInfo
-    frame.Texture:SetDesaturated(shouldDesaturate)
-    frame.Texture:SetVertexColor(1, 1, 1, 1)
+    applyCooldownVisual(frame, cooldownInfo.durationObject, shouldDesaturate, chargesText)
 end
 
 function cooldownDisplay:Create(frame)
@@ -230,7 +269,7 @@ function cooldownDisplay:Create(frame)
     CooldownText:SetPoint('CENTER', ElementFrame, 'CENTER', 0, 0)
     CooldownText:SetText('')
     frame.CooldownText = CooldownText
-    frame.readyPollElapsed = 0
+    frame._durationObject = C_DurationUtil.CreateDuration()
     frame.CooldownTextBinding = C_DurationUtil.CreateDurationTextBinding()
     frame.CooldownTextBinding:SetFontString(CooldownText)
     frame.CooldownTextBinding:SetExpiredText('')
@@ -261,9 +300,9 @@ function cooldownDisplay:Create(frame)
 
         if event == 'ITEM_DATA_LOAD_RESULT' then
             local itemID = ...
-            local trackedItemID = tonumber(db.itemID)
+            local trackedItemID = selfRef._sourceID or tonumber(db.itemID)
             if trackedItemID and itemID and tonumber(itemID) == trackedItemID then
-                local texture, isCorrect = cooldownDisplay:GetTexture(db)
+                local texture, isCorrect = cooldownDisplay:GetTexture(db, trackedItemID)
                 selfRef.invalidTexture = isCorrect
                 selfRef.Texture:SetTexture(texture)
             end
@@ -271,7 +310,7 @@ function cooldownDisplay:Create(frame)
         end
 
         if not selfRef.invalidTexture then
-            local texture, isCorrect = cooldownDisplay:GetTexture(db)
+            local texture, isCorrect = cooldownDisplay:GetTexture(db, selfRef._sourceID)
             selfRef.invalidTexture = isCorrect
             selfRef.Texture:SetTexture(texture)
         end
@@ -280,23 +319,6 @@ function cooldownDisplay:Create(frame)
     end
 
     frame:SetScript('OnEvent', frame.OnChange)
-    frame:SetScript('OnUpdate', function(selfRef, elapsed)
-        local db = selfRef.db
-        if not db or not db.enable or not selfRef:IsShown() then
-            return
-        end
-
-        selfRef.readyPollElapsed = (selfRef.readyPollElapsed or 0) + elapsed
-        local readyPollInterval = tonumber(db.readyPollInterval) or 1
-        if selfRef.readyPollElapsed >= readyPollInterval then
-            selfRef.readyPollElapsed = 0
-            cooldownDisplay:RenderCooldown(selfRef, db)
-        end
-
-        if not db.showCooldownText and selfRef.CooldownText then
-            selfRef.CooldownText:SetText('')
-        end
-    end)
 end
 
 function cooldownDisplay:Update(frame)
@@ -308,6 +330,7 @@ function cooldownDisplay:Update(frame)
 
     frame:Show()
     frame:RegisterFrameEvents()
+    self:CacheSourceIDs(frame, db)
 
     frame:SetSize(db.width, db.height)
     frame:ClearAllPoints()
@@ -338,9 +361,8 @@ function cooldownDisplay:Update(frame)
     end
     frame.CooldownTextBinding:SetUpdateInterval(tonumber(db.cooldownTextUpdateInterval) or 0.05)
     frame.CooldownTextBinding:SetEnabled(db.showCooldownText)
-    frame.readyPollElapsed = 0
 
-    local texture, isCorrect = self:GetTexture(db)
+    local texture, isCorrect = self:GetTexture(db, frame._sourceID)
     frame.Texture:SetTexture(texture)
     frame.invalidTexture = isCorrect
 
@@ -371,7 +393,7 @@ function cooldownDisplay:Update(frame)
         db.chargeFontFlag
     )
 
-    local source = getCooldownSource(db)
+    local source = frame._cooldownSource or getCooldownSource(db)
     if db.showStacks and source ~= 'equipment' then
         frame.StackText:Show()
     else

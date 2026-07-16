@@ -123,6 +123,7 @@ mythicPlusTimer.Update = function(self)
     if not self.enabled then
         return
     end
+    display:InvalidateStyleCache()
     display:Update()
 end
 

@@ -156,6 +156,37 @@ style.ShouldUseMasque = function(self, barConfig)
     return barConfig and barConfig.useMasque and Masque ~= nil
 end
 
+style.GetStyleSignature = function(self, barConfig)
+    if not barConfig then
+        return ''
+    end
+    local cooldown = barConfig.cooldown or {}
+    local backdrop = barConfig.backdropColor or {}
+    return table.concat({
+        tostring(barConfig.width or 0),
+        tostring(barConfig.height or 0),
+        tostring(barConfig.zoom or 0),
+        barConfig.showBorder and '1' or '0',
+        barConfig.showBackdrop and '1' or '0',
+        barConfig.useMasque and '1' or '0',
+        barConfig.showBlizzardArtwork and '1' or '0',
+        barConfig.showCooldownSwipe ~= false and '1' or '0',
+        barConfig.showCooldownText ~= false and '1' or '0',
+        barConfig.hideCooldownCharge and '1' or '0',
+        cooldown.enabled ~= false and '1' or '0',
+        tostring(cooldown.font or ''),
+        tostring(cooldown.fontSize or 0),
+        tostring(cooldown.fontFlag or ''),
+        tostring(cooldown.anchorPoint or ''),
+        tostring(cooldown.xOffset or 0),
+        tostring(cooldown.yOffset or 0),
+        tostring(backdrop.r or 0),
+        tostring(backdrop.g or 0),
+        tostring(backdrop.b or 0),
+        tostring(backdrop.a or 0),
+    }, ':')
+end
+
 style.BuildLABConfig = function(self, barConfig, commandName)
     local useMasque = self:ShouldUseMasque(barConfig)
     local hideLabBorder = useMasque and not barConfig.showBorder or not useMasque
@@ -270,12 +301,20 @@ style.ApplyCooldownSettings = function(self, button, barConfig)
         end
     end
 
-    if (not barConfig.hideCooldownCharge) then
-        C_Timer.After(0.1, function()
-            if (button.cooldown:IsShown() and button.chargeCooldown:IsShown()) then
-                button.cooldown:SetHideCountdownNumbers(true)
-            end
-        end)
+    -- Prefer an immediate check; only defer once if charge cooldown may appear shortly after.
+    if not barConfig.hideCooldownCharge and button.cooldown and button.chargeCooldown then
+        if button.cooldown:IsShown() and button.chargeCooldown:IsShown() then
+            button.cooldown:SetHideCountdownNumbers(true)
+        elseif not button.exuiChargeCdTimerPending then
+            button.exuiChargeCdTimerPending = true
+            C_Timer.After(0.1, function()
+                button.exuiChargeCdTimerPending = nil
+                if button.cooldown and button.cooldown:IsShown()
+                    and button.chargeCooldown and button.chargeCooldown:IsShown() then
+                    button.cooldown:SetHideCountdownNumbers(true)
+                end
+            end)
+        end
     end
 end
 
@@ -316,7 +355,7 @@ style.HideBlizzardButtonChrome = function(self, button)
     end
 end
 
-style.ApplyIconLayout = function(self, button, barConfig)
+style.ApplyIconLayout = function(self, button, barConfig, force)
     self:NormalizeAbilityButtonIcon(button)
     if not button.icon then
         return
@@ -324,6 +363,9 @@ style.ApplyIconLayout = function(self, button, barConfig)
 
     local w, h = barConfig.width, barConfig.height
     local sizeChanged = button.exuiLayoutWidth ~= w or button.exuiLayoutHeight ~= h
+    if not force and not sizeChanged and button.exuiLayoutApplied then
+        return
+    end
 
     -- SmallActionButtonTemplate (stance/pet/possess) hardcodes mask/cooldown insets in OnLoad.
     button.icon:ClearAllPoints()
@@ -358,9 +400,10 @@ style.ApplyIconLayout = function(self, button, barConfig)
         button.Flash:SetAllPoints(button)
     end
 
+    button.exuiLayoutWidth = w
+    button.exuiLayoutHeight = h
+    button.exuiLayoutApplied = true
     if sizeChanged then
-        button.exuiLayoutWidth = w
-        button.exuiLayoutHeight = h
         self:ApplyCooldownSettings(button, barConfig)
     end
 end
@@ -568,7 +611,9 @@ style.ApplyButtonStyle = function(self, button, barConfig)
         return
     end
 
-    self:ApplyIconLayout(button, barConfig)
+    button.exuiStyleSig = self:GetStyleSignature(barConfig)
+    button.exuiLastEmpty = self:ButtonIsEmpty(button)
+    self:ApplyIconLayout(button, barConfig, true)
 
     if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
         self:StyleMasqueButton(button, barConfig)
@@ -597,14 +642,36 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
         return
     end
 
-    self:ApplyIconLayout(button, barConfig)
+    local styleSig = self:GetStyleSignature(barConfig)
+    local styleChanged = button.exuiStyleSig ~= styleSig
+    if styleChanged then
+        button.exuiStyleSig = styleSig
+        button.exuiLayoutApplied = false
+        self:ApplyIconLayout(button, barConfig, true)
 
-    if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
-        self:StyleMasqueButton(button, barConfig)
+        if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
+            self:StyleMasqueButton(button, barConfig)
+        else
+            self:StyleNonMasqueButtonChrome(button, barConfig)
+        end
+        self:UpdateSlotBackdrop(button, barConfig)
+        button.exuiLastEmpty = self:ButtonIsEmpty(button)
     else
-        self:StyleNonMasqueButtonChrome(button, barConfig)
+        -- Action contents can change without bar style changing; refresh empty chrome cheaply.
+        local isEmpty = self:ButtonIsEmpty(button)
+        if button.exuiLastEmpty ~= isEmpty then
+            button.exuiLastEmpty = isEmpty
+            if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
+                if Masque and Masque.SetEmpty then
+                    Masque:SetEmpty(button, isEmpty)
+                end
+            else
+                self:StyleNonMasqueButtonChrome(button, barConfig)
+            end
+            self:UpdateSlotBackdrop(button, barConfig)
+        end
     end
-    self:UpdateSlotBackdrop(button, barConfig)
+
     self:ApplyCooldownSettings(button, barConfig)
     self:ApplyTextVisibility(button, barConfig)
 end

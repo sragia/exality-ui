@@ -286,11 +286,31 @@ local function getReagentName(reagent)
     end
 end
 
+local recipeSchematicCache = {}
+
+local function getRecipeSchematicCacheKey(recipeID, isRecraft)
+    return (isRecraft and 'r:' or 'n:') .. tostring(recipeID)
+end
+
 local function getRecipeSchematic(recipeID, isRecraft)
-    if ProfessionsUtil and ProfessionsUtil.GetRecipeSchematic then
-        return ProfessionsUtil.GetRecipeSchematic(recipeID, isRecraft)
+    local cacheKey = getRecipeSchematicCacheKey(recipeID, isRecraft)
+    local cached = recipeSchematicCache[cacheKey]
+    if cached ~= nil then
+        return cached or nil
     end
-    return C_TradeSkillUI.GetRecipeSchematic(recipeID, isRecraft)
+
+    local schematic
+    if ProfessionsUtil and ProfessionsUtil.GetRecipeSchematic then
+        schematic = ProfessionsUtil.GetRecipeSchematic(recipeID, isRecraft)
+    else
+        schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, isRecraft)
+    end
+    recipeSchematicCache[cacheKey] = schematic or false
+    return schematic
+end
+
+function trackerData:InvalidateRecipeSchematicCache()
+    wipe(recipeSchematicCache)
 end
 
 local function getReagentQuantityRequired(reagentSlotSchematic, reagent)
@@ -407,15 +427,15 @@ end
 
 function trackerData:CollectRecipeBlocks()
     local blocks = {}
+    if not C_TradeSkillUI or not C_TradeSkillUI.GetRecipesTracked then
+        return blocks
+    end
+
     local function addRecipes(isRecraft)
         local recipes = C_TradeSkillUI.GetRecipesTracked(isRecraft)
         for _, recipeID in ipairs(recipes) do
-            local name
-            if ProfessionsUtil and ProfessionsUtil.GetRecipeSchematic then
-                local schematic = ProfessionsUtil.GetRecipeSchematic(recipeID, isRecraft)
-                name = schematic and schematic.name
-            end
-            name = name or ('Recipe ' .. recipeID)
+            local schematic = getRecipeSchematic(recipeID, isRecraft)
+            local name = schematic and schematic.name or ('Recipe ' .. recipeID)
             if isRecraft then
                 name = PROFESSIONS_CRAFTING_FORM_RECRAFTING_HEADER and
                     PROFESSIONS_CRAFTING_FORM_RECRAFTING_HEADER:format(name) or name

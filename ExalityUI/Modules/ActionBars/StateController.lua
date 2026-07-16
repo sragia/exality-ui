@@ -110,7 +110,22 @@ state.UpdateStanceBar = function(self, db)
 
     db = db or actionBars:GetDB()
     local config = configResolver:GetBarConfig(db, 'stance')
-    specialButton:UpdateStanceButtons(frame, config)
+    if self.stanceUpdatePending then
+        self.pendingStanceConfig = config
+        return
+    end
+
+    self.stanceUpdatePending = true
+    self.pendingStanceConfig = config
+    C_Timer.After(0, function()
+        self.stanceUpdatePending = false
+        local pendingConfig = self.pendingStanceConfig
+        self.pendingStanceConfig = nil
+        local stanceFrame = barMod:Get('stance')
+        if stanceFrame and pendingConfig then
+            specialButton:UpdateStanceButtons(stanceFrame, pendingConfig)
+        end
+    end)
 end
 
 state.UpdatePetBar = function(self, db)

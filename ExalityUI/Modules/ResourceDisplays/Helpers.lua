@@ -169,33 +169,55 @@ function helpers:ClearResourceBarColorCurve(bar)
     bar._lowResourceColorCurveSig = nil
 end
 
+function helpers:InvalidateResourceColorCurveCache(db)
+    if not db then
+        return
+    end
+    db._exuiCachedCurvePoints = nil
+    db._exuiCachedCurveSigBase = nil
+end
+
 function helpers:GetResourceColorCurvePoints(db)
+    if not db then
+        return {}
+    end
+    if db._exuiCachedCurvePoints then
+        return db._exuiCachedCurvePoints
+    end
+
     local points = {}
     for _, point in ipairs(db.resourceColorCurve or {}) do
         if point.percent ~= nil and point.color then
-            table.insert(points, point)
+            points[#points + 1] = point
         end
     end
     table.sort(points, function(a, b)
         return a.percent < b.percent
     end)
+    db._exuiCachedCurvePoints = points
+    db._exuiCachedCurveSigBase = nil
     return points
 end
 
 function helpers:GetResourceColorCurveSignature(db, normalColor)
-    local parts = { tostring(db.resourceColorCurveEnabled) }
-    for _, point in ipairs(self:GetResourceColorCurvePoints(db)) do
-        local color = point.color or {}
-        table.insert(parts, string.format(
-            '%s|%s|%s|%s',
-            point.percent or 0,
-            color.r or 0,
-            color.g or 0,
-            color.b or 0
-        ))
+    normalColor = normalColor or self:GetResourceBarNormalColor(db)
+    local base = db._exuiCachedCurveSigBase
+    if not base then
+        local parts = { tostring(db.resourceColorCurveEnabled) }
+        for _, point in ipairs(self:GetResourceColorCurvePoints(db)) do
+            local color = point.color or {}
+            parts[#parts + 1] = string.format(
+                '%s|%s|%s|%s',
+                point.percent or 0,
+                color.r or 0,
+                color.g or 0,
+                color.b or 0
+            )
+        end
+        base = table.concat(parts, ':')
+        db._exuiCachedCurveSigBase = base
     end
-    table.insert(parts, string.format('%s|%s|%s', normalColor.r or 1, normalColor.g or 1, normalColor.b or 1))
-    return table.concat(parts, ':')
+    return string.format('%s:%s|%s|%s', base, normalColor.r or 1, normalColor.g or 1, normalColor.b or 1)
 end
 
 function helpers:BuildResourcePercentColorCurve(db, normalColor)
@@ -238,9 +260,6 @@ function helpers:ApplyResourceBarColor(bar, db, current, max, normalColor, power
     if not bar or not db or not db.resourceColorCurveEnabled then
         return false
     end
-    if #self:GetResourceColorCurvePoints(db) == 0 then
-        return false
-    end
     if not C_CurveUtil or not C_CurveUtil.CreateColorCurve or not CreateColor then
         return false
     end
@@ -248,12 +267,16 @@ function helpers:ApplyResourceBarColor(bar, db, current, max, normalColor, power
     normalColor = normalColor or self:GetResourceBarNormalColor(db)
 
     local signature = self:GetResourceColorCurveSignature(db, normalColor)
-    if not bar._lowResourceColorCurve or bar._lowResourceColorCurveSig ~= signature then
-        bar._lowResourceColorCurve = self:BuildResourcePercentColorCurve(db, normalColor)
+    local curve = bar._lowResourceColorCurve
+    if not curve or bar._lowResourceColorCurveSig ~= signature then
+        if #self:GetResourceColorCurvePoints(db) == 0 then
+            return false
+        end
+        curve = self:BuildResourcePercentColorCurve(db, normalColor)
+        bar._lowResourceColorCurve = curve
         bar._lowResourceColorCurveSig = signature
     end
 
-    local curve = bar._lowResourceColorCurve
     if not curve then
         return false
     end
