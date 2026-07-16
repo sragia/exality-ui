@@ -22,9 +22,11 @@ preview.forcedUnit = nil
 preview.activeStateKeys = {}
 preview._pendingSync = false
 
-local function frameStateKey(displayID, frame)
+local function frameStateKey(frame)
+    -- One preview container per unit frame so switching displays always
+    -- re-anchors/relayouts instead of stacking stale per-display containers.
     local name = frame.GetName and frame:GetName()
-    return ('uf:%s:%s'):format(tostring(displayID), name or tostring(frame))
+    return ('uf:%s'):format(name or tostring(frame))
 end
 
 local function positionPreviewContainer(container, frame, display)
@@ -229,13 +231,15 @@ function preview:Refresh(displayID)
     end
 
     local frames = self:GetFramesForUnit(unitType)
-    local nextKeys = {}
     local visual = group.visual
+
+    -- Reset first so previous display anchors/sizes cannot linger on the frame.
+    self:ClearPreviewStates()
 
     for _, frame in ipairs(frames) do
         if frame:IsShown() or frame.isFake then
             self:SuppressRealAuras(frame, displayID)
-            local stateKey = frameStateKey(displayID, frame)
+            local stateKey = frameStateKey(frame)
             local layoutDisplay = layoutDisplayForFrame(display, frame)
             adPreview:BuildPreviewOnFrame(
                 stateKey,
@@ -245,15 +249,7 @@ function preview:Refresh(displayID)
                 positionPreviewContainer,
                 adPreview:GetPreviewCount(group)
             )
-            nextKeys[stateKey] = true
             self.activeStateKeys[stateKey] = true
-        end
-    end
-
-    for stateKey in pairs(self.activeStateKeys) do
-        if not nextKeys[stateKey] then
-            adPreview:HidePreview(stateKey)
-            self.activeStateKeys[stateKey] = nil
         end
     end
 
@@ -290,17 +286,25 @@ function preview:Sync(displayID)
         self:Refresh(self._queuedDisplayID or (editor and editor.currItemID))
     end
 
-    -- Party ForceShow creates child frames next frame; wait one more so they are forced.
-    if unitType == 'party' and not self:HasNaturalGroupFrames('party') then
+    -- Defer when ForceShowing party, or when switching displays so anchors
+    -- apply against settled frame sizes (avoids stale preview positioning).
+    local switchingDisplay = self.activeDisplayID and displayID and self.activeDisplayID ~= displayID
+    local deferPartyForce = unitType == 'party' and not self:HasNaturalGroupFrames('party')
+    if switchingDisplay or deferPartyForce then
         if self._pendingSync then
             return
         end
         self._pendingSync = true
         C_Timer.After(0, function()
-            C_Timer.After(0, function()
+            if deferPartyForce then
+                C_Timer.After(0, function()
+                    self._pendingSync = false
+                    doRefresh()
+                end)
+            else
                 self._pendingSync = false
                 doRefresh()
-            end)
+            end
         end)
         return
     end

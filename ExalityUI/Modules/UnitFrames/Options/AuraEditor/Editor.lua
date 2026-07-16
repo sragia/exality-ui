@@ -10,6 +10,9 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIUnitFramesAuras
 local ufAuras = EXUI:GetModule('uf-auras')
 
+---@class EXUIUnitFramesAurasDefaults
+local ufAuraDefaults = EXUI:GetModule('uf-auras-defaults')
+
 ---@class EXUIUFAuraEditorContainerOptions
 local containerOptions = EXUI:GetModule('uf-aura-editor-container-options')
 
@@ -34,11 +37,13 @@ local editor = EXUI:GetModule('uf-aura-editor')
 editor.window = nil
 editor.splitView = nil
 editor.innerTabs = nil
+editor.unitSelector = nil
 editor.fields = {}
 editor.currItemID = nil
 editor.currTabID = nil
 editor.contextUnit = nil
 editor._suppressItemChange = false
+editor._suppressUnitChange = false
 
 local SECTION_TABS = {
     { ID = 'container', label = 'Container' },
@@ -199,6 +204,102 @@ function editor:AddInnerTabs()
     end
 end
 
+function editor:GetUnitOptions()
+    local options = {}
+    for index, unitKey in ipairs(ufAuraDefaults.UNIT_ORDER) do
+        options[unitKey] = {
+            label = ufAuraDefaults.UNIT_OPTIONS[unitKey] or unitKey,
+            order = index,
+        }
+    end
+    return options
+end
+
+function editor:UpdateTitle()
+    if not self.window then
+        return
+    end
+    local unitLabel = ufAuraDefaults.UNIT_OPTIONS[self.contextUnit]
+        or EXUI.utils.capitalize(self.contextUnit)
+        or self.contextUnit
+    self.window:SetTitle('Unit Frame Aura Editor — ' .. unitLabel)
+end
+
+function editor:SetContextUnit(unit)
+    if not unit or unit == self.contextUnit then
+        return
+    end
+
+    -- Tear down previous unit's force-show / suppressed live auras.
+    ufPreview:Clear()
+
+    self.contextUnit = unit
+    ufAuras.contextUnit = unit
+    ufPreview:SetContext(unit)
+    self.currItemID = nil
+    if self.splitView then
+        self.splitView.activeID = nil
+    end
+    self.currTabID = self.currTabID or 'container'
+    self:UpdateTitle()
+    self:SyncUnitSelector()
+    self:Refresh()
+end
+
+function editor:SyncUnitSelector()
+    if not self.unitSelector or not self.contextUnit then
+        return
+    end
+    self._suppressUnitChange = true
+    self.unitSelector:SetValue('value', self.contextUnit)
+    self._suppressUnitChange = false
+end
+
+function editor:EnsureUnitSelector()
+    if self.unitSelector or not self.window or not self.window.close then
+        return
+    end
+
+    local dropdown = EXFrames:GetFrame('dropdown'):Create({
+        label = '',
+        width = 130,
+        height = 28,
+    })
+    dropdown:SetParent(self.window)
+    dropdown:SetFrameStrata(self.window:GetFrameStrata())
+    dropdown:SetFrameLevel(self.window.close:GetFrameLevel() + 1)
+    dropdown:SetOptionData({
+        label = '',
+        getOptions = function()
+            return editor:GetUnitOptions()
+        end,
+        currentValue = function()
+            return editor.contextUnit
+        end,
+        onChange = function(value)
+            if editor._suppressUnitChange then
+                return
+            end
+            editor:SetContextUnit(value)
+        end,
+    })
+    if dropdown.SetLabel then
+        dropdown:SetLabel('')
+    end
+    if dropdown.label then
+        dropdown.label:Hide()
+    end
+    if dropdown.inputArea then
+        dropdown.inputArea:ClearAllPoints()
+        dropdown.inputArea:SetAllPoints()
+    end
+    dropdown:ClearAllPoints()
+    dropdown:SetSize(EXFrames:ScalePixel(130, self.window), EXFrames:ScalePixel(28, self.window))
+    dropdown:SetPoint('TOP', self.window.close, 'TOP', 0, 0)
+    dropdown:SetPoint('RIGHT', self.window.close, 'LEFT', EXFrames:ScalePixel(-6, self.window), 0)
+    self.unitSelector = dropdown
+end
+
 function editor:EnsureSplitView()
     if self.splitView then
         return
@@ -226,14 +327,14 @@ function editor:EnsureSplitView()
             self.currItemID = id
             return
         end
-        local sameItem = self.currItemID == id and self.innerTabs
         self.currItemID = id
         groupNav:EnsureGroupSelected(id)
         self.currTabID = self.currTabID or 'container'
-        if sameItem then
-            self:PopulateFields()
-        else
+        -- Keep the selected section tab; only rebuild fields for the new display.
+        if not self.innerTabs then
             self:AddInnerTabs()
+        else
+            self:PopulateFields()
         end
         ufPreview:Sync(id)
     end)
@@ -271,13 +372,29 @@ function editor:RefreshItemList()
             end
         end
     end
+    if not selectID and self.splitView.activeID then
+        for _, item in ipairs(items) do
+            if item.type ~= 'category' and item.ID == self.splitView.activeID then
+                selectID = self.splitView.activeID
+                break
+            end
+        end
+    end
     if not selectID then
-        selectID = self.splitView.activeID
+        for _, item in ipairs(items) do
+            if item.type ~= 'category' then
+                selectID = item.ID
+                break
+            end
+        end
     end
 
     if selectID then
         -- Silent highlight only — do not rebuild tabs/fields (avoids zero-width layout).
         self:SetActiveItemSilent(selectID)
+    else
+        self.currItemID = nil
+        self.splitView.activeID = nil
     end
 end
 
@@ -319,19 +436,34 @@ function editor:Refresh(selectID)
 end
 
 function editor:Show(contextUnit)
-    self.contextUnit = contextUnit
-    ufAuras.contextUnit = contextUnit
-
     if not self.window then
         self.window = self:CreateWindow()
     end
 
     ufPreview:HookEditorWindow(self.window)
-    ufPreview:SetContext(contextUnit)
-
-    self.window:SetTitle('Unit Frame Aura Editor — ' .. (EXUI.utils.capitalize(contextUnit) or contextUnit))
     self:EnsureSplitView()
-    self.currTabID = 'container'
+    self:EnsureUnitSelector()
+
+    if contextUnit and contextUnit ~= self.contextUnit then
+        if self.contextUnit then
+            ufPreview:Clear()
+        end
+        self.contextUnit = contextUnit
+        ufAuras.contextUnit = contextUnit
+        ufPreview:SetContext(contextUnit)
+        self.currItemID = nil
+        if self.splitView then
+            self.splitView.activeID = nil
+        end
+    elseif not self.contextUnit then
+        self.contextUnit = contextUnit
+        ufAuras.contextUnit = contextUnit
+        ufPreview:SetContext(contextUnit)
+    end
+
+    self.currTabID = self.currTabID or 'container'
+    self:UpdateTitle()
+    self:SyncUnitSelector()
     self.window:ShowWindow()
     -- Layout after show so right panel / scroll child have real widths.
     self:Refresh(self.currItemID)

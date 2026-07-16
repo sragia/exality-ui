@@ -373,6 +373,7 @@ end
 function preview:EnsurePreviewContainer(stateKey, frame, display, positionFn)
     local state = self:EnsureState(stateKey)
     if state.container then
+        state.container:ClearAllPoints()
         state.container:SetParent(frame)
         if positionFn then
             positionFn(state.container, frame, display)
@@ -671,6 +672,8 @@ function preview:HidePreview(stateKey)
 
     if state.container then
         state.container:Hide()
+        state.container:ClearAllPoints()
+        state.container:SetSize(1, 1)
     end
 end
 

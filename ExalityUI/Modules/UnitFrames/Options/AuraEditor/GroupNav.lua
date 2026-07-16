@@ -24,6 +24,19 @@ local auraDisplays = EXUI:GetModule('uf-auras')
 ---@class EXUIUFAuraEditorGroupNav
 local groupNav = EXUI:GetModule('uf-aura-editor-group-nav')
 
+local ICONS = nil
+local function getIcons()
+    if not ICONS then
+        local icons = EXUI.const.textures.frame.icons
+        ICONS = {
+            plus = icons.plus,
+            duplicate = icons.duplicate,
+            delete = icons.delete,
+        }
+    end
+    return ICONS
+end
+
 function groupNav:GetGroupLabel(display, index)
     return 'Group ' .. tostring(index)
 end
@@ -55,6 +68,9 @@ function groupNav:GetFields(displayID)
         return {}
     end
 
+    local icons = getIcons()
+    local theme = EXUI.const.theme
+
     return {
         { type = 'title', label = 'Groups', width = 100 },
         {
@@ -76,9 +92,12 @@ function groupNav:GetFields(displayID)
         },
         {
             type = 'button',
-            label = 'Add Group',
             name = 'addGroup',
-            width = 20,
+            width = 5,
+            square = true,
+            align = 'BOTTOM',
+            tooltip = { text = 'Add Group' },
+            icon = { file = icons.plus, width = 16, height = 16 },
             onClick = function()
                 local groupID = auraDisplays:AddGroup(displayID)
                 auraDisplays.currGroupID = groupID
@@ -88,11 +107,14 @@ function groupNav:GetFields(displayID)
         },
         {
             type = 'button',
-            label = 'Remove',
             name = 'removeGroup',
-            width = 20,
-            color = EXUI.EXFrames.Theme.danger,
-            hoverColor = EXUI.EXFrames.Theme.dangerHover,
+            width = 5,
+            square = true,
+            align = 'BOTTOM',
+            tooltip = { text = 'Remove Group' },
+            icon = { file = icons.delete, width = 16, height = 16 },
+            color = theme.danger,
+            hoverColor = theme.dangerHover,
             onClick = function()
                 if #display.groupOrder <= 1 then
                     return
@@ -105,9 +127,12 @@ function groupNav:GetFields(displayID)
         },
         {
             type = 'button',
-            label = 'Duplicate',
             name = 'duplicateGroup',
-            width = 20,
+            width = 5,
+            square = true,
+            align = 'BOTTOM',
+            tooltip = { text = 'Duplicate Group' },
+            icon = { file = icons.duplicate, width = 16, height = 16 },
             color = { 2 / 255, 145 / 255, 227 / 255, 1 },
             hoverColor = { 32 / 255, 165 / 255, 240 / 255, 1 },
             onClick = function()
@@ -117,6 +142,7 @@ function groupNav:GetFields(displayID)
                 refreshEditorOptions()
             end,
         },
+        { type = 'spacer', width = 45 },
         { type = 'spacer', width = 100 },
     }
 end

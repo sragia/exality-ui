@@ -50,8 +50,16 @@ end
 
 function ufAuras:EnsureDB()
     local db = self:GetDB()
+    local dirty = false
     if db.__exuiDefaultsVersion ~= defaults.SCHEMA_VERSION then
         defaults:MergeIntoDB(db)
+        dirty = true
+    end
+    if defaults:SeedStarterDisplays(db) then
+        defaults:MergeIntoDB(db)
+        dirty = true
+    end
+    if dirty then
         self:SaveDB(db)
     end
     return db
@@ -337,8 +345,17 @@ function ufAuras:GetSplitViewItems(contextUnit)
         end
     end
 
+    local theme = EXUI.const.theme
+    local success = theme.success
+    local danger = theme.danger
+
     local items = {}
-    table.insert(items, { type = 'category', label = 'Active' })
+    table.insert(items, {
+        type = 'category',
+        label = 'Active',
+        bgColor = { success[1], success[2], success[3], 0.28 },
+        textColor = { success[1], success[2], success[3], 1 },
+    })
     if #active == 0 then
         -- keep category visible even when empty
     else
@@ -346,7 +363,13 @@ function ufAuras:GetSplitViewItems(contextUnit)
             table.insert(items, item)
         end
     end
-    table.insert(items, { type = 'category', label = 'Inactive' })
+    table.insert(items, {
+        type = 'category',
+        label = 'Inactive',
+        spacingAbove = 10,
+        bgColor = { danger[1], danger[2], danger[3], 0.28 },
+        textColor = { danger[1], danger[2], danger[3], 1 },
+    })
     for _, item in ipairs(inactive) do
         table.insert(items, item)
     end

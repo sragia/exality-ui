@@ -159,7 +159,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'enable') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'enable', v); auraDisplays:RefreshDisplay(
-                displayID)
+                    displayID)
             end,
         },
         {
@@ -171,7 +171,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'groupType') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'groupType', v); auraDisplays:RefreshDisplay(
-                displayID); optionsFields:RefreshOptions()
+                    displayID); optionsFields:RefreshOptions()
             end,
         },
         {
@@ -186,7 +186,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'maxFrameCount') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'maxFrameCount', v); auraDisplays:RefreshDisplay(
-                displayID)
+                    displayID)
             end,
         },
         {
@@ -198,7 +198,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'sortMethod') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'sortMethod', v); auraDisplays:RefreshDisplay(
-                displayID)
+                    displayID)
             end,
         },
         {
@@ -210,7 +210,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'sortDirection') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'sortDirection', v); auraDisplays:RefreshDisplay(
-                displayID)
+                    displayID)
             end,
         },
     })
@@ -218,11 +218,11 @@ function conditionsOptions:GetOptions(displayID, groupID)
     append(fields, self:GetFilterFields(displayID, groupID))
 
     append(fields, {
-        { type = 'title', label = 'Spell IDs', width = 100 },
+        { type = 'title', label = 'Spell IDs',  width = 100 },
         {
             type = 'disclaimer',
             label =
-            'Spell ID filters are inactive for this unit/filter combination. They only apply to HELPFUL on friendly units and HARMFUL on enemy units.',
+            'Spell ID filters can be inactive for this unit/filter combination. They only apply to HELPFUL on friendly units and HARMFUL on enemy units.',
             name = 'spellIdNotice',
             width = 100,
             depends = function()
@@ -266,7 +266,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'maxDuration') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'maxDuration', v); auraDisplays:RefreshDisplay(
-                displayID)
+                    displayID)
             end,
         },
         { type = 'title', label = 'Aura Flags', width = 100 },
@@ -292,7 +292,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, entry.key) end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, entry.key, v); auraDisplays:RefreshDisplay(
-                displayID)
+                    displayID)
             end,
         })
     end
