@@ -4,28 +4,41 @@ local EXUI = select(2, ...)
 EXUI.changelog = [[
 # |cffdb49000.5.0|r
 
-- Visual update for options.
-- Added minimap styling.
-- Pixel Perfect improvements.
-- [Skins] Multiple blizzard windows are now skinned.
-- [Raid Tools] Battle Res rewrite — masked icon, configurable timer position, visibility modes.
-- [Character Frame] Fix stats issue with secrets.
-- [Action Bars] Implemented Action Bar initial version. Might have some bugs, so be aware of it.
-- [Aura Displays] New module for displaying auras anywhere on your screen. Apply filters and modify their look however you want.
-- [Aura Displays] Added bar display style per group with configurable fill, track, border, side icon, spell name, and duration text.
-- [Resource Displays] Updated resource display configs. Way more options to customize
-- [Profiles] Profile management moved to the Profiles window (gear icon in options). Export and import now support selecting individual modules.
-- [Cooldowns] Updated cooldown configs.
-- [Objective Tracker] New module that replaces default Blizzard objective tracker. Adds a bit more options to customize it more.
-- [Mythic Plus Timer] New Module for displaying timer. Fairly basic, mostly meant to be as something to use while using Objective Tracker functionality as other M+ Timers will not be able to hide them easily. However there's option to hide my Objective Tracker in M+ setting.
-- [Edit Mode] Improved Edit Mode. Added X/Y offset editor. Improve selecting frames that are overlapping. Add Snap mode. Nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.
+## General
+- Updated options. Adjusted styling, made them more compact (aka smaller), sidebar menu is collapsable.
+- Improved Pixel Perfect across the board. Most if not all elements should now look much closer to what is set.
 
-## UF Aura rework
-12.1 adds new Aura system. This brings a lot of nice changes that we can use.
-As such whole Aura system has been rewritten, and unfortunately what this means is that all auras settings have been nuked.
-You will need to redo them, sorry. But there's way more adjustments you can do now.
+## Aura Displays |cffeb7a34New|r
+New module for displaying auras using new 12.1 aura system.
+Create aura displays and place them anywhere on your screen. Adjust visual look, what unit to show it for, what filters to use, and what kind of conditions to load them on.
 
-For example, you can make as many different displays on the Unit Frames as you want. You can re-use same display for multiple units. You can apply more powerful filters. And much more...
+## Action Bars |cffeb7a34New|r
+Fairly basic action bar module. Adjust visual look of each bar, quick keybind mode.
+
+## Minimap |cffeb7a34New|r
+Minimap styling. Adjust size, clock, zone name, button styling on it.
+
+## Objective Tracker |cffeb7a34New|r
+Custom objective tracker replacing default blizzard one. Allows to have more styling options. Easier filtering of objectives via quick filter bar at the top of tracker.
+Easier untracking of the quests/recipes/achievements by just middle clicking on them.
+
+## Mythic Plus Timer |cffeb7a34New|r
+As complimentary to the objective tracker, added M+ timer. Fairly basic functionality.
+Mostly meant as something that is there to use while also using my Objective Tracker as other M+ Timers will not be able to hide them easily. However there's option to hide my Objective Tracker in M+ setting.
+
+## Unit Frames
+Aura Rework. Now you can make as many displays on each unit frame as you want, you can reuse the same display for multiple units. Have much more powerful filters to use. 
+Old aura settings will no longer be available and you will need to redo them, sorry.
+
+## Profiles
+Profiles moved completely to it's own window. Added partial profile import/export, you can choose which modules to export now.
+
+## Cooldowns & Resource Displays
+Updated both module options to match new style better, and also added some more additional options to use, like color curve where you can adjust the color of the resource display bar depending on value.
+Or some improved CD options like desature on cooldown.
+
+## Edit Mode
+Improved Edit mod, added X/Y offset editor, improved selecting frames that are overlapping, added snap mode, nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.
 
 # |cffdb49000.2.8|r
 
