@@ -639,7 +639,7 @@ core.UpdateRaidContainerSize = function(self, container)
     local unitHeight = self:GetValueForUnit('raid', 'sizeHeight')
     local spacingX = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingX'), container)
     local spacingY = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingY'), container)
-    local columnCount = math.min(MAX_GROUPS, #container.groupHeaders)
+    local columnCount = #container.groupHeaders
     local containerWidth = unitWidth * columnCount + spacingX * math.max(0, columnCount - 1)
     local containerHeight = unitHeight * RAID_MEMBERS_PER_GROUP + spacingY * math.max(0, RAID_MEMBERS_PER_GROUP - 1)
     EXUI:SetSize(container, containerWidth, containerHeight)
@@ -722,14 +722,15 @@ core.CheckRaidDificulty = function(self)
     local _, instanceType, difficulty = GetInstanceInfo()
     local raidHeader = core.headers['raid']
     if (not raidHeader) then return end
-    if (instanceType == 'raid') then
-        if (difficulty == 16) then
-            -- Mythic
-            MAX_GROUPS = 4
-        else
-            -- Flex
-            MAX_GROUPS = 8
-        end
+
+    local maxGroups = 8
+    if (instanceType == 'raid' and difficulty == 16) then
+        -- Mythic raid: only groups 1-4 are used
+        maxGroups = 4
+    end
+
+    if (MAX_GROUPS ~= maxGroups) then
+        MAX_GROUPS = maxGroups
         self:UpdateRaidLayout(raidHeader)
     end
 end
