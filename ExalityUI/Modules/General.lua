@@ -180,7 +180,10 @@ generalModule.GetOptions = function(self)
         type = 'toggle',
         onChange = function(value)
             data:SetDataByKey('replaceFonts', value)
-            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+            -- Damage numbers need a full logout; UI fonts apply on reload
+            EXUI:GetModule('options-reload-dialog'):ShowDialog(
+                'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
+            )
             optionsFields:RefreshOptions()
         end,
         currentValue = function()
@@ -207,12 +210,23 @@ generalModule.GetOptions = function(self)
         isFontDropdown = true,
         onChange = function(value)
             data:SetDataByKey('font', value)
-            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+            EXUI:GetModule('options-reload-dialog'):ShowDialog(
+                'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
+            )
         end,
         currentValue = function()
             return data:GetDataByKey('font')
         end,
         width = 33,
+    })
+    table.insert(options, {
+        type = 'disclaimer',
+        label = 'Relog (character select) is required for floating damage numbers to use the new font. A /reload is not enough.',
+        name = 'fontRelogNotice',
+        width = 100,
+        depends = function()
+            return data:GetDataByKey('replaceFonts')
+        end,
     })
 
     return options
@@ -581,6 +595,12 @@ generalModule.fonts = {
     Init = function(self)
         if (not data:GetDataByKey('replaceFonts')) then return end
         self:UpdateFonts()
+        -- World damage font is cached by the engine; re-apply after world load
+        EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'general-fonts', function()
+            if (data:GetDataByKey('replaceFonts')) then
+                generalModule.fonts:UpdateFonts()
+            end
+        end)
     end,
     fontsToReplace = {
         "SystemFont_Shadow_Small_Outline",
@@ -1027,9 +1047,19 @@ generalModule.fonts = {
         "ObjectiveTrackerLineFont",
         "ObjectiveTrackerHeaderFont",
     },
+    -- Engine world-text paths need AddOns + backslashes (SetFont is more forgiving)
+    NormalizeFontPath = function(_, path)
+        if (type(path) ~= 'string') then return path end
+        return path:gsub('/', '\\'):gsub('[Aa][Dd][Dd][Oo][Nn][Ss]', 'AddOns')
+    end,
     UpdateFonts = function(self)
-        local defaultFont = LSM:Fetch('font', data:GetDataByKey('font'))
+        local fontName = data:GetDataByKey('font')
+        if (type(fontName) ~= 'string') then return end
+        local defaultFont = LSM:Fetch('font', fontName)
         if (not defaultFont) then return end
+        -- World floating damage/heal numbers read this path (not a FontObject).
+        -- Requires a full logout to take effect; /reload is not enough.
+        DAMAGE_TEXT_FONT = self:NormalizeFontPath(defaultFont)
         local objectiveTrackerModule = EXUI:GetModule('objective-tracker')
         local otModuleActive = objectiveTrackerModule.ManagesObjectiveTrackerFonts
             and objectiveTrackerModule:ManagesObjectiveTrackerFonts()

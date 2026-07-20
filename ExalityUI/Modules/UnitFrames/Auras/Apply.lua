@@ -203,9 +203,6 @@ function apply:ApplyItemEnchantments(container, containerConfig)
 end
 
 function apply:RebuildGroups(container, displayID, display, frame)
-    frame._ufAuraSlotButtons = frame._ufAuraSlotButtons or {}
-    frame._ufAuraSlotButtons[displayID] = {}
-
     for _, groupID in ipairs(display.groupOrder or {}) do
         local group = display.groups and display.groups[groupID]
         if group and group.conditions and group.conditions.enable and loadConditions:ShouldLoad(group.load) then
@@ -213,31 +210,7 @@ function apply:RebuildGroups(container, displayID, display, frame)
             -- Stable keys via UF defaults (do NOT use oUF AddGroup — it invents a new key every call).
             local groupKey = defaults:GetGroupKey(displayID, groupID)
 
-            if options.groupType == 'slot' then
-                if container.AddAuraSlot then
-                    container:AddAuraSlot(groupKey, options.filterString, {
-                        sortMethod = options.sortMethod,
-                        sortDirection = options.sortDirection,
-                        candidateFilters = options.candidateFilters,
-                        initializeFrame = options.initializeFrame,
-                    })
-                    local slot = container.GetAuraSlot and container:GetAuraSlot(groupKey)
-                    if slot and slot.GetFrame then
-                        local slotButton = slot:GetFrame()
-                        if slotButton then
-                            slotButton:ClearAllPoints()
-                            slotButton:SetPoint(
-                                group.visual.slotAnchorPoint or 'CENTER',
-                                frame.ElementFrame or frame,
-                                group.visual.slotRelativePoint or 'CENTER',
-                                group.visual.slotXOff or 0,
-                                group.visual.slotYOff or 0
-                            )
-                            frame._ufAuraSlotButtons[displayID][groupKey] = slotButton
-                        end
-                    end
-                end
-            elseif container.AddAuraGroup then
+            if container.AddAuraGroup then
                 container:AddAuraGroup(groupKey, options.filterString, {
                     maxFrameCount = options.maxFrameCount,
                     sortMethod = options.sortMethod,

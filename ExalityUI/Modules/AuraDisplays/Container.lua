@@ -54,7 +54,6 @@ function containerModule:ClearContainer(frame)
         frame.AuraContainer:SetParent(nil)
         frame.AuraContainer = nil
     end
-    frame._slotButtons = nil
 end
 
 function containerModule:AnchorContainer(container, frame, display)
@@ -221,35 +220,11 @@ function containerModule:RebuildGroups(frame, displayID, display)
         return
     end
 
-    frame._slotButtons = {}
-
     for _, groupID in ipairs(display.groupOrder or {}) do
         local group = display.groups[groupID]
         if group and group.conditions.enable and loadConditions:ShouldLoad(group.load) then
             local options = resolver:ResolveGroupOptions(displayID, display, groupID, group, buttonStyle)
-            if options.groupType == 'slot' and container.AddAuraSlot then
-                container:AddAuraSlot(options.groupKey, options.filterString, {
-                    sortMethod = options.sortMethod,
-                    sortDirection = options.sortDirection,
-                    candidateFilters = options.candidateFilters,
-                    initializeFrame = options.initializeFrame,
-                })
-                local slot = container.GetAuraSlot and container:GetAuraSlot(options.groupKey)
-                if slot and slot.GetFrame then
-                    local slotButton = slot:GetFrame()
-                    if slotButton then
-                        slotButton:ClearAllPoints()
-                        slotButton:SetPoint(
-                            group.visual.slotAnchorPoint or 'CENTER',
-                            frame,
-                            group.visual.slotRelativePoint or 'CENTER',
-                            group.visual.slotXOff or 0,
-                            group.visual.slotYOff or 0
-                        )
-                        frame._slotButtons[options.groupKey] = slotButton
-                    end
-                end
-            elseif container.AddAuraGroup then
+            if container.AddAuraGroup then
                 container:AddAuraGroup(options.groupKey, options.filterString, {
                     maxFrameCount = options.maxFrameCount,
                     sortMethod = options.sortMethod,

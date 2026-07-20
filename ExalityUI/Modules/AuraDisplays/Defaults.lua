@@ -78,7 +78,6 @@ defaults.GROUP_LOAD = {
 
 defaults.GROUP_CONDITIONS = {
     enable = true,
-    groupType = 'group',
     filterTokens = {
         { token = 'HELPFUL', negated = false },
     },
@@ -129,10 +128,6 @@ defaults.GROUP_VISUAL = {
     forceNewRow = false,
     elementWidth = 0,
     elementHeight = 0,
-    slotAnchorPoint = 'CENTER',
-    slotRelativePoint = 'CENTER',
-    slotXOff = 0,
-    slotYOff = 0,
     showStacks = true,
     stackFont = 'DMSans',
     stackFontSize = 12,

@@ -164,8 +164,8 @@ EXUI.const = {
         }
     },
     fonts = {
-        Bahnschrift = [[Interface/Addons/ExalityUI/Assets/Fonts/bahnschrift.ttf]],
-        DEFAULT = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
+        Bahnschrift = [[Interface\AddOns\ExalityUI\Assets\Fonts\bahnschrift.ttf]],
+        DEFAULT = [[Interface\AddOns\ExalityUI\Assets\Fonts\DMSans.ttf]],
     },
     backdrop = {
         DEFAULT = {

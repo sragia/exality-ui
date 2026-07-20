@@ -50,57 +50,39 @@ function buttonStyle:ApplyBarInsets(statusBar, parent)
     statusBar:SetAllPoints(parent)
 end
 
-function buttonStyle:ApplyBarBorderChrome(borderFrame, visual, useSafeChrome)
+function buttonStyle:ApplyBarBorderChrome(borderFrame, visual)
     local thickness = visual.barBorderThickness or 1
     local borderColor = visual.barBorderColor or { r = 0, g = 0, b = 0, a = 1 }
 
-    if useSafeChrome then
-        if not borderFrame.BarPPBorder then
-            borderFrame.BarPPBorder = EXUI:AddPixelPerfectBorder(borderFrame, thickness, { register = false, layer = 'OVERLAY' })
-        end
-        borderFrame.BarPPBorder:SetBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
-        borderFrame.BarPPBorder:SetBorderThickness(thickness)
-        self:SetIconBorderVisibility(borderFrame.BarPPBorder, true)
-        if borderFrame.SetBackdrop then
-            borderFrame:SetBackdrop(nil)
-        end
-        return
+    if not borderFrame.BarPPBorder then
+        borderFrame.BarPPBorder = EXUI:AddPixelPerfectBorder(borderFrame, thickness, { register = false, layer = 'OVERLAY' })
     end
-
-    borderFrame:SetBackdrop(EXUI.const.backdrop.pixelPerfect(thickness, borderFrame))
-    borderFrame:SetBackdropColor(0, 0, 0, 0)
-    borderFrame:SetBackdropBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
-    if borderFrame.BarPPBorder then
-        self:SetIconBorderVisibility(borderFrame.BarPPBorder, false)
+    borderFrame.BarPPBorder:SetBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
+    borderFrame.BarPPBorder:SetBorderThickness(thickness)
+    self:SetIconBorderVisibility(borderFrame.BarPPBorder, true)
+    if borderFrame.SetBackdrop then
+        borderFrame:SetBackdrop(nil)
     end
 end
 
-function buttonStyle:ApplyBarTrackChrome(container, borderFrame, visual, useSafeChrome)
+function buttonStyle:ApplyBarTrackChrome(container, borderFrame, visual)
     local thickness = visual.barBorderThickness or 1
     local inset = EXUI:GetBorderInset(borderFrame, thickness, 0)
     local bgColor = visual.barBackgroundColor or { r = 0, g = 0, b = 0, a = 0.5 }
 
     container:ClearAllPoints()
+    -- Top/sides inset inside the PP border; bottom stays flush (bottom border is outward).
     container:SetPoint('TOPLEFT', borderFrame, 'TOPLEFT', inset, -inset)
-    container:SetPoint('BOTTOMRIGHT', borderFrame, 'BOTTOMRIGHT', -inset, inset)
+    container:SetPoint('BOTTOMRIGHT', borderFrame, 'BOTTOMRIGHT', -inset, 0)
 
-    if useSafeChrome then
-        if not container.BarTrackBg then
-            container.BarTrackBg = container:CreateTexture(nil, 'BACKGROUND')
-            container.BarTrackBg:SetAllPoints()
-        end
-        container.BarTrackBg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, bgColor.a or 1)
-        container.BarTrackBg:Show()
-        if container.SetBackdrop then
-            container:SetBackdrop(nil)
-        end
-        return
+    if not container.BarTrackBg then
+        container.BarTrackBg = container:CreateTexture(nil, 'BACKGROUND')
+        container.BarTrackBg:SetAllPoints()
     end
-
-    container:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
-    container:SetBackdropColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a or 1)
-    if container.BarTrackBg then
-        container.BarTrackBg:Hide()
+    container.BarTrackBg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, bgColor.a or 1)
+    container.BarTrackBg:Show()
+    if container.SetBackdrop then
+        container:SetBackdrop(nil)
     end
 end
 
@@ -177,14 +159,14 @@ function buttonStyle:ApplyBarPixelPerfect(button, visual)
     EXUI:SetSize(button, totalWidth, totalHeight)
     EXUI:SetSize(borderFrame, barWidth, barHeight)
 
-    self:ApplyBarBorderChrome(borderFrame, visual, self:UsesSafeBarChrome(button))
-    self:ApplyBarTrackChrome(container, borderFrame, visual, self:UsesSafeBarChrome(button))
+    self:ApplyBarBorderChrome(borderFrame, visual)
+    self:ApplyBarTrackChrome(container, borderFrame, visual)
 
     if button.BarStatusBar then
         self:ApplyBarInsets(button.BarStatusBar, container)
     end
 
-    if self:UsesSafeBarChrome(button) and borderFrame.BarPPBorder then
+    if borderFrame.BarPPBorder then
         borderFrame.BarPPBorder:SetBorderThickness(visual.barBorderThickness or 1)
         self:SetIconBorderVisibility(borderFrame.BarPPBorder, true)
     end
@@ -601,8 +583,8 @@ function buttonStyle:CreateBarContainer(button, visual)
         self:SetIconBorderVisibility(button.BarPPBorder, false)
     end
 
-    self:ApplyBarBorderChrome(button.BarBorderFrame, visual, useSafeChrome)
-    self:ApplyBarTrackChrome(button.BarContainer, button.BarBorderFrame, visual, useSafeChrome)
+    self:ApplyBarBorderChrome(button.BarBorderFrame, visual)
+    self:ApplyBarTrackChrome(button.BarContainer, button.BarBorderFrame, visual)
 
     if not button.BarStatusBar then
         button.BarStatusBar = CreateFrame('StatusBar', nil, button.BarContainer)

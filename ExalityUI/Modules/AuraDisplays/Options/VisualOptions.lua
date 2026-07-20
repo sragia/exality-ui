@@ -372,6 +372,7 @@ function visualOptions:GetOptions(displayID, groupID)
                 label = 'Texture',
                 name = 'barTexture',
                 width = 50,
+                isTextureDropdown = true,
                 getOptions = function()
                     local textures = {}
                     if LSM then
@@ -739,62 +740,6 @@ function visualOptions:GetOptions(displayID, groupID)
                     end
                     auraDisplays:RefreshDisplay(displayID)
                     optionsFields:RefreshOptions()
-                end,
-            },
-        })
-    end
-
-    if auraDisplays:GetGroupConditions(displayID, groupID, 'groupType') == 'slot' then
-        append(fields, {
-            { type = 'title', label = 'Slot Position', width = 100 },
-            {
-                type = 'anchor-point',
-                label = 'Anchor',
-                name = 'slotAnchorPoint',
-                width = 25,
-                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'slotAnchorPoint') end,
-                onChange = function(v)
-                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'slotAnchorPoint', v); auraDisplays
-                        :RefreshDisplay(displayID)
-                end,
-            },
-            {
-                type = 'anchor-point',
-                label = 'Relative',
-                name = 'slotRelativePoint',
-                width = 25,
-                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'slotRelativePoint') end,
-                onChange = function(v)
-                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'slotRelativePoint', v); auraDisplays
-                        :RefreshDisplay(displayID)
-                end,
-            },
-            {
-                type = 'range',
-                label = 'X',
-                name = 'slotXOff',
-                min = -500,
-                max = 500,
-                step = 1,
-                width = 12,
-                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'slotXOff') end,
-                onChange = function(v)
-                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'slotXOff', v); auraDisplays:RefreshDisplay(
-                        displayID)
-                end,
-            },
-            {
-                type = 'range',
-                label = 'Y',
-                name = 'slotYOff',
-                min = -500,
-                max = 500,
-                step = 1,
-                width = 12,
-                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'slotYOff') end,
-                onChange = function(v)
-                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'slotYOff', v); auraDisplays:RefreshDisplay(
-                        displayID)
                 end,
             },
         })

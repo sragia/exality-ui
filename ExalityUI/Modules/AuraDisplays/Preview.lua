@@ -705,9 +705,6 @@ function preview:GetPreviewCount(group)
     if not conditions then
         return #PREVIEW_SCENARIOS
     end
-    if conditions.groupType == 'slot' then
-        return 1
-    end
     local maxCount = conditions.maxFrameCount
     if not maxCount or maxCount <= 0 then
         return #PREVIEW_SCENARIOS
@@ -721,7 +718,7 @@ end
 ---@param display table display config (layout/growth/rowWidth)
 ---@param visual table group visual config
 ---@param positionFn function|nil optional (container, frame, display) anchor helper
----@param maxCount number|nil optional cap (Max Auras / slot); defaults to all scenarios
+---@param maxCount number|nil optional cap (Max Auras); defaults to all scenarios
 function preview:BuildPreviewOnFrame(stateKey, frame, display, visual, positionFn, maxCount)
     if not frame or not display or not visual then
         return

@@ -163,18 +163,6 @@ function conditionsOptions:GetOptions(displayID, groupID)
             end,
         },
         {
-            type = 'dropdown',
-            label = 'Group Type',
-            name = 'groupType',
-            width = 50,
-            getOptions = function() return { group = 'Group', slot = 'Slot' } end,
-            currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'groupType') end,
-            onChange = function(v)
-                auraDisplays:UpdateGroupConditions(displayID, groupID, 'groupType', v); auraDisplays:RefreshDisplay(
-                    displayID); optionsFields:RefreshOptions()
-            end,
-        },
-        {
             type = 'range',
             label = 'Max Auras',
             name = 'maxFrameCount',
@@ -182,7 +170,6 @@ function conditionsOptions:GetOptions(displayID, groupID)
             max = 40,
             step = 1,
             width = 50,
-            depends = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'groupType') == 'group' end,
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'maxFrameCount') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'maxFrameCount', v); auraDisplays:RefreshDisplay(

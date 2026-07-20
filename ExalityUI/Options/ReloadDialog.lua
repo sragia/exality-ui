@@ -11,10 +11,12 @@ local optionsReloadDialog = EXUI:GetModule('options-reload-dialog')
 
 optionsReloadDialog.dialog = nil
 
+optionsReloadDialog.defaultText = 'Reload UI to apply changes.'
+
 optionsReloadDialog.Init = function(self)
     EXUI.utils.addObserver(self)
     self.dialog = EXFrames:GetFrame('dialog-frame'):Create()
-    self.dialog:SetText('Reload UI to apply changes.')
+    self.dialog:SetText(self.defaultText)
     self.dialog:SetButtons({
         {
             text = 'Reload UI',
@@ -33,6 +35,8 @@ optionsReloadDialog.Init = function(self)
     })
 end
 
-optionsReloadDialog.ShowDialog = function(self)
+---@param message string|nil optional dialog body; defaults to reload prompt
+optionsReloadDialog.ShowDialog = function(self, message)
+    self.dialog:SetText(message or self.defaultText)
     self.dialog:ShowDialog()
 end

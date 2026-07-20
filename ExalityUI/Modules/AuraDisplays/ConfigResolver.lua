@@ -216,12 +216,11 @@ function resolver:ResolveGroupOptions(displayID, display, groupID, group, button
     return {
         groupKey = defaults:GetGroupKey(displayID, groupID),
         filterString = filterString,
-        maxFrameCount = group.conditions.groupType == 'slot' and 1 or (group.conditions.maxFrameCount or 10),
+        maxFrameCount = group.conditions.maxFrameCount or 10,
         sortMethod = self:GetSortMethod(group.conditions),
         sortDirection = self:GetSortDirection(group.conditions),
         candidateFilters = self:BuildCandidateFilters(group.conditions),
         layout = self:GetGroupLayout(group.visual),
-        groupType = group.conditions.groupType or 'group',
         initializeFrame = function(auraButton)
             buttonStyle:Apply(auraButton, group.visual)
         end,
