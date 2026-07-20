@@ -1,8 +1,57 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUIData
+local data = EXUI:GetModule('data')
+
 ---@class EXUISkins
 local skins = EXUI:GetModule('skins')
+
+skins.list = {
+    { key = 'GameTooltip', label = 'Game Tooltip' },
+    { key = 'GameMenu', label = 'Game Menu' },
+    { key = 'StaticPopup', label = 'Dialog' },
+    { key = 'DeathRecap', label = 'Death Recap' },
+    { key = 'WorldMap', label = 'World Map' },
+    { key = 'PlayerSpells', label = 'Talents' },
+    { key = 'ProfessionsBook', label = 'Professions Book' },
+    { key = 'EncounterJournal', label = 'Encounter Journal' },
+    { key = 'PVEFrame', label = 'Group Finder' },
+}
+
+skins.IsEnabled = function(self, key)
+    if (data:GetDataByKey('skinsEnabled') == false) then
+        return false
+    end
+    local db = data:GetDataByKey('skins')
+    if (type(db) ~= 'table') then
+        return true
+    end
+    return db[key] ~= false
+end
+
+skins.GetDefaultSkins = function(self)
+    local defaults = {}
+    for _, entry in ipairs(self.list) do
+        defaults[entry.key] = true
+    end
+    return defaults
+end
+
+skins.EnsureDefaults = function(self)
+    local db = data:GetDataByKey('skins')
+    if (type(db) ~= 'table' or not next(db)) then
+        -- GetDataByKey returns a throwaway {} when the key is missing.
+        db = self:GetDefaultSkins()
+    else
+        for _, entry in ipairs(self.list) do
+            if (db[entry.key] == nil) then
+                db[entry.key] = true
+            end
+        end
+    end
+    data:SetDataByKey('skins', db)
+end
 
 skins.NineSliceTextures = {
     'TopRightCorner',

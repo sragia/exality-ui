@@ -435,6 +435,8 @@ function professionsBookSkin:Install()
 end
 
 professionsBookSkin.Init = function(self)
+    if (not skins:IsEnabled('ProfessionsBook')) then return end
+
     if (ProfessionsBookFrame) then
         self:Install()
         return

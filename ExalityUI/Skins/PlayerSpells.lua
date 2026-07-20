@@ -921,6 +921,8 @@ function playerSpellsSkin:Install()
 end
 
 playerSpellsSkin.Init = function(self)
+    if (not skins:IsEnabled('PlayerSpells')) then return end
+
     if (PlayerSpellsFrame) then
         self:Install()
         return

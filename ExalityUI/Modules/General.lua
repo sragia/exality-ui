@@ -10,6 +10,9 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
+---@class EXUISkins
+local skins = EXUI:GetModule('skins')
+
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
 ----------------
@@ -24,6 +27,7 @@ generalModule.bottomVignette = nil
 generalModule.Init = function(self)
     optionsController:RegisterModule(self)
     data:UpdateDefaults(self:GetDefaults())
+    skins:EnsureDefaults()
 
     self:SetupUIScale()
     self.paperDoll:Init()
@@ -52,6 +56,8 @@ end
 generalModule.GetDefaults = function(self)
     return {
         uiScale = defaultUIScale,
+        skinsEnabled = true,
+        skins = skins:GetDefaultSkins(),
         paperDollEnabled = true,
         replaceFonts = true,
         font = 'DMSans',
@@ -60,7 +66,7 @@ generalModule.GetDefaults = function(self)
 end
 
 generalModule.GetOptions = function(self)
-    return {
+    local options = {
         {
             label = 'UI Scale',
             name = 'uiScale',
@@ -92,72 +98,124 @@ generalModule.GetOptions = function(self)
             color = { 219 / 255, 73 / 255, 0, 1 }
         },
         {
-            label = 'Paper Doll Improvements',
-            name = 'paperDollEnabled',
-            type = 'toggle',
-            onChange = function(value)
-                data:SetDataByKey('paperDollEnabled', value)
-                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('paperDollEnabled')
-            end,
+            type = 'title',
+            label = 'Skins',
             width = 100,
         },
         {
-            label = 'Add Bottom Vignette',
-            name = 'bottomVignette',
+            label = 'Enable Skins',
+            name = 'skinsEnabled',
             type = 'toggle',
             onChange = function(value)
-                data:SetDataByKey('bottomVignette', value)
-                generalModule:Refresh()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('bottomVignette')
-            end,
-            width = 100,
-        },
-        {
-            label = 'Replace All Fonts',
-            name = 'replaceFonts',
-            type = 'toggle',
-            onChange = function(value)
-                data:SetDataByKey('replaceFonts', value)
+                data:SetDataByKey('skinsEnabled', value)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
                 optionsFields:RefreshOptions()
             end,
             currentValue = function()
-                return data:GetDataByKey('replaceFonts')
+                return data:GetDataByKey('skinsEnabled') ~= false
             end,
             width = 100,
         },
-        {
-            label = 'Replacement Font',
-            name = 'font',
-            type = 'dropdown',
-            getOptions = function()
-                local fonts = LSM:List('font')
-                table.sort(fonts)
-                local options = {}
-                for _, font in ipairs(fonts) do
-                    options[font] = font
-                end
-                return options
-            end,
+    }
+
+    for _, entry in ipairs(skins.list) do
+        local skinKey = entry.key
+        table.insert(options, {
+            label = entry.label,
+            name = 'skin_' .. skinKey,
+            type = 'checkbox',
             depends = function()
-                return data:GetDataByKey('replaceFonts')
+                return data:GetDataByKey('skinsEnabled') ~= false
             end,
-            isFontDropdown = true,
             onChange = function(value)
-                data:SetDataByKey('font', value)
+                local db = data:GetDataByKey('skins')
+                if (type(db) ~= 'table') then
+                    db = skins:GetDefaultSkins()
+                end
+                db[skinKey] = value
+                data:SetDataByKey('skins', db)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end,
             currentValue = function()
-                return data:GetDataByKey('font')
+                local db = data:GetDataByKey('skins')
+                if (type(db) ~= 'table') then
+                    return true
+                end
+                return db[skinKey] ~= false
             end,
             width = 33,
-        }
-    }
+        })
+    end
+
+    table.insert(options, { type = 'spacer', width = 100 })
+    table.insert(options, {
+        label = 'Paper Doll Improvements',
+        name = 'paperDollEnabled',
+        type = 'toggle',
+        onChange = function(value)
+            data:SetDataByKey('paperDollEnabled', value)
+            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+        end,
+        currentValue = function()
+            return data:GetDataByKey('paperDollEnabled')
+        end,
+        width = 100,
+    })
+    table.insert(options, {
+        label = 'Add Bottom Vignette',
+        name = 'bottomVignette',
+        type = 'toggle',
+        onChange = function(value)
+            data:SetDataByKey('bottomVignette', value)
+            generalModule:Refresh()
+        end,
+        currentValue = function()
+            return data:GetDataByKey('bottomVignette')
+        end,
+        width = 100,
+    })
+    table.insert(options, {
+        label = 'Replace All Fonts',
+        name = 'replaceFonts',
+        type = 'toggle',
+        onChange = function(value)
+            data:SetDataByKey('replaceFonts', value)
+            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+            optionsFields:RefreshOptions()
+        end,
+        currentValue = function()
+            return data:GetDataByKey('replaceFonts')
+        end,
+        width = 100,
+    })
+    table.insert(options, {
+        label = 'Replacement Font',
+        name = 'font',
+        type = 'dropdown',
+        getOptions = function()
+            local fonts = LSM:List('font')
+            table.sort(fonts)
+            local fontOptions = {}
+            for _, font in ipairs(fonts) do
+                fontOptions[font] = font
+            end
+            return fontOptions
+        end,
+        depends = function()
+            return data:GetDataByKey('replaceFonts')
+        end,
+        isFontDropdown = true,
+        onChange = function(value)
+            data:SetDataByKey('font', value)
+            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+        end,
+        currentValue = function()
+            return data:GetDataByKey('font')
+        end,
+        width = 33,
+    })
+
+    return options
 end
 
 generalModule.UpdateUIScale = function(self)

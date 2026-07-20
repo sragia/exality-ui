@@ -68,6 +68,8 @@ local function SkinTooltip(tooltip)
 end
 
 gameTooltipSkin.Init = function(self)
+    if (not skins:IsEnabled('GameTooltip')) then return end
+
     SkinTooltip(GameTooltip)
 
     for _, child in pairs(GameTooltip.shoppingTooltips) do

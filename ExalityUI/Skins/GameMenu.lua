@@ -255,6 +255,8 @@ function gameMenuSkin:Install()
 end
 
 gameMenuSkin.Init = function(self)
+    if (not skins:IsEnabled('GameMenu')) then return end
+
     if (GameMenuFrame) then
         self:Install()
         return

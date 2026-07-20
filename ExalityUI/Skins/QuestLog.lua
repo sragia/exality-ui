@@ -181,6 +181,8 @@ function questLogSkin:Install()
 end
 
 questLogSkin.Init = function(self)
+    if (not skins:IsEnabled('WorldMap')) then return end
+
     if (QuestMapFrame) then
         self:Install()
         return

@@ -1391,6 +1391,8 @@ function pveFrameSkin:OnAddonLoaded(addon)
 end
 
 pveFrameSkin.Init = function(self)
+    if (not skins:IsEnabled('PVEFrame')) then return end
+
     if (PVEFrame) then
         self:Install()
     end

@@ -8,7 +8,7 @@ local skins = EXUI:GetModule('skins')
 local staticPopupSkin = EXUI:GetModule('skin-StaticPopup')
 
 local FONT_PATH = EXUI.const.fonts.DEFAULT
-local TEXT_SIZE = 14
+local TEXT_SIZE = 12
 local SUBTEXT_SIZE = 12
 local BUTTON_FONT_SIZE = 12
 local DIALOG_BG_ALPHA = 0.9
@@ -108,6 +108,8 @@ function staticPopupSkin:Install()
 end
 
 staticPopupSkin.Init = function(self)
+    if (not skins:IsEnabled('StaticPopup')) then return end
+
     if (StaticPopup1) then
         self:Install()
         return

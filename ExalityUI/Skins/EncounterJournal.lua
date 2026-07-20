@@ -1039,6 +1039,8 @@ function encounterJournalSkin:Install()
 end
 
 encounterJournalSkin.Init = function(self)
+    if (not skins:IsEnabled('EncounterJournal')) then return end
+
     if (EncounterJournal) then
         self:Install()
         return

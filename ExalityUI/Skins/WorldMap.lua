@@ -408,6 +408,8 @@ function worldMapSkin:Install()
 end
 
 worldMapSkin.Init = function(self)
+    if (not skins:IsEnabled('WorldMap')) then return end
+
     if (WorldMapFrame) then
         self:Install()
         return

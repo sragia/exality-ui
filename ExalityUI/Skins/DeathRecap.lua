@@ -116,6 +116,8 @@ function deathRecapSkin:Install()
 end
 
 deathRecapSkin.Init = function(self)
+    if (not skins:IsEnabled('DeathRecap')) then return end
+
     if (DeathRecapFrame) then
         self:Install()
         return
