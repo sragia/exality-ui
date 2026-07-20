@@ -34,22 +34,22 @@ EXUI.const = {
         backgroundPanel = { 48 / 255, 40 / 255, 34 / 255, 0.4 },  -- #302822  panels / tabs / header
 
 
-        border       = { 61 / 255, 53 / 255, 48 / 255, 1 },    -- #3D3530  warm neutral border
-        borderActive = { 217 / 255, 69 / 255, 16 / 255, 1 },   -- #D94510  selected border
+        border         = { 61 / 255, 53 / 255, 48 / 255, 1 },      -- #3D3530  warm neutral border
+        borderActive   = { 217 / 255, 69 / 255, 16 / 255, 1 },     -- #D94510  selected border
         borderInactive = { 168 / 255, 158 / 255, 148 / 255, 0.8 }, -- #A89E94  editor unselected
-        text         = { 237 / 255, 230 / 255, 223 / 255, 1 }, -- #EDE6DF  warm off-white
-        textMuted    = { 138 / 255, 128 / 255, 118 / 255, 1 }, -- #8A8076
-        danger       = { 232 / 255, 48 / 255, 80 / 255, 1 },   -- #E83050  close / destructive
-        dangerHover  = { 245 / 255, 64 / 255, 96 / 255, 1 },   -- #F54060  close hover
-        success      = { 107 / 255, 168 / 255, 50 / 255, 1 },  -- #6BA832  success
-        successDark  = { 82 / 255, 130 / 255, 38 / 255, 1 },   -- #528226  success dark
-        inProgress   = { 245 / 255, 160 / 255, 32 / 255, 1 },  -- #F5A020  amber progress
-        faded        = { 28 / 255, 24 / 255, 22 / 255, 1 },    -- #1C1816  muted button bg
-        gray         = { 110 / 255, 100 / 255, 92 / 255, 1 },  -- #6E645C
+        text           = { 237 / 255, 230 / 255, 223 / 255, 1 },   -- #EDE6DF  warm off-white
+        textMuted      = { 138 / 255, 128 / 255, 118 / 255, 1 },   -- #8A8076
+        danger         = { 232 / 255, 48 / 255, 80 / 255, 1 },     -- #E83050  close / destructive
+        dangerHover    = { 245 / 255, 64 / 255, 96 / 255, 1 },     -- #F54060  close hover
+        success        = { 107 / 255, 168 / 255, 50 / 255, 1 },    -- #6BA832  success
+        successDark    = { 82 / 255, 130 / 255, 38 / 255, 1 },     -- #528226  success dark
+        inProgress     = { 245 / 255, 160 / 255, 32 / 255, 1 },    -- #F5A020  amber progress
+        faded          = { 28 / 255, 24 / 255, 22 / 255, 1 },      -- #1C1816  muted button bg
+        gray           = { 110 / 255, 100 / 255, 92 / 255, 1 },    -- #6E645C
 
-        minimap = {
-            buttonBg = { 13 / 255, 11 / 255, 10 / 255, 1 },     -- #0D0B0A  ldb / drawer buttons
-            mailButtonBg = { 92 / 255, 34 / 255, 8 / 255, 1 },  -- #5C2208  dark accent blend for mail
+        minimap        = {
+            buttonBg = { 13 / 255, 11 / 255, 10 / 255, 1 },    -- #0D0B0A  ldb / drawer buttons
+            mailButtonBg = { 92 / 255, 34 / 255, 8 / 255, 1 }, -- #5C2208  dark accent blend for mail
         },
     },
     textures = {
@@ -125,6 +125,7 @@ EXUI.const = {
                 epic = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-epic.png]],
                 legendary = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-legendary.png]],
                 max = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-max.png]],
+                supermax = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-supermax.png]],
             },
             highlight = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/highlight.png]],
             dot = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/dot.png]],

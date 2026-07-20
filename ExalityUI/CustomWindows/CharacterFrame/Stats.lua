@@ -202,11 +202,11 @@ stats.CreateCrest = function(self, currencyId, parent)
 end
 
 local crestIds = {
-    3383, -- Adventurer
-    3341, -- Veteran
-    3343, -- Champion
-    3345, -- Hero
-    3347, -- Myth
+    3442, -- Adventurer
+    3443, -- Veteran
+    3444, -- Champion
+    3445, -- Hero
+    3446, -- Myth
 }
 stats.CreateCrestDisplay = function(self, parent)
     local container = CreateFrame('Frame', nil, parent)

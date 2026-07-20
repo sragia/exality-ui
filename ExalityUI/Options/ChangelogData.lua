@@ -44,6 +44,11 @@ Profiles moved completely to it's own window. Added partial profile import/expor
 Updated both module options to match new style better, and also added some more additional options to use, like color curve where you can adjust the color of the resource display bar depending on value.
 Or some improved CD options like desature on cooldown.
 
+## Character Frame
+- Fix temp enchant applying throwing error.
+- Update slot border visuals a bit to not be as "chaotic".
+- Dim icons that enchant is not for.
+
 ## Skinning
 
 Added a lot more blizzard window skins. You can also now enable/disable individual skins.

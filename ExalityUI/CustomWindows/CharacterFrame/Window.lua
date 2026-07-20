@@ -350,6 +350,9 @@ characterFrame.Create = function(self)
         disableResize = true,
     })
 
+    window.title:ClearAllPoints()
+    window.title:SetPoint('CENTER', window, 'TOP', 0, 0)
+
     local statsFrame = CreateFrame('Frame', nil, container)
     statsFrame:SetPoint('TOPLEFT', rightSlots, 'TOPRIGHT', 25, 0)
     statsFrame:SetPoint('BOTTOMRIGHT')

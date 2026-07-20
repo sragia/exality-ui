@@ -73,14 +73,14 @@ changelog.SetupWindow = function(self)
             textFrame:SetTextColor(1, 1, 1, 1)
             textFrame:SetText(block.text)
         elseif block.type == 'list' then
-            textFrame:SetFont(font, 12, 'OUTLINE')
+            textFrame:SetFont(font, 11, 'OUTLINE')
             textFrame:SetTextColor(0.85, 0.85, 0.85, 1)
             textFrame:SetText('  • ' .. block.text)
         elseif block.type == 'spacer' then
             textFrame:SetFont(font, 6, 'OUTLINE')
             textFrame:SetText(' ')
         else
-            textFrame:SetFont(font, 10, 'OUTLINE')
+            textFrame:SetFont(font, 11, 'OUTLINE')
             textFrame:SetTextColor(0.85, 0.85, 0.85, 1)
             textFrame:SetText(block.text)
         end
