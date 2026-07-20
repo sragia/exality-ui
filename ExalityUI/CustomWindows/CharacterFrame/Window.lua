@@ -16,6 +16,12 @@ local customWindows = EXUI:GetModule('custom-windows')
 ---@class EXUICharacterFrameStats
 local stats = EXUI:GetModule('character-frame-stats')
 
+---@class EXUICharacterFrameTitles
+local titles = EXUI:GetModule('character-frame-titles')
+
+---@class EXUICharacterFrameSets
+local sets = EXUI:GetModule('character-frame-sets')
+
 ---@class ExalityFramesTooltipInput
 local tooltip = EXFrames:GetFrame('tooltip')
 
@@ -28,6 +34,23 @@ characterFrame.enabled = false
 characterFrame.isCreated = false
 characterFrame.window = nil
 characterFrame.override = false
+characterFrame.activeSideTab = 'stats'
+characterFrame.sidePanels = nil
+characterFrame.sideTabButtons = nil
+
+local SIDE_TABS = {
+    { id = 'stats',  label = 'Stats' },
+    { id = 'titles', label = 'Titles' },
+    { id = 'sets',   label = 'Sets' },
+}
+
+local TAB_HEIGHT = 18
+local TAB_PAD_X = 10
+local TAB_GAP = 3
+local TAB_BAR_PAD = 3
+local TAB_CONTENT_GAP = 4
+
+local PANEL_SLICE = 8
 
 local LEFT_SLOTS = {
     1, 2, 3, 15, 5, 4, 19, 9
@@ -197,6 +220,116 @@ characterFrame.CreateToBlizzIcon = function(self, window)
     return toBlizzIcon
 end
 
+local function ApplySideTabVisual(button, active, hovered)
+    local theme = EXUI.const.theme
+    local panel = EXUI.const.textures.characterFrame.panel
+
+    if active then
+        button.bg:SetTexture(panel.bg)
+        button.bg:SetVertexColor(theme.backgroundLight[1], theme.backgroundLight[2], theme.backgroundLight[3], 0.95)
+        button.border:SetTexture(panel.border)
+        button.border:SetVertexColor(unpack(theme.accent))
+    elseif hovered then
+        button.bg:SetTexture(panel.bg)
+        button.bg:SetVertexColor(0.22, 0.2, 0.18, 0.95)
+        button.border:SetTexture(panel.border)
+        button.border:SetVertexColor(0.55, 0.5, 0.45, 1)
+    else
+        button.bg:SetTexture(panel.bg)
+        button.bg:SetVertexColor(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 0.95)
+        button.border:SetTexture(panel.border)
+        button.border:SetVertexColor(unpack(theme.border))
+    end
+
+    button.bg:SetTextureSliceMargins(PANEL_SLICE, PANEL_SLICE, PANEL_SLICE, PANEL_SLICE)
+    button.bg:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
+    button.border:SetTextureSliceMargins(PANEL_SLICE, PANEL_SLICE, PANEL_SLICE, PANEL_SLICE)
+    button.border:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
+end
+
+characterFrame.SetSideTab = function(self, tabId)
+    if not self.sidePanels then
+        return
+    end
+
+    self.activeSideTab = tabId
+
+    for id, panel in pairs(self.sidePanels) do
+        if id == tabId then
+            panel:Show()
+        else
+            panel:Hide()
+        end
+    end
+
+    if self.sideTabButtons then
+        for _, button in ipairs(self.sideTabButtons) do
+            ApplySideTabVisual(button, button.tabId == tabId, false)
+        end
+    end
+
+    if tabId ~= 'sets' then
+        sets:HideCreatePopup()
+    end
+end
+
+characterFrame.CreateSideTabs = function(self, parent)
+    local tabBar = CreateFrame('Frame', nil, parent)
+    tabBar:SetHeight(TAB_HEIGHT + TAB_BAR_PAD * 2)
+    tabBar:SetPoint('BOTTOMLEFT', parent, 'TOPLEFT', 0, 0)
+    tabBar:SetPoint('BOTTOMRIGHT', parent, 'TOPRIGHT', 0, 0)
+
+    local buttons = {}
+
+    for i, tabInfo in ipairs(SIDE_TABS) do
+        local button = CreateFrame('Button', nil, tabBar)
+        button:SetHeight(TAB_HEIGHT)
+        button.tabId = tabInfo.id
+
+        button.bg = button:CreateTexture(nil, 'BACKGROUND')
+        button.bg:SetAllPoints()
+
+        button.border = button:CreateTexture(nil, 'OVERLAY', nil, 1)
+        button.border:SetAllPoints()
+
+        button.Text = button:CreateFontString(nil, 'OVERLAY')
+        button.Text:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')
+        button.Text:SetPoint('CENTER', 0, 0)
+        button.Text:SetText(tabInfo.label)
+
+        local textWidth = button.Text:GetStringWidth() + TAB_PAD_X * 2
+        button:SetWidth(math.max(textWidth, 48))
+
+        if i == #SIDE_TABS then
+            button:SetPoint('RIGHT', tabBar, 'RIGHT', 0, 0)
+        end
+
+        buttons[#buttons + 1] = button
+    end
+
+    -- Right-align: chain leftward from the last tab
+    for i = #buttons - 1, 1, -1 do
+        buttons[i]:SetPoint('RIGHT', buttons[i + 1], 'LEFT', -TAB_GAP, 0)
+    end
+
+    for _, button in ipairs(buttons) do
+        button:SetScript('OnEnter', function(btn)
+            ApplySideTabVisual(btn, btn.tabId == characterFrame.activeSideTab, true)
+        end)
+        button:SetScript('OnLeave', function(btn)
+            ApplySideTabVisual(btn, btn.tabId == characterFrame.activeSideTab, false)
+        end)
+        button:SetScript('OnClick', function(btn)
+            PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
+            characterFrame:SetSideTab(btn.tabId)
+        end)
+        ApplySideTabVisual(button, button.tabId == 'stats', false)
+    end
+
+    self.sideTabButtons = buttons
+    return tabBar
+end
+
 characterFrame.Create = function(self)
     local window = windowConstruct:Create({
         size = {
@@ -353,11 +486,38 @@ characterFrame.Create = function(self)
     window.title:ClearAllPoints()
     window.title:SetPoint('CENTER', window, 'TOP', 0, 0)
 
-    local statsFrame = CreateFrame('Frame', nil, container)
-    statsFrame:SetPoint('TOPLEFT', rightSlots, 'TOPRIGHT', 25, 0)
-    statsFrame:SetPoint('BOTTOMRIGHT')
+    local sideColumn = CreateFrame('Frame', nil, container)
+    sideColumn:SetPoint('TOPLEFT', rightSlots, 'TOPRIGHT', 25, 0)
+    sideColumn:SetPoint('BOTTOMRIGHT')
 
-    stats:Create(statsFrame)
+    local tabBar = self:CreateSideTabs(sideColumn)
+
+    local contentHost = CreateFrame('Frame', nil, sideColumn)
+    contentHost:SetPoint('TOPLEFT', sideColumn, 'TOPLEFT', 0, 0)
+    contentHost:SetPoint('BOTTOMRIGHT')
+
+    local statsPanel = CreateFrame('Frame', nil, contentHost)
+    statsPanel:SetAllPoints()
+    local titlesPanel = CreateFrame('Frame', nil, contentHost)
+    titlesPanel:SetAllPoints()
+    local setsPanel = CreateFrame('Frame', nil, contentHost)
+    setsPanel:SetAllPoints()
+
+    self.sidePanels = {
+        stats = statsPanel,
+        titles = titlesPanel,
+        sets = setsPanel,
+    }
+
+    stats:Create(statsPanel)
+    titles:Create(titlesPanel)
+    sets:Create(setsPanel)
+
+    window.onClose = function()
+        sets:HideCreatePopup()
+    end
+
+    self:SetSideTab('stats')
 
     local toBlizzIcon = self:CreateToBlizzIcon(window)
     toBlizzIcon:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)

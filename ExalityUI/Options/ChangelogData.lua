@@ -48,6 +48,7 @@ Or some improved CD options like desature on cooldown.
 - Fix temp enchant applying throwing error.
 - Update slot border visuals a bit to not be as "chaotic".
 - Dim icons that enchant is not for.
+- Add Sets and Titles tabs like in default character frame.
 
 ## Skinning
 
