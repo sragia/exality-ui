@@ -144,7 +144,12 @@ raid.Init = function(self)
         -- Dispel Overlay
         ['dispelOverlayEnable'] = true,
         ['dispelOverlayFilter'] = 'RAID',
-        ['dispelOverlayAlpha'] = 1
+        ['dispelOverlayAlpha'] = 1,
+        -- Targeting
+        ['targetBorderEnable'] = true,
+        ['targetBorderColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['mouseoverBorderEnable'] = false,
+        ['mouseoverBorderColor'] = { r = 1, g = 1, b = 1, a = 0.7 },
     })
 
     local shouldShowBlizzardFrame = core:GetValueForUnit('raid', 'showBlizzardFrame') and
@@ -226,6 +231,7 @@ raid.Create = function(self, frame, unit)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.GroupRoleIndicator = EXUI:GetModule('uf-element-group-role-indicator'):Create(frame)
     frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
+    frame.SelectionHighlight = EXUI:GetModule('uf-element-selection-highlight'):Create(frame)
 
     frame.Update = function(self) raid:Update(self) end
 

@@ -7,6 +7,7 @@ EXUI.changelog = [[
 ## General
 - Updated options. Adjusted styling, made them more compact (aka smaller), sidebar menu is collapsable.
 - Improved Pixel Perfect across the board. Most if not all elements should now look much closer to what is set.
+- Floating combat text font now is also replaced with the configured font.
 
 ## Aura Displays |cffeb7a34New|r
 New module for displaying auras using new 12.1 aura system.
@@ -27,8 +28,14 @@ As complimentary to the objective tracker, added M+ timer. Fairly basic function
 Mostly meant as something that is there to use while also using my Objective Tracker as other M+ Timers will not be able to hide them easily. However there's option to hide my Objective Tracker in M+ setting.
 
 ## Unit Frames
-Aura Rework. Now you can make as many displays on each unit frame as you want, you can reuse the same display for multiple units. Have much more powerful filters to use. 
+Aura Rework. Now you can make as many displays on each unit frame as you want, you can reuse the same display for multiple units. Have much more powerful filters to use.
 Old aura settings will no longer be available and you will need to redo them, sorry.
+
+Additionally:
+- Added targetting border color change for current target and mouseover for party/raid frames.
+- Fixed party frame size in edit mode.
+- Fixed Mythic visibility (1-4 grp) staying on after leaving Mythic raid.
+- Added options to Dispel Overlay to show also when there's any dispellable auras present, that anyone in raid/grp can dispel or anything at all.
 
 ## Profiles
 Profiles moved completely to it's own window. Added partial profile import/export, you can choose which modules to export now.
@@ -36,6 +43,10 @@ Profiles moved completely to it's own window. Added partial profile import/expor
 ## Cooldowns & Resource Displays
 Updated both module options to match new style better, and also added some more additional options to use, like color curve where you can adjust the color of the resource display bar depending on value.
 Or some improved CD options like desature on cooldown.
+
+## Skinning
+
+Added a lot more blizzard window skins. You can also now enable/disable individual skins.
 
 ## Edit Mode
 Improved Edit mod, added X/Y offset editor, improved selecting frames that are overlapping, added snap mode, nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.

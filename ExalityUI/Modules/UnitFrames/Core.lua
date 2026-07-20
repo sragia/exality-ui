@@ -387,6 +387,10 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-dispel-overlay'):Update(frame)
     end
 
+    if (frame.SelectionHighlight) then
+        EXUI:GetModule('uf-element-selection-highlight'):Update(frame)
+    end
+
     frame:UpdateTags()
     frame:UpdateAllElements('RefreshUnit')
 
@@ -526,7 +530,9 @@ core.UpdateHeader = function(self, unit)
             partyHeader:SetAttribute('showSolo', true)
             partyHeader:SetAttribute('showParty', true)
             partyHeader:SetAttribute('showRaid', false)
-            partyHeader:SetVisibility(partyHeader.originalVisibility)
+            if partyHeader.originalVisibility then
+                partyHeader:SetVisibility(partyHeader.originalVisibility)
+            end
             header:Show()
         end
     end
@@ -543,9 +549,18 @@ core.UpdateHeader = function(self, unit)
             EXUI:SnapFrameToPixels(header)
         end
     else
-        -- Party
+        -- Party: re-assert show attrs + visibility every update (mirrors UpdateRaidLayout).
+        -- SecureGroupHeader only processes roster while IsVisible(); a desynced driver
+        -- after the container split leaves frames empty until Edit Mode refreshes them.
         local partyHeader = self:GetPartySecureHeader(header)
-        partyHeader:SetAttribute('yOffset', -EXUI:ScalePixel(db.spacing, header))
+        partyHeader:SetAttribute('showPlayer', true)
+        partyHeader:SetAttribute('showSolo', true)
+        partyHeader:SetAttribute('showParty', true)
+        partyHeader:SetAttribute('showRaid', false)
+        if partyHeader.originalVisibility then
+            partyHeader:SetVisibility(partyHeader.originalVisibility)
+        end
+        self:UpdatePartyLayout(header)
         local editorModule = EXUI:GetModule('editor')
         if not (editorModule and editorModule.enabled) then
             EXUI:SnapFrameToPixels(header)
@@ -601,10 +616,14 @@ core.PrepareGroupHeaderForEditor = function(self, unit)
 
     if unit == 'party' then
         header:Show()
+        local partyHeader = self:GetPartySecureHeader(header)
         if IsInGroup() and not IsInRaid() then
+            -- Already in party: re-assert visibility so roster configures children.
+            if partyHeader.originalVisibility then
+                partyHeader:SetVisibility(partyHeader.originalVisibility)
+            end
             return
         end
-        local partyHeader = self:GetPartySecureHeader(header)
         if partyHeader._editorVisibility then
             return
         end
@@ -765,6 +784,21 @@ EXUI:RegisterEventHandler(
     'raid-check-difficulty',
     function()
         core:CheckRaidDificulty()
+    end
+)
+
+EXUI:RegisterEventHandler(
+    { 'GROUP_ROSTER_UPDATE' },
+    'uf-party-header-refresh',
+    function()
+        if InCombatLockdown() then
+            return
+        end
+        -- Re-assert party secure visibility so roster can configure children
+        -- (SecureGroupHeader_Update only runs while the header IsVisible).
+        if core.headers.party then
+            core:UpdateHeader('party')
+        end
     end
 )
 
@@ -959,11 +993,13 @@ core.Unforce = function(self, unit)
         if (not container) then return end
         local header = self:GetPartySecureHeader(container)
         header.isFake = false
-        header:SetVisibility(header.originalVisibility)
         header:SetAttribute('showSolo', true)
         header:SetAttribute('showParty', true)
-        header:SetAttribute('showRaid', true)
+        header:SetAttribute('showRaid', false)
         header:SetAttribute('startingIndex', 1)
+        if header.originalVisibility then
+            header:SetVisibility(header.originalVisibility)
+        end
         self.forcedHeaders[unit] = nil
         for _, frame in ipairs(core.partyFrames) do
             if (frame) then
