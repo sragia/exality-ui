@@ -47,13 +47,14 @@ local SIDE_TABS = {
     { id = 'sets',   label = 'Sets' },
 }
 
-local TAB_HEIGHT = 18
+local TAB_HEIGHT = 20
 local TAB_PAD_X = 10
 local TAB_GAP = 3
 local TAB_BAR_PAD = 3
 local TAB_CONTENT_GAP = 4
 
-local PANEL_SLICE = 8
+-- Must stay well under half of TAB_HEIGHT or top/bottom 9-slice edges collapse.
+local TAB_SLICE = 4
 
 local LEFT_SLOTS = {
     1, 2, 3, 15, 5, 4, 19, 9
@@ -227,27 +228,24 @@ local function ApplySideTabVisual(button, active, hovered)
     local theme = EXUI.const.theme
     local panel = EXUI.const.textures.characterFrame.panel
 
-    if active then
-        button.bg:SetTexture(panel.bg)
-        button.bg:SetVertexColor(theme.backgroundLight[1], theme.backgroundLight[2], theme.backgroundLight[3], 0.95)
-        button.border:SetTexture(panel.border)
-        button.border:SetVertexColor(unpack(theme.accent))
-    elseif hovered then
-        button.bg:SetTexture(panel.bg)
-        button.bg:SetVertexColor(0.22, 0.2, 0.18, 0.95)
-        button.border:SetTexture(panel.border)
-        button.border:SetVertexColor(0.55, 0.5, 0.45, 1)
-    else
-        button.bg:SetTexture(panel.bg)
-        button.bg:SetVertexColor(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 0.95)
-        button.border:SetTexture(panel.border)
-        button.border:SetVertexColor(unpack(theme.border))
+    button.bg:SetTexture(panel.bg)
+    button.bg:SetTextureSliceMargins(TAB_SLICE, TAB_SLICE, TAB_SLICE, TAB_SLICE)
+    button.bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+
+    if button.border then
+        button.border:Hide()
     end
 
-    button.bg:SetTextureSliceMargins(PANEL_SLICE, PANEL_SLICE, PANEL_SLICE, PANEL_SLICE)
-    button.bg:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
-    button.border:SetTextureSliceMargins(PANEL_SLICE, PANEL_SLICE, PANEL_SLICE, PANEL_SLICE)
-    button.border:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
+    if active then
+        button.bg:SetVertexColor(unpack(theme.accent))
+        button.Text:SetVertexColor(1, 1, 1, 1)
+    elseif hovered then
+        button.bg:SetVertexColor(unpack(theme.accentLight))
+        button.Text:SetVertexColor(1, 1, 1, 1)
+    else
+        button.bg:SetVertexColor(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 0.95)
+        button.Text:SetVertexColor(unpack(theme.text))
+    end
 end
 
 characterFrame.SetSideTab = function(self, tabId)
@@ -291,9 +289,6 @@ characterFrame.CreateSideTabs = function(self, parent)
 
         button.bg = button:CreateTexture(nil, 'BACKGROUND')
         button.bg:SetAllPoints()
-
-        button.border = button:CreateTexture(nil, 'OVERLAY', nil, 1)
-        button.border:SetAllPoints()
 
         button.Text = button:CreateFontString(nil, 'OVERLAY')
         button.Text:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')

@@ -12,15 +12,21 @@ local currencies = EXUI:GetModule('character-frame-currencies')
 
 currencies.panel = nil
 currencies.toggle = nil
+currencies.optionsPopup = nil
 currencies.scrollFrame = nil
 currencies.scrollChild = nil
 currencies.headerRows = {}
 currencies.currencyRows = {}
 currencies.isOpen = false
 currencies.useAnimation = true
+currencies.selectedIndex = nil
+currencies.selectedName = nil
+currencies.selectedCurrencyID = nil
 
 local PANEL_WIDTH = 290
 local PANEL_GAP = 6
+local OPTIONS_WIDTH = 200
+local OPTIONS_GAP = 4
 local BUTTON_SIZE = 30
 local BUTTON_OUTSET_X = 0
 local BUTTON_OFFSET_Y = -60
@@ -34,9 +40,13 @@ local HEADER_GOLD = { 235 / 255, 183 / 255, 52 / 255, 1 } -- #ebb734
 local TOGGLE_BG = { 112 / 255, 80 / 255, 0, 1 }           -- #705000
 local TOGGLE_BG_HOVER = { 140 / 255, 100 / 255, 0, 1 }
 
-local function ApplyRowVisual(button, hovered)
+local function ApplyRowVisual(button, selected, hovered)
     local theme = EXUI.const.theme
-    if hovered then
+    if selected then
+        button.border:SetBorderColor(unpack(theme.accent))
+        button.border:SetBorderThickness(2)
+        button.bg:SetVertexColor(theme.backgroundLight[1], theme.backgroundLight[2], theme.backgroundLight[3], 0.9)
+    elseif hovered then
         button.border:SetBorderColor(0.55, 0.55, 0.55, 1)
         button.border:SetBorderThickness(1)
         button.bg:SetVertexColor(0.2, 0.2, 0.2, 0.7)
@@ -148,7 +158,7 @@ currencies.CreateCurrencyRow = function(self, parent)
     button.Count:SetTextColor(unpack(EXUI.const.theme.text))
 
     button:SetScript('OnEnter', function(btn)
-        ApplyRowVisual(btn, true)
+        ApplyRowVisual(btn, btn.currencyIndex == currencies.selectedIndex, true)
         if btn.currencyID then
             GameTooltip:SetOwner(btn, 'ANCHOR_RIGHT', 2, 2)
             GameTooltip:SetCurrencyByID(btn.currencyID)
@@ -156,8 +166,17 @@ currencies.CreateCurrencyRow = function(self, parent)
         end
     end)
     button:SetScript('OnLeave', function(btn)
-        ApplyRowVisual(btn, false)
+        ApplyRowVisual(btn, btn.currencyIndex == currencies.selectedIndex, false)
         GameTooltip:Hide()
+    end)
+    button:SetScript('OnClick', function(btn)
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        GameTooltip:Hide()
+        if currencies.selectedIndex == btn.currencyIndex and currencies.optionsPopup and currencies.optionsPopup:IsShown() then
+            currencies:HideOptions()
+        else
+            currencies:ShowOptions(btn)
+        end
     end)
 
     return button
@@ -243,10 +262,14 @@ currencies.Update = function(self)
 
                 row.currencyIndex = i
                 row.currencyID = info.currencyID
+                row.currencyName = info.name
+                row.discovered = info.discovered
+                row.isTypeUnused = info.isTypeUnused
+                row.isShowInBackpack = info.isShowInBackpack
                 row.Icon:SetTexture(info.iconFileID)
                 row.Text:SetText(info.name or '')
                 row.Count:SetText(BreakUpLargeNumbers(info.quantity or 0))
-                ApplyRowVisual(row, false)
+                ApplyRowVisual(row, i == self.selectedIndex, false)
                 y = y - ROW_HEIGHT - ROW_GAP
             end
         end
@@ -261,6 +284,233 @@ currencies.Update = function(self)
 
     content:SetHeight(math.max((-y) + 4, 1))
     self:UpdateScroll()
+
+    if self.optionsPopup and self.optionsPopup:IsShown() then
+        self:RefreshOptionsPopup()
+    end
+end
+
+currencies.ResolveSelectedIndex = function(self)
+    if not self.selectedName then
+        return nil
+    end
+    local listSize = C_CurrencyInfo.GetCurrencyListSize()
+    for i = 1, listSize do
+        local info = C_CurrencyInfo.GetCurrencyListInfo(i)
+        if info and not info.isHeader and info.name == self.selectedName then
+            return i, info
+        end
+    end
+    return nil
+end
+
+currencies.HideOptions = function(self)
+    self.selectedIndex = nil
+    self.selectedName = nil
+    self.selectedCurrencyID = nil
+    if self.optionsPopup then
+        self.optionsPopup:Hide()
+    end
+    for _, row in ipairs(self.currencyRows) do
+        if row:IsShown() then
+            ApplyRowVisual(row, false, false)
+        end
+    end
+end
+
+currencies.SetCheckboxValue = function(self, checkbox, value)
+    if not checkbox then
+        return
+    end
+    checkbox.suppressOnChange = true
+    checkbox:SetValue('value', value and true or false)
+    checkbox.suppressOnChange = false
+end
+
+currencies.RefreshOptionsPopup = function(self)
+    local popup = self.optionsPopup
+    if not popup or not popup:IsShown() then
+        return
+    end
+
+    local index, info = self:ResolveSelectedIndex()
+    if not index or not info then
+        self:HideOptions()
+        return
+    end
+
+    self.selectedIndex = index
+    self.selectedCurrencyID = info.currencyID
+    self.selectedName = info.name
+
+    local showChecks = info.discovered and true or false
+    popup.unusedCheckbox:SetShown(showChecks)
+    popup.backpackCheckbox:SetShown(showChecks)
+    self:SetCheckboxValue(popup.unusedCheckbox, info.isTypeUnused)
+    self:SetCheckboxValue(popup.backpackCheckbox, info.isShowInBackpack)
+
+    local showTransferNote = info.currencyID
+        and C_CurrencyInfo.IsAccountTransferableCurrency(info.currencyID)
+    popup.Disclaimer:SetShown(showTransferNote)
+
+    local height = 50
+    if showChecks then
+        height = height + 40
+    end
+    if showTransferNote then
+        height = height + 28
+    end
+    popup:SetHeight(height)
+end
+
+currencies.ShowOptions = function(self, row)
+    if not self.optionsPopup or not row then
+        return
+    end
+
+    self.selectedIndex = row.currencyIndex
+    self.selectedName = row.currencyName
+    self.selectedCurrencyID = row.currencyID
+
+    for _, other in ipairs(self.currencyRows) do
+        if other:IsShown() then
+            ApplyRowVisual(other, other.currencyIndex == self.selectedIndex, false)
+        end
+    end
+
+    self.optionsPopup:Show()
+    self:RefreshOptionsPopup()
+end
+
+currencies.CreateOptionsCheckbox = function(self, parent, label, tooltipText)
+    local checkbox = EXFrames:GetFrame('checkbox'):Create()
+    checkbox:SetParent(parent)
+    checkbox:SetHeight(22)
+    checkbox:SetFrameWidth(OPTIONS_WIDTH - 24)
+    checkbox:SetLabel(label)
+    checkbox.Label:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
+    checkbox.Label:SetTextColor(unpack(EXUI.const.theme.text))
+
+    checkbox:HookScript('OnEnter', function(cb)
+        if tooltipText then
+            GameTooltip:SetOwner(cb, 'ANCHOR_RIGHT')
+            GameTooltip:AddLine(tooltipText, 1, 1, 1, true)
+            GameTooltip:Show()
+        end
+    end)
+    checkbox:HookScript('OnLeave', function()
+        GameTooltip:Hide()
+    end)
+
+    return checkbox
+end
+
+currencies.CreateOptionsPopup = function(self, panel)
+    local theme = EXUI.const.theme
+    local popup = CreateFrame('Frame', nil, panel)
+    popup:SetSize(OPTIONS_WIDTH, 120)
+    popup:SetPoint('TOPLEFT', panel, 'TOPRIGHT', OPTIONS_GAP, -28)
+    popup:SetFrameLevel(panel:GetFrameLevel() + 10)
+    popup:EnableMouse(true)
+    popup:Hide()
+
+    local bg = popup:CreateTexture(nil, 'BACKGROUND')
+    bg:SetTexture(EXFrames.assets.textures.ui.panelBg)
+    bg:SetVertexColor(unpack(theme.backgroundDeep))
+    bg:SetTextureSliceMargins(8, 8, 8, 8)
+    bg:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
+    bg:SetAllPoints()
+
+    local border = popup:CreateTexture(nil, 'OVERLAY', nil, 1)
+    border:SetTexture(EXFrames.assets.textures.ui.panelBorder)
+    border:SetVertexColor(unpack(theme.border))
+    border:SetTextureSliceMargins(8, 8, 8, 8)
+    border:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
+    border:SetAllPoints()
+
+    local close = CreateFrame('Button', nil, popup)
+    close:SetSize(22, 18)
+    close:SetPoint('TOPRIGHT', -6, -6)
+    local closeBg = close:CreateTexture(nil, 'BACKGROUND')
+    closeBg:SetTexture(EXUI.const.textures.characterFrame.input.buttonBg)
+    closeBg:SetTextureSliceMargins(20, 20, 20, 20)
+    closeBg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    closeBg:SetVertexColor(unpack(theme.faded))
+    closeBg:SetAllPoints()
+    local closeIcon = close:CreateTexture(nil, 'OVERLAY')
+    closeIcon:SetTexture(EXUI.const.textures.frame.closeIcon)
+    closeIcon:SetSize(10, 10)
+    closeIcon:SetPoint('CENTER')
+    close:SetScript('OnEnter', function()
+        closeBg:SetVertexColor(unpack(theme.dangerHover))
+    end)
+    close:SetScript('OnLeave', function()
+        closeBg:SetVertexColor(unpack(theme.faded))
+    end)
+    close:SetScript('OnClick', function()
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+        currencies:HideOptions()
+    end)
+
+    local title = popup:CreateFontString(nil, 'OVERLAY')
+    title:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
+    title:SetPoint('TOPLEFT', 12, -12)
+    title:SetPoint('TOPRIGHT', close, 'TOPLEFT', -4, -1)
+    title:SetJustifyH('CENTER')
+    title:SetText(TOKEN_OPTIONS or 'Currency Options')
+    title:SetTextColor(unpack(HEADER_GOLD))
+    popup.Title = title
+
+    local unusedCheckbox = self:CreateOptionsCheckbox(popup, UNUSED or 'Unused', TOKEN_MOVE_TO_UNUSED)
+    unusedCheckbox:SetPoint('TOPLEFT', title, 'BOTTOMLEFT', -2, -10)
+    unusedCheckbox.onChange = function(value)
+        if not currencies.selectedIndex then
+            return
+        end
+        PlaySound(value and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+        C_CurrencyInfo.SetCurrencyUnused(currencies.selectedIndex, value and true or false)
+        local index = currencies:ResolveSelectedIndex()
+        if index then
+            currencies.selectedIndex = index
+        end
+        currencies:Update()
+    end
+    popup.unusedCheckbox = unusedCheckbox
+
+    local backpackCheckbox = self:CreateOptionsCheckbox(popup, SHOW_ON_BACKPACK or 'Show on Backpack',
+        TOKEN_SHOW_ON_BACKPACK)
+    backpackCheckbox:SetPoint('TOPLEFT', unusedCheckbox, 'BOTTOMLEFT', 0, -4)
+    backpackCheckbox.onChange = function(value)
+        if not currencies.selectedIndex then
+            return
+        end
+        if value and BackpackTokenFrame and BackpackTokenFrame.GetMaxTokensWatched then
+            local maxWatched = BackpackTokenFrame:GetMaxTokensWatched()
+            local watched = GetNumWatchedTokens and GetNumWatchedTokens() or 0
+            if watched >= maxWatched then
+                UIErrorsFrame:AddMessage(TOO_MANY_WATCHED_TOKENS:format(maxWatched), 1.0, 0.1, 0.1, 1.0)
+                currencies:SetCheckboxValue(backpackCheckbox, false)
+                return
+            end
+        end
+        PlaySound(value and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+        C_CurrencyInfo.SetCurrencyBackpack(currencies.selectedIndex, value and true or false)
+        currencies:Update()
+    end
+    popup.backpackCheckbox = backpackCheckbox
+
+    local disclaimer = popup:CreateFontString(nil, 'OVERLAY')
+    disclaimer:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
+    disclaimer:SetPoint('BOTTOMLEFT', 12, 12)
+    disclaimer:SetPoint('BOTTOMRIGHT', -12, 12)
+    disclaimer:SetJustifyH('LEFT')
+    disclaimer:SetWordWrap(true)
+    disclaimer:SetText('To transfer, please use Default UI.')
+    disclaimer:SetTextColor(unpack(theme.textMuted))
+    popup.Disclaimer = disclaimer
+
+    self.optionsPopup = popup
+    return popup
 end
 
 currencies.StopAnimations = function(self)
@@ -318,6 +568,7 @@ currencies.HidePanel = function(self, immediate)
     end
 
     self.isOpen = false
+    self:HideOptions()
     self:StopAnimations()
 
     if immediate or not self.useAnimation or not self.panel.fadeOut then
@@ -447,6 +698,7 @@ currencies.CreatePanel = function(self, window)
     border:SetAllPoints()
 
     self:CreateCloseButton(panel)
+    self:CreateOptionsPopup(panel)
 
     local title = panel:CreateFontString(nil, 'OVERLAY')
     title:SetFont(EXUI.const.fonts.DEFAULT, 13, 'OUTLINE')
