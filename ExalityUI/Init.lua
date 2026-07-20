@@ -132,6 +132,7 @@ EXUI.const = {
             toBlizzIcon = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/to-blizz-icon.png]],
             characterGlow = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/character-glow.png]],
             check = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/check.png]],
+            coins = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/coins.png]],
             panel = {
                 bg = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/panel-bg.png]],
                 border = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/panel-border.png]],

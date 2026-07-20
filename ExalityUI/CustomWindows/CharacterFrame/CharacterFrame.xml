@@ -4,5 +4,6 @@
     <Script file="Stats.lua"/>
     <Script file="Titles.lua"/>
     <Script file="Sets.lua"/>
+    <Script file="Currencies.lua"/>
     <Script file="Window.lua"/>
 </Ui>

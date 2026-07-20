@@ -22,6 +22,9 @@ local titles = EXUI:GetModule('character-frame-titles')
 ---@class EXUICharacterFrameSets
 local sets = EXUI:GetModule('character-frame-sets')
 
+---@class EXUICharacterFrameCurrencies
+local currencies = EXUI:GetModule('character-frame-currencies')
+
 ---@class ExalityFramesTooltipInput
 local tooltip = EXFrames:GetFrame('tooltip')
 
@@ -512,9 +515,11 @@ characterFrame.Create = function(self)
     stats:Create(statsPanel)
     titles:Create(titlesPanel)
     sets:Create(setsPanel)
+    currencies:Create(window)
 
     window.onClose = function()
         sets:HideCreatePopup()
+        currencies:Hide()
     end
 
     self:SetSideTab('stats')
