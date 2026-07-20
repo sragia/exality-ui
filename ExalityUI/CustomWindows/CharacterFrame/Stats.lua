@@ -8,20 +8,7 @@ local stats = EXUI:GetModule('character-frame-stats')
 stats.frames = {}
 stats.container = nil
 
-local function GetSecondaryBonus(rating, base, bonusCoeff)
-    -- For Legion Remix Timerunners, secondary stat bonuses all come from auras not actual stats
-    -- BonusCoeff is only from mastery, all other call sights should be 1
-    -- default bonus coeff call sights where we don't use this
-    if PlayerIsTimerunning() then
-        return base;
-    end
-
-    if not bonusCoeff then
-        bonusCoeff = 1;
-    end
-    return (GetCombatRatingBonus(rating) * bonusCoeff);
-end
-
+-- Gate once: tainted code cannot arithmetic/compare secret unit-stat numbers in M+/raids.
 local function AreUnitStatsSecret()
     return C_Secrets and C_Secrets.ShouldUnitStatsBeSecret and C_Secrets.ShouldUnitStatsBeSecret()
 end
@@ -46,11 +33,41 @@ local function IsNonZeroStat(value)
 end
 
 local function SetPercentageStatText(fontString, value)
-    if IsInaccessibleValue(value) then
-        fontString:SetFormattedText('%.2f%%', value)
-    else
-        fontString:SetText(string.format('%.2f%%', value))
+    fontString:SetFormattedText('%.2f%%', value)
+end
+
+local function SetLargeNumberStatText(fontString, value)
+    fontString:SetText(BreakUpLargeNumbers(value))
+end
+
+local function ClearStatTooltip(frame)
+    frame.tooltipLines = {}
+end
+
+local function GetSecondaryBonus(rating, base, bonusCoeff)
+    -- Timerunners: bonuses come from auras. Secret envs: cannot multiply rating bonus.
+    if PlayerIsTimerunning() or AreUnitStatsSecret() then
+        return base;
     end
+
+    if not bonusCoeff then
+        bonusCoeff = 1;
+    end
+    return (GetCombatRatingBonus(rating) * bonusCoeff);
+end
+
+local function GetSecretSafeCritInfo()
+    local _, class = UnitClass('player')
+    local spec = C_SpecializationInfo.GetSpecialization()
+    local primaryStatId = spec and select(6, C_SpecializationInfo.GetSpecializationInfo(spec))
+
+    if class == 'HUNTER' then
+        return CR_CRIT_RANGED, GetRangedCritChance()
+    end
+    if primaryStatId == LE_UNIT_STAT_INTELLECT then
+        return CR_CRIT_SPELL, GetSpellCritChance(2)
+    end
+    return CR_CRIT_MELEE, GetCritChance()
 end
 
 stats.CreateHeader = function(self, headerText, parent)
@@ -255,6 +272,13 @@ stats.Create = function(self, container)
         self:CreateHeader('Secondaries', container),
         self:CreateStat(STAT_CRITICAL_STRIKE, {
             update = function(frame)
+                if AreUnitStatsSecret() then
+                    local _, critChance = GetSecretSafeCritInfo()
+                    SetPercentageStatText(frame.StatRating, critChance)
+                    ClearStatTooltip(frame)
+                    return
+                end
+
                 local school = 2
                 local minCrit = GetSpellCritChance(school) -- 2 = holySchool
                 for i = (school + 1), MAX_SPELL_SCHOOLS do
@@ -278,7 +302,7 @@ stats.Create = function(self, container)
                     rating = CR_CRIT_MELEE;
                 end
 
-                frame.StatRating:SetText(string.format('%.2f%%', critChance))
+                SetPercentageStatText(frame.StatRating, critChance)
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAT_CRITICAL_STRIKE) .. FONT_COLOR_CODE_CLOSE;
                 local extraCritChance = GetSecondaryBonus(rating, critChance);
@@ -295,6 +319,12 @@ stats.Create = function(self, container)
             update = function(frame)
                 local haste = GetHaste();
                 local rating = CR_HASTE_MELEE;
+
+                if AreUnitStatsSecret() then
+                    SetPercentageStatText(frame.StatRating, haste)
+                    ClearStatTooltip(frame)
+                    return
+                end
 
                 local hastePerc = string.format('%.2f%%', haste)
 
@@ -320,10 +350,29 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_MASTERY, {
             update = function(frame)
                 local mastery = GetMasteryEffect();
-                frame.StatRating:SetText(string.format('%.2f%%', mastery))
+                SetPercentageStatText(frame.StatRating, mastery)
             end,
             onEnter = function(frame)
                 GameTooltip:SetOwner(frame, "ANCHOR_RIGHT");
+                if AreUnitStatsSecret() then
+                    local primaryTalentTree = C_SpecializationInfo.GetSpecialization();
+                    if primaryTalentTree then
+                        local masterySpells = C_SpecializationInfo.GetSpecializationMasterySpells(primaryTalentTree)
+                        local hasAddedAnyMasterySpell = false;
+                        for _, masterySpell in ipairs(masterySpells) do
+                            if hasAddedAnyMasterySpell then
+                                GameTooltip:AppendInfoWithSpacer("GetSpellByID", masterySpell);
+                            else
+                                GameTooltip:AppendInfo("GetSpellByID", masterySpell);
+                                hasAddedAnyMasterySpell = true;
+                            end
+                        end
+                    end
+                    frame.UpdateTooltip = frame.onEnterFunc;
+                    GameTooltip:Show();
+                    return
+                end
+
                 local mastery, bonusCoeff = GetMasteryEffect();
                 local masteryBonus = GetSecondaryBonus(CR_MASTERY, mastery, bonusCoeff);
 
@@ -357,12 +406,18 @@ stats.Create = function(self, container)
         }, container),
         self:CreateStat(STAT_VERSATILITY, {
             update = function(frame)
+                if AreUnitStatsSecret() then
+                    SetPercentageStatText(frame.StatRating, GetCombatRatingBonus(CR_VERSATILITY_DAMAGE_DONE))
+                    ClearStatTooltip(frame)
+                    return
+                end
+
                 local versatility = GetCombatRating(CR_VERSATILITY_DAMAGE_DONE);
                 local versatilityDamageBonus = GetCombatRatingBonus(CR_VERSATILITY_DAMAGE_DONE) +
                     GetVersatilityBonus(CR_VERSATILITY_DAMAGE_DONE);
                 local versatilityDamageTakenReduction = GetCombatRatingBonus(CR_VERSATILITY_DAMAGE_TAKEN) +
                     GetVersatilityBonus(CR_VERSATILITY_DAMAGE_TAKEN);
-                frame.StatRating:SetText(string.format('%.2f%%', versatilityDamageBonus))
+                SetPercentageStatText(frame.StatRating, versatilityDamageBonus)
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAT_VERSATILITY) .. FONT_COLOR_CODE_CLOSE;
 
@@ -379,10 +434,17 @@ stats.Create = function(self, container)
                 local spec = C_SpecializationInfo.GetSpecialization()
                 local primaryStatId = select(6, C_SpecializationInfo.GetSpecializationInfo(spec));
                 local stat, effectiveStat, posBuff, negBuff = UnitStat('player', primaryStatId);
+                local statName = _G["SPELL_STAT" .. primaryStatId .. "_NAME"];
+
+                frame.Name:SetText(statName)
+
+                if AreUnitStatsSecret() then
+                    SetLargeNumberStatText(frame.StatRating, effectiveStat)
+                    ClearStatTooltip(frame)
+                    return
+                end
 
                 local effectiveStatDisplay = BreakUpLargeNumbers(effectiveStat);
-
-                local statName = _G["SPELL_STAT" .. primaryStatId .. "_NAME"];
                 local tooltipText = HIGHLIGHT_FONT_COLOR_CODE .. format(PAPERDOLLFRAME_TOOLTIP_FORMAT, statName) .. " ";
 
                 if ((posBuff == 0) and (negBuff == 0)) then
@@ -414,7 +476,6 @@ stats.Create = function(self, container)
                     end
                 end
 
-                frame.Name:SetText(statName)
                 frame.StatRating:SetText(effectiveStatDisplay)
                 frame.tooltipLines[2] = _G["DEFAULT_STAT" .. primaryStatId .. "_TOOLTIP"];
 
@@ -463,6 +524,13 @@ stats.Create = function(self, container)
         self:CreateStat(_G["SPELL_STAT" .. LE_UNIT_STAT_STAMINA .. "_NAME"], {
             update = function(frame)
                 local stat, effectiveStat, posBuff, negBuff = UnitStat('player', LE_UNIT_STAT_STAMINA);
+
+                if AreUnitStatsSecret() then
+                    SetLargeNumberStatText(frame.StatRating, effectiveStat)
+                    ClearStatTooltip(frame)
+                    return
+                end
+
                 local statName = _G["SPELL_STAT" .. LE_UNIT_STAT_STAMINA .. "_NAME"]
                 local tooltipText = HIGHLIGHT_FONT_COLOR_CODE .. format(PAPERDOLLFRAME_TOOLTIP_FORMAT, statName) .. " ";
                 local effectiveStatDisplay = BreakUpLargeNumbers(effectiveStat);
@@ -507,9 +575,16 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_ARMOR, {
             update = function(frame)
                 local baselineArmor, effectiveArmor, armor, bonusArmor = UnitArmor('player');
+
+                if AreUnitStatsSecret() then
+                    SetLargeNumberStatText(frame.StatRating, effectiveArmor)
+                    ClearStatTooltip(frame)
+                    return
+                end
+
                 local armorReduction = PaperDollFrame_GetArmorReduction(effectiveArmor, UnitEffectiveLevel('player'));
                 local armorReductionAgainstTarget = PaperDollFrame_GetArmorReductionAgainstTarget(effectiveArmor);
-                frame.StatRating:SetText(BreakUpLargeNumbers(effectiveArmor))
+                SetLargeNumberStatText(frame.StatRating, effectiveArmor)
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, ARMOR) ..
                     " " .. BreakUpLargeNumbers(effectiveArmor) .. FONT_COLOR_CODE_CLOSE;
@@ -529,8 +604,8 @@ stats.Create = function(self, container)
                     return
                 end
                 SetPercentageStatText(frame.StatRating, avoidance)
-                if (AreUnitStatsSecret()) then
-                    frame.tooltipLines = {}
+                if AreUnitStatsSecret() then
+                    ClearStatTooltip(frame)
                     return
                 end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
@@ -548,8 +623,8 @@ stats.Create = function(self, container)
             update = function(frame)
                 local lifesteal = GetLifesteal();
                 SetPercentageStatText(frame.StatRating, lifesteal)
-                if (AreUnitStatsSecret()) then
-                    frame.tooltipLines = {}
+                if AreUnitStatsSecret() then
+                    ClearStatTooltip(frame)
                     return
                 end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
@@ -566,7 +641,11 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_DODGE, {
             update = function(frame)
                 local chance = GetDodgeChance();
-                frame.StatRating:SetText(string.format("%.2f%%", chance))
+                SetPercentageStatText(frame.StatRating, chance)
+                if AreUnitStatsSecret() then
+                    ClearStatTooltip(frame)
+                    return
+                end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, DODGE_CHANCE) ..
                     " " .. string.format("%.2F", chance) .. "%" .. FONT_COLOR_CODE_CLOSE;
@@ -584,7 +663,11 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_PARRY, {
             update = function(frame)
                 local chance = GetParryChance();
-                frame.StatRating:SetText(string.format("%.2f%%", chance))
+                SetPercentageStatText(frame.StatRating, chance)
+                if AreUnitStatsSecret() then
+                    ClearStatTooltip(frame)
+                    return
+                end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, PARRY_CHANCE) ..
                     " " .. string.format("%.2F", chance) .. "%" .. FONT_COLOR_CODE_CLOSE;
@@ -602,7 +685,11 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_BLOCK, {
             update = function(frame)
                 local chance = GetBlockChance();
-                frame.StatRating:SetText(string.format("%.2f%%", chance))
+                SetPercentageStatText(frame.StatRating, chance)
+                if AreUnitStatsSecret() then
+                    ClearStatTooltip(frame)
+                    return
+                end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, BLOCK_CHANCE) ..
                     " " .. string.format("%.2F", chance) .. "%" .. FONT_COLOR_CODE_CLOSE;
@@ -631,7 +718,11 @@ stats.Create = function(self, container)
         self:CreateStat(STAT_STAGGER, {
             update = function(frame)
                 local stagger, staggerAgainstTarget = C_PaperDollInfo.GetStaggerPercentage('player');
-                frame.StatRating:SetText(string.format('%.2f%%', stagger))
+                SetPercentageStatText(frame.StatRating, stagger)
+                if AreUnitStatsSecret() then
+                    ClearStatTooltip(frame)
+                    return
+                end
                 frame.tooltipLines[1] = HIGHLIGHT_FONT_COLOR_CODE ..
                     format(PAPERDOLLFRAME_TOOLTIP_FORMAT, STAGGER) ..
                     " " .. string.format("%.2F%%", stagger) .. FONT_COLOR_CODE_CLOSE;
