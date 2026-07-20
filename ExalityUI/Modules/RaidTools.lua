@@ -1055,7 +1055,6 @@ raidToolsModule.CreateBrezz = function(self)
         data:SetDataByKey('brezzRelativePoint', relativePoint)
         data:SetDataByKey('brezzXOff', xOfs)
         data:SetDataByKey('brezzYOff', yOfs)
-        raidToolsModule:CreateOrRefreshBrezz()
     end, function(frame)
         raidToolsModule.brezzEditorShowing = true
         raidToolsModule.brezzFrame:Show()

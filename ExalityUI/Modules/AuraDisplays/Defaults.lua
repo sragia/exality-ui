@@ -121,6 +121,7 @@ defaults.GROUP_VISUAL = {
     showIconBorder = true,
     iconBorderColor = { r = 0, g = 0, b = 0, a = 1 },
     iconBorderThickness = 1,
+    iconBorderColorByAuraType = false,
     elementSpacingX = 2,
     elementSpacingY = 2,
     gapX = 0,
@@ -169,6 +170,9 @@ defaults.GROUP_VISUAL = {
     dispelBorderShowIcon = true,
     dispelBorderHarmful = true,
     dispelBorderHelpful = false,
+    -- Mouse/tooltips default off (standalone Aura Displays stay click-through).
+    enableMouse = false,
+    tooltipAnchor = 'ANCHOR_BOTTOMLEFT',
 }
 
 defaults.CONTAINER = {

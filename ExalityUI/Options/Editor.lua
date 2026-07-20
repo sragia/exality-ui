@@ -341,7 +341,7 @@ editor.RefreshEditorOverlayBorder = function(self, frame, isActive)
 
     if isActive then
         local accent = theme.borderActive or theme.accent
-        overlay.PPBorder:SetBorderThickness(2)
+        overlay.PPBorder:SetBorderThickness(1)
         overlay.PPBorder:SetBorderColor(accent[1], accent[2], accent[3], accent[4] or 1)
         if overlay.labelText then
             overlay.labelText:SetTextColor(theme.accent[1], theme.accent[2], theme.accent[3], 1)
@@ -741,7 +741,7 @@ editor.EnsureKeyboardCapture = function(self)
             return
         end
 
-        local nudge = EXUI:ScalePixel(1, frame)
+        local nudge = EXUI:ScalePixels(1, frame)
         if IsShiftKeyDown() then
             nudge = nudge * 10
         end
@@ -935,7 +935,11 @@ editor.AddEditorOverlay = function(self, frame, label, onChange)
     frame.editor:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
     frame.editor:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     frame.editor:SetFrameStrata('FULLSCREEN_DIALOG')
-    EXUI:ApplySolidBorder(frame.editor, 1, { 1, 1, 1, 1 }, { 0, 0, 0, 0.7 }, { register = false })
+    EXUI:ApplySolidBorder(frame.editor, 1, { 1, 1, 1, 1 }, { 0, 0, 0, 0.7 }, {
+        register = false,
+        layer = 'OVERLAY',
+        outwardBottom = false,
+    })
 
     local backdropTint = frame.editor:CreateTexture(nil, 'BACKGROUND', nil, -1)
     backdropTint:SetAllPoints()
@@ -1027,7 +1031,7 @@ editor.AddOffsetArrow = function(self, frame, direction, sign)
 
     arrow:SetScript('OnClick', function()
         editor:SetActiveFrame(frame, 1)
-        local nudge = EXUI:ScalePixel(1, frame)
+        local nudge = EXUI:ScalePixels(1, frame)
         if direction == 'X' then
             editor:NudgeFrame(frame, sign * nudge, 0)
         else

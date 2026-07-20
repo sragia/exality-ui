@@ -1013,8 +1013,8 @@ core.RefreshDisplayByID = function(self, displayID)
 
             self:UpdateValueForDisplay(displayID, 'YOff', yOfs)
 
-            self:RefreshDisplayByID(displayID)
-
+            -- Persist only while editing: RefreshDisplayByID re-applies SetPoint +
+            -- SnapFrameToPixels and can cancel 1px nudges.
         end)
 
     else

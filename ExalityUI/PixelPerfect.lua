@@ -109,6 +109,11 @@ end
 ---Align a frame's screen rect to the physical pixel grid.
 ---@param frame Frame
 function EXUI:SnapFrameToPixels(frame)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled and frame.editor then
+        return
+    end
+
     local point, relativeTo, relativePoint = frame:GetPoint(1)
     if not point then
         return
@@ -191,9 +196,12 @@ local function applyBorderThickness(border, thickness, region)
     border.Bottom:ClearAllPoints()
     border.Bottom:SetHeight(size)
     border.Bottom:SetSnapToPixelGrid(false)
-    local bottomNudge = EXUI:ScalePixels(1, region)
-    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, -bottomNudge)
-    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, -bottomNudge)
+    local bottomOffset = 0
+    if border.outwardBottom ~= false then
+        bottomOffset = -EXUI:ScalePixels(1, region)
+    end
+    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, bottomOffset)
+    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, bottomOffset)
 
     border.Left:ClearAllPoints()
     border.Left:SetWidth(size)
@@ -214,8 +222,11 @@ function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor, options)
         frame:SetBackdropColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
     end
     if not frame.PPBorder then
-        frame.PPBorder = self:AddPixelPerfectBorder(frame, borderSize, { register = options.register })
+        frame.PPBorder = self:AddPixelPerfectBorder(frame, borderSize, options)
     else
+        if options.outwardBottom ~= nil then
+            frame.PPBorder.outwardBottom = options.outwardBottom
+        end
         frame.PPBorder:SetBorderThickness(borderSize)
     end
     if borderColor then
@@ -224,7 +235,7 @@ function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor, options)
 end
 
 ---Border textures live on the anchor frame so OVERLAY text stays above them.
----@param options? { layer?: string, register?: boolean }
+---@param options? { layer?: string, register?: boolean, outwardBottom?: boolean }
 function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     thickness = thickness or 1
     options = options or {}
@@ -234,6 +245,7 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     local border = {
         anchor = frame,
         thicknessPixels = thickness,
+        outwardBottom = options.outwardBottom,
     }
 
     border.Top = frame:CreateTexture(nil, layer, nil, 1)
@@ -264,6 +276,20 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     border.SetBorderThickness = function(self, nextThickness)
         self.thicknessPixels = nextThickness or self.thicknessPixels or 1
         applyBorderThickness(self, self.thicknessPixels, self.anchor)
+    end
+
+    border.Show = function(self)
+        self.Top:Show()
+        self.Bottom:Show()
+        self.Left:Show()
+        self.Right:Show()
+    end
+
+    border.Hide = function(self)
+        self.Top:Hide()
+        self.Bottom:Hide()
+        self.Left:Hide()
+        self.Right:Hide()
     end
 
     if register then

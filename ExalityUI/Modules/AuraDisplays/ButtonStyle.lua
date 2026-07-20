@@ -16,6 +16,8 @@ local BORDER_STYLE_MAP = {
     Color = 1,
 }
 
+local DEFAULT_TOOLTIP_ANCHOR = 'ANCHOR_BOTTOMLEFT'
+
 local BAR_TIMER_DIRECTION_MAP = {
     RemainingTime = Enum.StatusBarTimerDirection.RemainingTime,
     ElapsedTime = Enum.StatusBarTimerDirection.ElapsedTime,
@@ -104,6 +106,64 @@ end
 
 function buttonStyle:UsesSafeBarChrome(button)
     return button.exuiIsPreview == true
+end
+
+function buttonStyle:EnsureTooltipAnchorHook()
+    if self._tooltipAnchorHooked then
+        return
+    end
+    if not AuraButtonPrivateMixin or not AuraButtonPrivateMixin.ShowTooltip then
+        return
+    end
+
+    -- Blizzard hardcodes ANCHOR_BOTTOMLEFT; re-anchor after ShowTooltip when requested.
+    hooksecurefunc(AuraButtonPrivateMixin, 'ShowTooltip', function(self)
+        local anchor = self.exuiTooltipAnchor
+        if not anchor or anchor == DEFAULT_TOOLTIP_ANCHOR then
+            return
+        end
+        if not AuraButtonTooltip or not AuraButtonTooltip.IsOwned or not AuraButtonTooltip:IsOwned(self) then
+            return
+        end
+        local unitToken, auraData = self:GetAuraInstance()
+        if not auraData then
+            return
+        end
+        AuraButtonTooltip:SetOwner(self, anchor)
+        if RaiseFrameLevelByTwo then
+            RaiseFrameLevelByTwo(AuraButtonTooltip)
+        end
+        self:PopulateTooltip(unitToken, auraData)
+    end)
+
+    self._tooltipAnchorHooked = true
+end
+
+function buttonStyle:ApplyMouseInteraction(button, visual)
+    if not button then
+        return
+    end
+
+    local enableMouse = visual and visual.enableMouse and not self:UsesSafeBarChrome(button)
+    if button.EnableMouse then
+        button:EnableMouse(enableMouse and true or false)
+    end
+    if button.SetMouseMotionEnabled then
+        button:SetMouseMotionEnabled(enableMouse and true or false)
+    end
+
+    if enableMouse then
+        self:EnsureTooltipAnchorHook()
+        button.exuiTooltipAnchor = visual.tooltipAnchor or DEFAULT_TOOLTIP_ANCHOR
+        if button.SetCancelAuraButtons then
+            button:SetCancelAuraButtons('RightButtonUp')
+        end
+    else
+        button.exuiTooltipAnchor = nil
+        if button.SetCancelAuraButtons then
+            button:SetCancelAuraButtons(nil)
+        end
+    end
 end
 
 function buttonStyle:ApplyBarPixelPerfect(button, visual)
@@ -319,7 +379,8 @@ function buttonStyle:CreateCooldown(button)
 end
 
 local ICON_BORDER_DRAW_LEVEL = 1
-local DISPEL_BORDER_DRAW_LEVEL = 2
+local AURA_TYPE_BORDER_DRAW_LEVEL = 2
+local DISPEL_BORDER_DRAW_LEVEL = 3
 
 function buttonStyle:SetIconBorderVisibility(iconBorder, show)
     if not iconBorder then
@@ -337,6 +398,60 @@ function buttonStyle:SetIconBorderVisibility(iconBorder, show)
     end
 end
 
+function buttonStyle:UsesAuraTypeIconBorder(visual)
+    if not visual or visual.showIconBorder == false or not visual.iconBorderColorByAuraType then
+        return false
+    end
+    if visual.displayStyle == 'bar' and visual.showBarIcon == false then
+        return false
+    end
+    return true
+end
+
+-- Bound directly as SetAuraBorder Color target. Blizzard updates via a forbidden
+-- proxy, so this must be the visible texture (Lua hooks on a driver do not run).
+function buttonStyle:GetAuraTypeBorderTexturePath()
+    local icons = EXUI.const and EXUI.const.textures and EXUI.const.textures.frame and EXUI.const.textures.frame.icons
+    return (icons and icons.auraTypeBorder)
+        or [[Interface/Addons/ExalityUI/Assets/Images/Icons/aura-type-border.png]]
+end
+
+function buttonStyle:CreateAuraTypeBorder(button)
+    local parent = self:EnsureIconBorderOverlay(button)
+    local border = button.AuraTypeBorderTexture
+    if not border then
+        border = parent:CreateTexture(nil, 'OVERLAY')
+        button.AuraTypeBorderTexture = border
+    end
+
+    border:SetParent(parent)
+    border:SetDrawLayer('OVERLAY', AURA_TYPE_BORDER_DRAW_LEVEL)
+    border:SetTexture(self:GetAuraTypeBorderTexturePath())
+    border:SetTexCoord(0, 1, 0, 1)
+    border:ClearAllPoints()
+    border:SetAllPoints(parent)
+    if border.SetSnapToPixelGrid then
+        border:SetSnapToPixelGrid(true)
+    end
+    if border.SetTexelSnappingBias then
+        border:SetTexelSnappingBias(0)
+    end
+    border:Hide()
+    return border
+end
+
+function buttonStyle:SetAuraTypeBorderVisibility(button, show)
+    local border = button and button.AuraTypeBorderTexture
+    if not border then
+        return
+    end
+    if show then
+        border:Show()
+    else
+        border:Hide()
+    end
+end
+
 function buttonStyle:CreateBorder(button)
     if button.AuraBorderTexture then
         return button.AuraBorderTexture
@@ -347,6 +462,47 @@ function buttonStyle:CreateBorder(button)
     border:SetPoint('CENTER', parent, 'CENTER')
     button.AuraBorderTexture = border
     return border
+end
+
+function buttonStyle:ApplyAuraBorderBinding(button, visual)
+    if not button or not visual then
+        return
+    end
+
+    if self:UsesAuraTypeIconBorder(visual) and button.SetAuraBorder then
+        local border = self:CreateAuraTypeBorder(button)
+        if button.AuraBorderTexture then
+            button.AuraBorderTexture:Hide()
+        end
+        button:SetAuraBorder(border, {
+            showIcon = false,
+            showWhenHarmful = true,
+            showWhenHelpful = false,
+            style = BORDER_STYLE_MAP.Color,
+        })
+        return
+    end
+
+    if visual.displayStyle ~= 'bar' and visual.showDispelBorder and button.SetAuraBorder then
+        self:SetAuraTypeBorderVisibility(button, false)
+        local border = self:CreateBorder(button)
+        self:ApplyDispelBorderLayout(button, visual)
+        button:SetAuraBorder(border, {
+            showIcon = visual.dispelBorderShowIcon,
+            showWhenHarmful = visual.dispelBorderHarmful,
+            showWhenHelpful = visual.dispelBorderHelpful,
+            style = BORDER_STYLE_MAP[visual.dispelBorderStyle] or 0,
+        })
+        return
+    end
+
+    if button.ClearAuraBorder then
+        button:ClearAuraBorder()
+    end
+    self:SetAuraTypeBorderVisibility(button, false)
+    if button.AuraBorderTexture then
+        button.AuraBorderTexture:Hide()
+    end
 end
 
 function buttonStyle:ApplyDispelBorderLayout(button, visual)
@@ -381,6 +537,7 @@ function buttonStyle:ApplyIconBorder(button, visual)
 
     if visual.showIconBorder == false then
         self:SetIconBorderVisibility(button.IconPPBorder, false)
+        self:SetAuraTypeBorderVisibility(button, false)
         if button.IconBorderOverlay then
             button.IconBorderOverlay:Hide()
         end
@@ -408,6 +565,12 @@ function buttonStyle:ApplyIconBorder(button, visual)
     button.IconPPBorder:SetBorderColor(color.r, color.g, color.b, color.a or 1)
     button.IconPPBorder:SetBorderThickness(thickness)
     self:SetIconBorderVisibility(button.IconPPBorder, true)
+
+    if visual.iconBorderColorByAuraType then
+        self:CreateAuraTypeBorder(button)
+    else
+        self:SetAuraTypeBorderVisibility(button, false)
+    end
 end
 
 function buttonStyle:CreateBarContainer(button, visual)
@@ -506,6 +669,7 @@ function buttonStyle:ApplyBarIconLayout(button, visual)
             button.Icon:Hide()
         end
         self:SetIconBorderVisibility(button.IconPPBorder, false)
+        self:SetAuraTypeBorderVisibility(button, false)
         if button.IconBorderOverlay then
             button.IconBorderOverlay:Hide()
         end
@@ -517,15 +681,6 @@ function buttonStyle:ApplyBarStyle(button, visual)
     styledButtons[button] = visual
     local useSafeChrome = self:UsesSafeBarChrome(button)
 
-    if not useSafeChrome then
-        if button.EnableMouse then
-            button:EnableMouse(false)
-        end
-        if button.SetMouseMotionEnabled then
-            button:SetMouseMotionEnabled(false)
-        end
-    end
-
     self:CreateBarContainer(button, visual)
     self:ApplyBarIconLayout(button, visual)
     self:ApplyBarPixelPerfect(button, visual)
@@ -533,9 +688,6 @@ function buttonStyle:ApplyBarStyle(button, visual)
     if not useSafeChrome then
         if button.ClearDurationCooldown then
             button:ClearDurationCooldown()
-        end
-        if button.ClearAuraBorder then
-            button:ClearAuraBorder()
         end
         if button.ClearAuraSymbol then
             button:ClearAuraSymbol()
@@ -596,6 +748,11 @@ function buttonStyle:ApplyBarStyle(button, visual)
         button:ClearSpellName()
     end
 
+    if not useSafeChrome then
+        self:ApplyAuraBorderBinding(button, visual)
+    end
+
+    self:ApplyMouseInteraction(button, visual)
     self:ApplyLayering(button)
 end
 
@@ -619,12 +776,6 @@ function buttonStyle:Apply(button, visual)
     styledButtons[button] = visual
 
     button:SetSize(visual.iconWidth or 32, visual.iconHeight or 32)
-    if button.EnableMouse then
-        button:EnableMouse(false)
-    end
-    if button.SetMouseMotionEnabled then
-        button:SetMouseMotionEnabled(false)
-    end
 
     local icon = self:CreateIcon(button, visual)
     icon:SetSize(visual.iconWidth or 32, visual.iconHeight or 32)
@@ -679,23 +830,13 @@ function buttonStyle:Apply(button, visual)
         button:ClearSpellName()
     end
 
-    if visual.showDispelBorder and button.SetAuraBorder then
-        local border = self:CreateBorder(button)
-        self:ApplyDispelBorderLayout(button, visual)
-        button:SetAuraBorder(border, {
-            showIcon = visual.dispelBorderShowIcon,
-            showWhenHarmful = visual.dispelBorderHarmful,
-            showWhenHelpful = visual.dispelBorderHelpful,
-            style = BORDER_STYLE_MAP[visual.dispelBorderStyle] or 0,
-        })
-    elseif button.ClearAuraBorder then
-        button:ClearAuraBorder()
-    end
+    self:ApplyAuraBorderBinding(button, visual)
 
     if button.ClearAuraSymbol then
         button:ClearAuraSymbol()
     end
 
+    self:ApplyMouseInteraction(button, visual)
     self:ApplyLayering(button)
 end
 

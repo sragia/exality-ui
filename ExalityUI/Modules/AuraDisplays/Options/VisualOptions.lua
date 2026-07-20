@@ -505,6 +505,25 @@ function visualOptions:GetOptions(displayID, groupID)
                         end,
                         onChange = function(v) updateVisual(displayID, groupID, 'iconBorderThickness', v) end,
                     },
+                    {
+                        type = 'toggle',
+                        label = 'Color by Aura Type',
+                        name = 'iconBorderColorByAuraType',
+                        width = 100,
+                        tooltip = {
+                            text =
+                            'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Cannot be combined with Dispel Border.',
+                        },
+                        currentValue = function()
+                            return auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
+                        end,
+                        onChange = function(v)
+                            if v then
+                                auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', false)
+                            end
+                            updateVisual(displayID, groupID, 'iconBorderColorByAuraType', v, true)
+                        end,
+                    },
                 })
             end
         end
@@ -601,6 +620,27 @@ function visualOptions:GetOptions(displayID, groupID)
                                 displayID)
                     end,
                 },
+                {
+                    type = 'toggle',
+                    label = 'Color by Aura Type',
+                    name = 'iconBorderColorByAuraType',
+                    width = 100,
+                    tooltip = {
+                        text =
+                        'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Cannot be combined with Dispel Border.',
+                    },
+                    currentValue = function()
+                        return auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
+                    end,
+                    onChange = function(v)
+                        auraDisplays:UpdateGroupVisual(displayID, groupID, 'iconBorderColorByAuraType', v)
+                        if v then
+                            auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', false)
+                        end
+                        auraDisplays:RefreshDisplay(displayID)
+                        optionsFields:RefreshOptions()
+                    end,
+                },
             })
         end
     end
@@ -684,11 +724,21 @@ function visualOptions:GetOptions(displayID, groupID)
                 label = 'Show Dispel Border',
                 name = 'showDispelBorder',
                 width = 100,
-                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelBorder') end,
+                tooltip = {
+                    text =
+                    'Shows Blizzard dispel-type border chrome. Cannot be combined with Color by Aura Type on the icon border.',
+                },
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelBorder')
+                        and not auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
+                end,
                 onChange = function(v)
-                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', v); auraDisplays
-                        :RefreshDisplay(
-                            displayID)
+                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', v)
+                    if v then
+                        auraDisplays:UpdateGroupVisual(displayID, groupID, 'iconBorderColorByAuraType', false)
+                    end
+                    auraDisplays:RefreshDisplay(displayID)
+                    optionsFields:RefreshOptions()
                 end,
             },
         })

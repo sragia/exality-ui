@@ -158,9 +158,9 @@ local function createRow(editor, index)
         color = EXUI.const.theme.faded,
         hoverColor = EXUI.const.theme.dangerHover,
         icon = {
-            texture = EXUI.const.textures.frame.closeIcon,
-            width = 10,
-            height = 10,
+            texture = EXUI.const.textures.frame.icons.delete,
+            width = 14,
+            height = 14,
         },
         onClick = function()
             editor:RemovePoint(row.index)
@@ -222,7 +222,11 @@ local function updateRow(editor, row, index, point, curve)
                 return
             end
             nextCurve[index].color = value
-            commitCurve(nextCurve)
+            point.color = value
+            -- Persist + live-preview the bar, but do not rebuild rows (that closes the picker).
+            if editor.optionData.onChange then
+                editor.optionData.onChange(normalizeCurve(nextCurve))
+            end
         end,
     })
 end

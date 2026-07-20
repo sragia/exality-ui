@@ -594,15 +594,38 @@ function preview:ApplyDurationBar(btn, scenario, visual)
 end
 
 function preview:ApplyDispelBorder(btn, scenario, visual)
-    if visual.displayStyle == 'bar' or not visual.showDispelBorder or not scenario.dispelName then
-        local border = btn.GetAuraBorder and btn:GetAuraBorder() or btn.AuraBorder or btn.AuraBorderTexture
-        if border then
-            border:Hide()
+    local typeBorder = btn.AuraTypeBorderTexture
+    local atlasBorder = btn.GetAuraBorder and btn:GetAuraBorder() or btn.AuraBorder or btn.AuraBorderTexture
+    if atlasBorder == typeBorder then
+        atlasBorder = btn.AuraBorderTexture
+    end
+
+    if buttonStyle:UsesAuraTypeIconBorder(visual) then
+        if atlasBorder then
+            atlasBorder:Hide()
+        end
+        typeBorder = typeBorder or buttonStyle:CreateAuraTypeBorder(btn)
+        if scenario.dispelName and AuraUtil and AuraUtil.SetAuraBorderColor then
+            AuraUtil.SetAuraBorderColor(typeBorder, scenario.dispelName)
+            typeBorder:Show()
+        else
+            typeBorder:Hide()
         end
         return
     end
 
-    local border = btn.GetAuraBorder and btn:GetAuraBorder() or btn.AuraBorder or btn.AuraBorderTexture
+    if typeBorder then
+        typeBorder:Hide()
+    end
+
+    if visual.displayStyle == 'bar' or not visual.showDispelBorder or not scenario.dispelName then
+        if atlasBorder then
+            atlasBorder:Hide()
+        end
+        return
+    end
+
+    local border = atlasBorder
     if not border then
         return
     end

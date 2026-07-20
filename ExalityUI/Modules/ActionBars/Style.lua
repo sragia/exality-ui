@@ -322,6 +322,9 @@ style.ApplyDefaultBorder = function(self, button, alpha)
     if button.NormalTexture then
         button.NormalTexture:SetAlpha(0)
     end
+    if button.PPBorder then
+        button.PPBorder:Hide()
+    end
 
     local border = self:EnsureBorderTexture(button)
     border:SetTexture(EXUI.const.masque.rectangle.border)
@@ -340,6 +343,9 @@ style.HideDefaultBorder = function(self, button)
     end
     if button.exuiBorderOverlay then
         button.exuiBorderOverlay:Hide()
+    end
+    if button.PPBorder then
+        button.PPBorder:Hide()
     end
 end
 
@@ -590,6 +596,8 @@ style.StyleMasqueButton = function(self, button, barConfig)
         return
     end
 
+    self:HideDefaultBorder(button)
+
     local needsReskin = self:NormalTextureIsQuickslot(button)
     self:FixMasqueNormalRegion(button)
 
@@ -644,32 +652,31 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
 
     local styleSig = self:GetStyleSignature(barConfig)
     local styleChanged = button.exuiStyleSig ~= styleSig
+    local isEmpty = self:ButtonIsEmpty(button)
+    local emptyChanged = button.exuiLastEmpty ~= isEmpty
+    button.exuiLastEmpty = isEmpty
+
     if styleChanged then
         button.exuiStyleSig = styleSig
         button.exuiLayoutApplied = false
         self:ApplyIconLayout(button, barConfig, true)
+    end
 
-        if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
+    if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
+        if styleChanged then
             self:StyleMasqueButton(button, barConfig)
-        else
-            self:StyleNonMasqueButtonChrome(button, barConfig)
+        elseif emptyChanged and Masque and Masque.SetEmpty then
+            Masque:SetEmpty(button, isEmpty)
         end
-        self:UpdateSlotBackdrop(button, barConfig)
-        button.exuiLastEmpty = self:ButtonIsEmpty(button)
     else
-        -- Action contents can change without bar style changing; refresh empty chrome cheaply.
-        local isEmpty = self:ButtonIsEmpty(button)
-        if button.exuiLastEmpty ~= isEmpty then
-            button.exuiLastEmpty = isEmpty
-            if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
-                if Masque and Masque.SetEmpty then
-                    Masque:SetEmpty(button, isEmpty)
-                end
-            else
-                self:StyleNonMasqueButtonChrome(button, barConfig)
-            end
-            self:UpdateSlotBackdrop(button, barConfig)
-        end
+        -- LAB Update always re-shows SlotBackground on empty slots and can shove
+        -- HighlightTexture outside the button when hideElements.border is set.
+        -- Reassert our chrome after every LAB update, not only when empty flips.
+        self:StyleNonMasqueButtonChrome(button, barConfig)
+    end
+
+    if styleChanged or emptyChanged then
+        self:UpdateSlotBackdrop(button, barConfig)
     end
 
     self:ApplyCooldownSettings(button, barConfig)

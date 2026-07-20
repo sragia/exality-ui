@@ -461,6 +461,25 @@ function visualOptions:GetOptions(displayID, groupID)
                         end,
                         onChange = function(v) updateVisual(displayID, groupID, 'iconBorderThickness', v) end,
                     },
+                    {
+                        type = 'toggle',
+                        label = 'Color by Aura Type',
+                        name = 'iconBorderColorByAuraType',
+                        width = 100,
+                        tooltip = {
+                            text =
+                            'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Cannot be combined with Dispel Border.',
+                        },
+                        currentValue = function()
+                            return auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
+                        end,
+                        onChange = function(v)
+                            if v then
+                                auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', false)
+                            end
+                            updateVisual(displayID, groupID, 'iconBorderColorByAuraType', v, true)
+                        end,
+                    },
                 })
             end
         end
@@ -557,6 +576,25 @@ function visualOptions:GetOptions(displayID, groupID)
                                 displayID)
                     end,
                 },
+                {
+                    type = 'toggle',
+                    label = 'Color by Aura Type',
+                    name = 'iconBorderColorByAuraType',
+                    width = 100,
+                    tooltip = {
+                        text =
+                        'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Cannot be combined with Dispel Border.',
+                    },
+                    currentValue = function()
+                        return auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
+                    end,
+                    onChange = function(v)
+                        if v then
+                            auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', false)
+                        end
+                        updateVisual(displayID, groupID, 'iconBorderColorByAuraType', v, true)
+                    end,
+                },
             })
         end
     end
@@ -632,6 +670,56 @@ function visualOptions:GetOptions(displayID, groupID)
         append(fields, self:MakeTextFields(displayID, groupID, 'spellName', 'Spell Name', { skipTitle = true }))
     end
 
+    append(fields, {
+        { type = 'title', label = 'Interaction', width = 100 },
+        {
+            type = 'toggle',
+            label = 'Enable Mouse',
+            name = 'enableMouse',
+            width = 100,
+            tooltip = {
+                text =
+                'Allows hovering for aura tooltips and right-click to cancel (when possible). Blocks clicks from passing through to the unit frame.',
+            },
+            currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'enableMouse') end,
+            onChange = function(v) updateVisual(displayID, groupID, 'enableMouse', v, true) end,
+        },
+    })
+
+    if auraDisplays:GetGroupVisual(displayID, groupID, 'enableMouse') then
+        append(fields, {
+            {
+                type = 'dropdown',
+                label = 'Tooltip Anchor',
+                name = 'tooltipAnchor',
+                width = 100,
+                tooltip = {
+                    text = 'Where the aura tooltip appears relative to the icon (or follow the cursor).',
+                },
+                getOptions = function()
+                    return {
+                        ANCHOR_TOPLEFT = 'Top Left',
+                        ANCHOR_TOP = 'Top',
+                        ANCHOR_TOPRIGHT = 'Top Right',
+                        ANCHOR_LEFT = 'Left',
+                        ANCHOR_RIGHT = 'Right',
+                        ANCHOR_BOTTOMLEFT = 'Bottom Left',
+                        ANCHOR_BOTTOM = 'Bottom',
+                        ANCHOR_BOTTOMRIGHT = 'Bottom Right',
+                        ANCHOR_CURSOR = 'Cursor',
+                        ANCHOR_CURSOR_RIGHT = 'Cursor Right',
+                    }
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'tooltipAnchor') or 'ANCHOR_BOTTOMLEFT'
+                end,
+                onChange = function(v)
+                    updateVisual(displayID, groupID, 'tooltipAnchor', v)
+                end,
+            },
+        })
+    end
+
     if not isBarStyle(displayID, groupID) then
         append(fields, {
             { type = 'title', label = 'Dispel', width = 100 },
@@ -640,11 +728,21 @@ function visualOptions:GetOptions(displayID, groupID)
                 label = 'Show Dispel Border',
                 name = 'showDispelBorder',
                 width = 100,
-                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelBorder') end,
+                tooltip = {
+                    text =
+                    'Shows Blizzard dispel-type border chrome. Cannot be combined with Color by Aura Type on the icon border.',
+                },
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelBorder')
+                        and not auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
+                end,
                 onChange = function(v)
-                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', v); auraDisplays
-                        :RefreshDisplay(
-                            displayID)
+                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', v)
+                    if v then
+                        auraDisplays:UpdateGroupVisual(displayID, groupID, 'iconBorderColorByAuraType', false)
+                    end
+                    auraDisplays:RefreshDisplay(displayID)
+                    refreshEditorOptions()
                 end,
             },
         })

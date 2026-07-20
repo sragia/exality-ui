@@ -439,7 +439,6 @@ dataBrokers.Displays = {
             dataBrokers.Data:UpdateValueForBroker(id, 'relativeAnchor', relativePoint)
             dataBrokers.Data:UpdateValueForBroker(id, 'XOff', xOfs)
             dataBrokers.Data:UpdateValueForBroker(id, 'YOff', yOfs)
-            self:UpdateById(id)
         end)
         return frame
     end,

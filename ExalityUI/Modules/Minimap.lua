@@ -3262,7 +3262,6 @@ minimap.RegisterEditorFrames = function(self)
         self.Data:SetValue('relativeAnchor', relativePoint)
         self.Data:SetValue('xOffset', xOfs)
         self.Data:SetValue('yOffset', yOfs)
-        self:ConfigureMinimap()
     end, editorOnShow)
 end
 
