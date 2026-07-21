@@ -25,6 +25,9 @@ local sets = EXUI:GetModule('character-frame-sets')
 ---@class EXUICharacterFrameCurrencies
 local currencies = EXUI:GetModule('character-frame-currencies')
 
+---@class EXUICharacterFrameReputation
+local reputation = EXUI:GetModule('character-frame-reputation')
+
 ---@class ExalityFramesTooltipInput
 local tooltip = EXFrames:GetFrame('tooltip')
 
@@ -49,12 +52,9 @@ local SIDE_TABS = {
 
 local TAB_HEIGHT = 20
 local TAB_PAD_X = 10
-local TAB_GAP = 3
+local TAB_GAP = 0
 local TAB_BAR_PAD = 3
 local TAB_CONTENT_GAP = 4
-
--- Must stay well under half of TAB_HEIGHT or top/bottom 9-slice edges collapse.
-local TAB_SLICE = 4
 
 local LEFT_SLOTS = {
     1, 2, 3, 15, 5, 4, 19, 9
@@ -226,25 +226,23 @@ end
 
 local function ApplySideTabVisual(button, active, hovered)
     local theme = EXUI.const.theme
-    local panel = EXUI.const.textures.characterFrame.panel
 
-    button.bg:SetTexture(panel.bg)
-    button.bg:SetTextureSliceMargins(TAB_SLICE, TAB_SLICE, TAB_SLICE, TAB_SLICE)
-    button.bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
-
-    if button.border then
-        button.border:Hide()
-    end
+    button.bg:SetColorTexture(0, 0, 0, 0)
+    button.underline:Show()
 
     if active then
-        button.bg:SetVertexColor(unpack(theme.accent))
-        button.Text:SetVertexColor(1, 1, 1, 1)
+        button.Text:SetVertexColor(unpack(theme.white))
+        button.underline:SetColorTexture(theme.accent[1], theme.accent[2], theme.accent[3], 1)
+        button.glow:SetVertexColor(theme.accent[1], theme.accent[2], theme.accent[3], 1)
+        button.glow:Show()
     elseif hovered then
-        button.bg:SetVertexColor(unpack(theme.accentLight))
-        button.Text:SetVertexColor(1, 1, 1, 1)
+        button.Text:SetVertexColor(unpack(theme.white))
+        button.underline:SetColorTexture(theme.border[1], theme.border[2], theme.border[3], 1)
+        button.glow:Hide()
     else
-        button.bg:SetVertexColor(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 0.95)
-        button.Text:SetVertexColor(unpack(theme.text))
+        button.Text:SetVertexColor(unpack(theme.textMuted))
+        button.underline:SetColorTexture(theme.border[1], theme.border[2], theme.border[3], 1)
+        button.glow:Hide()
     end
 end
 
@@ -289,11 +287,24 @@ characterFrame.CreateSideTabs = function(self, parent)
 
         button.bg = button:CreateTexture(nil, 'BACKGROUND')
         button.bg:SetAllPoints()
+        button.bg:SetColorTexture(0, 0, 0, 0)
 
         button.Text = button:CreateFontString(nil, 'OVERLAY')
         button.Text:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')
         button.Text:SetPoint('CENTER', 0, 0)
         button.Text:SetText(tabInfo.label)
+
+        button.underline = button:CreateTexture(nil, 'OVERLAY')
+        button.underline:SetHeight(1)
+        button.underline:SetPoint('BOTTOMLEFT', button.Text, 'BOTTOMLEFT', -5, -6)
+        button.underline:SetPoint('BOTTOMRIGHT', button.Text, 'BOTTOMRIGHT', 5, -6)
+
+        button.glow = button:CreateTexture(nil, 'ARTWORK')
+        button.glow:SetTexture(EXUI.const.textures.characterFrame.tabGlow)
+        button.glow:SetHeight(20)
+        button.glow:SetPoint('BOTTOMLEFT', button.underline, 'TOPLEFT', 0, 0)
+        button.glow:SetPoint('BOTTOMRIGHT', button.underline, 'TOPRIGHT', 0, 0)
+        button.glow:Hide()
 
         local textWidth = button.Text:GetStringWidth() + TAB_PAD_X * 2
         button:SetWidth(math.max(textWidth, 48))
@@ -511,10 +522,12 @@ characterFrame.Create = function(self)
     titles:Create(titlesPanel)
     sets:Create(setsPanel)
     currencies:Create(window)
+    reputation:Create(window)
 
     window.onClose = function()
         sets:HideCreatePopup()
         currencies:Hide()
+        reputation:Hide()
     end
 
     self:SetSideTab('stats')

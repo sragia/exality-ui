@@ -45,6 +45,16 @@ function staticPopupSkin:SkinButtons(dialog)
     end
 end
 
+function staticPopupSkin:SkinEditBox(dialog)
+    if (not dialog) then return end
+
+    local editBox = dialog.GetEditBox and dialog:GetEditBox() or dialog.EditBox
+    if (not editBox) then return end
+
+    skins:StripNineSlice(editBox)
+    skins:SkinEditBox(editBox)
+end
+
 function staticPopupSkin:RefreshDialog(dialog)
     if (not dialog) then return end
 
@@ -53,6 +63,7 @@ function staticPopupSkin:RefreshDialog(dialog)
     StyleDialogText(dialog.Text, TEXT_SIZE, th.text)
     StyleDialogText(dialog.SubText, SUBTEXT_SIZE, th.textMuted)
     self:SkinButtons(dialog)
+    self:SkinEditBox(dialog)
 end
 
 function staticPopupSkin:SkinDialog(dialog)

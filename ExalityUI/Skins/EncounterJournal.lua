@@ -207,42 +207,38 @@ local function RefreshBossHeaderDescriptionLinks(encounter)
     end
 end
 
-local function RefreshOverviewDescriptionLinks(encounter)
-    if (not encounter) then return end
+local function SetDescriptionWidgetText(widget, text)
+    if (not widget or type(text) ~= 'string') then return end
+    HookDescriptionSetText(widget)
+    widget:SetText(text)
+end
 
-    local overviewFrame = encounter.overviewFrame
-    if (not overviewFrame) then return end
+local function ApplyBulletDescriptionSource(parent, description)
+    if (not parent or type(description) ~= 'string' or description == '') then return end
 
-    HookEncounterDescriptionWidgets(encounter)
-
-    if (encounter.infoFrame and encounter.infoFrame.encounterID and overviewFrame.loreDescription) then
-        local _, description = EJ_GetEncounterInfo(encounter.infoFrame.encounterID)
-        if (description) then
-            overviewFrame.loreDescription:SetText(description)
+    local overviewDescription = parent.overviewDescription
+    if (not string.find(description, '$bullet;')) then
+        if (overviewDescription) then
+            overviewDescription.textString = description
+            SetDescriptionWidgetText(overviewDescription.Text, description)
         end
+        return
     end
 
-    if (overviewFrame.rootOverviewSectionID and overviewFrame.overviewDescription and C_EncounterJournal) then
-        local sectionInfo = C_EncounterJournal.GetSectionInfo(overviewFrame.rootOverviewSectionID)
-        if (sectionInfo and sectionInfo.description) then
-            EncounterJournal_SetBullets(overviewFrame.overviewDescription, sectionInfo.description, false)
-        end
+    local desc = strtrim(string.match(description, '(.-)$bullet;') or '')
+    if (overviewDescription) then
+        overviewDescription.textString = desc
+        SetDescriptionWidgetText(overviewDescription.Text, desc)
     end
 
-    for _, overview in ipairs(overviewFrame.overviews or {}) do
-        if (overview.sectionID and overview.overviewDescription and C_EncounterJournal) then
-            local sectionInfo = C_EncounterJournal.GetSectionInfo(overview.sectionID)
-            if (sectionInfo and sectionInfo.description) then
-                local overviewDescriptionWasShown = overview.overviewDescription:IsShown()
-                EncounterJournal_SetDescriptionWithBullets(overview, sectionInfo.description)
-                if (not overviewDescriptionWasShown) then
-                    overview.overviewDescription:Hide()
-                    for _, bullet in ipairs(overview.Bullets or {}) do
-                        bullet:Hide()
-                    end
-                end
-            end
+    local index = 1
+    for chunk in string.gmatch(description, '$bullet;([^$]+)') do
+        local text = strtrim(chunk) .. '|n|n'
+        local bullet = parent.Bullets and parent.Bullets[index]
+        if (bullet and bullet.Text) then
+            SetDescriptionWidgetText(bullet.Text, text)
         end
+        index = index + 1
     end
 end
 
@@ -615,6 +611,40 @@ local function ApplyOverviewFrameDescriptions(overviewFrame)
     end
 end
 
+local function RefreshOverviewDescriptionLinks(encounter)
+    if (not encounter) then return end
+
+    local overviewFrame = encounter.overviewFrame
+    if (not overviewFrame) then return end
+
+    HookEncounterDescriptionWidgets(encounter)
+
+    if (encounter.infoFrame and encounter.infoFrame.encounterID and overviewFrame.loreDescription) then
+        local _, description = EJ_GetEncounterInfo(encounter.infoFrame.encounterID)
+        if (description) then
+            SetDescriptionWidgetText(overviewFrame.loreDescription, description)
+        end
+    end
+
+    if (overviewFrame.rootOverviewSectionID and C_EncounterJournal) then
+        local sectionInfo = C_EncounterJournal.GetSectionInfo(overviewFrame.rootOverviewSectionID)
+        if (sectionInfo and sectionInfo.description) then
+            ApplyBulletDescriptionSource(overviewFrame, sectionInfo.description)
+        end
+    end
+
+    for _, overview in ipairs(overviewFrame.overviews or {}) do
+        if (overview.sectionID and C_EncounterJournal) then
+            local sectionInfo = C_EncounterJournal.GetSectionInfo(overview.sectionID)
+            if (sectionInfo and sectionInfo.description) then
+                ApplyBulletDescriptionSource(overview, sectionInfo.description)
+            end
+        end
+    end
+
+    ApplyOverviewFrameDescriptions(overviewFrame)
+end
+
 local function ApplyInstanceLoreDescription(instance)
     if (not instance or not instance.LoreScrollingFont) then return end
 
@@ -878,15 +908,16 @@ function encounterJournalSkin:InstallDescriptionHooks()
 
     hooksecurefunc('EncounterJournal_SetBullets', function(object, description)
         if (not object) then return end
-        if (object.Text) then
-            HookDescriptionSetText(object.Text)
-            local text = object.textString or description
-            if (type(text) == 'string' and text ~= '') then
-                object.Text:SetText(text)
-            end
+
+        local parent = object.GetParent and object:GetParent()
+        if (parent and type(description) == 'string') then
+            ApplyBulletDescriptionSource(parent, description)
+        elseif (object.Text and type(description) == 'string' and description ~= '') then
+            SetDescriptionWidgetText(object.Text, object.textString or description)
         end
+
         ApplyDescriptionSimpleHTML(object.Text)
-        ApplyDescriptionBullets(object.Bullets)
+        ApplyDescriptionBullets(parent and parent.Bullets)
     end)
 
     hooksecurefunc('EncounterJournal_SetDescriptionWithBullets', function(infoHeader)

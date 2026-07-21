@@ -10,6 +10,9 @@ local tooltip = EXFrames:GetFrame('tooltip')
 ---@class EXUICharacterFrameCurrencies
 local currencies = EXUI:GetModule('character-frame-currencies')
 
+---@class EXUICharacterFrameReputation
+local reputation = EXUI:GetModule('character-frame-reputation')
+
 currencies.panel = nil
 currencies.toggle = nil
 currencies.optionsPopup = nil
@@ -37,8 +40,8 @@ local ROW_GAP = 2
 local CONTENT_PAD = 10
 local ANIM_DURATION = 0.18
 local HEADER_GOLD = { 235 / 255, 183 / 255, 52 / 255, 1 } -- #ebb734
-local TOGGLE_BG = { 112 / 255, 80 / 255, 0, 1 }           -- #705000
-local TOGGLE_BG_HOVER = { 140 / 255, 100 / 255, 0, 1 }
+local TOGGLE_ICON = { 235 / 255, 183 / 255, 52 / 255, 1 } -- #ebb734
+local TOGGLE_ICON_HOVER = { 255 / 255, 210 / 255, 90 / 255, 1 }
 
 local function ApplyRowVisual(button, selected, hovered)
     local theme = EXUI.const.theme
@@ -67,10 +70,13 @@ local function ApplyHeaderVisual(button, hovered)
 end
 
 local function ApplyToggleVisual(button, hovered)
+    local theme = EXUI.const.theme
     if hovered then
-        button.bg:SetVertexColor(unpack(TOGGLE_BG_HOVER))
+        button.bg:SetVertexColor(unpack(theme.backgroundLight))
+        button.icon:SetVertexColor(unpack(TOGGLE_ICON_HOVER))
     else
-        button.bg:SetVertexColor(unpack(TOGGLE_BG))
+        button.bg:SetVertexColor(unpack(theme.backgroundDeep))
+        button.icon:SetVertexColor(unpack(TOGGLE_ICON))
     end
 end
 
@@ -540,17 +546,45 @@ currencies.RevealToggle = function(self, animated)
     end
 end
 
+local function HideEdgeToggles()
+    if currencies.toggle then
+        if currencies.toggle.fadeIn then
+            currencies.toggle.fadeIn:Stop()
+        end
+        currencies.toggle:SetAlpha(1)
+        currencies.toggle:Hide()
+    end
+    if reputation.toggle then
+        if reputation.toggle.fadeIn then
+            reputation.toggle.fadeIn:Stop()
+        end
+        reputation.toggle:SetAlpha(1)
+        reputation.toggle:Hide()
+    end
+end
+
+local function RevealEdgeToggles(animated)
+    if currencies.isOpen or (reputation and reputation.isOpen) then
+        return
+    end
+    currencies:RevealToggle(animated)
+    if reputation and reputation.RevealToggle then
+        reputation:RevealToggle(animated)
+    end
+end
+
 currencies.ShowPanel = function(self)
     if not self.panel then
         return
     end
 
     self.isOpen = true
-    self:StopAnimations()
-    if self.toggle then
-        self.toggle:SetAlpha(1)
-        self.toggle:Hide()
+    if reputation and reputation.isOpen and reputation.HidePanel then
+        reputation:HidePanel(true)
     end
+
+    self:StopAnimations()
+    HideEdgeToggles()
     self.panel:Show()
     self:Update()
 
@@ -574,14 +608,14 @@ currencies.HidePanel = function(self, immediate)
     if immediate or not self.useAnimation or not self.panel.fadeOut then
         self.panel:SetAlpha(1)
         self.panel:Hide()
-        self:RevealToggle(false)
+        RevealEdgeToggles(false)
         return
     end
 
     self.panel.fadeOut:SetScript('OnFinished', function()
         self.panel:Hide()
         self.panel:SetAlpha(1)
-        self:RevealToggle(true)
+        RevealEdgeToggles(true)
     end)
     self.panel.fadeOut:Play()
 end
