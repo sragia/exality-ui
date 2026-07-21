@@ -416,12 +416,37 @@ characterFrame.Create = function(self)
     characterModel:SetAllPoints()
     characterModel:SetUnit('player')
     characterModel:SetCamDistanceScale(1.2)
+    if characterModel.SetKeepModelOnHide then
+        characterModel:SetKeepModelOnHide(true)
+    end
     local rotation = math.rad(20)
     local ROTATION_SENSITIVITY = 0.05
 
     characterModel:SetRotation(rotation)
 
     characterModel:EnableMouse(true)
+
+    -- PlayerModel does not follow parent Translation animations; hide during window dive/fade.
+    local function HideModelForWindowAnim()
+        characterModel:Hide()
+    end
+
+    local function ShowModelAfterWindowAnim()
+        characterModel:Show()
+        characterModel:SetCamDistanceScale(1.2)
+        characterModel:SetRotation(rotation)
+        if characterModel.RefreshUnit then
+            characterModel:RefreshUnit()
+        end
+    end
+
+    if window.fadeIn then
+        window.fadeIn:HookScript('OnPlay', HideModelForWindowAnim)
+        window.fadeIn:HookScript('OnFinished', ShowModelAfterWindowAnim)
+    end
+    if window.fadeOut then
+        window.fadeOut:HookScript('OnPlay', HideModelForWindowAnim)
+    end
 
     local function StopRotation(self)
         self.lastMouseX = nil

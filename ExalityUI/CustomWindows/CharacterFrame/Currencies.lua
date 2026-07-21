@@ -537,6 +537,10 @@ currencies.RevealToggle = function(self, animated)
     if not self.toggle then
         return
     end
+    self.toggle.edgeHidden = false
+    if self.toggle.stopWindowAnims then
+        self.toggle.stopWindowAnims()
+    end
     ApplyToggleVisual(self.toggle, false)
     if animated and self.useAnimation and self.toggle.fadeIn then
         self.toggle:SetAlpha(0)
@@ -553,6 +557,10 @@ local function HideEdgeToggles()
         if currencies.toggle.fadeIn then
             currencies.toggle.fadeIn:Stop()
         end
+        if currencies.toggle.stopWindowAnims then
+            currencies.toggle.stopWindowAnims()
+        end
+        currencies.toggle.edgeHidden = true
         currencies.toggle:SetAlpha(1)
         currencies.toggle:Hide()
     end
@@ -560,6 +568,10 @@ local function HideEdgeToggles()
         if reputation.toggle.fadeIn then
             reputation.toggle.fadeIn:Stop()
         end
+        if reputation.toggle.stopWindowAnims then
+            reputation.toggle.stopWindowAnims()
+        end
+        reputation.toggle.edgeHidden = true
         reputation.toggle:SetAlpha(1)
         reputation.toggle:Hide()
     end
@@ -631,12 +643,16 @@ currencies.Toggle = function(self)
 end
 
 local function AttachToggleBehindWindow(button, window, offsetX, offsetY)
+    local animDuration = 0.2
+    local diveY = 20
+
     button.hostWindow = window
     button:SetParent(window:GetParent() or UIParent)
     button:SetFrameStrata(window:GetFrameStrata())
     button:SetFrameLevel(math.max(1, window:GetFrameLevel() - 1))
     button:ClearAllPoints()
     button:SetPoint('TOPLEFT', window, 'TOPRIGHT', offsetX, offsetY)
+    button:Hide()
 
     local function syncLayer()
         if not window:IsShown() then
@@ -646,30 +662,83 @@ local function AttachToggleBehindWindow(button, window, offsetX, offsetY)
         button:SetFrameLevel(math.max(1, window:GetFrameLevel() - 1))
     end
 
-    local function onUpdate(self)
-        if not window:IsShown() then
-            self:Hide()
-            return
-        end
-        syncLayer()
-        if not (self.fadeIn and self.fadeIn:IsPlaying()) then
-            local alpha = window:GetAlpha()
-            if self:GetAlpha() ~= alpha then
-                self:SetAlpha(alpha)
-            end
-        end
-    end
+    -- Match window dive/fade. No point adjustment: layout already follows the window anchor.
+    local windowFadeIn = button:CreateAnimationGroup()
+    local alphaIn = windowFadeIn:CreateAnimation('Alpha')
+    alphaIn:SetFromAlpha(0)
+    alphaIn:SetToAlpha(1)
+    alphaIn:SetDuration(animDuration)
+    alphaIn:SetSmoothing('IN')
+    local translateIn = windowFadeIn:CreateAnimation('Translation')
+    translateIn:SetOffset(0, -diveY)
+    translateIn:SetDuration(animDuration)
+    translateIn:SetSmoothing('IN')
+    windowFadeIn:SetScript('OnFinished', function()
+        button:SetAlpha(1)
+    end)
+    button.windowFadeIn = windowFadeIn
 
-    button:HookScript('OnShow', function(self)
-        syncLayer()
-        self:SetScript('OnUpdate', onUpdate)
-    end)
-    button:HookScript('OnHide', function(self)
-        self:SetScript('OnUpdate', nil)
-    end)
-    window:HookScript('OnHide', function()
+    local windowFadeOut = button:CreateAnimationGroup()
+    local alphaOut = windowFadeOut:CreateAnimation('Alpha')
+    alphaOut:SetFromAlpha(1)
+    alphaOut:SetToAlpha(0)
+    alphaOut:SetDuration(animDuration)
+    alphaOut:SetSmoothing('OUT')
+    local translateOut = windowFadeOut:CreateAnimation('Translation')
+    translateOut:SetOffset(0, diveY)
+    translateOut:SetDuration(animDuration)
+    translateOut:SetSmoothing('OUT')
+    windowFadeOut:SetScript('OnFinished', function()
+        button:SetAlpha(1)
         button:Hide()
     end)
+    button.windowFadeOut = windowFadeOut
+
+    local function stopWindowAnims()
+        if button.windowFadeIn then
+            button.windowFadeIn:Stop()
+        end
+        if button.windowFadeOut then
+            button.windowFadeOut:Stop()
+        end
+    end
+    button.stopWindowAnims = stopWindowAnims
+
+    if window.fadeIn then
+        window.fadeIn:HookScript('OnPlay', function()
+            if button.edgeHidden then
+                return
+            end
+            stopWindowAnims()
+            if button.fadeIn then
+                button.fadeIn:Stop()
+            end
+            syncLayer()
+            button:SetAlpha(0)
+            button:Show()
+            button.windowFadeIn:Play()
+        end)
+    end
+
+    if window.fadeOut then
+        window.fadeOut:HookScript('OnPlay', function()
+            if button.edgeHidden or not button:IsShown() then
+                return
+            end
+            stopWindowAnims()
+            if button.fadeIn then
+                button.fadeIn:Stop()
+            end
+            button.windowFadeOut:Play()
+        end)
+    end
+
+    window:HookScript('OnHide', function()
+        stopWindowAnims()
+        button:SetAlpha(1)
+        button:Hide()
+    end)
+
     window:HookScript('OnShow', syncLayer)
 end
 
@@ -822,5 +891,15 @@ currencies.Create = function(self, window)
 end
 
 currencies.Hide = function(self)
-    self:HidePanel(true)
+    self.isOpen = false
+    self:HideOptions()
+    self:StopAnimations()
+    if self.panel then
+        self.panel:SetAlpha(1)
+        self.panel:Hide()
+    end
+    if self.toggle then
+        -- Keep visible so window close animation can fade/dive it out with the frame.
+        self.toggle.edgeHidden = false
+    end
 end
