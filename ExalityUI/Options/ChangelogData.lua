@@ -2,7 +2,10 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
-# |cffdb49000.5.0|r
+# |cffdb49000.9.0|r
+
+This major update marks the first step of 1.0.0, as feature wise it's basically quite complete of what I currently want from this addon. Most major things are there, things that are missing mainly are Bags and Nameplates, both of which personally I think other addons handle quite well.
+There's ton of new stuff added, and while in my testing things are working quite well, there's still a lot of polishing that will need to happen and many bugs that I haven't found yet to fix.
 
 ## General
 - Updated options. Adjusted styling, made them more compact (aka smaller), sidebar menu is collapsable.

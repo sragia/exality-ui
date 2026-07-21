@@ -173,6 +173,9 @@ stats.CreateCrest = function(self, currencyId, parent)
 
     crest.Update = function(self)
         local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(self.currencyId)
+        if (not currencyInfo) then
+            return
+        end
         self.Icon:SetTexture(currencyInfo.iconFileID)
         self.Text:SetText(currencyInfo.quantity)
 
