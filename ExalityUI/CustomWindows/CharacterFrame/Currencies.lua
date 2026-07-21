@@ -30,8 +30,10 @@ local PANEL_WIDTH = 290
 local PANEL_GAP = 6
 local OPTIONS_WIDTH = 200
 local OPTIONS_GAP = 4
-local BUTTON_SIZE = 30
-local BUTTON_OUTSET_X = 0
+local BUTTON_WIDTH = 38
+local BUTTON_HEIGHT = 30
+local BUTTON_OUTSET_X = -10
+local BUTTON_ICON_OFFSET_X = 5
 local BUTTON_OFFSET_Y = -60
 local TITLE_HEIGHT = 28
 local ROW_HEIGHT = 24
@@ -628,11 +630,52 @@ currencies.Toggle = function(self)
     end
 end
 
+local function AttachToggleBehindWindow(button, window, offsetX, offsetY)
+    button.hostWindow = window
+    button:SetParent(window:GetParent() or UIParent)
+    button:SetFrameStrata(window:GetFrameStrata())
+    button:SetFrameLevel(math.max(1, window:GetFrameLevel() - 1))
+    button:ClearAllPoints()
+    button:SetPoint('TOPLEFT', window, 'TOPRIGHT', offsetX, offsetY)
+
+    local function syncLayer()
+        if not window:IsShown() then
+            return
+        end
+        button:SetFrameStrata(window:GetFrameStrata())
+        button:SetFrameLevel(math.max(1, window:GetFrameLevel() - 1))
+    end
+
+    local function onUpdate(self)
+        if not window:IsShown() then
+            self:Hide()
+            return
+        end
+        syncLayer()
+        if not (self.fadeIn and self.fadeIn:IsPlaying()) then
+            local alpha = window:GetAlpha()
+            if self:GetAlpha() ~= alpha then
+                self:SetAlpha(alpha)
+            end
+        end
+    end
+
+    button:HookScript('OnShow', function(self)
+        syncLayer()
+        self:SetScript('OnUpdate', onUpdate)
+    end)
+    button:HookScript('OnHide', function(self)
+        self:SetScript('OnUpdate', nil)
+    end)
+    window:HookScript('OnHide', function()
+        button:Hide()
+    end)
+    window:HookScript('OnShow', syncLayer)
+end
+
 currencies.CreateToggle = function(self, window)
-    local button = CreateFrame('Button', nil, window)
-    button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
-    button:SetPoint('TOPLEFT', window, 'TOPRIGHT', BUTTON_OUTSET_X, BUTTON_OFFSET_Y)
-    button:SetFrameLevel(window:GetFrameLevel() + 20)
+    local button = CreateFrame('Button', nil, window:GetParent() or UIParent)
+    button:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
 
     local bg = button:CreateTexture(nil, 'BACKGROUND')
     bg:SetTexture(EXUI.const.textures.characterFrame.input.buttonBg)
@@ -644,9 +687,11 @@ currencies.CreateToggle = function(self, window)
     local icon = button:CreateTexture(nil, 'OVERLAY')
     icon:SetTexture(EXUI.const.textures.characterFrame.coins)
     icon:SetSize(18, 18)
-    icon:SetPoint('CENTER')
+    icon:SetPoint('CENTER', BUTTON_ICON_OFFSET_X, 0)
     icon:SetVertexColor(1, 1, 1, 1)
     button.icon = icon
+
+    AttachToggleBehindWindow(button, window, BUTTON_OUTSET_X, BUTTON_OFFSET_Y)
 
     button.Tooltip = tooltip:Get({
         text = 'Currencies'
