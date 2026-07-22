@@ -16,9 +16,6 @@ local skins = EXUI:GetModule('skins')
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
 ----------------
-local _, screenHeight = GetPhysicalScreenSize()
-local defaultUIScale = 768 / screenHeight
-
 ---@class EXUIGeneralModule
 local generalModule = EXUI:GetModule('general-module')
 
@@ -48,6 +45,7 @@ generalModule.GetProfileExportSpec = function(self)
     for k in pairs(self:GetDefaults()) do
         keys[#keys + 1] = k
     end
+    table.insert(keys, 'uiScale')
     table.insert(keys, 'showMinimap')
     table.insert(keys, 'minimapIcon')
     return { id = 'general', keys = keys }
@@ -55,7 +53,6 @@ end
 
 generalModule.GetDefaults = function(self)
     return {
-        uiScale = defaultUIScale,
         skinsEnabled = true,
         skins = skins:GetDefaultSkins(),
         paperDollEnabled = true,
@@ -76,10 +73,14 @@ generalModule.GetOptions = function(self)
             step = 0.001,
             width = 25,
             currentValue = function()
-                return data:GetDataByKey('uiScale')
+                local stored = data:GetData().uiScale
+                if type(stored) == 'number' then
+                    return stored
+                end
+                return UIParent:GetScale()
             end,
             onChange = function(value)
-                if (value == data:GetDataByKey('uiScale')) then return end
+                if (value == data:GetData().uiScale) then return end
                 data:SetDataByKey('uiScale', value)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end
@@ -221,7 +222,8 @@ generalModule.GetOptions = function(self)
     })
     table.insert(options, {
         type = 'disclaimer',
-        label = 'Relog (character select) is required for floating damage numbers to use the new font. A /reload is not enough.',
+        label =
+        'Relog (character select) is required for floating damage numbers to use the new font. A /reload is not enough.',
         name = 'fontRelogNotice',
         width = 100,
         depends = function()
@@ -233,7 +235,9 @@ generalModule.GetOptions = function(self)
 end
 
 generalModule.UpdateUIScale = function(self)
-    local uiScale = data:GetDataByKey('uiScale') or defaultUIScale
+    -- GetDataByKey returns {} for missing keys; read the raw profile value for scalars.
+    local stored = data:GetData().uiScale
+    local uiScale = type(stored) == 'number' and stored or UIParent:GetScale()
     UIParent:SetScale(uiScale)
     EXUI:GetModule('pixel-perfect'):Initialize()
     if EXUI.EXFrames and EXUI.EXFrames.RefreshPixelPerfect then
@@ -257,6 +261,9 @@ end
 generalModule.SetupUIScale = function(self)
     EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'general-module', function(event, scale)
         EXUI:UnregisterEventHandler('PLAYER_ENTERING_WORLD', 'general-module')
+        if type(data:GetData().uiScale) ~= 'number' then
+            data:SetDataByKey('uiScale', UIParent:GetScale())
+        end
         generalModule:UpdateUIScale()
     end)
     EXUI:RegisterEventHandler('UI_SCALE_CHANGED', 'general-module', function(event, scale)
