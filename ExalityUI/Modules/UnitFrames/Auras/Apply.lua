@@ -383,6 +383,7 @@ function apply:UpdateFrame(frame)
                     end
                     self:ApplyProcessingPolicy(container, display)
                     layout:ApplyItemEnchantmentLayout(container, display.container)
+                    container:Show()
                 else
                     self:DiscardContainer(frame, displayID)
                     container = self:CreateContainer(frame, display)

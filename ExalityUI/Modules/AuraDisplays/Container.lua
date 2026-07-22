@@ -329,6 +329,8 @@ function containerModule:Refresh(frame, displayID, display)
         self:BindContainerSize(frame, display, displayID)
         if self:IsEditMode(frame) then
             self:SetEditMode(frame, display, true)
+        else
+            frame.AuraContainer:Show()
         end
         return
     end
