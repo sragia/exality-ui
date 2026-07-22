@@ -18,6 +18,12 @@ Create aura displays and place them anywhere on your screen. Adjust visual look,
 
 ## Action Bars |cffeb7a34New|r
 Fairly basic action bar module. Adjust visual look of each bar, quick keybind mode.
+There are couple things built in it that I have always wanted from action bars and some other stuff:
+- Non-Square buttons. Generally AB addons make you make them square as that's the default Blizzard style, but I wanted some bars to have rectangle buttons.
+- Showing CD on charges instead of only showing when charges = 0. There were some addons that did this already, this was more just something to add on top.
+- Spell Picker (|cffdb4900Ctrl + Right Click|r) to pick spells/consumables from spellbook or bags. Just easier way to setup bars.
+- Custom Glow. Added LibCustomGlow that allows you to have some wider choice of glows to pick from.
+- CD Text location adjustments.
 
 ## Minimap |cffeb7a34New|r
 Minimap styling. Adjust size, clock, zone name, button styling on it.
