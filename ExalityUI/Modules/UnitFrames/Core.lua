@@ -524,14 +524,15 @@ core.UpdateHeader = function(self, unit)
     if (header.isDisabled) then
         -- Re-enable header
         if (not header.groupHeaders) then
-            -- Party, raid is going to be re-enabled in UpdateRaidLayout
             local partyHeader = self:GetPartySecureHeader(header)
-            partyHeader:SetAttribute('showPlayer', true)
-            partyHeader:SetAttribute('showSolo', true)
-            partyHeader:SetAttribute('showParty', true)
-            partyHeader:SetAttribute('showRaid', false)
-            if partyHeader.originalVisibility then
-                partyHeader:SetVisibility(partyHeader.originalVisibility)
+            if (not partyHeader.isFake) then
+                partyHeader:SetAttribute('showPlayer', true)
+                partyHeader:SetAttribute('showSolo', true)
+                partyHeader:SetAttribute('showParty', true)
+                partyHeader:SetAttribute('showRaid', false)
+                if partyHeader.originalVisibility then
+                    partyHeader:SetVisibility(partyHeader.originalVisibility)
+                end
             end
             header:Show()
         end
@@ -549,16 +550,15 @@ core.UpdateHeader = function(self, unit)
             EXUI:SnapFrameToPixels(header)
         end
     else
-        -- Party: re-assert show attrs + visibility every update (mirrors UpdateRaidLayout).
-        -- SecureGroupHeader only processes roster while IsVisible(); a desynced driver
-        -- after the container split leaves frames empty until Edit Mode refreshes them.
         local partyHeader = self:GetPartySecureHeader(header)
-        partyHeader:SetAttribute('showPlayer', true)
-        partyHeader:SetAttribute('showSolo', true)
-        partyHeader:SetAttribute('showParty', true)
-        partyHeader:SetAttribute('showRaid', false)
-        if partyHeader.originalVisibility then
-            partyHeader:SetVisibility(partyHeader.originalVisibility)
+        if (not partyHeader.isFake) then
+            partyHeader:SetAttribute('showPlayer', true)
+            partyHeader:SetAttribute('showSolo', true)
+            partyHeader:SetAttribute('showParty', true)
+            partyHeader:SetAttribute('showRaid', false)
+            if partyHeader.originalVisibility then
+                partyHeader:SetVisibility(partyHeader.originalVisibility)
+            end
         end
         self:UpdatePartyLayout(header)
         local editorModule = EXUI:GetModule('editor')
