@@ -220,22 +220,52 @@ function containerModule:RebuildGroups(frame, displayID, display)
         return
     end
 
-    for _, groupID in ipairs(display.groupOrder or {}) do
-        local group = display.groups[groupID]
-        if group and group.conditions.enable and loadConditions:ShouldLoad(group.load) then
-            local options = resolver:ResolveGroupOptions(displayID, display, groupID, group, buttonStyle)
-            if container.AddAuraGroup then
-                container:AddAuraGroup(options.groupKey, options.filterString, {
-                    maxFrameCount = options.maxFrameCount,
-                    sortMethod = options.sortMethod,
-                    sortDirection = options.sortDirection,
-                    candidateFilters = options.candidateFilters,
-                    layout = options.layout,
-                    initializeFrame = options.initializeFrame,
-                })
-            end
+    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+        return loadConditions:ShouldLoad(load)
+    end)) do
+        local options = resolver:ResolveGroupOptions(
+            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex
+        )
+        if container.AddAuraGroup then
+            container:AddAuraGroup(options.groupKey, options.filterString, {
+                maxFrameCount = options.maxFrameCount,
+                sortMethod = options.sortMethod,
+                sortDirection = options.sortDirection,
+                candidateFilters = options.candidateFilters,
+                layout = options.layout,
+                initializeFrame = options.initializeFrame,
+            })
         end
     end
+end
+
+function containerModule:UpdateGroupsInPlace(frame, displayID, display)
+    local container = frame.AuraContainer
+    if not resolver:CanUpdateGroupsInPlace(container) then
+        return false
+    end
+
+    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+        return loadConditions:ShouldLoad(load)
+    end)) do
+        local options = resolver:ResolveGroupOptions(
+            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex
+        )
+        resolver:ApplyGroupOptions(container, options)
+    end
+
+    if container.UpdateAllAuras then
+        container:UpdateAllAuras()
+    end
+    return true
+end
+
+function containerModule:GetHardSignature(displayID, display)
+    return resolver:BuildHardSignature(displayID, display, function(id, groupID)
+        return defaults:GetGroupKey(id, groupID)
+    end, function(load)
+        return loadConditions:ShouldLoad(load)
+    end)
 end
 
 function containerModule:ApplyItemEnchantments(frame, containerConfig)
@@ -288,6 +318,21 @@ function containerModule:Refresh(frame, displayID, display)
         return
     end
 
+    local hardSig = self:GetHardSignature(displayID, display)
+    if frame.AuraContainer and frame._exuiHardSig == hardSig and self:UpdateGroupsInPlace(frame, displayID, display) then
+        layout:ApplyDisplayPosition(frame, display)
+        self:AnchorContainer(frame.AuraContainer, frame, display)
+        layout:ApplyContainerLayout(frame.AuraContainer, display)
+        self:ApplyUnit(frame.AuraContainer, display.container, display.enable)
+        self:ApplyProcessingPolicy(frame.AuraContainer, display)
+        layout:ApplyItemEnchantmentLayout(frame.AuraContainer, display.container)
+        self:BindContainerSize(frame, display, displayID)
+        if self:IsEditMode(frame) then
+            self:SetEditMode(frame, display, true)
+        end
+        return
+    end
+
     self:ClearContainer(frame)
 
     local ok, container = pcall(CreateFrame, 'AuraContainer', nil, frame, 'CustomAuraContainerTemplate')
@@ -295,6 +340,7 @@ function containerModule:Refresh(frame, displayID, display)
         return
     end
     frame.AuraContainer = container
+    frame._exuiHardSig = hardSig
 
     layout:ApplyDisplayPosition(frame, display)
     self:AnchorContainer(container, frame, display)

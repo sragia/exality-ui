@@ -244,7 +244,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
         {
             type = 'disclaimer',
             label =
-            'Spell ID filters can be inactive for this unit/filter combination. They only apply to HELPFUL on friendly units and HARMFUL on enemy units.',
+            'Spell ID filters always apply to non-secret auras on any unit. For other auras they only apply to HELPFUL on friendly units and HARMFUL on enemy units.',
             name = 'spellIdNotice',
             width = 100,
             depends = function()
@@ -278,6 +278,30 @@ function conditionsOptions:GetOptions(displayID, groupID)
             end,
         },
         {
+            type = 'checkbox',
+            label = 'Show spell IDs in aura tooltips',
+            name = 'tooltipShowAuraSpellIDs',
+            width = 100,
+            tooltip = {
+                text = 'Session only. Stays enabled until you exit the game.',
+            },
+            currentValue = function()
+                if C_CVar and C_CVar.GetCVarBool then
+                    return C_CVar.GetCVarBool('tooltipShowAuraSpellIDs')
+                end
+                return GetCVarBool and GetCVarBool('tooltipShowAuraSpellIDs')
+            end,
+            onChange = function(v)
+                local value = v and '1' or '0'
+                if C_CVar and C_CVar.SetCVar then
+                    C_CVar.SetCVar('tooltipShowAuraSpellIDs', value)
+                elseif SetCVar then
+                    SetCVar('tooltipShowAuraSpellIDs', value)
+                end
+                refreshEditorOptions()
+            end,
+        },
+        {
             type = 'range',
             label = 'Max Duration (0=off)',
             name = 'maxDuration',
@@ -294,27 +318,33 @@ function conditionsOptions:GetOptions(displayID, groupID)
         { type = 'title', label = 'Aura Flags', width = 100 },
     })
 
-    local boolFields = {
-        { key = 'isFromPlayerOrPlayerPet', label = 'From Player/Pet' },
-        { key = 'isRoleAura',              label = 'Role Aura' },
-        { key = 'isPriorityAura',          label = 'Priority Aura' },
-        { key = 'isStealable',             label = 'Stealable' },
-        { key = 'nameplateShowAll',        label = 'Nameplate Show All' },
-        { key = 'nameplateShowPersonal',   label = 'Nameplate Show Personal' },
-        { key = 'canApplyAura',            label = 'Can Apply Aura' },
-        { key = 'isBossAura',              label = 'Boss Aura' },
-        { key = 'isBossOrRoleAura',        label = 'Boss Or Role Aura' },
-    }
-    for _, entry in ipairs(boolFields) do
+    for _, entry in ipairs(defaults.BOOL_CONDITION_FIELDS) do
         table.insert(fields, {
-            type = 'checkbox',
-            label = entry.label,
-            name = entry.key,
+            type = 'tri-state-checkbox',
+            label = defaults.BOOL_CONDITION_LABELS[entry] or entry,
+            name = entry,
             width = 33,
-            currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, entry.key) end,
-            onChange = function(v)
-                auraDisplays:UpdateGroupConditions(displayID, groupID, entry.key, v); auraDisplays:RefreshDisplay(
-                    displayID)
+            tooltip = {
+                text = defaults.BOOL_CONDITION_TOOLTIPS[entry],
+            },
+            currentValue = function()
+                local value = auraDisplays:GetGroupConditions(displayID, groupID, entry)
+                if value == true then return 1 end
+                if value == false then return 2 end
+                return 0
+            end,
+            onChange = function(state)
+                local value
+                if state == 1 then
+                    value = true
+                elseif state == 2 then
+                    value = false
+                else
+                    value = nil
+                end
+                auraDisplays:UpdateGroupConditions(displayID, groupID, entry, value)
+                auraDisplays:RefreshDisplay(displayID)
+                refreshEditorOptions()
             end,
         })
     end

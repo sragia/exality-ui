@@ -7,7 +7,7 @@ local adDefaults = EXUI:GetModule('aura-displays-defaults')
 ---@class EXUIUnitFramesAurasDefaults
 local defaults = EXUI:GetModule('uf-auras-defaults')
 
-defaults.SCHEMA_VERSION = 2
+defaults.SCHEMA_VERSION = 3
 
 defaults.UNIT_OPTIONS = {
     player = 'Player',
@@ -73,6 +73,7 @@ function defaults:MergeGroupDefaults(group)
 end
 
 function defaults:MergeIntoDB(db)
+    local oldVersion = db.__exuiDefaultsVersion or 0
     if not db.displays then
         db.displays = {}
     end
@@ -152,6 +153,9 @@ function defaults:MergeIntoDB(db)
             local group = display.groups[groupID]
             if group then
                 self:MergeGroupDefaults(group)
+                if oldVersion < 3 then
+                    adDefaults:MigrateBoolConditionFlags(group.conditions)
+                end
             end
         end
     end

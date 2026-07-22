@@ -203,25 +203,55 @@ function apply:ApplyItemEnchantments(container, containerConfig)
 end
 
 function apply:RebuildGroups(container, displayID, display, frame)
-    for _, groupID in ipairs(display.groupOrder or {}) do
-        local group = display.groups and display.groups[groupID]
-        if group and group.conditions and group.conditions.enable and loadConditions:ShouldLoad(group.load) then
-            local options = resolver:ResolveGroupOptions(displayID, display, groupID, group, buttonStyle)
-            -- Stable keys via UF defaults (do NOT use oUF AddGroup — it invents a new key every call).
-            local groupKey = defaults:GetGroupKey(displayID, groupID)
-
-            if container.AddAuraGroup then
-                container:AddAuraGroup(groupKey, options.filterString, {
-                    maxFrameCount = options.maxFrameCount,
-                    sortMethod = options.sortMethod,
-                    sortDirection = options.sortDirection,
-                    candidateFilters = options.candidateFilters,
-                    layout = options.layout,
-                    initializeFrame = options.initializeFrame,
-                })
-            end
+    local getGroupKey = function(id, groupID)
+        return defaults:GetGroupKey(id, groupID)
+    end
+    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+        return loadConditions:ShouldLoad(load)
+    end)) do
+        local options = resolver:ResolveGroupOptions(
+            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
+        )
+        if container.AddAuraGroup then
+            container:AddAuraGroup(options.groupKey, options.filterString, {
+                maxFrameCount = options.maxFrameCount,
+                sortMethod = options.sortMethod,
+                sortDirection = options.sortDirection,
+                candidateFilters = options.candidateFilters,
+                layout = options.layout,
+                initializeFrame = options.initializeFrame,
+            })
         end
     end
+end
+
+function apply:UpdateGroupsInPlace(container, displayID, display)
+    if not resolver:CanUpdateGroupsInPlace(container) then
+        return false
+    end
+    local getGroupKey = function(id, groupID)
+        return defaults:GetGroupKey(id, groupID)
+    end
+    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+        return loadConditions:ShouldLoad(load)
+    end)) do
+        local options = resolver:ResolveGroupOptions(
+            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
+        )
+        resolver:ApplyGroupOptions(container, options)
+    end
+    if container.UpdateAllAuras then
+        container:UpdateAllAuras()
+    end
+    return true
+end
+
+function apply:GetHardSignature(displayID, display)
+    return resolver:BuildHardSignature(displayID, display, function(id, groupID)
+        return defaults:GetGroupKey(id, groupID)
+    end, function(load)
+        return loadConditions:ShouldLoad(load)
+    end)
 end
 
 function apply:CreateContainer(frame, display)
@@ -336,14 +366,33 @@ function apply:UpdateFrame(frame)
                 end
                 self:QueueFrame(frame)
             else
-                -- Always recreate: addons cannot ClearAuraGroups on existing containers.
-                self:DiscardContainer(frame, displayID)
-                local container = self:CreateContainer(frame, display)
-                if not container then
-                    return
+                local hardSig = self:GetHardSignature(displayID, display)
+                local container = frame.UFAuraContainers[displayID]
+                if container and container._exuiHardSig == hardSig and self:UpdateGroupsInPlace(container, displayID, display) then
+                    self:AnchorContainer(container, frame, display)
+                    self:ApplyFrameLayer(container, frame, display)
+                    self:ApplyLayout(container, display)
+                    if container.SetAuraLayoutRowWidth then
+                        container:SetAuraLayoutRowWidth(self:GetRowWidth(frame, display))
+                    end
+                    if container.SetUnit and frame.unit then
+                        container:SetUnit(frame.unit)
+                    end
+                    if container.SetEnabled then
+                        container:SetEnabled(display.enable ~= false)
+                    end
+                    self:ApplyProcessingPolicy(container, display)
+                    layout:ApplyItemEnchantmentLayout(container, display.container)
+                else
+                    self:DiscardContainer(frame, displayID)
+                    container = self:CreateContainer(frame, display)
+                    if not container then
+                        return
+                    end
+                    container._exuiHardSig = hardSig
+                    frame.UFAuraContainers[displayID] = container
+                    self:ConfigureContainer(frame, displayID, display, container)
                 end
-                frame.UFAuraContainers[displayID] = container
-                self:ConfigureContainer(frame, displayID, display, container)
             end
         elseif frame.UFAuraContainers[displayID] then
             if InCombatLockdown() then

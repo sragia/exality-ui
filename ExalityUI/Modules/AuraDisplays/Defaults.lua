@@ -4,7 +4,44 @@ local EXUI = select(2, ...)
 ---@class EXUIAuraDisplaysDefaults
 local defaults = EXUI:GetModule('aura-displays-defaults')
 
-defaults.SCHEMA_VERSION = 3
+defaults.SCHEMA_VERSION = 4
+
+defaults.BOOL_CONDITION_FIELDS = {
+    'isFromPlayerOrPlayerPet',
+    'isRoleAura',
+    'isPriorityAura',
+    'isStealable',
+    'nameplateShowAll',
+    'nameplateShowPersonal',
+    'canApplyAura',
+    'isBossAura',
+    'isBossOrRoleAura',
+}
+
+defaults.BOOL_CONDITION_LABELS = {
+    isFromPlayerOrPlayerPet = 'From Player/Pet',
+    isRoleAura = 'Role Aura',
+    isPriorityAura = 'Priority Aura',
+    isStealable = 'Stealable',
+    nameplateShowAll = 'Nameplate Show All',
+    nameplateShowPersonal = 'Nameplate Show Personal',
+    canApplyAura = 'Can Apply Aura',
+    isBossAura = 'Boss Aura',
+    isBossOrRoleAura = 'Boss Or Role Aura',
+}
+
+-- Meanings from AuraData / AuraUtil (Blizzard has no options UI for these filters).
+defaults.BOOL_CONDITION_TOOLTIPS = {
+    isFromPlayerOrPlayerPet = 'Aura was applied by a player or their pet.',
+    isRoleAura = 'Aura flagged for a role (tank, healer, or DPS).',
+    isPriorityAura = 'Aura flagged as a priority aura (same list Blizzard uses for important debuffs).',
+    isStealable = 'Aura can be spellstolen.',
+    nameplateShowAll = 'Aura is marked to always show on nameplates, ignoring usual nameplate filtering.',
+    nameplateShowPersonal = 'Aura is marked to show on nameplates only when applied by you (player, pet, or vehicle).',
+    canApplyAura = 'You are capable of applying this aura.',
+    isBossAura = 'Aura was applied by a boss.',
+    isBossOrRoleAura = 'Aura is a boss aura or a role aura.',
+}
 
 defaults.FILTER_TOKENS = {
     'HELPFUL',
@@ -90,15 +127,7 @@ defaults.GROUP_CONDITIONS = {
     excludeDispelTypes = {},
     maxDuration = 0,
     processedAuraType = nil,
-    isFromPlayerOrPlayerPet = false,
-    isRoleAura = false,
-    isPriorityAura = false,
-    isStealable = false,
-    nameplateShowAll = false,
-    nameplateShowPersonal = false,
-    canApplyAura = false,
-    isBossAura = false,
-    isBossOrRoleAura = false,
+    -- Bool candidate filters are tri-state: nil = ignore, true = require, false = exclude.
 }
 
 defaults.GROUP_VISUAL = {
@@ -238,6 +267,17 @@ function defaults:BuildNewDisplay()
     return displayID, display
 end
 
+function defaults:MigrateBoolConditionFlags(conditions)
+    if not conditions then
+        return
+    end
+    for _, field in ipairs(self.BOOL_CONDITION_FIELDS) do
+        if conditions[field] == false then
+            conditions[field] = nil
+        end
+    end
+end
+
 function defaults:MergeGroupDefaults(group)
     if not group.visual then group.visual = self:CopyTable(self.GROUP_VISUAL) end
     if not group.conditions then group.conditions = self:CopyTable(self.GROUP_CONDITIONS) end
@@ -254,6 +294,7 @@ function defaults:MergeGroupDefaults(group)
 end
 
 function defaults:MergeIntoDB(db)
+    local oldVersion = db.__exuiDefaultsVersion or 0
     if not db.displays then db.displays = {} end
     for _, display in pairs(db.displays) do
         for key, value in pairs(self.DISPLAY) do
@@ -276,6 +317,9 @@ function defaults:MergeIntoDB(db)
             local group = display.groups[groupID]
             if group then
                 self:MergeGroupDefaults(group)
+                if oldVersion < 4 then
+                    self:MigrateBoolConditionFlags(group.conditions)
+                end
             end
         end
     end

@@ -1730,9 +1730,16 @@ function defaults:SeedStarterDisplays(db)
         return false
     end
     db.displays = db.displays or {}
+    local adDefaults = EXUI:GetModule('aura-displays-defaults')
     for displayID, display in pairs(self.STARTER_DISPLAYS) do
         if not db.displays[displayID] then
-            db.displays[displayID] = self:CopyTable(display)
+            local copy = self:CopyTable(display)
+            if copy.groups then
+                for _, group in pairs(copy.groups) do
+                    adDefaults:MigrateBoolConditionFlags(group.conditions)
+                end
+            end
+            db.displays[displayID] = copy
         end
     end
     db.__exuiStarterDisplaysSeeded = true
