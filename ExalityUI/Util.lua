@@ -157,13 +157,22 @@ EXUI.utils = {
         if (parent) then frame:SetParent(parent) end
         return frame
     end,
-    getIlvlColor = function(ilvl)
-        if not ilvl then return "ffffffff" end
+    getIlvlInfo = function(ilvl)
         local colors = EXUI.const.ilvlColors
-        for i = 1, #colors do
-            if colors[i].ilvl > ilvl then return colors[i].str end
+        local result = colors[1]
+        if ilvl then
+            for i = 1, #colors do
+                if ilvl >= colors[i].ilvl then
+                    result = colors[i]
+                else
+                    break
+                end
+            end
         end
-        return "fffffb26"
+        return result
+    end,
+    getIlvlColor = function(ilvl)
+        return EXUI.utils.getIlvlInfo(ilvl).color
     end,
     isEmpty = function(t)
         for _ in pairs(t) do

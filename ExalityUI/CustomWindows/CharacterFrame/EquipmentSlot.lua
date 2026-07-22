@@ -71,25 +71,8 @@ local EVENTS = {
     "BAG_UPDATE_COOLDOWN"
 }
 
-local ILVL_RARITY = {
-    { ilvl = 0,   color = 'ffffffff', border = EXUI.const.textures.characterFrame.border.empty },
-    { ilvl = 279, color = 'ff26ff3f', border = EXUI.const.textures.characterFrame.border.uncommon },
-    { ilvl = 292, color = 'ff26e2ff', border = EXUI.const.textures.characterFrame.border.rare },
-    { ilvl = 305, color = 'ffe226ff', border = EXUI.const.textures.characterFrame.border.epic },
-    { ilvl = 318, color = 'ffffc526', border = EXUI.const.textures.characterFrame.border.legendary },
-    { ilvl = 334, color = 'ffff2634', border = EXUI.const.textures.characterFrame.border.max },
-    { ilvl = 344, color = 'FFF6FF00', border = EXUI.const.textures.characterFrame.border.supermax },
-}
-
 equipmentSlot.GetItemColorAndBorder = function(self, ilvl)
-    local result = ILVL_RARITY[1]
-    for i = 1, #ILVL_RARITY do
-        if ilvl >= ILVL_RARITY[i].ilvl then
-            result = ILVL_RARITY[i]
-        else
-            break
-        end
-    end
+    local result = EXUI.utils.getIlvlInfo(ilvl)
     return result.color, result.border
 end
 
