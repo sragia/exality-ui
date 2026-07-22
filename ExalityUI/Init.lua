@@ -9,15 +9,6 @@ local EXFrames = EXUI.EXFrames
 EXFrames:Configure({
     logoPath = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
     defaultFontPath = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
-    scalePixel = function(value, region, minPixels)
-        return EXUI:ScalePixel(value, region, minPixels)
-    end,
-    snapFrame = function(frame)
-        EXUI:SnapFrameToPixels(frame)
-    end,
-    addPixelPerfectBorder = function(frame, thickness, options)
-        return EXUI:AddPixelPerfectBorder(frame, thickness, options)
-    end,
 })
 
 EXUI.const = {

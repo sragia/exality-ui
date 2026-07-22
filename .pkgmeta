@@ -16,7 +16,7 @@ externals:
     # tag: 13.4.5
   ExalityUI/ExalityFrames:
     url: https://github.com/sragia/ExalityFrames
-    tag: 1.1.7
+    tag: 1.1.8
   ExalityUI/Libs/LibActionButton-1.0: https://repos.wowace.com/wow/libactionbutton-1-0
   ExalityUI/Libs/LibButtonGlow-1.0: https://repos.wowace.com/wow/libbuttonglow-1-0
   ExalityUI/Libs/LibCustomGlow-1.0: https://github.com/Stanzilla/LibCustomGlow
