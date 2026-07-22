@@ -226,7 +226,7 @@ core:AddOption({
             }
         },
         {
-            name = 'Resurrect Indicator',
+            name = 'Resurrect Icon',
             id = 'resurrectindicator',
             allowPreview = true,
             options = {
@@ -254,7 +254,7 @@ core:AddOption({
             }
         },
         {
-            name = 'Summon Indicator',
+            name = 'Summon Icon',
             id = 'summonindicator',
             allowPreview = true,
             options = {
@@ -310,7 +310,7 @@ core:AddOption({
             }
         },
         {
-            name = 'Group Role Indicator',
+            name = 'Group Role Icon',
             id = 'grouproleindicator',
             allowPreview = true,
             options = {

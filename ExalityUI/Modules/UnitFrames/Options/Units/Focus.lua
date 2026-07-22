@@ -211,7 +211,7 @@ core:AddOption({
             }
         },
         {
-            name = 'Resurrect Indicator',
+            name = 'Resurrect Icon',
             id = 'resurrectindicator',
             allowPreview = true,
             options = {
@@ -239,7 +239,7 @@ core:AddOption({
             }
         },
         {
-            name = 'Summon Indicator',
+            name = 'Summon Icon',
             id = 'summonindicator',
             allowPreview = true,
             options = {

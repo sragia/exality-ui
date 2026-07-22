@@ -251,7 +251,7 @@ core:AddOption({
             }
         },
         {
-            name = 'Summon Indicator',
+            name = 'Summon Icon',
             id = 'summonindicator',
             allowPreview = true,
             options = {
