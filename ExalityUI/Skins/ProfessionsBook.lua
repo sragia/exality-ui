@@ -28,9 +28,9 @@ local SECONDARY_PROFESSION_KEYS = { 'SecondaryProfession1', 'SecondaryProfession
 local BOOK_PAGE_KEYS = { 'ProfessionsBookPage1', 'ProfessionsBookPage2' }
 
 local STATUS_BAR_BG_KEYS = { 'BGLeft', 'BGRight', 'BGMiddle', 'Left', 'Right', 'capRight' }
+local STATUS_BAR_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/StatusBar/noisy]]
 local STATUS_BAR_HEIGHT = 18
 local STATUS_BAR_WIDTH = 110
-local STATUS_BAR_INSET = 1
 local PRIMARY_NAME_X = 100
 local PRIMARY_NAME_Y = -15
 local PRIMARY_RANK_Y = -24
@@ -44,7 +44,7 @@ end
 
 local function GetStatusBarColors()
     local th = GetTheme()
-    return th.backgroundDeep, th.border
+    return th.backgroundDeep, th.inProgress
 end
 
 local function ApplyFontText(fontString, size, color)
@@ -207,7 +207,7 @@ local function EnsureStatusBarFillTexture(statusBar)
     if (statusBar.exuiFillTex) then return end
 
     local fillTex = statusBar:CreateTexture(nil, 'ARTWORK', nil, 2)
-    fillTex:SetTexture(EXUI.const.textures.frame.solidBg)
+    fillTex:SetTexture(STATUS_BAR_TEXTURE)
     statusBar.exuiFillTex = fillTex
 
     if (statusBar.exuiFillFrame) then
@@ -225,7 +225,7 @@ local function UpdateStatusBarFill(statusBar)
     local _, fillColor = GetStatusBarColors()
     local min, max = statusBar:GetMinMaxValues()
     local value = statusBar:GetValue()
-    local trackWidth = math.max(1, statusBar:GetWidth() - (STATUS_BAR_INSET * 2))
+    local trackWidth = math.max(1, statusBar:GetWidth())
     local perc = 0
 
     if (max > min) then
@@ -234,10 +234,16 @@ local function UpdateStatusBarFill(statusBar)
     perc = math.max(0, math.min(1, perc))
 
     local fillTex = statusBar.exuiFillTex
-    local fillWidth = math.max(1, trackWidth * perc)
     fillTex:ClearAllPoints()
-    fillTex:SetPoint('TOPLEFT', statusBar, 'TOPLEFT', STATUS_BAR_INSET, -STATUS_BAR_INSET)
-    fillTex:SetPoint('BOTTOMLEFT', statusBar, 'BOTTOMLEFT', STATUS_BAR_INSET, STATUS_BAR_INSET)
+    fillTex:SetPoint('TOPLEFT', statusBar, 'TOPLEFT', 0, 0)
+    fillTex:SetPoint('BOTTOMLEFT', statusBar, 'BOTTOMLEFT', 0, 0)
+
+    if (perc <= 0) then
+        fillTex:Hide()
+        return
+    end
+
+    local fillWidth = math.max(1, math.floor(trackWidth * perc + 0.5))
     fillTex:SetWidth(fillWidth)
     fillTex:SetVertexColor(unpack(fillColor))
     fillTex:Show()

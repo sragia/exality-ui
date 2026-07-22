@@ -103,24 +103,18 @@ local function ForEachMenuButton(frame, callback)
     end
 end
 
-local STRIP_OPTIONS = { keepHighlight = true, blockHighlightAtlas = true }
+local STRIP_OPTIONS = { keepHighlight = false, blockHighlightAtlas = true }
 
 function gameMenuSkin:SkinButton(button)
     if (not button) then return end
 
-    button.exuiHighlightConfigured = nil
-
-    skins:StripThreeSliceButton(button, STRIP_OPTIONS)
-    skins:ApplyPanelButtonBackground(button)
-    skins:ApplyPanelButtonHighlight(button)
-
-    skins:StylePanelButtonText(button, FONT_SIZE)
-    skins:ApplyPanelButtonState(button, 'NORMAL')
+    skins:SkinPanelButton(button, { fontSize = FONT_SIZE })
 
     if (button.UpdateButton and not button.exuiUpdateHooked) then
         button.exuiUpdateHooked = true
         hooksecurefunc(button, 'UpdateButton', function(self, buttonState)
             skins:StripThreeSliceButton(self, STRIP_OPTIONS)
+            skins:ApplyPanelButtonHighlight(self)
             skins:ApplyPanelButtonBackground(self)
             skins:ApplyPanelButtonState(self, buttonState)
             skins:StylePanelButtonText(self, FONT_SIZE)
@@ -204,6 +198,7 @@ function gameMenuSkin:InstallHooks()
         hooksecurefunc(ThreeSliceButtonMixin, 'UpdateButton', function(button, buttonState)
             if (button:GetParent() ~= GameMenuFrame) then return end
             skins:StripThreeSliceButton(button, STRIP_OPTIONS)
+            skins:ApplyPanelButtonHighlight(button)
             skins:ApplyPanelButtonBackground(button)
             skins:ApplyPanelButtonState(button, buttonState)
             skins:StylePanelButtonText(button, FONT_SIZE)
@@ -220,14 +215,13 @@ function gameMenuSkin:InstallHooks()
     if (ThreeSliceButtonMixin and ThreeSliceButtonMixin.OnMouseUp) then
         hooksecurefunc(ThreeSliceButtonMixin, 'OnMouseUp', function(button)
             if (button:GetParent() ~= GameMenuFrame) then return end
-            skins:ApplyPanelButtonState(button, 'NORMAL')
+            skins:ApplyPanelButtonState(button, button:IsMouseOver() and 'HOVERED' or 'NORMAL')
         end)
     end
 
     if (ThreeSliceButtonMixin and ThreeSliceButtonMixin.InitButton) then
         hooksecurefunc(ThreeSliceButtonMixin, 'InitButton', function(button)
             if (button:GetParent() ~= GameMenuFrame) then return end
-            button.exuiHighlightConfigured = nil
             skins:ApplyPanelButtonHighlight(button)
         end)
     end

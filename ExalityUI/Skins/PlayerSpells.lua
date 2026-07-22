@@ -83,71 +83,6 @@ local function SkinMaxMinButton(button, mode)
     end)
 end
 
-local function EnsureTexturedBackground(button)
-    if (not button.exuiBg) then
-        local bg = button:CreateTexture(nil, 'BACKGROUND', nil, 1)
-        bg:SetTexture(EXUI.const.textures.frame.whiteTextured)
-        bg:SetAllPoints()
-        button.exuiBg = bg
-    end
-end
-
-local function ApplyTexturedBackground(button, hovered, pushed)
-    EnsureTexturedBackground(button)
-    local th = GetTheme()
-    if (not button:IsEnabled()) then
-        button.exuiBg:SetVertexColor(unpack(th.faded))
-    elseif (pushed) then
-        button.exuiBg:SetVertexColor(unpack(th.accentDark))
-    elseif (hovered) then
-        button.exuiBg:SetVertexColor(unpack(th.backgroundLight))
-    else
-        button.exuiBg:SetVertexColor(unpack(th.backgroundDeep))
-    end
-    button.exuiBg:Show()
-end
-
-local function SkinTexturedButton(button)
-    if (not button or button.exuiTexturedSkinned) then return end
-    button.exuiTexturedSkinned = true
-
-    skins:StripThreeSliceButton(button, { keepHighlight = false })
-    local highlight = button.GetHighlightTexture and button:GetHighlightTexture()
-    if (highlight) then skins:StripTexture(highlight) end
-
-    ApplyTexturedBackground(button, false, false)
-    skins:StylePanelButtonText(button)
-    skins:AddBorder(button, { thickness = 1 })
-
-    if (not button.exuiTexturedHooked) then
-        button.exuiTexturedHooked = true
-        button:HookScript('OnEnter', function(btn)
-            if (btn:IsEnabled()) then ApplyTexturedBackground(btn, true, false) end
-        end)
-        button:HookScript('OnLeave', function(btn)
-            ApplyTexturedBackground(btn, false, false)
-        end)
-        button:HookScript('OnMouseDown', function(btn)
-            if (btn:IsEnabled()) then ApplyTexturedBackground(btn, true, true) end
-        end)
-        button:HookScript('OnMouseUp', function(btn)
-            ApplyTexturedBackground(btn, btn:IsMouseOver(), false)
-        end)
-        button:HookScript('OnDisable', function(btn)
-            ApplyTexturedBackground(btn, false, false)
-            skins:StylePanelButtonText(btn)
-        end)
-        button:HookScript('OnEnable', function(btn)
-            ApplyTexturedBackground(btn, btn:IsMouseOver(), false)
-            skins:StylePanelButtonText(btn)
-        end)
-        button:HookScript('OnShow', function(btn)
-            ApplyTexturedBackground(btn, btn:IsMouseOver(), false)
-            skins:StylePanelButtonText(btn)
-        end)
-    end
-end
-
 local function IsTabSelected(tab)
     return tab.isSelected == true
 end
@@ -484,7 +419,7 @@ local function SkinLoadoutDialog(dialog)
 
     for _, key in ipairs({ 'AcceptButton', 'CancelButton', 'DeleteButton' }) do
         local button = dialog[key]
-        if (button) then SkinTexturedButton(button) end
+        if (button) then skins:SkinPanelButton(button) end
     end
 end
 
@@ -496,7 +431,7 @@ local function SkinHeroTalentsDialog(dialog)
 
     for _, key in ipairs({ 'ActivateButton', 'ApplyChangesButton' }) do
         local button = dialog[key]
-        if (button) then SkinTexturedButton(button) end
+        if (button) then skins:SkinPanelButton(button) end
     end
 end
 
@@ -588,7 +523,7 @@ local function SkinTalentsFrame(frame)
 
     for _, key in ipairs({ 'ApplyButton', 'InspectCopyButton' }) do
         local button = frame[key]
-        if (button) then SkinTexturedButton(button) end
+        if (button) then skins:SkinPanelButton(button) end
     end
 
     for _, key in ipairs({ 'ResetButton', 'UndoButton' }) do
@@ -609,7 +544,7 @@ end
 
 local function SkinSpecContentFrame(contentFrame)
     if (not contentFrame or not contentFrame.ActivateButton) then return end
-    SkinTexturedButton(contentFrame.ActivateButton)
+    skins:SkinPanelButton(contentFrame.ActivateButton)
 end
 
 local function SkinSpecContentFrames(frame)

@@ -665,13 +665,25 @@ local QUEUE_BG_FALLBACK_TOP = -144
 local QUEUE_BG_BORDER_THICKNESS = 1
 
 local function RefreshQueueBackgroundBorder(chrome)
-    local border = chrome and chrome.exuiBorder
-    if (not border) then return end
+    if (not chrome or not chrome.exuiBorder) then return end
 
-    -- Match PixelPerfect applyBorderThickness: left/right flush (no outward nudge).
-    -- Outward left was fighting the Group Finder sidebar edge.
+    local queueFrame = chrome:GetParent()
+    local texture = queueFrame and ResolveQueueBackground(queueFrame)
+    if (texture) then
+        chrome:ClearAllPoints()
+        chrome:SetPoint('TOPLEFT', texture, 'TOPLEFT')
+        chrome:SetPoint('BOTTOMRIGHT', texture, 'BOTTOMRIGHT')
+    end
+
+    if (queueFrame) then
+        chrome:SetFrameLevel((queueFrame:GetFrameLevel() or 1) + 100)
+    end
+
+    local border = chrome.exuiBorder
     border:SetBorderThickness(QUEUE_BG_BORDER_THICKNESS)
     border:SetBorderColor(unpack(GetTheme().border))
+    border:Show()
+    chrome:Show()
 end
 
 local function ResolveQueueTypeDropdown(queueFrame)
@@ -712,7 +724,7 @@ local function LayoutQueueBackground(queueFrame, texture)
         chrome = CreateFrame('Frame', nil, queueFrame)
         chrome:EnableMouse(false)
         chrome.exuiBorder = EXUI:AddPixelPerfectBorder(chrome, QUEUE_BG_BORDER_THICKNESS, {
-            register = true,
+            register = false,
             layer = 'OVERLAY',
         })
         queueFrame.exuiQueueBgChrome = chrome
@@ -723,15 +735,11 @@ local function LayoutQueueBackground(queueFrame, texture)
         chrome:HookScript('OnSizeChanged', function(self)
             RefreshQueueBackgroundBorder(self)
         end)
+        queueFrame:HookScript('OnShow', function()
+            RefreshQueueBackgroundBorder(queueFrame.exuiQueueBgChrome)
+        end)
     end
 
-    chrome:ClearAllPoints()
-    chrome:SetPoint('TOPLEFT', texture, 'TOPLEFT')
-    chrome:SetPoint('BOTTOMRIGHT', texture, 'BOTTOMRIGHT')
-    -- Sit above ScrollBox / list siblings so all four edges stay visible.
-    chrome:SetFrameLevel((queueFrame:GetFrameLevel() or 1) + 100)
-
-    chrome:Show()
     RefreshQueueBackgroundBorder(chrome)
 end
 

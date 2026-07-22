@@ -8,15 +8,15 @@ local data = EXUI:GetModule('data')
 local skins = EXUI:GetModule('skins')
 
 skins.list = {
-    { key = 'GameTooltip', label = 'Game Tooltip' },
-    { key = 'GameMenu', label = 'Game Menu' },
-    { key = 'StaticPopup', label = 'Dialog' },
-    { key = 'DeathRecap', label = 'Death Recap' },
-    { key = 'WorldMap', label = 'World Map' },
-    { key = 'PlayerSpells', label = 'Talents' },
-    { key = 'ProfessionsBook', label = 'Professions Book' },
+    { key = 'GameTooltip',      label = 'Game Tooltip' },
+    { key = 'GameMenu',         label = 'Game Menu' },
+    { key = 'StaticPopup',      label = 'Dialog' },
+    { key = 'DeathRecap',       label = 'Death Recap' },
+    { key = 'WorldMap',         label = 'World Map' },
+    { key = 'PlayerSpells',     label = 'Talents' },
+    { key = 'ProfessionsBook',  label = 'Professions Book' },
     { key = 'EncounterJournal', label = 'Encounter Journal' },
-    { key = 'PVEFrame', label = 'Group Finder' },
+    { key = 'PVEFrame',         label = 'Group Finder' },
 }
 
 skins.IsEnabled = function(self, key)
@@ -204,26 +204,77 @@ skins.AddBackdrop = function(self, frame, options)
     return frame.exuiBackdrop
 end
 
+local DEFAULT_BORDER_LEVEL_OFFSET = 5
+
+local function RefreshAddBorderOverlay(frame)
+    local overlay = frame and frame.exuiBorderOverlay
+    local border = overlay and (overlay.border or overlay.PPBorder)
+    if (not overlay or not border) then return end
+
+    overlay:ClearAllPoints()
+    overlay:SetAllPoints(frame)
+    overlay:Show()
+
+    local thickness = border.thicknessPixels or 1
+    local borderWidth = EXUI:ScalePixels(thickness, overlay)
+    local outward = EXUI:ScalePixels(thickness, overlay)
+
+    border.Top:SetHeight(borderWidth)
+    border.Top:ClearAllPoints()
+    border.Top:SetPoint('TOPLEFT', overlay, 'TOPLEFT', 0, 0)
+    border.Top:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', 0, 0)
+
+    border.Left:SetWidth(borderWidth)
+    border.Left:ClearAllPoints()
+    border.Left:SetPoint('TOPLEFT', overlay, 'TOPLEFT', -outward, 0)
+    border.Left:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', -outward, 0)
+
+    border.Right:SetWidth(borderWidth)
+    border.Right:ClearAllPoints()
+    border.Right:SetPoint('TOPRIGHT', overlay, 'TOPRIGHT', outward, 0)
+    border.Right:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', outward, 0)
+
+    border.Bottom:SetHeight(borderWidth)
+    border.Bottom:SetSnapToPixelGrid(false)
+    border.Bottom:ClearAllPoints()
+    border.Bottom:SetPoint('BOTTOMLEFT', overlay, 'BOTTOMLEFT', 0, -outward)
+    border.Bottom:SetPoint('BOTTOMRIGHT', overlay, 'BOTTOMRIGHT', 0, -outward)
+
+    border:Show()
+end
+
+local function HookAddBorderRefresh(frame)
+    if (frame.exuiBorderHooks) then return end
+    frame.exuiBorderHooks = true
+    frame:HookScript('OnShow', function(self)
+        RefreshAddBorderOverlay(self)
+    end)
+    frame:HookScript('OnSizeChanged', function(self)
+        RefreshAddBorderOverlay(self)
+    end)
+end
+
 ---1px pixel-perfect border on an overlay child frame so it draws above Blizzard art.
----@param options? { thickness?: number, color?: number[], level?: number }
+---@param options? { thickness?: number, color?: number[], level?: number, levelOffset?: number }
 skins.AddBorder = function(self, frame, options)
     options = options or {}
     local thickness = options.thickness or 1
+    local levelOffset = options.levelOffset or DEFAULT_BORDER_LEVEL_OFFSET
+    local frameLevel = options.level or ((frame:GetFrameLevel() or 1) + levelOffset)
 
     if (not frame.exuiBorderOverlay) then
         local overlay = CreateFrame('Frame', nil, frame)
         overlay:EnableMouse(false)
-        overlay:SetFrameLevel(options.level or 500)
         overlay.border = EXUI:AddPixelPerfectBorder(overlay, thickness, { register = false, layer = 'OVERLAY' })
         frame.exuiBorderOverlay = overlay
+        HookAddBorderRefresh(frame)
     end
 
     local overlay = frame.exuiBorderOverlay
-    overlay:ClearAllPoints()
-    overlay:SetAllPoints(frame)
+    overlay:SetFrameLevel(frameLevel)
     overlay.border:SetBorderColor(unpack(options.color or GetTheme().border))
-    overlay.border:SetBorderThickness(thickness)
-    overlay:Show()
+    overlay.border.thicknessPixels = thickness
+    RefreshAddBorderOverlay(frame)
     return overlay
 end
 
@@ -305,41 +356,45 @@ skins.SkinIconButton = function(self, button, options)
     button:HookScript('OnLeave', function() ApplyTint(normalColor) end)
 end
 
-local PANEL_BUTTON_BG_MARGINS = 10
-local PANEL_BUTTON_HIGHLIGHT_MARGINS = 10
 local PANEL_BUTTON_FONT_SIZE = 12
+local PANEL_BUTTON_TEXT_Y_OFFSET = -1
+local DIALOG_BUTTON_TEXT_Y_OFFSET = -1
+local PANEL_BUTTON_STRIP_OPTIONS = { keepHighlight = false, blockHighlightAtlas = true }
 
 skins.ApplyPanelButtonBackground = function(self, button)
     if (not button.exuiBg) then
         local bg = button:CreateTexture(nil, 'BACKGROUND', nil, 1)
+        bg:SetTexture(EXUI.const.textures.frame.whiteTextured)
         bg:SetAllPoints()
         button.exuiBg = bg
     end
 
-    button.exuiBg:SetTexture(EXUI.const.textures.frame.inputs.buttonBg)
-    button.exuiBg:SetTextureSliceMargins(PANEL_BUTTON_BG_MARGINS, PANEL_BUTTON_BG_MARGINS, PANEL_BUTTON_BG_MARGINS,
-        PANEL_BUTTON_BG_MARGINS)
-    button.exuiBg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    button.exuiBg:SetTexture(EXUI.const.textures.frame.whiteTextured)
+    button.exuiBg:SetAllPoints()
     button.exuiBg:SetAlpha(1)
     button.exuiBg:Show()
 end
 
-local function ResolveButtonState(button, state)
-    if (state) then return state end
-    if (not button:IsEnabled()) then return 'DISABLED' end
-    return button:GetButtonState() or 'NORMAL'
-end
-
 skins.ApplyPanelButtonState = function(self, button, state)
     if (not button.exuiBg) then return end
-    state = ResolveButtonState(button, state)
+
     local th = GetTheme()
     if (state == 'DISABLED' or not button:IsEnabled()) then
         button.exuiBg:SetVertexColor(unpack(th.faded))
-    elseif (state == 'PUSHED') then
+        return
+    end
+
+    local resolved = state
+    if (not resolved) then
+        resolved = button:GetButtonState() or 'NORMAL'
+    end
+
+    if (resolved == 'PUSHED') then
         button.exuiBg:SetVertexColor(unpack(th.accentDark))
-    else
+    elseif (resolved == 'HOVERED' or (resolved == 'NORMAL' and button:IsMouseOver())) then
         button.exuiBg:SetVertexColor(unpack(th.backgroundLight))
+    else
+        button.exuiBg:SetVertexColor(unpack(th.backgroundDeep))
     end
 end
 
@@ -357,35 +412,16 @@ skins.StylePanelButtonText = function(self, button, fontSize)
 end
 
 skins.ApplyPanelButtonHighlight = function(self, button)
-    if (not button.exuiHighlightConfigured) then
-        button.exuiHighlightConfigured = true
-
-        if (button.SetHighlightAtlas and not button.exuiHighlightAtlasBlocked) then
-            button.exuiHighlightAtlasBlocked = true
-            button.SetHighlightAtlas = function()
-                -- keep custom SetHighlightTexture
-            end
-        end
-
-        button:SetHighlightTexture(EXUI.const.textures.skins.btnHighlight, 'BLEND')
+    if (button.SetHighlightAtlas and not button.exuiHighlightAtlasBlocked) then
+        button.exuiHighlightAtlasBlocked = true
+        button.SetHighlightAtlas = function() end
     end
 
-    local highlight = button:GetHighlightTexture()
-    if (not highlight) then return end
-
-    -- Force full-button coverage so sliced end-caps (rounded corners) are not clipped.
-    highlight:ClearAllPoints()
-    highlight:SetAllPoints(button)
-    highlight:SetTexCoord(0, 1, 0, 1)
-    highlight:SetTextureSliceMargins(PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS,
-        PANEL_BUTTON_HIGHLIGHT_MARGINS, PANEL_BUTTON_HIGHLIGHT_MARGINS)
-    highlight:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
-    highlight:SetVertexColor(unpack(GetTheme().accent))
-    -- Undo a prior strip; the button widget drives visibility itself.
-    highlight:SetAlpha(1)
+    local highlight = button.GetHighlightTexture and button:GetHighlightTexture()
+    if (highlight) then
+        StripTexture(highlight)
+    end
 end
-
-local PANEL_BUTTON_STRIP_OPTIONS = { keepHighlight = true, blockHighlightAtlas = true }
 
 local function StripClassicDialogButtonTextures(button)
     skins:StripTexture(button:GetNormalTexture())
@@ -393,24 +429,37 @@ local function StripClassicDialogButtonTextures(button)
     if (button.GetDisabledTexture) then
         skins:StripTexture(button:GetDisabledTexture())
     end
+    if (button.GetHighlightTexture) then
+        skins:StripTexture(button:GetHighlightTexture())
+    end
 end
 
 local function HookPanelButtonState(button, fontSize)
     if (button.exuiStateHooked) then return end
     button.exuiStateHooked = true
 
+    button:HookScript('OnEnter', function(btn)
+        if (btn:IsEnabled()) then skins:ApplyPanelButtonState(btn, 'HOVERED') end
+    end)
+    button:HookScript('OnLeave', function(btn)
+        skins:ApplyPanelButtonState(btn, 'NORMAL')
+    end)
     button:HookScript('OnMouseDown', function(btn)
         if (btn:IsEnabled()) then skins:ApplyPanelButtonState(btn, 'PUSHED') end
     end)
     button:HookScript('OnMouseUp', function(btn)
-        skins:ApplyPanelButtonState(btn)
+        if (btn:IsEnabled() and btn:IsMouseOver()) then
+            skins:ApplyPanelButtonState(btn, 'HOVERED')
+        else
+            skins:ApplyPanelButtonState(btn, 'NORMAL')
+        end
     end)
     button:HookScript('OnDisable', function(btn)
         skins:ApplyPanelButtonState(btn, 'DISABLED')
         skins:StylePanelButtonText(btn, fontSize)
     end)
     button:HookScript('OnEnable', function(btn)
-        skins:ApplyPanelButtonState(btn, 'NORMAL')
+        skins:ApplyPanelButtonState(btn, btn:IsMouseOver() and 'HOVERED' or 'NORMAL')
         skins:StylePanelButtonText(btn, fontSize)
     end)
     button:HookScript('OnShow', function(btn)
@@ -419,32 +468,47 @@ local function HookPanelButtonState(button, fontSize)
     end)
 end
 
----Full flat treatment for UIPanelButtonTemplate-style three-slice buttons.
 ---@param options? { fontSize?: number }
 skins.SkinPanelButton = function(self, button, options)
     if (not button) then return end
     options = options or {}
 
     self:StripThreeSliceButton(button, PANEL_BUTTON_STRIP_OPTIONS)
-    self:ApplyPanelButtonBackground(button)
     self:ApplyPanelButtonHighlight(button)
+    self:ApplyPanelButtonBackground(button)
     self:StylePanelButtonText(button, options.fontSize)
     self:ApplyPanelButtonState(button, 'NORMAL')
+    self:AddBorder(button, { thickness = 1 })
+
+    local fontString = button:GetFontString()
+    if (fontString and not button.exuiPanelTextOffset) then
+        button.exuiPanelTextOffset = true
+        fontString:ClearAllPoints()
+        fontString:SetPoint('CENTER', button, 'CENTER', 0, PANEL_BUTTON_TEXT_Y_OFFSET)
+    end
+
     HookPanelButtonState(button, options.fontSize)
 end
 
----Flat treatment for classic dialog buttons (StaticPopupButtonTemplate / UI-DialogBox-Button-*).
----Leaves Flash / PulseAnim intact. Does not use three-slice stripping.
 ---@param options? { fontSize?: number }
 skins.SkinDialogButton = function(self, button, options)
     if (not button) then return end
     options = options or {}
 
     StripClassicDialogButtonTextures(button)
-    self:ApplyPanelButtonBackground(button)
     self:ApplyPanelButtonHighlight(button)
+    self:ApplyPanelButtonBackground(button)
     self:StylePanelButtonText(button, options.fontSize)
     self:ApplyPanelButtonState(button, 'NORMAL')
+    self:AddBorder(button, { thickness = 1 })
+
+    local fontString = button:GetFontString()
+    if (fontString and not button.exuiDialogTextOffset) then
+        button.exuiDialogTextOffset = true
+        fontString:ClearAllPoints()
+        fontString:SetPoint('CENTER', button, 'CENTER', 0, DIALOG_BUTTON_TEXT_Y_OFFSET)
+    end
+
     HookPanelButtonState(button, options.fontSize)
 end
 
@@ -722,6 +786,7 @@ local function RefreshModernDropdownChrome(dropdown)
     local overlay = dropdown.exuiBorderOverlay
     if (not overlay) then return end
 
+    overlay:SetFrameLevel((dropdown:GetFrameLevel() or 1) + DEFAULT_BORDER_LEVEL_OFFSET)
     overlay:ClearAllPoints()
     overlay:SetAllPoints(dropdown)
 
@@ -835,11 +900,11 @@ skins.SkinModernDropdown = function(self, dropdown, options)
     if (not dropdown.exuiBorderOverlay) then
         local overlay = CreateFrame('Frame', nil, dropdown)
         overlay:SetAllPoints()
-        overlay:SetFrameLevel(500)
         overlay:EnableMouse(false)
         overlay.PPBorder = EXUI:AddPixelPerfectBorder(overlay, 1, { register = false, layer = 'OVERLAY' })
         dropdown.exuiBorderOverlay = overlay
     end
+    dropdown.exuiBorderOverlay:SetFrameLevel((dropdown:GetFrameLevel() or 1) + DEFAULT_BORDER_LEVEL_OFFSET)
 
     RefreshModernDropdownChrome(dropdown)
 
@@ -922,10 +987,10 @@ local function EnsureInputFieldChrome(frame, bgColor)
     if (not frame.exuiBorderOverlay) then
         local overlay = CreateFrame('Frame', nil, frame)
         overlay:EnableMouse(false)
-        overlay:SetFrameLevel((frame:GetFrameLevel() or 1) + 5)
         overlay.PPBorder = EXUI:AddPixelPerfectBorder(overlay, 1, { register = false, layer = 'OVERLAY' })
         frame.exuiBorderOverlay = overlay
     end
+    frame.exuiBorderOverlay:SetFrameLevel((frame:GetFrameLevel() or 1) + DEFAULT_BORDER_LEVEL_OFFSET)
 
     frame.exuiBg:SetVertexColor(unpack(bgColor or th.background))
     frame.exuiBorderOverlay.PPBorder:SetBorderColor(unpack(th.border))
@@ -947,6 +1012,7 @@ local function RefreshInputFieldChrome(frame)
     local overlay = frame.exuiBorderOverlay
     if (not overlay or not overlay.PPBorder) then return end
 
+    overlay:SetFrameLevel((frame:GetFrameLevel() or 1) + DEFAULT_BORDER_LEVEL_OFFSET)
     overlay:ClearAllPoints()
     overlay:SetAllPoints(frame)
 
