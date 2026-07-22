@@ -21,17 +21,12 @@ local function SkinTooltip(tooltip)
     tex:SetAllPoints()
     tex:SetVertexColor(0, 0, 0, 0.6)
 
-    local border = EXUI:AddPixelPerfectBorder(backdrop, 1)
+    local border = EXUI:AddPixelPerfectBorder(backdrop, 1, { register = false })
     border:SetBorderColor(0, 0, 0, 1)
 
     if (tooltip.CompareHeader) then
-        for _, region in ipairs(tooltip.CompareHeader:GetRegions()) do
-            if (region.SetTexture) then
-                region:SetTexture(nil)
-                region:SetAlpha(0)
-                region:Hide()
-            end
-        end
+        skins:StripAllTextures(tooltip.CompareHeader)
+
         local compareBackdrop = CreateFrame('Frame', nil, tooltip.CompareHeader)
         compareBackdrop:SetAllPoints()
         compareBackdrop:SetFrameLevel(0)
@@ -39,9 +34,8 @@ local function SkinTooltip(tooltip)
         tex:SetTexture(EXUI.const.textures.frame.solidBg)
         tex:SetAllPoints()
         tex:SetVertexColor(0, 0, 0, 0.6)
-        local compareBorder = EXUI:AddPixelPerfectBorder(compareBackdrop, 1)
+        local compareBorder = EXUI:AddPixelPerfectBorder(compareBackdrop, 1, { register = false })
         compareBorder:SetBorderColor(0, 0, 0, 1)
-
 
         if (tooltip.CompareHeader:GetFrameLevel() == 0) then
             tooltip.CompareHeader:SetFrameLevel(1)
@@ -56,7 +50,7 @@ local function SkinTooltip(tooltip)
         tex:SetTexture(EXUI.const.textures.frame.solidBg)
         tex:SetAllPoints()
         tex:SetVertexColor(0, 0, 0, 0.4)
-        local statusBarBorder = EXUI:AddPixelPerfectBorder(sbBackdrop, 1)
+        local statusBarBorder = EXUI:AddPixelPerfectBorder(sbBackdrop, 1, { register = false })
         statusBarBorder:SetBorderColor(0, 0, 0, 1)
 
         if (tooltip.StatusBar:GetFrameLevel() == 0) then
