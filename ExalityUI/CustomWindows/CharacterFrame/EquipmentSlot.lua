@@ -212,12 +212,22 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot.Highlight.FadeOut:SetScript('OnFinished', function() slot.Highlight:SetAlpha(0) end)
     slot.Highlight:SetAlpha(0)
 
-    local cooldown = CreateFrame('Cooldown', nil, slot)
+    local cooldown = CreateFrame('Cooldown', nil, slot, 'CooldownFrameTemplate')
     slot.Cooldown = cooldown
     cooldown:SetAllPoints()
     cooldown:SetSwipeColor(0, 0, 0, 0.6)
+    cooldown:SetDrawEdge(false)
     cooldown:SetCountdownFont('ExalityUI_EQUIPMENT_SLOT_CD_Font')
-    cooldown:SetSwipeTexture(EXUI.const.textures.frame.bg)
+    slot.AnchorCooldownText = function(self)
+        local countdown = self.Cooldown.GetCountdownFontString and self.Cooldown:GetCountdownFontString()
+        if not countdown then
+            return
+        end
+        countdown:ClearAllPoints()
+        countdown:SetPoint('BOTTOMLEFT', self.Cooldown, 'BOTTOMLEFT', 4, 3)
+        countdown:SetJustifyH('LEFT')
+    end
+    slot:AnchorCooldownText()
 
     -- Dim overlay for invalid enchant / temp-enchant targets (below Border OVERLAY)
     local itemContextOverlay = overlayFrame:CreateTexture(nil, 'ARTWORK', nil, 1)
@@ -447,6 +457,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             self.Border:SetTexture(border)
             local start, duration = GetInventoryItemCooldown("player", self:GetID());
             self.Cooldown:SetCooldown(start, duration)
+            self:AnchorCooldownText()
 
             -- Enchant
             local enchant = EXUI.utils.GetItemEnchant(itemLink)
