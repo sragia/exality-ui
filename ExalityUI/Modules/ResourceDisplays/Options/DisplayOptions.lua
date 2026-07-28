@@ -7,11 +7,7 @@ local core = EXUI:GetModule('resource-displays-core')
 ---@class EXUIResourceDisplaysDisplayOptions
 local displayOptions = EXUI:GetModule('resource-displays-display-options')
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+local append = EXUI.utils.append
 
 function displayOptions:GetOptions(displayID)
     local currentItem = core:GetDBByDisplayID(displayID)

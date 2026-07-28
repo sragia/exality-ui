@@ -7,23 +7,42 @@ local resolver = EXUI:GetModule('aura-displays-config-resolver')
 ---@class EXUIAuraDisplaysLayout
 local layout = EXUI:GetModule('aura-displays-layout')
 
+local FLOW_AXIS = AnchorUtil and AnchorUtil.FlowLayoutAxis
+local FLOW_AXIS_HORIZONTAL = (FLOW_AXIS and FLOW_AXIS.Horizontal) or 0
+local FLOW_AXIS_VERTICAL = (FLOW_AXIS and FLOW_AXIS.Vertical) or 1
+
+function layout:GetFlowLayoutAxis(display)
+    if display and display.flowLayoutAxis == 'Columns' then
+        return FLOW_AXIS_VERTICAL
+    end
+    return FLOW_AXIS_HORIZONTAL
+end
+
+function layout:IsColumnAxis(display)
+    return self:GetFlowLayoutAxis(display) == FLOW_AXIS_VERTICAL
+end
+
 function layout:ApplyContainerLayout(container, display)
     if not container then
         return
     end
 
-    if container.SetAuraLayoutAnchorPoint then
-        container:SetAuraLayoutAnchorPoint(display.containerAnchorPoint or 'TOPLEFT')
+    if container.SetFlowLayoutAxis then
+        container:SetFlowLayoutAxis(self:GetFlowLayoutAxis(display))
     end
 
-    if container.SetAuraLayoutGrowthDirection then
+    if container.SetFlowLayoutAnchorPoint then
+        container:SetFlowLayoutAnchorPoint(display.containerAnchorPoint or 'TOPLEFT')
+    end
+
+    if container.SetFlowLayoutGrowthDirection then
         local horizontal = resolver:GetGrowthDirection(display.horizontalGrowth or 'RIGHT')
         local vertical = resolver:GetGrowthDirection(display.verticalGrowth or 'DOWN')
-        container:SetAuraLayoutGrowthDirection(horizontal, vertical)
+        container:SetFlowLayoutGrowthDirection(horizontal, vertical)
     end
 
-    if container.SetAuraLayoutPadding then
-        container:SetAuraLayoutPadding(
+    if container.SetFlowLayoutPadding then
+        container:SetFlowLayoutPadding(
             display.paddingLeft or 0,
             display.paddingRight or 0,
             display.paddingTop or 0,
@@ -31,12 +50,12 @@ function layout:ApplyContainerLayout(container, display)
         )
     end
 
-    if container.SetAuraLayoutRowWidth then
+    if container.SetFlowLayoutMaximumLineSize then
         local rowWidth = display.rowWidth
         if not rowWidth or rowWidth <= 0 then
             rowWidth = math.huge
         end
-        container:SetAuraLayoutRowWidth(rowWidth)
+        container:SetFlowLayoutMaximumLineSize(rowWidth)
     end
 end
 
@@ -47,17 +66,22 @@ function layout:ApplyDisplayPosition(frame, display)
     frame:SetFrameLevel(display.frameLevel or 10)
 end
 
-function layout:ApplyItemEnchantmentLayout(container, containerConfig)
+function layout:ApplyItemEnchantmentLayout(container, containerConfig, display)
     if not container or not container.SetItemEnchantmentLayout then
         return
     end
     local placement = containerConfig.itemEnchantPlacement == 'AfterAuraGroups' and 1 or 0
+    local spacingX = containerConfig.itemEnchantSpacingX or 0
+    local spacingY = containerConfig.itemEnchantSpacingY or 0
+    local gapX = containerConfig.itemEnchantGapX or 0
+    local gapY = containerConfig.itemEnchantGapY or 0
+    local columns = self:IsColumnAxis(display)
     container:SetItemEnchantmentLayout({
         placement = placement,
-        elementSpacingX = containerConfig.itemEnchantSpacingX or 0,
-        elementSpacingY = containerConfig.itemEnchantSpacingY or 0,
-        gapX = containerConfig.itemEnchantGapX or 0,
-        gapY = containerConfig.itemEnchantGapY or 0,
+        elementSpacing = columns and spacingY or spacingX,
+        lineSpacing = columns and spacingX or spacingY,
+        groupSpacing = columns and gapY or gapX,
+        groupLineSpacing = columns and gapX or gapY,
         elementWidth = containerConfig.itemEnchantWidth and containerConfig.itemEnchantWidth > 0 and containerConfig.itemEnchantWidth or nil,
         elementHeight = containerConfig.itemEnchantHeight and containerConfig.itemEnchantHeight > 0 and containerConfig.itemEnchantHeight or nil,
     })
@@ -71,26 +95,27 @@ function layout:ApplyPreviewFlowLayout(container, display, elements, groupVisual
     end
 
     groupVisual = groupVisual or {}
-    local groupLayout = resolver:GetGroupLayout(groupVisual)
+    local groupLayout = resolver:GetGroupLayout(groupVisual, nil, display)
     local elementWidth = groupLayout.elementWidth or groupVisual.iconWidth or 32
     local elementHeight = groupLayout.elementHeight or groupVisual.iconHeight or 32
 
     local anchorPoint = display.containerAnchorPoint or 'TOPLEFT'
     local horizontalDirection = resolver:GetGrowthDirection(display.horizontalGrowth or 'RIGHT')
     local verticalDirection = resolver:GetGrowthDirection(display.verticalGrowth or 'DOWN')
+    local columns = self:IsColumnAxis(display)
 
     local paddingLeft = display.paddingLeft or 0
     local paddingRight = display.paddingRight or 0
     local paddingTop = display.paddingTop or 0
     local paddingBottom = display.paddingBottom or 0
 
-    local maxRowWidth = display.rowWidth
-    if not maxRowWidth or maxRowWidth <= 0 then
-        maxRowWidth = math.huge
+    local maxLineSize = display.rowWidth
+    if not maxLineSize or maxLineSize <= 0 then
+        maxLineSize = math.huge
     end
 
-    local elementSpacingX = groupLayout.elementSpacingX or 0
-    local elementSpacingY = groupLayout.elementSpacingY or 0
+    local elementSpacing = groupLayout.elementSpacing or 0
+    local lineSpacing = groupLayout.lineSpacing or 0
 
     local flowDown = verticalDirection == -1
     local flowRight = horizontalDirection == 1
@@ -102,35 +127,57 @@ function layout:ApplyPreviewFlowLayout(container, display, elements, groupVisual
 
     local cursorX = startPaddingX * horizontalDirection
     local cursorY = startPaddingY * verticalDirection
-    local rowUsedWidth = 0
-    local rowHeight = 0
+    local lineUsed = 0
+    local lineCrossSize = 0
     local layoutWidth = startPaddingX + endPaddingX
     local layoutHeight = startPaddingY + endPaddingY
 
-    local function advanceToNextRow(rowGapY)
-        cursorX = startPaddingX * horizontalDirection
-        cursorY = cursorY + ((rowHeight + rowGapY) * verticalDirection)
-        rowUsedWidth = 0
-        rowHeight = 0
+    local function primarySize()
+        return columns and elementHeight or elementWidth
+    end
+
+    local function crossSize()
+        return columns and elementWidth or elementHeight
+    end
+
+    local function advanceToNextLine()
+        if columns then
+            cursorY = startPaddingY * verticalDirection
+            cursorX = cursorX + ((lineCrossSize + lineSpacing) * horizontalDirection)
+        else
+            cursorX = startPaddingX * horizontalDirection
+            cursorY = cursorY + ((lineCrossSize + lineSpacing) * verticalDirection)
+        end
+        lineUsed = 0
+        lineCrossSize = 0
     end
 
     for _, element in ipairs(elements) do
-        local nextRowWidth = rowUsedWidth > 0 and rowUsedWidth + elementWidth or elementWidth
-        if rowUsedWidth > 0 and nextRowWidth > maxRowWidth then
-            advanceToNextRow(elementSpacingY)
-            nextRowWidth = elementWidth
+        local nextLineUsed = lineUsed > 0 and lineUsed + primarySize() or primarySize()
+        if lineUsed > 0 and nextLineUsed > maxLineSize then
+            advanceToNextLine()
+            nextLineUsed = primarySize()
         end
 
         element:SetSize(elementWidth, elementHeight)
         element:ClearAllPoints()
         element:SetPoint(anchorPoint, container, anchorPoint, cursorX, cursorY)
 
-        cursorX = cursorX + ((elementWidth + elementSpacingX) * horizontalDirection)
-        rowUsedWidth = nextRowWidth + elementSpacingX
-        rowHeight = math.max(rowHeight, elementHeight)
+        if columns then
+            cursorY = cursorY + ((elementHeight + elementSpacing) * verticalDirection)
+        else
+            cursorX = cursorX + ((elementWidth + elementSpacing) * horizontalDirection)
+        end
+        lineUsed = nextLineUsed + elementSpacing
+        lineCrossSize = math.max(lineCrossSize, crossSize())
 
-        layoutWidth = math.max(layoutWidth, startPaddingX + rowUsedWidth - elementSpacingX + endPaddingX)
-        layoutHeight = math.max(layoutHeight, math.abs(cursorY) + elementHeight + endPaddingY)
+        if columns then
+            layoutWidth = math.max(layoutWidth, math.abs(cursorX) + elementWidth + endPaddingX)
+            layoutHeight = math.max(layoutHeight, startPaddingY + lineUsed - elementSpacing + endPaddingY)
+        else
+            layoutWidth = math.max(layoutWidth, startPaddingX + lineUsed - elementSpacing + endPaddingX)
+            layoutHeight = math.max(layoutHeight, math.abs(cursorY) + elementHeight + endPaddingY)
+        end
     end
 
     container:SetSize(math.max(layoutWidth, 1), math.max(layoutHeight, 1))

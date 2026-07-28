@@ -11,7 +11,10 @@ local apply = EXUI:GetModule('uf-auras-apply')
 local dispelOverlay = EXUI:GetModule('uf-element-dispel-overlay')
 
 local SLOT_KEY = 'dispelOverlay'
-local BORDER_STYLE_COLOR = (AuraButtonBorderStyle and AuraButtonBorderStyle.Color) or 1
+
+local DISPEL_STYLE = Enum and Enum.CustomAuraButtonDispelTypeTextureStyle
+local DISPEL_STYLE_PRESERVE = (DISPEL_STYLE and DISPEL_STYLE.PreserveAsset) or 3
+local DISPEL_STYLE_ICON = (DISPEL_STYLE and DISPEL_STYLE.Icon) or 2
 
 local FILTER_MAP = {
     RAID = 'HARMFUL|RAID',
@@ -23,6 +26,27 @@ local function GetFilterString(mode)
     return FILTER_MAP[mode] or FILTER_MAP.RAID
 end
 
+-- Independent toggles; migrate old exclusive dispelOverlayStyle if needed.
+local function ShowOverlay(db)
+    if not db then
+        return true
+    end
+    if db.dispelOverlayShowOverlay ~= nil then
+        return db.dispelOverlayShowOverlay and true or false
+    end
+    return (db.dispelOverlayStyle or 'Overlay') ~= 'Icon'
+end
+
+local function ShowIcon(db)
+    if not db then
+        return false
+    end
+    if db.dispelOverlayShowIcon ~= nil then
+        return db.dispelOverlayShowIcon and true or false
+    end
+    return db.dispelOverlayStyle == 'Icon'
+end
+
 local function GetPreviewColor()
     local colors = EXUI.oUF and EXUI.oUF.colors and EXUI.oUF.colors.dispel
     local magic = EXUI.oUF and EXUI.oUF.Enum and EXUI.oUF.Enum.DispelType and EXUI.oUF.Enum.DispelType.Magic
@@ -32,8 +56,18 @@ local function GetPreviewColor()
     return DEBUFF_TYPE_MAGIC_COLOR
 end
 
--- Preview lives on ElementFrame (always safe). Live border lives on the AuraButton
--- and inherits DenyTaintedAccessWhenAurasAreSecret — never assume method calls succeed.
+local function GetHardSignature(db)
+    db = db or {}
+    -- Size/anchor are applied live on IconHost; only structural mode changes need rebuild.
+    return table.concat({
+        GetFilterString(db.dispelOverlayFilter),
+        ShowOverlay(db) and 'o' or '-',
+        ShowIcon(db) and 'i' or '-',
+    }, '|')
+end
+
+-- Preview lives on ElementFrame (always safe). Live textures live on the AuraButton
+-- and inherit DenyTaintedAccessWhenAurasAreSecret — never assume method calls succeed.
 local function IsOverlayTexture(overlay)
     if not overlay or type(overlay.GetObjectType) ~= 'function' then
         return false
@@ -53,6 +87,79 @@ local function SafeCall(object, methodName, ...)
     return pcall(method, object, ...)
 end
 
+local function AddDispelTexture(button, texture, style)
+    if button.AddDispelTypeTexture then
+        button:AddDispelTypeTexture(texture, {
+            showWhenHarmful = true,
+            showWhenHelpful = false,
+            style = style,
+        })
+    elseif button.SetAuraBorder then
+        button:SetAuraBorder(texture, {
+            showWhenHarmful = true,
+            showWhenHelpful = false,
+            style = style,
+        })
+    end
+end
+
+local function LayoutIconHost(host, parent, db)
+    if not host then
+        return
+    end
+    local size = (db and db.dispelOverlayIconSize) or 16
+    host:ClearAllPoints()
+    host:SetSize(size, size)
+    host:SetPoint(
+        (db and db.dispelOverlayAnchorPoint) or 'CENTER',
+        parent,
+        (db and db.dispelOverlayRelativeAnchorPoint) or 'CENTER',
+        (db and db.dispelOverlayXOff) or 0,
+        (db and db.dispelOverlayYOff) or 0
+    )
+end
+
+local function LayoutPreviewTextures(frame, db)
+    local cover = frame.ElementFrame or frame
+    local alpha = db and db.dispelOverlayAlpha or 1
+    local overlayPreview = frame.DispelOverlay
+    local iconPreview = frame.DispelOverlayIconPreview
+
+    if IsOverlayTexture(overlayPreview) then
+        overlayPreview:SetAlpha(alpha)
+        if ShowOverlay(db) then
+            overlayPreview:ClearAllPoints()
+            overlayPreview:SetAllPoints(cover)
+            overlayPreview:SetTexture(EXUI.const.textures.unitFrames.dispelOverlay)
+            overlayPreview:SetTexCoord(0, 1, 0, 1)
+        else
+            overlayPreview:Hide()
+        end
+    end
+
+    if IsOverlayTexture(iconPreview) then
+        iconPreview:SetAlpha(alpha)
+        if ShowIcon(db) then
+            local size = (db and db.dispelOverlayIconSize) or 16
+            iconPreview:ClearAllPoints()
+            iconPreview:SetSize(size, size)
+            iconPreview:SetPoint(
+                (db and db.dispelOverlayAnchorPoint) or 'CENTER',
+                cover,
+                (db and db.dispelOverlayRelativeAnchorPoint) or 'CENTER',
+                (db and db.dispelOverlayXOff) or 0,
+                (db and db.dispelOverlayYOff) or 0
+            )
+            -- Keep our size: IgnoreAtlasSize == false.
+            if iconPreview.SetAtlas then
+                iconPreview:SetAtlas('RaidFrame-Icon-DebuffMagic', false)
+            end
+        else
+            iconPreview:Hide()
+        end
+    end
+end
+
 function dispelOverlay:DiscardContainer(frame)
     local container = frame.DispelOverlayContainer
     if not container then
@@ -64,6 +171,8 @@ function dispelOverlay:DiscardContainer(frame)
     SafeCall(container, 'SetParent', nil)
     frame.DispelOverlayContainer = nil
     frame.DispelOverlayLive = nil
+    frame.DispelOverlayLiveIcon = nil
+    frame.DispelOverlayIconHost = nil
 end
 
 function dispelOverlay:EnsureHeaderBudget(frame)
@@ -74,16 +183,29 @@ function dispelOverlay:EnsureHeaderBudget(frame)
 end
 
 function dispelOverlay:EnsureContainer(frame)
-    if frame.DispelOverlayContainer then
-        return frame.DispelOverlayContainer
+    local db = frame.db
+    local showOverlay = ShowOverlay(db)
+    local showIcon = ShowIcon(db)
+    if not showOverlay and not showIcon then
+        self:DiscardContainer(frame)
+        return nil
     end
-    if not frame.CreateAuras or InCombatLockdown() then
+
+    local hardSig = GetHardSignature(db)
+    if frame.DispelOverlayContainer then
+        if frame.DispelOverlayContainer._dispelOverlayHardSig == hardSig then
+            return frame.DispelOverlayContainer
+        end
+        self:DiscardContainer(frame)
+    end
+
+    if not frame.CreateAuras then
         return nil
     end
 
     self:EnsureHeaderBudget(frame)
 
-    local filterString = GetFilterString(frame.db and frame.db.dispelOverlayFilter)
+    local filterString = GetFilterString(db and db.dispelOverlayFilter)
     local container = frame:CreateAuras({
         maxWidth = 1,
         initialAnchor = 'CENTER',
@@ -95,11 +217,8 @@ function dispelOverlay:EnsureContainer(frame)
     end
 
     local cover = frame.ElementFrame or frame
-    local alpha = (frame.db and frame.db.dispelOverlayAlpha) or 1
+    local alpha = (db and db.dispelOverlayAlpha) or 1
 
-    -- Size/anchor the button only in initializeFrame: AddAuraSlot applies access
-    -- restrictions and UpdateAllAuras before returning, so post-return layout is
-    -- denied when auras are secret (e.g. reload inside M+).
     container:AddAuraSlot(SLOT_KEY, filterString, {
         initializeFrame = function(button)
             if button.EnableMouse then
@@ -110,31 +229,47 @@ function dispelOverlay:EnsureContainer(frame)
             end
 
             button:ClearAllPoints()
+            -- Slot button always covers the unit so overlay can fill; icon lives on a
+            -- sized host frame that we can still SetSize after initializeFrame.
             button:SetAllPoints(cover)
 
-            local live = button:CreateTexture(nil, 'OVERLAY')
-            live:SetAllPoints(button)
-            live:SetTexture(EXUI.const.textures.unitFrames.dispelOverlay)
-            live:SetVertexColor(0, 0, 0, 0)
-            live:SetAlpha(alpha)
-            live:Hide()
-
-            if button.SetAuraBorder then
-                button:SetAuraBorder(live, {
-                    showIcon = false,
-                    showWhenHarmful = true,
-                    showWhenHelpful = false,
-                    style = BORDER_STYLE_COLOR,
-                })
+            if button.ClearDispelTypeTextures then
+                button:ClearDispelTypeTextures()
             end
 
-            frame.DispelOverlayLive = live
+            if showOverlay then
+                local live = button:CreateTexture(nil, 'ARTWORK')
+                live:SetAllPoints(button)
+                live:SetTexture(EXUI.const.textures.unitFrames.dispelOverlay)
+                live:SetVertexColor(0, 0, 0, 0)
+                live:SetAlpha(alpha)
+                live:Hide()
+                AddDispelTexture(button, live, DISPEL_STYLE_PRESERVE)
+                frame.DispelOverlayLive = live
+            else
+                frame.DispelOverlayLive = nil
+            end
+
+            if showIcon then
+                local host = CreateFrame('Frame', nil, button)
+                host:EnableMouse(false)
+                LayoutIconHost(host, button, db)
+                local icon = host:CreateTexture(nil, 'OVERLAY')
+                icon:SetAllPoints(host)
+                icon:SetAlpha(alpha)
+                icon:Hide()
+                AddDispelTexture(button, icon, DISPEL_STYLE_ICON)
+                frame.DispelOverlayIconHost = host
+                frame.DispelOverlayLiveIcon = icon
+            else
+                frame.DispelOverlayIconHost = nil
+                frame.DispelOverlayLiveIcon = nil
+            end
         end,
     })
 
     SafeCall(container, 'ClearAllPoints')
     SafeCall(container, 'SetAllPoints', cover)
-    -- Above health/power, below ElementFrame so name/health text stay readable.
     local health = frame.Health
     local baseLevel = (health and health.GetFrameLevel and health:GetFrameLevel()) or frame:GetFrameLevel()
     local elementLevel = cover.GetFrameLevel and cover:GetFrameLevel()
@@ -144,6 +279,7 @@ function dispelOverlay:EnsureContainer(frame)
     end
     SafeCall(container, 'SetFrameLevel', level)
     container._dispelOverlayFilter = filterString
+    container._dispelOverlayHardSig = hardSig
 
     frame.DispelOverlayContainer = container
     return container
@@ -163,31 +299,53 @@ function dispelOverlay:ApplyFilter(container, mode)
 end
 
 function dispelOverlay:ApplyPreview(frame, enabled)
-    local preview = frame.DispelOverlay
-    if not IsOverlayTexture(preview) then
-        return
-    end
-
-    local container = frame.DispelOverlayContainer
     local db = frame.db
+    local container = frame.DispelOverlayContainer
     local alpha = db and db.dispelOverlayAlpha or 1
+    local overlayPreview = frame.DispelOverlay
+    local iconPreview = frame.DispelOverlayIconPreview
 
     if enabled then
-        preview.isPreview = true
-        -- Pause live container so it doesn't fight preview; preview texture is on
-        -- ElementFrame and is not tied to AuraButton visibility.
         SafeCall(container, 'SetEnabled', false)
-        local color = GetPreviewColor()
-        local r, g, b = color:GetRGB()
-        preview:SetVertexColor(r, g, b, 1)
-        preview:SetAlpha(alpha)
-        preview:Show()
-    elseif preview.isPreview then
-        preview.isPreview = false
-        preview:SetVertexColor(0, 0, 0, 0)
-        preview:SetAlpha(alpha)
-        preview:Hide()
-        if container then
+        LayoutPreviewTextures(frame, db)
+
+        if ShowOverlay(db) and IsOverlayTexture(overlayPreview) then
+            overlayPreview.isPreview = true
+            local color = GetPreviewColor()
+            local r, g, b = color:GetRGB()
+            overlayPreview:SetVertexColor(r, g, b, 1)
+            overlayPreview:SetAlpha(alpha)
+            overlayPreview:Show()
+        elseif IsOverlayTexture(overlayPreview) then
+            overlayPreview.isPreview = false
+            overlayPreview:Hide()
+        end
+
+        if ShowIcon(db) and IsOverlayTexture(iconPreview) then
+            iconPreview.isPreview = true
+            iconPreview:SetVertexColor(1, 1, 1, 1)
+            iconPreview:SetAlpha(alpha)
+            iconPreview:Show()
+        elseif IsOverlayTexture(iconPreview) then
+            iconPreview.isPreview = false
+            iconPreview:Hide()
+        end
+    else
+        local wasPreview = (overlayPreview and overlayPreview.isPreview)
+            or (iconPreview and iconPreview.isPreview)
+        if IsOverlayTexture(overlayPreview) then
+            overlayPreview.isPreview = false
+            overlayPreview:SetVertexColor(0, 0, 0, 0)
+            overlayPreview:SetAlpha(alpha)
+            overlayPreview:Hide()
+        end
+        if IsOverlayTexture(iconPreview) then
+            iconPreview.isPreview = false
+            iconPreview:SetVertexColor(1, 1, 1, 1)
+            iconPreview:SetAlpha(alpha)
+            iconPreview:Hide()
+        end
+        if wasPreview and container then
             SafeCall(container, 'SetEnabled', true)
             SafeCall(container, 'UpdateAllAuras')
         end
@@ -195,23 +353,31 @@ function dispelOverlay:ApplyPreview(frame, enabled)
 end
 
 dispelOverlay.Create = function(self, frame)
-    -- Preview-only texture on ElementFrame. Live overlay must live on the AuraButton
-    -- (SetAuraBorder forbidden aspects), so preview stays separate.
-    -- ARTWORK (sublevel -8) keeps preview under OVERLAY texts on ElementFrame.
-    local preview = frame.ElementFrame:CreateTexture(nil, 'ARTWORK', nil, -8)
-    preview:SetAllPoints()
-    preview:SetTexture(EXUI.const.textures.unitFrames.dispelOverlay)
-    preview:SetVertexColor(0, 0, 0, 0)
-    preview:SetAlpha(1)
-    preview:Hide()
-    preview.isPreview = false
-    return preview
+    -- Preview-only textures on ElementFrame. Live textures must live on the AuraButton.
+    local overlay = frame.ElementFrame:CreateTexture(nil, 'ARTWORK', nil, -8)
+    overlay:SetAllPoints()
+    overlay:SetTexture(EXUI.const.textures.unitFrames.dispelOverlay)
+    overlay:SetVertexColor(0, 0, 0, 0)
+    overlay:SetAlpha(1)
+    overlay:Hide()
+    overlay.isPreview = false
+
+    local icon = frame.ElementFrame:CreateTexture(nil, 'OVERLAY', nil, -7)
+    icon:SetSize(16, 16)
+    icon:SetPoint('CENTER')
+    icon:SetVertexColor(1, 1, 1, 1)
+    icon:SetAlpha(1)
+    icon:Hide()
+    icon.isPreview = false
+    frame.DispelOverlayIconPreview = icon
+
+    return overlay
 end
 
 dispelOverlay.Update = function(self, frame)
     local db = frame.db
     local preview = frame.DispelOverlay
-    if not preview or not ufAuras:IsSupported() then -- Temp block until we are in 12.1
+    if not preview or not ufAuras:IsSupported() then
         return
     end
 
@@ -221,23 +387,42 @@ dispelOverlay.Update = function(self, frame)
             preview:SetVertexColor(0, 0, 0, 0)
             preview:Hide()
         end
+        if IsOverlayTexture(frame.DispelOverlayIconPreview) then
+            frame.DispelOverlayIconPreview.isPreview = false
+            frame.DispelOverlayIconPreview:Hide()
+        end
         self:DiscardContainer(frame)
         return
     end
+
+    LayoutPreviewTextures(frame, db)
 
     local container = self:EnsureContainer(frame)
     local alpha = db.dispelOverlayAlpha or 1
     if IsOverlayTexture(preview) then
         preview:SetAlpha(alpha)
     end
-    -- Live border may be secret-restricted; skip alpha if access is denied.
+    if IsOverlayTexture(frame.DispelOverlayIconPreview) then
+        frame.DispelOverlayIconPreview:SetAlpha(alpha)
+    end
     SafeCall(frame.DispelOverlayLive, 'SetAlpha', alpha)
+    SafeCall(frame.DispelOverlayLiveIcon, 'SetAlpha', alpha)
+
+    -- Icon host is a normal frame (not inbound-configured), so size/position can
+    -- update without discarding the aura slot.
+    if ShowIcon(db) and frame.DispelOverlayIconHost then
+        local cover = frame.ElementFrame or frame
+        local hostParent = frame.DispelOverlayIconHost:GetParent() or cover
+        LayoutIconHost(frame.DispelOverlayIconHost, hostParent, db)
+    end
 
     local previewEnabled = frame:IsElementPreviewEnabled('dispeloverlay')
+    local anyPreview = preview.isPreview
+        or (frame.DispelOverlayIconPreview and frame.DispelOverlayIconPreview.isPreview)
     if previewEnabled then
         self:ApplyPreview(frame, true)
         return
-    elseif preview.isPreview then
+    elseif anyPreview then
         self:ApplyPreview(frame, false)
     end
 

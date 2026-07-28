@@ -15,11 +15,7 @@ local CLASS_OPTIONS = {
     'Shaman', 'Mage', 'Warlock', 'Monk', 'Druid', 'Demon Hunter', 'Evoker',
 }
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+local append = EXUI.utils.append
 
 function loadOptions:SetListValue(displayID, key, value, enabled)
     local list = core:GetValueForDisplay(displayID, key) or {}

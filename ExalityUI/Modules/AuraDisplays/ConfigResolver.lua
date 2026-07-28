@@ -19,6 +19,7 @@ local SORT_METHOD_MAP = {
     ExpirationOnly = 5,
     Name = 6,
     NameOnly = 7,
+    AuraInstanceIDOnly = 8,
 }
 
 -- AnchorUtil.FlowDirection: Left=-1, Right=1, Up=1, Down=-1
@@ -158,7 +159,7 @@ function resolver:GetSortDirection(conditions)
     return 0
 end
 
-function resolver:GetGroupLayout(visual, layoutIndex)
+function resolver:GetGroupLayout(visual, layoutIndex, display)
     visual = visual or {}
     local elementWidth, elementHeight
 
@@ -174,12 +175,18 @@ function resolver:GetGroupLayout(visual, layoutIndex)
         elementHeight = visual.elementHeight and visual.elementHeight > 0 and visual.elementHeight or nil
     end
 
+    local spacingX = visual.elementSpacingX or 0
+    local spacingY = visual.elementSpacingY or 0
+    local gapX = visual.gapX or 0
+    local gapY = visual.gapY or 0
+    local columns = display and display.flowLayoutAxis == 'Columns'
+
     return {
-        elementSpacingX = visual.elementSpacingX or 0,
-        elementSpacingY = visual.elementSpacingY or 0,
-        gapX = visual.gapX or 0,
-        gapY = visual.gapY or 0,
-        forceNewRow = visual.forceNewRow or false,
+        elementSpacing = columns and spacingY or spacingX,
+        lineSpacing = columns and spacingX or spacingY,
+        groupSpacing = columns and gapY or gapX,
+        groupLineSpacing = columns and gapX or gapY,
+        forceNewLine = visual.forceNewRow or false,
         elementWidth = elementWidth,
         elementHeight = elementHeight,
         layoutIndex = layoutIndex,
@@ -252,7 +259,7 @@ function resolver:ResolveGroupOptions(displayID, display, groupID, group, button
         sortMethod = self:GetSortMethod(group.conditions),
         sortDirection = self:GetSortDirection(group.conditions),
         candidateFilters = self:BuildCandidateFilters(group.conditions),
-        layout = self:GetGroupLayout(group.visual, layoutIndex),
+        layout = self:GetGroupLayout(group.visual, layoutIndex, display),
         initializeFrame = function(auraButton)
             buttonStyle:Apply(auraButton, group.visual)
         end,

@@ -417,8 +417,9 @@ function preview:DestroyButtons(state)
             btn:ClearAuraInstance()
         end
         buttonStyle:Clear(btn)
+        -- AuraButton forbids ChangeParent; leave parented and hide.
         button:Hide()
-        button:SetParent(nil)
+        button:ClearAllPoints()
     end
     wipe(state.buttons)
 end
@@ -595,15 +596,12 @@ end
 
 function preview:ApplyDispelBorder(btn, scenario, visual)
     local typeBorder = btn.AuraTypeBorderTexture
-    local atlasBorder = btn.GetAuraBorder and btn:GetAuraBorder() or btn.AuraBorder or btn.AuraBorderTexture
-    if atlasBorder == typeBorder then
-        atlasBorder = btn.AuraBorderTexture
-    end
+    local atlasBorder = btn.AuraBorderTexture
+    local auraTypeDispel = btn.DispelAuraTypeTexture
+    local iconTexture = btn.DispelIconTexture
+    local iconHost = btn.DispelIconHost
 
     if buttonStyle:UsesAuraTypeIconBorder(visual) then
-        if atlasBorder then
-            atlasBorder:Hide()
-        end
         typeBorder = typeBorder or buttonStyle:CreateAuraTypeBorder(btn)
         if scenario.dispelName and AuraUtil and AuraUtil.SetAuraBorderColor then
             AuraUtil.SetAuraBorderColor(typeBorder, scenario.dispelName)
@@ -611,33 +609,66 @@ function preview:ApplyDispelBorder(btn, scenario, visual)
         else
             typeBorder:Hide()
         end
-        return
-    end
-
-    if typeBorder then
+    elseif typeBorder then
         typeBorder:Hide()
     end
 
-    if visual.displayStyle == 'bar' or not visual.showDispelBorder or not scenario.dispelName then
-        if atlasBorder then
-            atlasBorder:Hide()
+    local showBorder = buttonStyle:ShouldShowDispelBorder(visual)
+    local showIcon = buttonStyle:ShouldShowDispelIcon(visual)
+    if showBorder and buttonStyle:GetDispelBorderKind(visual) == 'Minimal'
+        and buttonStyle:UsesAuraTypeIconBorder(visual) then
+        showBorder = false
+    end
+
+    if visual.displayStyle == 'bar' or not scenario.dispelName then
+        showBorder = false
+        showIcon = false
+    end
+
+    if atlasBorder then
+        atlasBorder:Hide()
+    end
+    if auraTypeDispel then
+        auraTypeDispel:Hide()
+    end
+    if iconHost then
+        iconHost:Hide()
+    elseif iconTexture then
+        iconTexture:Hide()
+    end
+
+    if showBorder then
+        if buttonStyle:GetDispelBorderKind(visual) == 'Minimal' then
+            auraTypeDispel = auraTypeDispel or buttonStyle:CreateDispelAuraTypeTexture(btn)
+            buttonStyle:ApplyDispelMinimalBorderLayout(btn)
+            if AuraUtil and AuraUtil.SetAuraBorderColor then
+                AuraUtil.SetAuraBorderColor(auraTypeDispel, scenario.dispelName)
+            end
+            auraTypeDispel:Show()
+        else
+            atlasBorder = atlasBorder or buttonStyle:CreateDispelBorderTexture(btn)
+            buttonStyle:ApplyDispelBorderLayout(btn, visual)
+            if AuraUtil and AuraUtil.SetAuraBorderAtlas then
+                AuraUtil.SetAuraBorderAtlas(atlasBorder, scenario.dispelName, visual.dispelBorderShowIcon)
+            elseif AuraUtil and AuraUtil.SetAuraBorderColor then
+                AuraUtil.SetAuraBorderColor(atlasBorder, scenario.dispelName)
+            end
+            atlasBorder:Show()
         end
-        return
     end
 
-    local border = atlasBorder
-    if not border then
-        return
+    if showIcon then
+        iconTexture = iconTexture or buttonStyle:CreateDispelIconHost(btn, visual)
+        if btn.DispelIconHost then
+            btn.DispelIconHost:Show()
+        end
+        if AuraUtil and AuraUtil.SetAuraDispelTypeIcon then
+            AuraUtil.SetAuraDispelTypeIcon(iconTexture, scenario.dispelName)
+        elseif AuraUtil and AuraUtil.SetAuraBorderAtlas then
+            AuraUtil.SetAuraBorderAtlas(iconTexture, scenario.dispelName, true)
+        end
+        iconTexture:Show()
     end
-
-    buttonStyle:ApplyDispelBorderLayout(btn, visual)
-
-    if AuraUtil and AuraUtil.SetAuraBorderAtlas then
-        AuraUtil.SetAuraBorderAtlas(border, scenario.dispelName, visual.dispelBorderShowIcon)
-    elseif AuraUtil and AuraUtil.SetAuraBorderColor then
-        AuraUtil.SetAuraBorderColor(border, scenario.dispelName)
-    end
-    border:Show()
 end
 
 function preview:ApplySpellName(btn, scenario, visual)
@@ -751,32 +782,36 @@ function preview:BuildPreviewOnFrame(stateKey, frame, display, visual, positionF
             break
         end
     end
-    while #state.buttons > needed do
-        local button = table.remove(state.buttons)
-        local btn = resolveButton(button)
-        if btn.ClearAuraInstance then
-            btn:ClearAuraInstance()
-        end
-        buttonStyle:Clear(btn)
-        button:Hide()
-        button:SetParent(nil)
-    end
 
-    for index = 1, needed do
+    for index = 1, #state.buttons do
         local button = state.buttons[index]
-        local scenario = PREVIEW_SCENARIOS[index]
-        if button and scenario then
-            button:SetParent(container)
-            self:ApplyScenario(button, scenario, visual, state, index)
+        if index <= needed then
+            local scenario = PREVIEW_SCENARIOS[index]
+            if button and scenario then
+                -- Created under container already; AuraButton cannot be reparented.
+                self:ApplyScenario(button, scenario, visual, state, index)
+            end
+        else
+            local btn = resolveButton(button)
+            if btn.ClearAuraInstance then
+                btn:ClearAuraInstance()
+            end
+            buttonStyle:Clear(btn)
+            button:Hide()
+            button:ClearAllPoints()
         end
     end
 
-    if #state.buttons == 0 then
+    if needed == 0 or #state.buttons == 0 then
         container:Hide()
         return
     end
 
-    self:LayoutButtons(container, state.buttons, display, visual)
+    local activeButtons = {}
+    for index = 1, needed do
+        activeButtons[index] = state.buttons[index]
+    end
+    self:LayoutButtons(container, activeButtons, display, visual)
     container:Show()
 end
 

@@ -16,11 +16,7 @@ local unitResolver = EXUI:GetModule('aura-displays-unit-resolver')
 ---@class EXUIAuraDisplaysContainerOptions
 local containerOptions = EXUI:GetModule('aura-displays-container-options')
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+local append = EXUI.utils.append
 
 function containerOptions:GetOptions(displayID)
     local fields = {}
@@ -100,6 +96,19 @@ function containerOptions:GetOptions(displayID)
         },
         {
             type = 'dropdown',
+            label = 'Layout Axis',
+            name = 'flowLayoutAxis',
+            width = 25,
+            getOptions = function() return { Rows = 'Rows', Columns = 'Columns' } end,
+            currentValue = function() return auraDisplays:GetDisplayValue(displayID, 'flowLayoutAxis') or 'Rows' end,
+            onChange = function(v)
+                auraDisplays:UpdateDisplayValue(displayID, 'flowLayoutAxis', v)
+                auraDisplays:RefreshDisplay(displayID)
+                optionsFields:RefreshOptions()
+            end,
+        },
+        {
+            type = 'dropdown',
             label = 'Grow Horizontal',
             name = 'horizontalGrowth',
             width = 25,
@@ -122,12 +131,15 @@ function containerOptions:GetOptions(displayID)
         },
         {
             type = 'range',
-            label = 'Row Width (0=unlimited)',
+            label = 'Max Line Size',
             name = 'rowWidth',
             min = 1, -- TODO: Don't allow 0 for now, causes crash
             max = 1000,
             step = 1,
             width = 25,
+            tooltip = {
+                text = 'Maximum size along the primary layout axis before wrapping (row width for Rows, column height for Columns).',
+            },
             currentValue = function() return auraDisplays:GetDisplayValue(displayID, 'rowWidth') end,
             onChange = function(v)
                 auraDisplays:UpdateDisplayValue(displayID, 'rowWidth', v); auraDisplays:RefreshDisplay(displayID)

@@ -268,7 +268,7 @@ function containerModule:GetHardSignature(displayID, display)
     end)
 end
 
-function containerModule:ApplyItemEnchantments(frame, containerConfig)
+function containerModule:ApplyItemEnchantments(frame, containerConfig, display)
     local container = frame.AuraContainer
     if not container or not container.AddItemEnchantment then
         return
@@ -278,7 +278,7 @@ function containerModule:ApplyItemEnchantments(frame, containerConfig)
         return
     end
 
-    layout:ApplyItemEnchantmentLayout(container, containerConfig)
+    layout:ApplyItemEnchantmentLayout(container, containerConfig, display)
 
     local slots = {
         { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
@@ -313,11 +313,6 @@ function containerModule:Refresh(frame, displayID, display)
         frame.unavailableText:Hide()
     end
 
-    if InCombatLockdown() then
-        frame._pendingRefresh = true
-        return
-    end
-
     local hardSig = self:GetHardSignature(displayID, display)
     if frame.AuraContainer and frame._exuiHardSig == hardSig and self:UpdateGroupsInPlace(frame, displayID, display) then
         layout:ApplyDisplayPosition(frame, display)
@@ -325,7 +320,7 @@ function containerModule:Refresh(frame, displayID, display)
         layout:ApplyContainerLayout(frame.AuraContainer, display)
         self:ApplyUnit(frame.AuraContainer, display.container, display.enable)
         self:ApplyProcessingPolicy(frame.AuraContainer, display)
-        layout:ApplyItemEnchantmentLayout(frame.AuraContainer, display.container)
+        layout:ApplyItemEnchantmentLayout(frame.AuraContainer, display.container, display)
         self:BindContainerSize(frame, display, displayID)
         if self:IsEditMode(frame) then
             self:SetEditMode(frame, display, true)
@@ -354,7 +349,7 @@ function containerModule:Refresh(frame, displayID, display)
     container:Show()
 
     self:RebuildGroups(frame, displayID, display)
-    self:ApplyItemEnchantments(frame, display.container)
+    self:ApplyItemEnchantments(frame, display.container, display)
 
     if container.UpdateAllAuras then
         container:UpdateAllAuras()

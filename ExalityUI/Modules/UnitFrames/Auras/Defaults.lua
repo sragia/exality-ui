@@ -108,6 +108,9 @@ function defaults:MergeIntoDB(db)
         if display.containerAnchorPoint == nil then
             display.containerAnchorPoint = 'BOTTOMLEFT'
         end
+        if display.flowLayoutAxis == nil then
+            display.flowLayoutAxis = 'Rows'
+        end
         if display.horizontalGrowth == nil then
             display.horizontalGrowth = 'RIGHT'
         end

@@ -143,6 +143,13 @@ party.Init = function(self)
         ['dispelOverlayEnable'] = true,
         ['dispelOverlayFilter'] = 'RAID',
         ['dispelOverlayAlpha'] = 1,
+        ['dispelOverlayShowOverlay'] = true,
+        ['dispelOverlayShowIcon'] = false,
+        ['dispelOverlayIconSize'] = 16,
+        ['dispelOverlayAnchorPoint'] = 'CENTER',
+        ['dispelOverlayRelativeAnchorPoint'] = 'CENTER',
+        ['dispelOverlayXOff'] = 0,
+        ['dispelOverlayYOff'] = 0,
         -- Targeting
         ['targetBorderEnable'] = true,
         ['targetBorderColor'] = { r = 1, g = 1, b = 1, a = 1 },

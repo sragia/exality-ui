@@ -128,6 +128,7 @@ generalModule.GetOptions = function(self)
             depends = function()
                 return data:GetDataByKey('skinsEnabled') ~= false
             end,
+            tooltip = entry.tooltip and { text = entry.tooltip } or nil,
             onChange = function(value)
                 local db = data:GetDataByKey('skins')
                 if (type(db) ~= 'table') then
@@ -139,10 +140,10 @@ generalModule.GetOptions = function(self)
             end,
             currentValue = function()
                 local db = data:GetDataByKey('skins')
-                if (type(db) ~= 'table') then
-                    return true
+                if (type(db) ~= 'table' or db[skinKey] == nil) then
+                    return skins:GetEntryDefaultEnabled(skinKey)
                 end
-                return db[skinKey] ~= false
+                return db[skinKey] and true or false
             end,
             width = 33,
         })

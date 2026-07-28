@@ -36,11 +36,7 @@ local conditionsOptions = EXUI:GetModule('uf-aura-editor-conditions-options')
 ---@class EXUIUnitFramesAurasDefaults
 local ufDefaults = EXUI:GetModule('uf-auras-defaults')
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+local append = EXUI.utils.append
 
 local function EscapeFontString(text)
     return (text or ''):gsub('|', '||')

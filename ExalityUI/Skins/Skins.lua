@@ -17,7 +17,23 @@ skins.list = {
     { key = 'ProfessionsBook',  label = 'Professions Book' },
     { key = 'EncounterJournal', label = 'Encounter Journal' },
     { key = 'PVEFrame',         label = 'Group Finder' },
+    {
+        key = 'BuffFrame',
+        label = 'Hide Buff/Debuff Frames',
+        defaultEnabled = false,
+        tooltip =
+        'Hides Blizzard\'s default player buff and debuff frames. Enable this only if you replace them with your own Aura Displays.',
+    },
 }
+
+skins.GetEntryDefaultEnabled = function(self, key)
+    for _, entry in ipairs(self.list) do
+        if (entry.key == key) then
+            return entry.defaultEnabled ~= false
+        end
+    end
+    return true
+end
 
 skins.IsEnabled = function(self, key)
     if (data:GetDataByKey('skinsEnabled') == false) then
@@ -25,15 +41,18 @@ skins.IsEnabled = function(self, key)
     end
     local db = data:GetDataByKey('skins')
     if (type(db) ~= 'table') then
-        return true
+        return self:GetEntryDefaultEnabled(key)
     end
-    return db[key] ~= false
+    if (db[key] == nil) then
+        return self:GetEntryDefaultEnabled(key)
+    end
+    return db[key] and true or false
 end
 
 skins.GetDefaultSkins = function(self)
     local defaults = {}
     for _, entry in ipairs(self.list) do
-        defaults[entry.key] = true
+        defaults[entry.key] = entry.defaultEnabled ~= false
     end
     return defaults
 end
@@ -46,7 +65,7 @@ skins.EnsureDefaults = function(self)
     else
         for _, entry in ipairs(self.list) do
             if (db[entry.key] == nil) then
-                db[entry.key] = true
+                db[entry.key] = entry.defaultEnabled ~= false
             end
         end
     end

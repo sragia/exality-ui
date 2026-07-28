@@ -88,6 +88,7 @@ defaults.SORT_METHODS = {
     ExpirationOnly = 'Expiration Only',
     Name = 'Name',
     NameOnly = 'Name Only',
+    AuraInstanceIDOnly = 'Aura Instance ID',
 }
 
 defaults.UNIT_OPTIONS = {
@@ -190,13 +191,20 @@ defaults.GROUP_VISUAL = {
     spellNameXOff = 0,
     spellNameYOff = -2,
     showDispelBorder = true,
-    dispelBorderStyle = 'Atlas',
+    showDispelIcon = false,
+    dispelBorderStyle = 'Default',
     dispelBorderShowIcon = true,
     dispelBorderHarmful = true,
     dispelBorderHelpful = false,
+    dispelIconSize = 16,
+    dispelIconAnchorPoint = 'TOPRIGHT',
+    dispelIconRelativePoint = 'TOPRIGHT',
+    dispelIconXOff = 0,
+    dispelIconYOff = 0,
     -- Mouse/tooltips default off (standalone Aura Displays stay click-through).
     enableMouse = false,
     tooltipAnchor = 'ANCHOR_BOTTOMLEFT',
+    hideTooltipInCombat = false,
 }
 
 defaults.CONTAINER = {
@@ -232,6 +240,7 @@ defaults.DISPLAY = {
     frameStrata = 'LOW',
     frameLevel = 10,
     containerAnchorPoint = 'TOPLEFT',
+    flowLayoutAxis = 'Rows',
     horizontalGrowth = 'RIGHT',
     verticalGrowth = 'DOWN',
     paddingLeft = 0,
@@ -282,6 +291,19 @@ function defaults:MergeGroupDefaults(group)
     if not group.visual then group.visual = self:CopyTable(self.GROUP_VISUAL) end
     if not group.conditions then group.conditions = self:CopyTable(self.GROUP_CONDITIONS) end
     if not group.load then group.load = self:CopyTable(self.GROUP_LOAD) end
+
+    -- Migrate exclusive dispelMode / legacy border style before filling nil keys.
+    local visual = group.visual
+    if visual.showDispelIcon == nil and visual.dispelMode == 'Icon' then
+        visual.showDispelIcon = true
+        visual.showDispelBorder = false
+    end
+    if visual.dispelBorderStyle == 'Atlas' or visual.dispelBorderStyle == 'Color' then
+        visual.dispelBorderStyle = 'Default'
+    elseif visual.dispelBorderStyle == 'AuraType' then
+        visual.dispelBorderStyle = 'Minimal'
+    end
+
     for key, value in pairs(self.GROUP_VISUAL) do
         if group.visual[key] == nil then group.visual[key] = value end
     end

@@ -44,11 +44,7 @@ local INSTANCE_OPTIONS = {
 
 local ROLE_OPTIONS = { Tank = 'Tank', Healer = 'Healer', DPS = 'DPS' }
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+local append = EXUI.utils.append
 
 function loadOptions:SetListValue(displayID, groupID, key, value, enabled)
     local list = auraDisplays:GetGroupLoad(displayID, groupID, key) or {}

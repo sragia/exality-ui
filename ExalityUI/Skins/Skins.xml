@@ -11,4 +11,5 @@
     <Script file="PVEFrame.lua"/>
     <Script file="QuestLog.lua"/>
     <Script file="BigWigs.lua"/>
+    <Script file="BuffFrame.lua"/>
 </Ui>

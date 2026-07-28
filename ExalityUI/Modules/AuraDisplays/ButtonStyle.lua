@@ -11,10 +11,11 @@ local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 
 local styledButtons = {}
 
-local BORDER_STYLE_MAP = {
-    Atlas = 0,
-    Color = 1,
-}
+local DISPEL_STYLE = Enum and Enum.CustomAuraButtonDispelTypeTextureStyle
+local DISPEL_STYLE_BORDER = (DISPEL_STYLE and DISPEL_STYLE.Border) or 0
+local DISPEL_STYLE_BORDER_WITH_ICON = (DISPEL_STYLE and DISPEL_STYLE.BorderWithIcon) or 1
+local DISPEL_STYLE_ICON = (DISPEL_STYLE and DISPEL_STYLE.Icon) or 2
+local DISPEL_STYLE_PRESERVE = (DISPEL_STYLE and DISPEL_STYLE.PreserveAsset) or 3
 
 local DEFAULT_TOOLTIP_ANCHOR = 'ANCHOR_BOTTOMLEFT'
 
@@ -55,7 +56,8 @@ function buttonStyle:ApplyBarBorderChrome(borderFrame, visual)
     local borderColor = visual.barBorderColor or { r = 0, g = 0, b = 0, a = 1 }
 
     if not borderFrame.BarPPBorder then
-        borderFrame.BarPPBorder = EXUI:AddPixelPerfectBorder(borderFrame, thickness, { register = false, layer = 'OVERLAY' })
+        borderFrame.BarPPBorder = EXUI:AddPixelPerfectBorder(borderFrame, thickness,
+            { register = false, layer = 'OVERLAY' })
     end
     borderFrame.BarPPBorder:SetBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
     borderFrame.BarPPBorder:SetBorderThickness(thickness)
@@ -90,37 +92,6 @@ function buttonStyle:UsesSafeBarChrome(button)
     return button.exuiIsPreview == true
 end
 
-function buttonStyle:EnsureTooltipAnchorHook()
-    if self._tooltipAnchorHooked then
-        return
-    end
-    if not AuraButtonPrivateMixin or not AuraButtonPrivateMixin.ShowTooltip then
-        return
-    end
-
-    -- Blizzard hardcodes ANCHOR_BOTTOMLEFT; re-anchor after ShowTooltip when requested.
-    hooksecurefunc(AuraButtonPrivateMixin, 'ShowTooltip', function(self)
-        local anchor = self.exuiTooltipAnchor
-        if not anchor or anchor == DEFAULT_TOOLTIP_ANCHOR then
-            return
-        end
-        if not AuraButtonTooltip or not AuraButtonTooltip.IsOwned or not AuraButtonTooltip:IsOwned(self) then
-            return
-        end
-        local unitToken, auraData = self:GetAuraInstance()
-        if not auraData then
-            return
-        end
-        AuraButtonTooltip:SetOwner(self, anchor)
-        if RaiseFrameLevelByTwo then
-            RaiseFrameLevelByTwo(AuraButtonTooltip)
-        end
-        self:PopulateTooltip(unitToken, auraData)
-    end)
-
-    self._tooltipAnchorHooked = true
-end
-
 function buttonStyle:ApplyMouseInteraction(button, visual)
     if not button then
         return
@@ -135,13 +106,22 @@ function buttonStyle:ApplyMouseInteraction(button, visual)
     end
 
     if enableMouse then
-        self:EnsureTooltipAnchorHook()
-        button.exuiTooltipAnchor = visual.tooltipAnchor or DEFAULT_TOOLTIP_ANCHOR
+        if button.SetTooltipAnchorPoint then
+            button:SetTooltipAnchorPoint(visual.tooltipAnchor or DEFAULT_TOOLTIP_ANCHOR)
+        end
+        if button.SetHideTooltipInCombat then
+            button:SetHideTooltipInCombat(visual.hideTooltipInCombat and true or false)
+        end
         if button.SetCancelAuraButtons then
             button:SetCancelAuraButtons('RightButtonUp')
         end
     else
-        button.exuiTooltipAnchor = nil
+        if button.SetTooltipAnchorPoint then
+            button:SetTooltipAnchorPoint(DEFAULT_TOOLTIP_ANCHOR)
+        end
+        if button.SetHideTooltipInCombat then
+            button:SetHideTooltipInCombat(false)
+        end
         if button.SetCancelAuraButtons then
             button:SetCancelAuraButtons(nil)
         end
@@ -266,13 +246,6 @@ function buttonStyle:EnsureDispelBorderOverlay(button)
     return overlay
 end
 
-function buttonStyle:RaiseDispelBorderLayer(button, border)
-    if not border or not border.SetParent then
-        return
-    end
-    border:SetParent(self:EnsureDispelBorderOverlay(button))
-end
-
 function buttonStyle:ApplyLayering(button)
     if button.BarBorderFrame then
         local base = button.BarBorderFrame:GetFrameLevel()
@@ -314,18 +287,14 @@ function buttonStyle:ApplyLayering(button)
     end
 end
 
-function buttonStyle:RaiseTextLayer(button, region)
-    if region and region.SetParent then
-        region:SetParent(self:EnsureTextOverlay(button))
-    end
-end
-
+-- Create under TextOverlay before Blizzard Set* APIs (ChangeParent is locked after configure).
 function buttonStyle:CreateFontString(button, key, visualKey, visual, defaults)
     visual = visual or {}
+    local overlay = self:EnsureTextOverlay(button)
     local anchorParent = self:GetAuraButtonFrame(button)
     local fontString = button[key]
     if not fontString then
-        fontString = button:CreateFontString(nil, 'OVERLAY')
+        fontString = overlay:CreateFontString(nil, 'OVERLAY')
         button[key] = fontString
     end
 
@@ -390,8 +359,8 @@ function buttonStyle:UsesAuraTypeIconBorder(visual)
     return true
 end
 
--- Bound directly as SetAuraBorder Color target. Blizzard updates via a forbidden
--- proxy, so this must be the visible texture (Lua hooks on a driver do not run).
+-- Bound as PreserveAsset target. Blizzard updates via a forbidden proxy, so this
+-- must be the visible texture (Lua hooks on a driver do not run).
 function buttonStyle:GetAuraTypeBorderTexturePath()
     local icons = EXUI.const and EXUI.const.textures and EXUI.const.textures.frame and EXUI.const.textures.frame.icons
     return (icons and icons.auraTypeBorder)
@@ -406,7 +375,6 @@ function buttonStyle:CreateAuraTypeBorder(button)
         button.AuraTypeBorderTexture = border
     end
 
-    border:SetParent(parent)
     border:SetDrawLayer('OVERLAY', AURA_TYPE_BORDER_DRAW_LEVEL)
     border:SetTexture(self:GetAuraTypeBorderTexturePath())
     border:SetTexCoord(0, 1, 0, 1)
@@ -434,64 +402,116 @@ function buttonStyle:SetAuraTypeBorderVisibility(button, show)
     end
 end
 
-function buttonStyle:CreateBorder(button)
-    if button.AuraBorderTexture then
-        return button.AuraBorderTexture
+-- Independent Border / Icon toggles; migrate old exclusive dispelMode.
+function buttonStyle:ShouldShowDispelBorder(visual)
+    if not visual or visual.displayStyle == 'bar' then
+        return false
     end
-    local parent = self:GetAuraButtonFrame(button)
-    local border = button:CreateTexture(nil, 'OVERLAY')
+    if visual.showDispelBorder == false then
+        return false
+    end
+    if visual.showDispelIcon == nil and visual.dispelMode == 'Icon' then
+        return false
+    end
+    return visual.showDispelBorder ~= false
+end
+
+function buttonStyle:ShouldShowDispelIcon(visual)
+    if not visual or visual.displayStyle == 'bar' then
+        return false
+    end
+    if visual.showDispelIcon ~= nil then
+        return visual.showDispelIcon and true or false
+    end
+    return visual.dispelMode == 'Icon'
+end
+
+function buttonStyle:GetDispelBorderKind(visual)
+    local style = visual and visual.dispelBorderStyle
+    -- Minimal: tight colored frame matching icon size. Legacy AuraType maps here.
+    if style == 'Minimal' or style == 'AuraType' then
+        return 'Minimal'
+    end
+    -- Legacy Atlas / Color map to Default Blizzard border.
+    return 'Default'
+end
+
+function buttonStyle:GetDefaultDispelBorderStyle(visual)
+    if visual and visual.dispelBorderShowIcon then
+        return DISPEL_STYLE_BORDER_WITH_ICON
+    end
+    return DISPEL_STYLE_BORDER
+end
+
+function buttonStyle:CreateDispelBorderTexture(button)
+    local parent = self:EnsureDispelBorderOverlay(button)
+    local border = button.AuraBorderTexture
+    if not border then
+        border = parent:CreateTexture(nil, 'OVERLAY')
+        button.AuraBorderTexture = border
+    end
     border:SetDrawLayer('OVERLAY', DISPEL_BORDER_DRAW_LEVEL)
-    border:SetPoint('CENTER', parent, 'CENTER')
-    button.AuraBorderTexture = border
     return border
 end
 
-function buttonStyle:ApplyAuraBorderBinding(button, visual)
-    if not button or not visual then
+function buttonStyle:CreateDispelAuraTypeTexture(button)
+    local parent = self:EnsureDispelBorderOverlay(button)
+    local border = button.DispelAuraTypeTexture
+    if not border then
+        border = parent:CreateTexture(nil, 'OVERLAY')
+        button.DispelAuraTypeTexture = border
+    end
+    border:SetDrawLayer('OVERLAY', DISPEL_BORDER_DRAW_LEVEL)
+    border:SetTexture(self:GetAuraTypeBorderTexturePath())
+    border:SetTexCoord(0, 1, 0, 1)
+    if border.SetSnapToPixelGrid then
+        border:SetSnapToPixelGrid(true)
+    end
+    if border.SetTexelSnappingBias then
+        border:SetTexelSnappingBias(0)
+    end
+    return border
+end
+
+function buttonStyle:CreateDispelIconHost(button, visual)
+    local parent = self:EnsureDispelBorderOverlay(button)
+    local host = button.DispelIconHost
+    if not host then
+        host = CreateFrame('Frame', nil, parent)
+        host:EnableMouse(false)
+        button.DispelIconHost = host
+    end
+    self:ApplyDispelIconHostLayout(button, visual)
+    local icon = button.DispelIconTexture
+    if not icon then
+        icon = host:CreateTexture(nil, 'OVERLAY')
+        button.DispelIconTexture = icon
+    end
+    icon:SetAllPoints(host)
+    icon:SetDrawLayer('OVERLAY', DISPEL_BORDER_DRAW_LEVEL)
+    return icon
+end
+
+function buttonStyle:ApplyDispelIconHostLayout(button, visual)
+    local host = button.DispelIconHost
+    if not host then
         return
     end
-
-    if self:UsesAuraTypeIconBorder(visual) and button.SetAuraBorder then
-        local border = self:CreateAuraTypeBorder(button)
-        if button.AuraBorderTexture then
-            button.AuraBorderTexture:Hide()
-        end
-        button:SetAuraBorder(border, {
-            showIcon = false,
-            showWhenHarmful = true,
-            showWhenHelpful = false,
-            style = BORDER_STYLE_MAP.Color,
-        })
-        return
-    end
-
-    if visual.displayStyle ~= 'bar' and visual.showDispelBorder and button.SetAuraBorder then
-        self:SetAuraTypeBorderVisibility(button, false)
-        local border = self:CreateBorder(button)
-        self:ApplyDispelBorderLayout(button, visual)
-        button:SetAuraBorder(border, {
-            showIcon = visual.dispelBorderShowIcon,
-            showWhenHarmful = visual.dispelBorderHarmful,
-            showWhenHelpful = visual.dispelBorderHelpful,
-            style = BORDER_STYLE_MAP[visual.dispelBorderStyle] or 0,
-        })
-        return
-    end
-
-    if button.ClearAuraBorder then
-        button:ClearAuraBorder()
-    end
-    self:SetAuraTypeBorderVisibility(button, false)
-    if button.AuraBorderTexture then
-        button.AuraBorderTexture:Hide()
-    end
+    local parent = self:GetAuraButtonFrame(button)
+    local size = visual.dispelIconSize or 16
+    host:ClearAllPoints()
+    host:SetSize(size, size)
+    host:SetPoint(
+        visual.dispelIconAnchorPoint or 'TOPRIGHT',
+        parent,
+        visual.dispelIconRelativePoint or 'TOPRIGHT',
+        visual.dispelIconXOff or 0,
+        visual.dispelIconYOff or 0
+    )
 end
 
 function buttonStyle:ApplyDispelBorderLayout(button, visual)
     local border = button.AuraBorderTexture
-    if not border and button.GetAuraBorder then
-        border = button:GetAuraBorder()
-    end
     if not border then
         return
     end
@@ -504,11 +524,166 @@ function buttonStyle:ApplyDispelBorderLayout(button, visual)
     if border.SetDrawLayer then
         border:SetDrawLayer('OVERLAY', DISPEL_BORDER_DRAW_LEVEL)
     end
-    self:RaiseDispelBorderLayer(button, border)
+end
+
+-- Minimal border hugs the icon; do not use the oversized Default atlas size.
+function buttonStyle:ApplyDispelMinimalBorderLayout(button)
+    local border = button.DispelAuraTypeTexture
+    if not border then
+        return
+    end
+    local parent = self:GetAuraButtonFrame(button)
+    border:ClearAllPoints()
+    border:SetAllPoints(parent)
+    border:SetDrawLayer('OVERLAY', DISPEL_BORDER_DRAW_LEVEL)
+end
+
+function buttonStyle:ClearDispelTextures(button)
+    if button.ClearDispelTypeTextures then
+        button:ClearDispelTypeTextures()
+    elseif button.ClearAuraBorder then
+        button:ClearAuraBorder()
+    end
+    if button.AuraBorderTexture then
+        button.AuraBorderTexture:Hide()
+    end
+    if button.DispelAuraTypeTexture then
+        button.DispelAuraTypeTexture:Hide()
+    end
+    if button.DispelIconTexture then
+        button.DispelIconTexture:Hide()
+    end
+    if button.DispelIconHost then
+        button.DispelIconHost:Hide()
+    end
+end
+
+function buttonStyle:AddDispelTexture(button, texture, options)
+    if button.AddDispelTypeTexture then
+        button:AddDispelTypeTexture(texture, options)
+    elseif button.SetAuraBorder then
+        button:SetAuraBorder(texture, options)
+    end
+end
+
+function buttonStyle:GetDispelShowOptions(visual)
+    return {
+        showWhenHarmful = visual.dispelBorderHarmful ~= false,
+        showWhenHelpful = visual.dispelBorderHelpful and true or false,
+    }
+end
+
+function buttonStyle:ApplyAuraBorderBinding(button, visual)
+    if not button or not visual then
+        return
+    end
+
+    local useIconTypeBorder = self:UsesAuraTypeIconBorder(visual)
+    local showBorder = self:ShouldShowDispelBorder(visual)
+    local showIcon = self:ShouldShowDispelIcon(visual)
+
+    -- Icon "Color by Aura Type" chrome already uses PreserveAsset; skip Minimal dispel border.
+    if showBorder and self:GetDispelBorderKind(visual) == 'Minimal' and useIconTypeBorder then
+        showBorder = false
+    end
+
+    if visual.displayStyle == 'bar' then
+        showBorder = false
+        showIcon = false
+    end
+
+    self:ClearDispelTextures(button)
+
+    if useIconTypeBorder then
+        local border = self:CreateAuraTypeBorder(button)
+        self:AddDispelTexture(button, border, {
+            showWhenHarmful = true,
+            showWhenHelpful = false,
+            style = DISPEL_STYLE_PRESERVE,
+        })
+    else
+        self:SetAuraTypeBorderVisibility(button, false)
+    end
+
+    if not showBorder and not showIcon then
+        return
+    end
+
+    local showOpts = self:GetDispelShowOptions(visual)
+
+    if showBorder then
+        if self:GetDispelBorderKind(visual) == 'Minimal' then
+            local texture = self:CreateDispelAuraTypeTexture(button)
+            self:ApplyDispelMinimalBorderLayout(button)
+            self:AddDispelTexture(button, texture, {
+                showWhenHarmful = showOpts.showWhenHarmful,
+                showWhenHelpful = showOpts.showWhenHelpful,
+                style = DISPEL_STYLE_PRESERVE,
+            })
+        else
+            local texture = self:CreateDispelBorderTexture(button)
+            self:ApplyDispelBorderLayout(button, visual)
+            self:AddDispelTexture(button, texture, {
+                showWhenHarmful = showOpts.showWhenHarmful,
+                showWhenHelpful = showOpts.showWhenHelpful,
+                style = self:GetDefaultDispelBorderStyle(visual),
+            })
+        end
+    end
+
+    if showIcon then
+        local icon = self:CreateDispelIconHost(button, visual)
+        if button.DispelIconHost then
+            button.DispelIconHost:Show()
+        end
+        self:AddDispelTexture(button, icon, {
+            showWhenHarmful = showOpts.showWhenHarmful,
+            showWhenHelpful = showOpts.showWhenHelpful,
+            style = DISPEL_STYLE_ICON,
+        })
+    end
 end
 
 function buttonStyle:GetDurationFormatter(visual)
     return durationFormat:GetFormatter(visual and visual.durationFormat or durationFormat.FORMAT_FALLBACK)
+end
+
+function buttonStyle:BuildDurationTextOptions(visual)
+    visual = visual or {}
+    local options = {}
+
+    local formatter = self:GetDurationFormatter(visual)
+    if formatter then
+        options.textFormatter = formatter
+    end
+
+    local needsBinding = (visual.durationExpiredText and visual.durationExpiredText ~= '')
+        or (visual.durationZeroText and visual.durationZeroText ~= '')
+        or (visual.durationUpdateInterval and visual.durationUpdateInterval > 0)
+
+    if needsBinding and C_DurationUtil and C_DurationUtil.CreateDurationTextBinding then
+        local binding = C_DurationUtil.CreateDurationTextBinding()
+        if binding.SetToDefaults then
+            binding:SetToDefaults()
+        end
+        if formatter and binding.SetFormatter then
+            binding:SetFormatter(formatter)
+        end
+        if visual.durationExpiredText and binding.SetExpiredText then
+            binding:SetExpiredText(visual.durationExpiredText)
+        end
+        if visual.durationZeroText and binding.SetZeroDurationText then
+            binding:SetZeroDurationText(visual.durationZeroText)
+        end
+        if visual.durationUpdateInterval and visual.durationUpdateInterval > 0 and binding.SetUpdateInterval then
+            binding:SetUpdateInterval(visual.durationUpdateInterval)
+        end
+        options.binding = binding
+        -- Binding already has the formatter; avoid applying it twice.
+        options.textFormatter = nil
+    end
+
+    return options
 end
 
 function buttonStyle:ApplyIconBorder(button, visual)
@@ -671,21 +846,24 @@ function buttonStyle:ApplyBarStyle(button, visual)
         if button.ClearDurationCooldown then
             button:ClearDurationCooldown()
         end
-        if button.ClearAuraSymbol then
+        if button.ClearDispelTypeText then
+            button:ClearDispelTypeText()
+        elseif button.ClearAuraSymbol then
             button:ClearAuraSymbol()
         end
     end
 
     if visual.showStacks then
         local stackText = self:CreateFontString(button, 'ApplicationCount', 'stack', visual, {
-            font = 'DMSans', size = 12, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'BOTTOMRIGHT', relative =
-        'BOTTOMRIGHT',
+            font = 'DMSans',
+            size = 12,
+            color = { r = 1, g = 1, b = 1, a = 1 },
+            anchor = 'BOTTOMRIGHT',
+            relative =
+            'BOTTOMRIGHT',
         })
-        if useSafeChrome then
-            self:RaiseTextLayer(button, stackText)
-        elseif button.SetApplicationCount then
+        if not useSafeChrome and button.SetApplicationCount then
             button:SetApplicationCount(stackText)
-            self:RaiseTextLayer(button, stackText)
         end
     elseif not useSafeChrome and button.ClearApplicationCount then
         button:ClearApplicationCount()
@@ -695,22 +873,8 @@ function buttonStyle:ApplyBarStyle(button, visual)
         local durationText = self:CreateFontString(button, 'DurationText', 'duration', visual, {
             font = 'DMSans', size = 12, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'CENTER', relative = 'CENTER',
         })
-        if useSafeChrome then
-            self:RaiseTextLayer(button, durationText)
-        elseif button.SetDurationText then
-            local durationOptions = {
-                expiredText = visual.durationExpiredText,
-                zeroDurationText = visual.durationZeroText,
-            }
-            if visual.durationUpdateInterval and visual.durationUpdateInterval > 0 then
-                durationOptions.updateInterval = visual.durationUpdateInterval
-            end
-            local formatter = self:GetDurationFormatter(visual)
-            if formatter then
-                durationOptions.formatter = formatter
-            end
-            button:SetDurationText(durationText, durationOptions)
-            self:RaiseTextLayer(button, durationText)
+        if not useSafeChrome and button.SetDurationText then
+            button:SetDurationText(durationText, self:BuildDurationTextOptions(visual))
         end
     elseif not useSafeChrome and button.ClearDurationText then
         button:ClearDurationText()
@@ -720,11 +884,8 @@ function buttonStyle:ApplyBarStyle(button, visual)
         local spellName = self:CreateFontString(button, 'SpellNameText', 'spellName', visual, {
             font = 'DMSans', size = 10, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'LEFT', relative = 'LEFT',
         })
-        if useSafeChrome then
-            self:RaiseTextLayer(button, spellName)
-        elseif button.SetSpellName then
+        if not useSafeChrome and button.SetSpellName then
             button:SetSpellName(spellName)
-            self:RaiseTextLayer(button, spellName)
         end
     elseif not useSafeChrome and button.ClearSpellName then
         button:ClearSpellName()
@@ -766,11 +927,14 @@ function buttonStyle:Apply(button, visual)
 
     if visual.showStacks and button.SetApplicationCount then
         local stackText = self:CreateFontString(button, 'ApplicationCount', 'stack', visual, {
-            font = 'DMSans', size = 12, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'BOTTOMRIGHT', relative =
-        'BOTTOMRIGHT',
+            font = 'DMSans',
+            size = 12,
+            color = { r = 1, g = 1, b = 1, a = 1 },
+            anchor = 'BOTTOMRIGHT',
+            relative =
+            'BOTTOMRIGHT',
         })
         button:SetApplicationCount(stackText)
-        self:RaiseTextLayer(button, stackText)
     elseif button.ClearApplicationCount then
         button:ClearApplicationCount()
     end
@@ -785,19 +949,7 @@ function buttonStyle:Apply(button, visual)
         local durationText = self:CreateFontString(button, 'DurationText', 'duration', visual, {
             font = 'DMSans', size = 12, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'CENTER', relative = 'CENTER',
         })
-        local durationOptions = {
-            expiredText = visual.durationExpiredText,
-            zeroDurationText = visual.durationZeroText,
-        }
-        if visual.durationUpdateInterval and visual.durationUpdateInterval > 0 then
-            durationOptions.updateInterval = visual.durationUpdateInterval
-        end
-        local formatter = self:GetDurationFormatter(visual)
-        if formatter then
-            durationOptions.formatter = formatter
-        end
-        button:SetDurationText(durationText, durationOptions)
-        self:RaiseTextLayer(button, durationText)
+        button:SetDurationText(durationText, self:BuildDurationTextOptions(visual))
     elseif button.ClearDurationText then
         button:ClearDurationText()
     end
@@ -807,14 +959,15 @@ function buttonStyle:Apply(button, visual)
             font = 'DMSans', size = 10, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'BOTTOM', relative = 'TOP',
         })
         button:SetSpellName(spellName)
-        self:RaiseTextLayer(button, spellName)
     elseif button.ClearSpellName then
         button:ClearSpellName()
     end
 
     self:ApplyAuraBorderBinding(button, visual)
 
-    if button.ClearAuraSymbol then
+    if button.ClearDispelTypeText then
+        button:ClearDispelTypeText()
+    elseif button.ClearAuraSymbol then
         button:ClearAuraSymbol()
     end
 

@@ -22,11 +22,7 @@ local conditionsOptions = EXUI:GetModule('aura-displays-conditions-options')
 ---@class EXUIAuraDisplaysUnitResolver
 local unitResolver = EXUI:GetModule('aura-displays-unit-resolver')
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+local append = EXUI.utils.append
 
 local function EscapeFontString(text)
     return (text or ''):gsub('|', '||')

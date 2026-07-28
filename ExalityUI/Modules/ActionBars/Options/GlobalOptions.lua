@@ -30,12 +30,7 @@ local GLOW_TYPES = {
     proc = 'LibCustomGlow: Proc Glow',
 }
 
-local function appendFields(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-    return target
-end
+local appendFields = EXUI.utils.append
 
 globalOptions.GetVisibilityOptions = function()
     return VISIBILITY

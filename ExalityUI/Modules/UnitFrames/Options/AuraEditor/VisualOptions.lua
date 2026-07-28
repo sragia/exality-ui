@@ -32,11 +32,10 @@ local visualOptions = EXUI:GetModule('uf-aura-editor-visual-options')
 ---@class EXUIAuraDisplaysDurationFormat
 local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+---@class EXUIAuraDisplaysButtonStyle
+local buttonStyle = EXUI:GetModule('aura-displays-button-style')
+
+local append = EXUI.utils.append
 
 local function isBarStyle(displayID, groupID)
     return auraDisplays:GetGroupVisual(displayID, groupID, 'displayStyle') == 'bar'
@@ -468,14 +467,17 @@ function visualOptions:GetOptions(displayID, groupID)
                         width = 100,
                         tooltip = {
                             text =
-                            'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Cannot be combined with Dispel Border.',
+                            'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Disables Minimal dispel border while enabled.',
                         },
                         currentValue = function()
                             return auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
                         end,
                         onChange = function(v)
                             if v then
-                                auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', false)
+                                local style = auraDisplays:GetGroupVisual(displayID, groupID, 'dispelBorderStyle')
+                                if style == 'Minimal' or style == 'AuraType' then
+                                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'dispelBorderStyle', 'Default')
+                                end
                             end
                             updateVisual(displayID, groupID, 'iconBorderColorByAuraType', v, true)
                         end,
@@ -583,14 +585,17 @@ function visualOptions:GetOptions(displayID, groupID)
                     width = 100,
                     tooltip = {
                         text =
-                        'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Cannot be combined with Dispel Border.',
+                        'Colors the icon border using Blizzard aura-type colors (Poison, Bleed, Magic, …). Auras without a type keep the normal border color. Disables Minimal dispel border while enabled.',
                     },
                     currentValue = function()
                         return auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
                     end,
                     onChange = function(v)
                         if v then
-                            auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', false)
+                            local style = auraDisplays:GetGroupVisual(displayID, groupID, 'dispelBorderStyle')
+                            if style == 'Minimal' or style == 'AuraType' then
+                                auraDisplays:UpdateGroupVisual(displayID, groupID, 'dispelBorderStyle', 'Default')
+                            end
                         end
                         updateVisual(displayID, groupID, 'iconBorderColorByAuraType', v, true)
                     end,
@@ -692,7 +697,7 @@ function visualOptions:GetOptions(displayID, groupID)
                 type = 'dropdown',
                 label = 'Tooltip Anchor',
                 name = 'tooltipAnchor',
-                width = 100,
+                width = 50,
                 tooltip = {
                     text = 'Where the aura tooltip appears relative to the icon (or follow the cursor).',
                 },
@@ -717,35 +722,205 @@ function visualOptions:GetOptions(displayID, groupID)
                     updateVisual(displayID, groupID, 'tooltipAnchor', v)
                 end,
             },
+            {
+                type = 'toggle',
+                label = 'Hide Tooltip In Combat',
+                name = 'hideTooltipInCombat',
+                width = 50,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'hideTooltipInCombat')
+                end,
+                onChange = function(v)
+                    updateVisual(displayID, groupID, 'hideTooltipInCombat', v)
+                end,
+            },
         })
     end
 
     if not isBarStyle(displayID, groupID) then
+        local function dispelVisualSnapshot()
+            return {
+                displayStyle = auraDisplays:GetGroupVisual(displayID, groupID, 'displayStyle'),
+                showDispelBorder = auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelBorder'),
+                showDispelIcon = auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelIcon'),
+                dispelMode = auraDisplays:GetGroupVisual(displayID, groupID, 'dispelMode'),
+                dispelBorderStyle = auraDisplays:GetGroupVisual(displayID, groupID, 'dispelBorderStyle'),
+            }
+        end
+
         append(fields, {
             { type = 'title', label = 'Dispel', width = 100 },
             {
                 type = 'toggle',
-                label = 'Show Dispel Border',
+                label = 'Border',
                 name = 'showDispelBorder',
                 width = 100,
                 tooltip = {
                     text =
-                    'Shows Blizzard dispel-type border chrome. Cannot be combined with Color by Aura Type on the icon border.',
+                    'Shows dispel-type border chrome around the aura. Use Border Style for Default (Blizzard atlas) or Minimal (tight colored frame).',
                 },
                 currentValue = function()
-                    return auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelBorder')
-                        and not auraDisplays:GetGroupVisual(displayID, groupID, 'iconBorderColorByAuraType')
+                    return buttonStyle:ShouldShowDispelBorder(dispelVisualSnapshot())
                 end,
                 onChange = function(v)
-                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', v)
-                    if v then
-                        auraDisplays:UpdateGroupVisual(displayID, groupID, 'iconBorderColorByAuraType', false)
+                    if auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelIcon') == nil then
+                        auraDisplays:UpdateGroupVisual(
+                            displayID,
+                            groupID,
+                            'showDispelIcon',
+                            auraDisplays:GetGroupVisual(displayID, groupID, 'dispelMode') == 'Icon'
+                        )
                     end
+                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelBorder', v)
+                    auraDisplays:RefreshDisplay(displayID)
+                    refreshEditorOptions()
+                end,
+            },
+            {
+                type = 'toggle',
+                label = 'Icon',
+                name = 'showDispelIcon',
+                width = 100,
+                tooltip = {
+                    text = 'Shows the Blizzard dispel-type icon. Can be combined with Border.',
+                },
+                currentValue = function()
+                    return buttonStyle:ShouldShowDispelIcon(dispelVisualSnapshot())
+                end,
+                onChange = function(v)
+                    if auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelIcon') == nil then
+                        local exclusiveIcon =
+                            auraDisplays:GetGroupVisual(displayID, groupID, 'dispelMode') == 'Icon'
+                        auraDisplays:UpdateGroupVisual(
+                            displayID,
+                            groupID,
+                            'showDispelBorder',
+                            (not exclusiveIcon)
+                                and auraDisplays:GetGroupVisual(displayID, groupID, 'showDispelBorder') ~= false
+                        )
+                    end
+                    auraDisplays:UpdateGroupVisual(displayID, groupID, 'showDispelIcon', v)
                     auraDisplays:RefreshDisplay(displayID)
                     refreshEditorOptions()
                 end,
             },
         })
+
+        if buttonStyle:ShouldShowDispelBorder(dispelVisualSnapshot()) then
+            append(fields, {
+                {
+                    type = 'dropdown',
+                    label = 'Border Style',
+                    name = 'dispelBorderStyle',
+                    width = 50,
+                    getOptions = function()
+                        return { Default = 'Default', Minimal = 'Minimal' }
+                    end,
+                    currentValue = function()
+                        return buttonStyle:GetDispelBorderKind(dispelVisualSnapshot())
+                    end,
+                    onChange = function(v)
+                        auraDisplays:UpdateGroupVisual(displayID, groupID, 'dispelBorderStyle', v)
+                        if v == 'Minimal' then
+                            auraDisplays:UpdateGroupVisual(displayID, groupID, 'iconBorderColorByAuraType', false)
+                        end
+                        auraDisplays:RefreshDisplay(displayID)
+                        refreshEditorOptions()
+                    end,
+                },
+            })
+
+            if buttonStyle:GetDispelBorderKind(dispelVisualSnapshot()) == 'Default' then
+                append(fields, {
+                    {
+                        type = 'toggle',
+                        label = 'Corner Icon On Border',
+                        name = 'dispelBorderShowIcon',
+                        width = 50,
+                        currentValue = function()
+                            return auraDisplays:GetGroupVisual(displayID, groupID, 'dispelBorderShowIcon')
+                        end,
+                        onChange = function(v)
+                            updateVisual(displayID, groupID, 'dispelBorderShowIcon', v)
+                        end,
+                    },
+                })
+            end
+        end
+
+        if buttonStyle:ShouldShowDispelIcon(dispelVisualSnapshot()) then
+            append(fields, {
+                {
+                    type = 'range',
+                    label = 'Icon Size',
+                    name = 'dispelIconSize',
+                    min = 8,
+                    max = 64,
+                    step = 1,
+                    width = 50,
+                    currentValue = function()
+                        return auraDisplays:GetGroupVisual(displayID, groupID, 'dispelIconSize') or 16
+                    end,
+                    onChange = function(v)
+                        updateVisual(displayID, groupID, 'dispelIconSize', v)
+                    end,
+                },
+                {
+                    type = 'anchor-point',
+                    label = 'Icon Anchor',
+                    name = 'dispelIconAnchorPoint',
+                    width = 25,
+                    currentValue = function()
+                        return auraDisplays:GetGroupVisual(displayID, groupID, 'dispelIconAnchorPoint') or 'TOPRIGHT'
+                    end,
+                    onChange = function(v)
+                        updateVisual(displayID, groupID, 'dispelIconAnchorPoint', v)
+                    end,
+                },
+                {
+                    type = 'anchor-point',
+                    label = 'Relative',
+                    name = 'dispelIconRelativePoint',
+                    width = 25,
+                    currentValue = function()
+                        return auraDisplays:GetGroupVisual(displayID, groupID, 'dispelIconRelativePoint') or 'TOPRIGHT'
+                    end,
+                    onChange = function(v)
+                        updateVisual(displayID, groupID, 'dispelIconRelativePoint', v)
+                    end,
+                },
+                {
+                    type = 'range',
+                    label = 'X',
+                    name = 'dispelIconXOff',
+                    min = -50,
+                    max = 50,
+                    step = 1,
+                    width = 25,
+                    currentValue = function()
+                        return auraDisplays:GetGroupVisual(displayID, groupID, 'dispelIconXOff') or 0
+                    end,
+                    onChange = function(v)
+                        updateVisual(displayID, groupID, 'dispelIconXOff', v)
+                    end,
+                },
+                {
+                    type = 'range',
+                    label = 'Y',
+                    name = 'dispelIconYOff',
+                    min = -50,
+                    max = 50,
+                    step = 1,
+                    width = 25,
+                    currentValue = function()
+                        return auraDisplays:GetGroupVisual(displayID, groupID, 'dispelIconYOff') or 0
+                    end,
+                    onChange = function(v)
+                        updateVisual(displayID, groupID, 'dispelIconYOff', v)
+                    end,
+                },
+            })
+        end
     end
 
     return fields

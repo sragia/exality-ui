@@ -216,6 +216,15 @@ EXUI.utils = {
         end
         return keys
     end,
+    append = function(target, source)
+        if not target or not source then
+            return target
+        end
+        for _, value in ipairs(source) do
+            target[#target + 1] = value
+        end
+        return target
+    end,
     deepCloneTable = function(orig)
         local orig_type = type(orig)
         local copy

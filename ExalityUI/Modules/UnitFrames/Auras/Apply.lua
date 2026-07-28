@@ -173,7 +173,7 @@ function apply:ApplyProcessingPolicy(container, display)
     container:SetAuraProcessingPolicy(1, processAuraOptions)
 end
 
-function apply:ApplyItemEnchantments(container, containerConfig)
+function apply:ApplyItemEnchantments(container, containerConfig, display)
     if not container or not container.AddItemEnchantment or not containerConfig then
         return
     end
@@ -181,7 +181,7 @@ function apply:ApplyItemEnchantments(container, containerConfig)
         return
     end
 
-    layout:ApplyItemEnchantmentLayout(container, containerConfig)
+    layout:ApplyItemEnchantmentLayout(container, containerConfig, display)
 
     local slots = {
         { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
@@ -291,8 +291,8 @@ function apply:ConfigureContainer(frame, displayID, display, container)
     self:AnchorContainer(container, frame, display)
     self:ApplyFrameLayer(container, frame, display)
     self:ApplyLayout(container, display)
-    if container.SetAuraLayoutRowWidth then
-        container:SetAuraLayoutRowWidth(self:GetRowWidth(frame, display))
+    if container.SetFlowLayoutMaximumLineSize then
+        container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
     end
 
     if container.SetUnit and frame.unit then
@@ -305,7 +305,7 @@ function apply:ConfigureContainer(frame, displayID, display, container)
     self:ApplyProcessingPolicy(container, display)
     container:Show()
     self:RebuildGroups(container, displayID, display, frame)
-    self:ApplyItemEnchantments(container, display.container)
+    self:ApplyItemEnchantments(container, display.container, display)
 
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
@@ -354,63 +354,47 @@ function apply:UpdateFrame(frame)
 
         if shouldShow then
             keep[displayID] = true
-            if InCombatLockdown() then
-                local container = frame.UFAuraContainers[displayID]
-                if container then
-                    if container.SetUnit and frame.unit then
-                        container:SetUnit(frame.unit)
-                    end
-                    if container.UpdateAllAuras then
-                        container:UpdateAllAuras()
-                    end
+            local hardSig = self:GetHardSignature(displayID, display)
+            local container = frame.UFAuraContainers[displayID]
+            if container and container._exuiHardSig == hardSig and self:UpdateGroupsInPlace(container, displayID, display) then
+                self:AnchorContainer(container, frame, display)
+                self:ApplyFrameLayer(container, frame, display)
+                self:ApplyLayout(container, display)
+                if container.SetFlowLayoutMaximumLineSize then
+                    container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
                 end
-                self:QueueFrame(frame)
+                if container.SetUnit and frame.unit then
+                    container:SetUnit(frame.unit)
+                end
+                if container.SetEnabled then
+                    container:SetEnabled(display.enable ~= false)
+                end
+                self:ApplyProcessingPolicy(container, display)
+                layout:ApplyItemEnchantmentLayout(container, display.container, display)
+                container:Show()
             else
-                local hardSig = self:GetHardSignature(displayID, display)
-                local container = frame.UFAuraContainers[displayID]
-                if container and container._exuiHardSig == hardSig and self:UpdateGroupsInPlace(container, displayID, display) then
-                    self:AnchorContainer(container, frame, display)
-                    self:ApplyFrameLayer(container, frame, display)
-                    self:ApplyLayout(container, display)
-                    if container.SetAuraLayoutRowWidth then
-                        container:SetAuraLayoutRowWidth(self:GetRowWidth(frame, display))
+                -- CreateAuras / CustomAuraContainer may still fail under lockdown for
+                -- non-aura parenting; queue and retry if create fails in combat.
+                self:DiscardContainer(frame, displayID)
+                container = self:CreateContainer(frame, display)
+                if not container then
+                    if InCombatLockdown() then
+                        self:QueueFrame(frame)
                     end
-                    if container.SetUnit and frame.unit then
-                        container:SetUnit(frame.unit)
-                    end
-                    if container.SetEnabled then
-                        container:SetEnabled(display.enable ~= false)
-                    end
-                    self:ApplyProcessingPolicy(container, display)
-                    layout:ApplyItemEnchantmentLayout(container, display.container)
-                    container:Show()
-                else
-                    self:DiscardContainer(frame, displayID)
-                    container = self:CreateContainer(frame, display)
-                    if not container then
-                        return
-                    end
-                    container._exuiHardSig = hardSig
-                    frame.UFAuraContainers[displayID] = container
-                    self:ConfigureContainer(frame, displayID, display, container)
+                    return
                 end
+                container._exuiHardSig = hardSig
+                frame.UFAuraContainers[displayID] = container
+                self:ConfigureContainer(frame, displayID, display, container)
             end
         elseif frame.UFAuraContainers[displayID] then
-            if InCombatLockdown() then
-                self:QueueFrame(frame)
-            else
-                self:DiscardContainer(frame, displayID)
-            end
+            self:DiscardContainer(frame, displayID)
         end
     end
 
     for displayID in pairs(frame.UFAuraContainers) do
         if not keep[displayID] then
-            if InCombatLockdown() then
-                self:QueueFrame(frame)
-            else
-                self:DiscardContainer(frame, displayID)
-            end
+            self:DiscardContainer(frame, displayID)
         end
     end
 end

@@ -61,6 +61,26 @@ local function SkinTooltip(tooltip)
     end
 end
 
+local function SkinAuraButtonTooltips()
+    if not AuraContainerInbound or not AuraContainerInbound.SetTooltipBackdrop then
+        return
+    end
+
+    local bgFile = EXUI.const.textures.frame.solidBg
+        or [[Interface\BUTTONS\WHITE8X8.blp]]
+
+    AuraContainerInbound.SetTooltipBackdrop({
+        backdropInfo = {
+            bgFile = bgFile,
+            edgeFile = [[Interface\BUTTONS\WHITE8X8.blp]],
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        borderColor = CreateColor(0, 0, 0, 1),
+        centerColor = CreateColor(0, 0, 0, 0.6),
+    })
+end
+
 gameTooltipSkin.Init = function(self)
     if (not skins:IsEnabled('GameTooltip')) then return end
 
@@ -69,4 +89,6 @@ gameTooltipSkin.Init = function(self)
     for _, child in pairs(GameTooltip.shoppingTooltips) do
         SkinTooltip(child)
     end
+
+    SkinAuraButtonTooltips()
 end

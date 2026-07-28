@@ -27,11 +27,7 @@ local defaults = EXUI:GetModule('uf-auras-defaults')
 ---@class EXUIUFAuraEditorContainerOptions
 local containerOptions = EXUI:GetModule('uf-aura-editor-container-options')
 
-local function append(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-end
+local append = EXUI.utils.append
 
 local function refreshDisplayAndList(displayID)
     -- Unit / enable / name changes can move displays between Active/Inactive and
@@ -199,6 +195,19 @@ function containerOptions:GetOptions(displayID)
         },
         {
             type = 'dropdown',
+            label = 'Layout Axis',
+            name = 'flowLayoutAxis',
+            width = 25,
+            getOptions = function() return { Rows = 'Rows', Columns = 'Columns' } end,
+            currentValue = function() return ufAuras:GetDisplayValue(displayID, 'flowLayoutAxis') or 'Rows' end,
+            onChange = function(v)
+                ufAuras:UpdateDisplayValue(displayID, 'flowLayoutAxis', v)
+                ufAuras:RefreshDisplay(displayID)
+                refreshEditorOptions()
+            end,
+        },
+        {
+            type = 'dropdown',
             label = 'Grow Horizontal',
             name = 'horizontalGrowth',
             width = 25,
@@ -238,12 +247,15 @@ function containerOptions:GetOptions(displayID)
         },
         {
             type = 'range',
-            label = 'Row Width',
+            label = 'Max Line Size',
             name = 'rowWidth',
             min = 1,
             max = 1000,
             step = 1,
             width = 100,
+            tooltip = {
+                text = 'Maximum size along the primary layout axis before wrapping (row width for Rows, column height for Columns).',
+            },
             depends = function()
                 return ufAuras:GetDisplayValue(displayID, 'matchUnitFrameWidth') == false
             end,

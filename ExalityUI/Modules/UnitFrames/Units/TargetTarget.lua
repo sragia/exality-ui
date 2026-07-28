@@ -121,7 +121,14 @@ targettarget.Init = function(self)
         -- Dispel Overlay
         ['dispelOverlayEnable'] = false,
         ['dispelOverlayFilter'] = 'RAID',
-        ['dispelOverlayAlpha'] = 1
+        ['dispelOverlayAlpha'] = 1,
+        ['dispelOverlayShowOverlay'] = true,
+        ['dispelOverlayShowIcon'] = false,
+        ['dispelOverlayIconSize'] = 16,
+        ['dispelOverlayAnchorPoint'] = 'CENTER',
+        ['dispelOverlayRelativeAnchorPoint'] = 'CENTER',
+        ['dispelOverlayXOff'] = 0,
+        ['dispelOverlayYOff'] = 0
     })
 end
 
