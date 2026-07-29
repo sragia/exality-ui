@@ -378,7 +378,7 @@ end
 local PANEL_BUTTON_FONT_SIZE = 12
 local PANEL_BUTTON_TEXT_Y_OFFSET = -1
 local DIALOG_BUTTON_TEXT_Y_OFFSET = -1
-local PANEL_BUTTON_STRIP_OPTIONS = { keepHighlight = false, blockHighlightAtlas = true }
+local PANEL_BUTTON_STRIP_OPTIONS = { keepHighlight = true, blockHighlightAtlas = true }
 
 skins.ApplyPanelButtonBackground = function(self, button)
     if (not button.exuiBg) then
@@ -431,15 +431,47 @@ skins.StylePanelButtonText = function(self, button, fontSize)
 end
 
 skins.ApplyPanelButtonHighlight = function(self, button)
-    if (button.SetHighlightAtlas and not button.exuiHighlightAtlasBlocked) then
-        button.exuiHighlightAtlasBlocked = true
-        button.SetHighlightAtlas = function() end
+    if (not button.exuiHighlightConfigured) then
+        button.exuiHighlightConfigured = true
+
+        if (button.SetHighlightAtlas and not button.exuiHighlightAtlasBlocked) then
+            button.exuiHighlightAtlasBlocked = true
+            button.SetHighlightAtlas = function() end
+        end
+
+        button:SetHighlightTexture(EXUI.const.textures.frame.whiteTextured, 'BLEND')
     end
 
-    local highlight = button.GetHighlightTexture and button:GetHighlightTexture()
-    if (highlight) then
-        StripTexture(highlight)
+    local highlight = button:GetHighlightTexture()
+    if (not highlight) then return end
+
+    if (not button.exuiHighlightHoverHooked) then
+        button.exuiHighlightHoverHooked = true
+        local function OnHighlightShown(shown)
+            if (shown) then
+                if (not button:IsEnabled()) then return end
+                if (button:GetButtonState() == 'PUSHED') then
+                    skins:ApplyPanelButtonState(button, 'PUSHED')
+                else
+                    skins:ApplyPanelButtonState(button, 'HOVERED')
+                end
+            else
+                if (button:GetButtonState() == 'PUSHED') then
+                    skins:ApplyPanelButtonState(button, 'PUSHED')
+                else
+                    skins:ApplyPanelButtonState(button, 'NORMAL')
+                end
+            end
+        end
+        hooksecurefunc(highlight, 'Show', function() OnHighlightShown(true) end)
+        hooksecurefunc(highlight, 'Hide', function() OnHighlightShown(false) end)
+        hooksecurefunc(highlight, 'SetShown', function(_, shown) OnHighlightShown(shown) end)
     end
+
+    highlight:ClearAllPoints()
+    highlight:SetAllPoints(button)
+    highlight:SetTexture(EXUI.const.textures.frame.whiteTextured)
+    highlight:SetAlpha(0)
 end
 
 local function StripClassicDialogButtonTextures(button)
@@ -448,12 +480,11 @@ local function StripClassicDialogButtonTextures(button)
     if (button.GetDisabledTexture) then
         skins:StripTexture(button:GetDisabledTexture())
     end
-    if (button.GetHighlightTexture) then
-        skins:StripTexture(button:GetHighlightTexture())
-    end
 end
 
 local function HookPanelButtonState(button, fontSize)
+    button.exuiPanelFontSize = fontSize
+
     if (button.exuiStateHooked) then return end
     button.exuiStateHooked = true
 
@@ -475,15 +506,15 @@ local function HookPanelButtonState(button, fontSize)
     end)
     button:HookScript('OnDisable', function(btn)
         skins:ApplyPanelButtonState(btn, 'DISABLED')
-        skins:StylePanelButtonText(btn, fontSize)
+        skins:StylePanelButtonText(btn, btn.exuiPanelFontSize or fontSize)
     end)
     button:HookScript('OnEnable', function(btn)
         skins:ApplyPanelButtonState(btn, btn:IsMouseOver() and 'HOVERED' or 'NORMAL')
-        skins:StylePanelButtonText(btn, fontSize)
+        skins:StylePanelButtonText(btn, btn.exuiPanelFontSize or fontSize)
     end)
     button:HookScript('OnShow', function(btn)
         skins:ApplyPanelButtonState(btn)
-        skins:StylePanelButtonText(btn, fontSize)
+        skins:StylePanelButtonText(btn, btn.exuiPanelFontSize or fontSize)
     end)
 end
 
