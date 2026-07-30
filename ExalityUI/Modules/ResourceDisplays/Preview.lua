@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUIOptionsController
+local optionsController = EXUI:GetModule('options-controller')
+
 ---@class EXUIOptionsFields
 local optionsFields = EXUI:GetModule('options-fields')
 
@@ -13,9 +16,14 @@ local core = EXUI:GetModule('resource-displays-core')
 ---@class EXUIResourceDisplaysPreview
 local preview = EXUI:GetModule('resource-displays-preview')
 
-preview.activeDisplayID = nil
-preview.enabled = false
+local MODULE_NAME = 'Resource Displays'
+
+preview.toggled = {}
+preview.userDisabled = {}
 preview.scenario = 'mid'
+
+-- Legacy flag kept in sync for existing call sites.
+preview.enabled = false
 
 preview.MOCK_VALUES = {
     ['Energy'] = { empty = 0, mid = 50, full = 100 },
@@ -42,44 +50,146 @@ preview.MOCK_VALUES = {
     ['Tip of the Spear'] = { empty = 0, mid = 2, full = 5 },
 }
 
-function preview:GetPreviewDisplayID()
-    return optionsFields.currItemID or self.activeDisplayID
+function preview:HasAnyToggled()
+    return next(self.toggled) ~= nil
+end
+
+function preview:IsToggled(displayID)
+    return self.toggled[displayID] == true
 end
 
 function preview:IsActive(displayID)
-    return self.enabled and self:GetPreviewDisplayID() == displayID
+    return self:IsToggled(displayID)
 end
 
-function preview:SetActiveDisplay(displayID)
-    self.activeDisplayID = displayID
+function preview:ShouldUsePreview(frame)
+    if not frame or not frame.displayID then
+        return false
+    end
+    return self:IsToggled(frame.displayID)
 end
 
-function preview:SetEnabled(enabled)
-    self.enabled = enabled
+function preview:SyncEnabledFlag()
+    self.enabled = self:HasAnyToggled()
+end
+
+function preview:Activate(displayID)
     self.scenario = 'mid'
-    if not enabled then
-        core:RefreshAllFrames()
+    core:RefreshDisplayByID(displayID)
+end
+
+function preview:Deactivate(displayID)
+    core:RefreshDisplayByID(displayID)
+end
+
+function preview:SetToggled(displayID, enabled)
+    if enabled then
+        self.userDisabled[displayID] = nil
+        self.toggled[displayID] = true
+        self:SyncEnabledFlag()
+        self:Activate(displayID)
+        self:RefreshNonPreviewFrames()
         return
     end
 
-    local previewDisplayID = self:GetPreviewDisplayID()
+    self.userDisabled[displayID] = true
+    self.toggled[displayID] = nil
+    self:SyncEnabledFlag()
+    self:Deactivate(displayID)
+    self:RefreshNonPreviewFrames()
+end
 
-    for displayID, frame in pairs(core.frames) do
-        if displayID ~= previewDisplayID then
-            frame:Hide()
-            if frame.editor then
-                frame.editor:Hide()
-            end
-            if frame.Disable then
-                frame:Disable()
-            end
-            core:UpdatePlaceholder(frame, false)
+function preview:RefreshNonPreviewFrames()
+    for displayID in pairs(core.frames) do
+        if not self.toggled[displayID] then
+            core:RefreshDisplayByID(displayID)
+        end
+    end
+end
+
+function preview:Clear()
+    local hadAny = self:HasAnyToggled()
+    wipe(self.toggled)
+    wipe(self.userDisabled)
+    self:SyncEnabledFlag()
+    if hadAny then
+        core:RefreshAllFrames()
+    end
+end
+
+function preview:SyncPreviewToggles()
+    if optionsFields.splitView and optionsFields.splitView.SyncPreviewToggles then
+        optionsFields.splitView:SyncPreviewToggles(function(id)
+            return preview:IsToggled(id)
+        end)
+    end
+end
+
+function preview:IsOptionsOpen()
+    return optionsMain.window and optionsMain.window:IsShown()
+end
+
+function preview:HookSplitViewSelection(splitView)
+    if not splitView or splitView._exuiResourcePreviewSelectHooked then
+        return
+    end
+    splitView._exuiResourcePreviewSelectHooked = true
+
+    local previous = splitView.onItemChange
+    splitView.onItemChange = function(id)
+        preview.userDisabled[id] = nil
+        if previous then
+            previous(id)
+        end
+    end
+end
+
+function preview:Sync()
+    if not self:IsOptionsOpen() or optionsController:GetSelectedModuleName() ~= MODULE_NAME then
+        self:Clear()
+        return
+    end
+
+    local itemID = optionsFields.currItemID
+    local currentDisplay = itemID and core:GetDBByDisplayID(itemID)
+    if itemID and currentDisplay and currentDisplay.resourceType and not self.userDisabled[itemID] then
+        if not self.toggled[itemID] then
+            self:SetToggled(itemID, true)
         end
     end
 
-    if previewDisplayID then
-        core:RefreshDisplayByID(previewDisplayID)
+    for displayID in pairs(self.toggled) do
+        local display = core:GetDBByDisplayID(displayID)
+        if not display or not display.resourceType then
+            self.toggled[displayID] = nil
+            self:Deactivate(displayID)
+        else
+            self:Activate(displayID)
+        end
     end
+
+    self:SyncEnabledFlag()
+    self:SyncPreviewToggles()
+end
+
+-- Kept for older call sites; prefer SetToggled.
+function preview:SetActiveDisplay(_displayID)
+end
+
+function preview:SetEnabled(enabled)
+    if not enabled then
+        self:Clear()
+        return
+    end
+
+    local itemID = optionsFields.currItemID
+    if itemID then
+        self:SetToggled(itemID, true)
+    end
+end
+
+function preview:GetPreviewDisplayID()
+    return optionsFields.currItemID
 end
 
 function preview:GetMockValue(resourceType, scenario)
@@ -97,16 +207,6 @@ function preview:GetMockMax(resourceType)
         return 100
     end
     return values.full or 100
-end
-
-function preview:ShouldUsePreview(frame)
-    if not frame or not frame.displayID then
-        return false
-    end
-    if not self.enabled then
-        return false
-    end
-    return frame.displayID == self:GetPreviewDisplayID()
 end
 
 function preview:ApplyBarPreview(frame, resourceType)
@@ -146,6 +246,30 @@ function preview:Init()
         return
     end
 
+    optionsController:Observe('selectedModule', function()
+        self:Sync()
+    end)
+
+    hooksecurefunc(optionsFields, 'AddSplitView', function(self, module)
+        if module and module.GetName and module:GetName() == MODULE_NAME then
+            preview:HookSplitViewSelection(self.splitView)
+        end
+    end)
+
+    hooksecurefunc(optionsFields, 'RefreshFields', function()
+        self:Sync()
+    end)
+
+    hooksecurefunc(optionsFields, 'Refresh', function()
+        self:Sync()
+    end)
+
+    hooksecurefunc(optionsMain, 'Show', function()
+        C_Timer.After(0, function()
+            preview:Sync()
+        end)
+    end)
+
     if optionsMain.window then
         self:HookOptionsWindow(optionsMain.window)
     end
@@ -167,6 +291,7 @@ function preview:HookOptionsWindow(window)
 
     local previousOnClose = window.onClose
     window.onClose = function()
+        preview:Clear()
         core:TeardownOptionsChrome()
         if previousOnClose then
             previousOnClose()

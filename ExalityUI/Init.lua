@@ -95,6 +95,8 @@ EXUI.const = {
                 plus = [[Interface/Addons/ExalityUI/Assets/Images/Icons/plus.png]],
                 duplicate = [[Interface/Addons/ExalityUI/Assets/Images/Icons/duplicate.png]],
                 delete = [[Interface/Addons/ExalityUI/Assets/Images/Icons/delete.png]],
+                eye = [[Interface/Addons/ExalityUI/Assets/Images/Icons/eye.png]],
+                eyeOff = [[Interface/Addons/ExalityUI/Assets/Images/Icons/eye-off.png]],
                 auraTypeBorder = [[Interface/Addons/ExalityUI/Assets/Images/Icons/aura-type-border.png]],
             },
             previewIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/preview_icon.png]],

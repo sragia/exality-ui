@@ -242,6 +242,8 @@ core.GetSplitViewItems = function(self)
 
     local items = {}
 
+    local icons = EXUI.const.textures.frame.icons
+
 
 
     for displayID, display in EXUI.utils.spairs(displayDB, function(t, a, b)
@@ -267,6 +269,22 @@ core.GetSplitViewItems = function(self)
                 label = display.name or displayID,
 
                 ID = displayID,
+
+                preview = {
+
+                    enabled = preview:IsToggled(displayID),
+
+                    iconOn = icons.eye,
+
+                    iconOff = icons.eyeOff,
+
+                    onToggle = function(itemID, enabled)
+
+                        preview:SetToggled(itemID, enabled)
+
+                    end,
+
+                },
 
                 contextMenuItems = {
 
@@ -353,8 +371,6 @@ core.GetOptions = function(self, currTabID, currItemID)
 
 
     self:EnsureDB()
-
-    preview:SetActiveDisplay(currItemID)
 
 
 
@@ -910,11 +926,9 @@ core.ShouldShowDisplay = function(self, displayID, frame)
 
     end
 
-    if preview.enabled then
+    if preview:HasAnyToggled() then
 
-        local previewDisplayID = preview:GetPreviewDisplayID()
-
-        return previewDisplayID ~= nil and displayID == previewDisplayID
+        return preview:IsToggled(displayID)
 
     end
 
@@ -955,7 +969,7 @@ core.RefreshDisplayByID = function(self, displayID)
 
     frame.db = displayDB
 
-    if preview:GetPreviewDisplayID() == displayID then
+    if preview:IsToggled(displayID) then
         preview.scenario = 'mid'
     end
 
@@ -963,7 +977,7 @@ core.RefreshDisplayByID = function(self, displayID)
 
     local shouldShow = self:ShouldShowDisplay(displayID, frame)
 
-    local inEditor = not preview.enabled and (editor.activeFrame == frame or (frame.editor and frame.editor:IsShown()))
+    local inEditor = not preview:HasAnyToggled() and (editor.activeFrame == frame or (frame.editor and frame.editor:IsShown()))
 
 
 
@@ -1327,8 +1341,6 @@ core.TeardownOptionsChrome = function(self)
 
     self.previewDisplayID = nil
 
-    preview:SetEnabled(false)
-
 end
 
 
@@ -1465,39 +1477,7 @@ end
 
 core.UpdateOptionsChrome = function(self, optionsFieldsRef)
 
-    if not optionsFieldsRef.innerTabs or not optionsFieldsRef.innerTabs.tabBar then
-
-        self:TeardownOptionsChrome()
-
-        return
-
-    end
-
-    local displayID = optionsFieldsRef.currItemID
-
-    if not displayID then
-
-        self:TeardownOptionsChrome()
-
-        return
-
-    end
-
-    if self.previewDisplayID ~= displayID then
-
-        preview:SetEnabled(false)
-
-        self.previewDisplayID = displayID
-
-    end
-
-    preview:SetActiveDisplay(displayID)
-
-    self:EnsurePreviewButton(optionsFieldsRef.innerTabs.tabBar)
-
-    self.previewButton:Show()
-
-    self:UpdatePreviewButton()
+    self:TeardownOptionsChrome()
 
 end
 

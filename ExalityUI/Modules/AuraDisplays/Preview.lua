@@ -129,7 +129,8 @@ local PREVIEW_SCENARIOS = {
     },
 }
 
-preview.activeDisplayID = nil
+preview.toggled = {}
+preview.userDisabled = {}
 preview.states = {}
 
 local function getSpellTexture(spellID)
@@ -201,13 +202,60 @@ function preview:IsOptionsOpen()
     return optionsMain.window and optionsMain.window:IsShown()
 end
 
+function preview:IsToggled(displayID)
+    return self.toggled[displayID] == true
+end
+
 function preview:IsConfiguring(displayID)
-    return self.activeDisplayID == displayID and self:IsOptionsOpen()
+    return self.toggled[displayID] == true and self:IsOptionsOpen()
+end
+
+function preview:SetToggled(displayID, enabled)
+    if enabled then
+        self.userDisabled[displayID] = nil
+        self.toggled[displayID] = true
+        self:Activate(displayID)
+        self:Refresh(displayID)
+        return
+    end
+
+    self.userDisabled[displayID] = true
+    self.toggled[displayID] = nil
+    self:Deactivate(displayID)
+end
+
+function preview:SyncPreviewToggles()
+    if optionsFields.splitView and optionsFields.splitView.SyncPreviewToggles then
+        optionsFields.splitView:SyncPreviewToggles(function(id)
+            return preview:IsToggled(id)
+        end)
+    end
+end
+
+function preview:HookSplitViewSelection(splitView)
+    if not splitView or splitView._exuiAuraPreviewSelectHooked then
+        return
+    end
+    splitView._exuiAuraPreviewSelectHooked = true
+
+    local previous = splitView.onItemChange
+    splitView.onItemChange = function(id)
+        preview.userDisabled[id] = nil
+        if previous then
+            previous(id)
+        end
+    end
 end
 
 function preview:Init()
     optionsController:Observe('selectedModule', function()
         self:Sync()
+    end)
+
+    hooksecurefunc(optionsFields, 'AddSplitView', function(self, module)
+        if module and module.GetName and module:GetName() == MODULE_NAME then
+            preview:HookSplitViewSelection(self.splitView)
+        end
     end)
 
     hooksecurefunc(optionsFields, 'RefreshFields', function()
@@ -251,33 +299,43 @@ function preview:HookOptionsWindow(window)
 end
 
 function preview:Sync()
-    if not self:IsOptionsOpen()
-        or optionsController:GetSelectedModuleName() ~= MODULE_NAME
-        or not optionsFields.currItemID then
+    if not self:IsOptionsOpen() or optionsController:GetSelectedModuleName() ~= MODULE_NAME then
         self:Clear()
         return
     end
 
-    self:SetActive(optionsFields.currItemID)
-    self:Refresh(optionsFields.currItemID)
-end
-
-function preview:SetActive(displayID)
-    if self.activeDisplayID and self.activeDisplayID ~= displayID then
-        self:Deactivate(self.activeDisplayID)
+    local itemID = optionsFields.currItemID
+    if itemID and auraDisplays:GetDisplay(itemID) and not self.userDisabled[itemID] then
+        if not self.toggled[itemID] then
+            self:SetToggled(itemID, true)
+        end
     end
 
-    self.activeDisplayID = displayID
+    for displayID in pairs(self.toggled) do
+        if not auraDisplays:GetDisplay(displayID) then
+            self.toggled[displayID] = nil
+            self:Deactivate(displayID)
+        else
+            self:Activate(displayID)
+            self:Refresh(displayID)
+        end
+    end
+
+    self:SyncPreviewToggles()
+end
+
+function preview:Activate(displayID)
     self:EnsureDisplayFrame(displayID)
     self:ElevateDisplayFrame(displayID)
     self:SuppressAuras(displayID)
 end
 
 function preview:Clear()
-    if self.activeDisplayID then
-        self:Deactivate(self.activeDisplayID)
+    for displayID in pairs(self.toggled) do
+        self:Deactivate(displayID)
     end
-    self.activeDisplayID = nil
+    wipe(self.toggled)
+    wipe(self.userDisabled)
 end
 
 function preview:Deactivate(displayID)
@@ -815,6 +873,17 @@ function preview:BuildPreviewOnFrame(stateKey, frame, display, visual, positionF
     container:Show()
 end
 
+function preview:GetPreviewGroup(displayID, display)
+    if optionsFields.currItemID == displayID then
+        groupNav:EnsureGroupSelected(displayID)
+        local groupID = auraDisplays.currGroupID
+        return groupID and display.groups and display.groups[groupID]
+    end
+
+    local groupID = display.groupOrder and display.groupOrder[1]
+    return groupID and display.groups and display.groups[groupID]
+end
+
 function preview:Refresh(displayID)
     if not self:IsConfiguring(displayID) then
         return
@@ -837,9 +906,7 @@ function preview:Refresh(displayID)
 
     layout:ApplyDisplayPosition(frame, display)
 
-    groupNav:EnsureGroupSelected(displayID)
-    local groupID = auraDisplays.currGroupID
-    local group = groupID and display.groups and display.groups[groupID]
+    local group = self:GetPreviewGroup(displayID, display)
     if not group then
         self:HidePreview(displayID)
         return

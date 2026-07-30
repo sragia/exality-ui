@@ -257,6 +257,7 @@ end
 
 function auraDisplays:GetSplitViewItems()
     local db = self:EnsureDB()
+    local icons = EXUI.const.textures.frame.icons
     local items = {}
     for displayID, display in EXUI.utils.spairs(db.displays or {}, function(t, a, b)
         return (t[a].createdAt or 0) < (t[b].createdAt or 0)
@@ -264,6 +265,14 @@ function auraDisplays:GetSplitViewItems()
         table.insert(items, {
             ID = displayID,
             label = display.name or 'Aura Display',
+            preview = {
+                enabled = preview:IsToggled(displayID),
+                iconOn = icons.eye,
+                iconOff = icons.eyeOff,
+                onToggle = function(itemID, enabled)
+                    preview:SetToggled(itemID, enabled)
+                end,
+            },
             contextMenuItems = {
                 {
                     label = 'Duplicate',
