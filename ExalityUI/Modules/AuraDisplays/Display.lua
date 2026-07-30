@@ -19,10 +19,7 @@ local auraDisplays = EXUI:GetModule('aura-displays')
 displayModule.frames = {}
 
 function displayModule:CreateFrame(displayID)
-    local frame = CreateFrame('Frame', 'EXUIAuraDisplay_' .. displayID, UIParent, 'BackdropTemplate')
-    frame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
-    frame:SetBackdropColor(0, 0, 0, 0)
-    frame:SetBackdropBorderColor(0, 0, 0, 0)
+    local frame = CreateFrame('Frame', 'EXUIAuraDisplay_' .. displayID, UIParent)
     frame:EnableMouse(false)
     frame.displayID = displayID
     self.frames[displayID] = frame
@@ -64,6 +61,7 @@ function displayModule:RegisterEditor(frame, display)
             end,
             function()
                 onEditModeChange(true)
+                frame.editor:SetEditorAsMovable()
             end,
             function()
                 onEditModeChange(false)

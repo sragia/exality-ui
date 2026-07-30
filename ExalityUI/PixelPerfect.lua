@@ -187,31 +187,38 @@ end
 local function applyBorderThickness(border, thickness, region)
     local size = EXUI:ScalePixels(thickness, region)
     local frame = border.anchor
-
-    border.Top:ClearAllPoints()
-    border.Top:SetHeight(size)
-    border.Top:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
-    border.Top:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
-
-    border.Bottom:ClearAllPoints()
-    border.Bottom:SetHeight(size)
-    border.Bottom:SetSnapToPixelGrid(false)
+    local sideOut = 0
+    if border.outwardSides then
+        sideOut = EXUI:ScalePixels(1, region)
+    end
     local bottomOffset = 0
     if border.outwardBottom ~= false then
         bottomOffset = -EXUI:ScalePixels(1, region)
     end
-    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, bottomOffset)
-    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, bottomOffset)
+
+    border.Top:ClearAllPoints()
+    border.Top:SetHeight(size)
+    border.Top:SetSnapToPixelGrid(false)
+    border.Top:SetPoint('TOPLEFT', frame, 'TOPLEFT', -sideOut, 0)
+    border.Top:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', sideOut, 0)
+
+    border.Bottom:ClearAllPoints()
+    border.Bottom:SetHeight(size)
+    border.Bottom:SetSnapToPixelGrid(false)
+    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', -sideOut, bottomOffset)
+    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', sideOut, bottomOffset)
 
     border.Left:ClearAllPoints()
     border.Left:SetWidth(size)
-    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
-    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, 0)
+    border.Left:SetSnapToPixelGrid(false)
+    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', -sideOut, 0)
+    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', -sideOut, bottomOffset)
 
     border.Right:ClearAllPoints()
     border.Right:SetWidth(size)
-    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
-    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
+    border.Right:SetSnapToPixelGrid(false)
+    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', sideOut, 0)
+    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', sideOut, bottomOffset)
 end
 
 function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor, options)
@@ -235,7 +242,7 @@ function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor, options)
 end
 
 ---Border textures live on the anchor frame so OVERLAY text stays above them.
----@param options? { layer?: string, register?: boolean, outwardBottom?: boolean }
+---@param options? { layer?: string, register?: boolean, outwardBottom?: boolean, outwardSides?: boolean }
 function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     thickness = thickness or 1
     options = options or {}
@@ -246,6 +253,7 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
         anchor = frame,
         thicknessPixels = thickness,
         outwardBottom = options.outwardBottom,
+        outwardSides = options.outwardSides,
     }
 
     border.Top = frame:CreateTexture(nil, layer, nil, 1)

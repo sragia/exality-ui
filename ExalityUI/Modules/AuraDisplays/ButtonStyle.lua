@@ -708,17 +708,31 @@ function buttonStyle:ApplyIconBorder(button, visual)
         if button.IconPPBorder then
             self:SetIconBorderVisibility(button.IconPPBorder, false)
         end
-        button.IconPPBorder = EXUI:AddPixelPerfectBorder(borderParent, 1, { register = false, layer = 'OVERLAY' })
+        button.IconPPBorder = EXUI:AddPixelPerfectBorder(borderParent, 1, {
+            register = false,
+            layer = 'OVERLAY',
+            outwardSides = true,
+        })
         for _, edge in ipairs({ 'Top', 'Bottom', 'Left', 'Right' }) do
             local texture = button.IconPPBorder[edge]
             if texture and texture.SetDrawLayer then
                 texture:SetDrawLayer('OVERLAY', ICON_BORDER_DRAW_LEVEL)
             end
         end
+        if not borderParent._exuiIconBorderSizeHooked then
+            borderParent._exuiIconBorderSizeHooked = true
+            borderParent:HookScript('OnSizeChanged', function(overlay)
+                local ppBorder = button.IconPPBorder
+                if ppBorder and ppBorder.anchor == overlay and overlay:IsShown() then
+                    ppBorder:SetBorderThickness(ppBorder.thicknessPixels or 1)
+                end
+            end)
+        end
     end
 
     local color = visual.iconBorderColor or { r = 0, g = 0, b = 0, a = 1 }
     local thickness = visual.iconBorderThickness or 1
+    button.IconPPBorder.outwardSides = true
     button.IconPPBorder:SetBorderColor(color.r, color.g, color.b, color.a or 1)
     button.IconPPBorder:SetBorderThickness(thickness)
     self:SetIconBorderVisibility(button.IconPPBorder, true)
@@ -918,10 +932,12 @@ function buttonStyle:Apply(button, visual)
 
     styledButtons[button] = visual
 
-    button:SetSize(visual.iconWidth or 32, visual.iconHeight or 32)
+    local iconWidth = visual.iconWidth or 32
+    local iconHeight = visual.iconHeight or 32
+    EXUI:SetSize(button, iconWidth, iconHeight)
 
     local icon = self:CreateIcon(button, visual)
-    icon:SetSize(visual.iconWidth or 32, visual.iconHeight or 32)
+    EXUI:SetSize(icon, iconWidth, iconHeight)
     self:ApplyIconTexCoord(icon, visual)
     self:ApplyIconBorder(button, visual)
 
