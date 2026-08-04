@@ -68,6 +68,9 @@ There will be more in future probably. Skinning these frames are boring.
 ## Edit Mode
 Improved Edit mod, added X/Y offset editor, improved selecting frames that are overlapping, added snap mode, nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.
 
+## Misc
+- Added loot pickup notification option under Tweaks
+
 # |cffdb49000.2.8|r
 
 - [Unit Frames] Update oUF to 13.4.5.
