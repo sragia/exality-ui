@@ -29,6 +29,7 @@ display.bossLines = {}
 display.lastShouldSuppressObjectiveTracker = nil
 display.suppressionTarget = nil
 display.blizzardShowHooked = false
+display._lastRender = nil
 
 function display:GetFont(fontKey, sizeKey, flagKey, db)
     local fontName = db[fontKey] or 'DMSans'
@@ -166,33 +167,36 @@ function display:ApplyBarStyle(barFrame, settings, db, barHeight)
     barFrame.bar:SetStatusBarTexture(self:GetBarTexture(db))
 end
 
-function display:PositionSparks(barFrame, db, elapsedPercent)
-    local sparkWidth = EXUI:ScalePixel(defaults.SPARK_WIDTH, barFrame.border)
-    local barWidth = barFrame.border:GetWidth()
+function display:PositionSparks(barFrame, db, elapsedPercent, forceLayout)
     local thresholds = defaults.UPGRADE_THRESHOLDS
 
-    local function placeSpark(spark, fraction)
-        local x = barWidth * fraction - (sparkWidth / 2)
-        spark:ClearAllPoints()
-        spark:SetPoint('TOPLEFT', barFrame.border, 'TOPLEFT', x, 0)
-        spark:SetPoint('BOTTOMLEFT', barFrame.border, 'BOTTOMLEFT', x, 0)
-        EXUI:SetWidth(spark, sparkWidth)
-        spark:Show()
-    end
-
-    local function updateSpark(spark, fraction)
+    local function updateSpark(spark, fraction, laidOutKey)
         if not spark then
             return
         end
         if elapsedPercent and elapsedPercent >= fraction then
-            spark:Hide()
+            if spark:IsShown() then
+                spark:Hide()
+            end
             return
         end
-        placeSpark(spark, fraction)
+        if forceLayout or not spark[laidOutKey] then
+            local sparkWidth = EXUI:ScalePixel(defaults.SPARK_WIDTH, barFrame.border)
+            local barWidth = barFrame.border:GetWidth()
+            local x = barWidth * fraction - (sparkWidth / 2)
+            spark:ClearAllPoints()
+            spark:SetPoint('TOPLEFT', barFrame.border, 'TOPLEFT', x, 0)
+            spark:SetPoint('BOTTOMLEFT', barFrame.border, 'BOTTOMLEFT', x, 0)
+            EXUI:SetWidth(spark, sparkWidth)
+            spark[laidOutKey] = true
+        end
+        if not spark:IsShown() then
+            spark:Show()
+        end
     end
 
-    updateSpark(barFrame.spark1, thresholds.plus3)
-    updateSpark(barFrame.spark2, thresholds.plus2)
+    updateSpark(barFrame.spark1, thresholds.plus3, '_exuiSparkLaidOut')
+    updateSpark(barFrame.spark2, thresholds.plus2, '_exuiSparkLaidOut')
 end
 
 function display:EnsureTextLayer(section)
@@ -442,24 +446,37 @@ function display:UpdateBossList(snapshot, db)
     local lineSpacing = defaults.SPACING.bossLine
     local lineHeight = db.bossFontSize + lineSpacing
     local y = 0
+    local applyFonts = not self._stylesApplied
 
     for index, boss in ipairs(bosses) do
         local line = self:GetBossLine(index)
         if line then
-            line:ClearAllPoints()
-            line:SetPoint('TOPRIGHT', self.frame.bossSection, 'TOPRIGHT', 0, y)
-            line:SetPoint('TOPLEFT', self.frame.bossSection, 'TOPLEFT', 0, y)
-            line:SetJustifyH(isRight and 'RIGHT' or 'LEFT')
-            self:ApplyFontString(line, 'bossFont', 'bossFontSize', 'bossFontFlag', db)
+            if not line._exuiBossLaidOut then
+                line:ClearAllPoints()
+                line:SetPoint('TOPRIGHT', self.frame.bossSection, 'TOPRIGHT', 0, y)
+                line:SetPoint('TOPLEFT', self.frame.bossSection, 'TOPLEFT', 0, y)
+                line:SetJustifyH(isRight and 'RIGHT' or 'LEFT')
+                line._exuiBossLaidOut = true
+                applyFonts = true
+            end
+            if applyFonts or not line._exuiBossStyled then
+                self:ApplyFontString(line, 'bossFont', 'bossFontSize', 'bossFontFlag', db)
+                line._exuiBossStyled = true
+            end
 
+            local text
             if boss.killTime then
                 line:SetTextColor(db.bossKilledColor.r, db.bossKilledColor.g, db.bossKilledColor.b,
                     db.bossKilledColor.a or 1)
-                line:SetText(string.format('%s %s', boss.name, self:FormatClock(boss.killTime)))
+                text = string.format('%s %s', boss.name, self:FormatClock(boss.killTime))
             else
                 line:SetTextColor(db.bossPendingColor.r, db.bossPendingColor.g, db.bossPendingColor.b,
                     db.bossPendingColor.a or 1)
-                line:SetText(boss.name)
+                text = boss.name
+            end
+            if line._exuiBossText ~= text then
+                line._exuiBossText = text
+                line:SetText(text)
             end
             line:Show()
             y = y - lineHeight
@@ -470,14 +487,21 @@ function display:UpdateBossList(snapshot, db)
     return math.abs(y)
 end
 
-function display:PositionMilestoneTimer(barFrame, milestoneIndex, db)
+function display:PositionMilestoneTimer(barFrame, milestoneIndex, db, force)
     local timerText = self.frame and self.frame.milestoneTimer
     if not timerText then
         return
     end
 
     if not milestoneIndex then
-        timerText:Hide()
+        if timerText:IsShown() then
+            timerText:Hide()
+        end
+        timerText._exuiMilestoneIndex = nil
+        return
+    end
+
+    if not force and timerText._exuiMilestoneIndex == milestoneIndex and timerText:IsShown() then
         return
     end
 
@@ -494,7 +518,48 @@ function display:PositionMilestoneTimer(barFrame, milestoneIndex, db)
         timerText:SetPoint('CENTER', barFrame, 'BOTTOM', (fraction - 0.5) * barWidth, 0)
         timerText:SetJustifyH('CENTER')
     end
+    timerText._exuiMilestoneIndex = milestoneIndex
     timerText:Show()
+end
+
+local function setTextIfChanged(fontString, text)
+    if fontString._exuiText == text then
+        return
+    end
+    fontString._exuiText = text
+    fontString:SetText(text)
+end
+
+function display:RenderTickerSnapshot(snapshot, db)
+    local frame = self.frame
+    if not frame or not snapshot then
+        return
+    end
+
+    local last = self._lastRender
+    if not last then
+        last = {}
+        self._lastRender = last
+    end
+
+    local elapsedText = self:FormatClock(snapshot.elapsed)
+    setTextIfChanged(frame.elapsed, elapsedText)
+
+    local elapsedPercent = (snapshot.elapsedPercent or 0) * 100
+    if last.elapsedPercent ~= elapsedPercent then
+        last.elapsedPercent = elapsedPercent
+        frame.timerBar.bar:SetValue(math.min(100, elapsedPercent))
+    end
+    self:PositionSparks(frame.timerBar, db, snapshot.elapsedPercent, false)
+
+    if snapshot.milestoneIndex and snapshot.milestoneRemaining then
+        setTextIfChanged(frame.milestoneTimer, self:FormatClock(snapshot.milestoneRemaining))
+        self:PositionMilestoneTimer(frame.timerBar, snapshot.milestoneIndex, db, false)
+    elseif frame.milestoneTimer:IsShown() then
+        frame.milestoneTimer:Hide()
+        frame.milestoneTimer._exuiMilestoneIndex = nil
+        frame.milestoneTimer._exuiText = nil
+    end
 end
 
 function display:RenderSnapshot(snapshot, db)
@@ -503,53 +568,74 @@ function display:RenderSnapshot(snapshot, db)
         return
     end
 
+    local last = self._lastRender
+    if not last then
+        last = {}
+        self._lastRender = last
+    end
+
     if db.showDeathCounter then
-        frame.deathCount:SetText(tostring(snapshot.deathCount or 0))
+        setTextIfChanged(frame.deathCount, tostring(snapshot.deathCount or 0))
     end
 
     if db.showMaxTimer then
-        frame.maxTimer:SetText(self:FormatClock(snapshot.timeLimit))
+        setTextIfChanged(frame.maxTimer, self:FormatClock(snapshot.timeLimit))
     end
 
     if snapshot.showDeathPenalty then
-        frame.deathPenalty:SetText(self:FormatPenalty(snapshot.timeLost))
-        frame.deathPenalty:Show()
-    else
+        setTextIfChanged(frame.deathPenalty, self:FormatPenalty(snapshot.timeLost))
+        if not frame.deathPenalty:IsShown() then
+            frame.deathPenalty:Show()
+        end
+    elseif frame.deathPenalty:IsShown() then
         frame.deathPenalty:Hide()
     end
 
-    frame.elapsed:SetText(self:FormatClock(snapshot.elapsed))
-
-    frame.keyLevel:SetText(snapshot.levelText or '')
+    setTextIfChanged(frame.elapsed, self:FormatClock(snapshot.elapsed))
+    setTextIfChanged(frame.keyLevel, snapshot.levelText or '')
 
     local elapsedPercent = (snapshot.elapsedPercent or 0) * 100
     frame.timerBar.bar:SetValue(math.min(100, elapsedPercent))
-    self:PositionSparks(frame.timerBar, db, snapshot.elapsedPercent)
+    last.elapsedPercent = elapsedPercent
+    self:PositionSparks(frame.timerBar, db, snapshot.elapsedPercent, true)
 
     if snapshot.milestoneIndex and snapshot.milestoneRemaining then
-        frame.milestoneTimer:SetText(self:FormatClock(snapshot.milestoneRemaining))
-        self:PositionMilestoneTimer(frame.timerBar, snapshot.milestoneIndex, db)
+        setTextIfChanged(frame.milestoneTimer, self:FormatClock(snapshot.milestoneRemaining))
+        self:PositionMilestoneTimer(frame.timerBar, snapshot.milestoneIndex, db, true)
     else
         frame.milestoneTimer:Hide()
+        frame.milestoneTimer._exuiMilestoneIndex = nil
+        frame.milestoneTimer._exuiText = nil
     end
 
     local forces = snapshot.forces
     if forces then
         frame.forcesBar.bar:SetValue(forces.percent or 0)
-        frame.forcesPercent:SetText(self:FormatPercent(forces.percent))
-        frame.forcesRaw:SetText(string.format('%d/%d', forces.current or 0, forces.total or 0))
+        setTextIfChanged(frame.forcesPercent, self:FormatPercent(forces.percent))
+        setTextIfChanged(frame.forcesRaw, string.format('%d/%d', forces.current or 0, forces.total or 0))
     else
         frame.forcesBar.bar:SetValue(0)
-        frame.forcesPercent:SetText('0.00%')
-        frame.forcesRaw:SetText('0/0')
+        setTextIfChanged(frame.forcesPercent, '0.00%')
+        setTextIfChanged(frame.forcesRaw, '0/0')
+    end
+
+    local bosses = snapshot.bosses or {}
+    if frame.bossSection and frame.bossSection.lines then
+        for _, line in ipairs(frame.bossSection.lines) do
+            line._exuiBossLaidOut = nil
+            line._exuiBossStyled = nil
+        end
     end
 
     local bossHeight = self:UpdateBossList(snapshot, db)
     if db.showBossNames and bossHeight > 0 then
         EXUI:SetHeight(frame.bossSection, bossHeight)
     end
-    local totalHeight = self:CalculateTotalHeight(db, #snapshot.bosses, bossHeight)
-    EXUI:SetHeight(frame, totalHeight)
+    local totalHeight = self:CalculateTotalHeight(db, #bosses, bossHeight)
+    if last.totalHeight ~= totalHeight then
+        last.totalHeight = totalHeight
+        EXUI:SetHeight(frame, totalHeight)
+    end
 end
 
 function display:CalculateTotalHeight(db, bossCount, bossSectionHeight)
@@ -656,11 +742,34 @@ end
 function display:InvalidateStyleCache()
     self._stylesApplied = false
     self._layoutApplied = false
+    self._lastRender = nil
+    if self.frame and self.frame.bossSection and self.frame.bossSection.lines then
+        for _, line in ipairs(self.frame.bossSection.lines) do
+            line._exuiBossLaidOut = nil
+            line._exuiBossStyled = nil
+            line._exuiBossText = nil
+        end
+    end
+    if self.frame then
+        if self.frame.timerBar then
+            if self.frame.timerBar.spark1 then
+                self.frame.timerBar.spark1._exuiSparkLaidOut = nil
+            end
+            if self.frame.timerBar.spark2 then
+                self.frame.timerBar.spark2._exuiSparkLaidOut = nil
+            end
+        end
+        if self.frame.milestoneTimer then
+            self.frame.milestoneTimer._exuiMilestoneIndex = nil
+            self.frame.milestoneTimer._exuiText = nil
+        end
+    end
 end
 
 function display:Update(opts)
     opts = opts or {}
     local db = mythicPlusTimer.Data:GetDB()
+    local isTicker = opts.ticker == true
 
     self:CreateMainFrame()
 
@@ -671,7 +780,7 @@ function display:Update(opts)
         self:SyncObjectiveTrackerSuppression()
         self._layoutApplied = true
         self._stylesApplied = true
-    elseif not opts.ticker then
+    elseif not isTicker then
         -- Event-driven updates may still need OT suppression sync.
         self:SyncObjectiveTrackerSuppression()
     end
@@ -683,7 +792,11 @@ function display:Update(opts)
 
     local snapshot = preview:GetSnapshot()
     if not snapshot then
-        snapshot = timerData:GetTimerSnapshot()
+        if isTicker then
+            snapshot = timerData:GetTickerSnapshot()
+        else
+            snapshot = timerData:GetTimerSnapshot()
+        end
     end
 
     if not snapshot then
@@ -691,7 +804,11 @@ function display:Update(opts)
         return
     end
 
-    self:RenderSnapshot(snapshot, db)
+    if isTicker and not preview:IsActive() then
+        self:RenderTickerSnapshot(snapshot, db)
+    else
+        self:RenderSnapshot(snapshot, db)
+    end
     self.frame:Show()
 end
 

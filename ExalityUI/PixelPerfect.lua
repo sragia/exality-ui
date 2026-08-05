@@ -6,13 +6,21 @@ local pixelPerfect = EXUI:GetModule('pixel-perfect')
 pixelPerfect.UIScale = 1
 pixelPerfect.borders = {}
 pixelPerfect.snapFrames = {}
+pixelPerfect.cachedUIParentScale = nil
+
+function pixelPerfect:InvalidateScaleCache()
+    self.cachedUIParentScale = nil
+end
 
 ---@param region? Frame
 function pixelPerfect:GetLayoutScale(region)
-    if region and region.GetEffectiveScale then
+    if region and region ~= UIParent and region.GetEffectiveScale then
         return region:GetEffectiveScale()
     end
-    return UIParent:GetEffectiveScale()
+    if not self.cachedUIParentScale then
+        self.cachedUIParentScale = UIParent:GetEffectiveScale()
+    end
+    return self.cachedUIParentScale
 end
 
 ---@param region? Frame
@@ -314,6 +322,7 @@ local function refreshUnitFrameBorder(frame)
 end
 
 pixelPerfect.Refresh = function(self)
+    self:InvalidateScaleCache()
     local snapped = {}
     for i = #self.borders, 1, -1 do
         local border = self.borders[i]
@@ -346,6 +355,7 @@ pixelPerfect.Refresh = function(self)
 end
 
 pixelPerfect.Initialize = function(self)
+    self:InvalidateScaleCache()
     self.UIScale = UIParent:GetScale()
     self:Refresh()
 end

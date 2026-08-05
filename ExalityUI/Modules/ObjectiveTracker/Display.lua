@@ -1714,6 +1714,7 @@ function display:RequestUpdate()
     if not objectiveTracker.enabled then
         return
     end
+    trackerData:InvalidateCategoryCache()
     if self.updateScheduled then
         return
     end
@@ -1732,6 +1733,7 @@ function display:Update()
         return
     end
 
+    trackerData:InvalidateCategoryCache()
     local db = objectiveTracker.Data:GetDB()
 
     if self:IsSuppressedByMythicPlusTimer() then

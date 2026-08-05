@@ -562,11 +562,39 @@ end
 
 core.ApplySegmentChrome = function(self, segmentFrame, bgColor, borderColor)
 
+    local bgR = bgColor and bgColor.r or 0
+
+    local bgG = bgColor and bgColor.g or 0
+
+    local bgB = bgColor and bgColor.b or 0
+
+    local bgA = bgColor and bgColor.a or 0
+
+    local borderR = borderColor and borderColor.r or 0
+
+    local borderG = borderColor and borderColor.g or 0
+
+    local borderB = borderColor and borderColor.b or 0
+
+    local borderA = borderColor and borderColor.a or 0
+
+    local chromeSig = table.concat({ bgR, bgG, bgB, bgA, borderR, borderG, borderB, borderA }, ':')
+
+    if segmentFrame._exuiChromeSig == chromeSig and segmentFrame.PPBorder then
+
+        return
+
+    end
+
+    segmentFrame._exuiChromeSig = chromeSig
+
+
+
     segmentFrame:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
 
     if bgColor then
 
-        segmentFrame:SetBackdropColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
+        segmentFrame:SetBackdropColor(bgR, bgG, bgB, bgA)
 
     end
 
@@ -590,7 +618,7 @@ core.ApplySegmentChrome = function(self, segmentFrame, bgColor, borderColor)
 
     if borderColor then
 
-        segmentFrame.PPBorder:SetBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+        segmentFrame.PPBorder:SetBorderColor(borderR, borderG, borderB, borderA)
 
     end
 

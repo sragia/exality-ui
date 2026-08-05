@@ -23,5 +23,11 @@ externals:
 
 enable-nolib-creation: no
 
+ignore:
+  - fetch-libs.bat
+  - fetch-libs.sh
+  - README.md
+  - Logos
+
 move-folders:
   ExalityUI/ExalityUI: ExalityUI

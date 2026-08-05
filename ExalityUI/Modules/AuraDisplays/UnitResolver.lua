@@ -109,6 +109,7 @@ function unitResolver:Init()
         return
     end
 
+    self.rosterDirty = true
     self.eventFrame = CreateFrame('Frame')
     self.eventFrame:RegisterEvent('GROUP_ROSTER_UPDATE')
     self.eventFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
@@ -123,10 +124,21 @@ function unitResolver:Init()
             return
         end
 
-        if event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' or event == 'PLAYER_REGEN_ENABLED' then
+        if event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' then
+            self.rosterDirty = true
             if not InCombatLockdown() then
                 self:ScanCoTank()
                 displayModule:SyncCoTankUnits()
+                self.rosterDirty = false
+            end
+            return
+        end
+
+        if event == 'PLAYER_REGEN_ENABLED' then
+            if self.rosterDirty and not InCombatLockdown() then
+                self:ScanCoTank()
+                displayModule:SyncCoTankUnits()
+                self.rosterDirty = false
             end
             return
         end

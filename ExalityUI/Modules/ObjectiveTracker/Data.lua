@@ -756,26 +756,48 @@ function trackerData:ShouldShowCategory(entry, db)
     return true
 end
 
-function trackerData:GetPresentCategoryIds()
+function trackerData:InvalidateCategoryCache()
+    self.categoryCacheValid = false
+    self.blocksByCategory = nil
+    self.cachedPresent = nil
+    self.cachedPresentCount = 0
+end
+
+function trackerData:RefreshCategoryCache()
+    if self.categoryCacheValid and self.blocksByCategory then
+        return
+    end
+
+    local blocksByCategory = {}
     local present = {}
     local count = 0
     for _, entry in ipairs(defaults.MODULE_ENTRIES) do
         local collector = COLLECTORS[entry.id]
         local blocks = collector and collector(self) or {}
+        blocksByCategory[entry.id] = blocks
         if #blocks > 0 then
             present[entry.id] = true
             count = count + 1
         end
     end
-    return present, count
+
+    self.blocksByCategory = blocksByCategory
+    self.cachedPresent = present
+    self.cachedPresentCount = count
+    self.categoryCacheValid = true
+end
+
+function trackerData:GetPresentCategoryIds()
+    self:RefreshCategoryCache()
+    return self.cachedPresent, self.cachedPresentCount
 end
 
 function trackerData:GetCategories(db)
+    self:RefreshCategoryCache()
     local categories = {}
     for _, entry in ipairs(defaults.MODULE_ENTRIES) do
         if self:ShouldShowCategory(entry, db) then
-            local collector = COLLECTORS[entry.id]
-            local blocks = collector and collector(self) or {}
+            local blocks = self.blocksByCategory[entry.id] or {}
             if #blocks > 0 then
                 categories[#categories + 1] = {
                     id = entry.id,

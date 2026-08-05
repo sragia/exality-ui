@@ -23,38 +23,56 @@ health.Create = function(self, frame)
     return health
 end
 
-health.PostUpdateColor = function(self, unit, color)
-    local baseFrame = self:GetParent()
+local function resolveHealthColorSettings(baseFrame)
     local generalDB = baseFrame.generalDB
     local db = baseFrame.db
-    local isOverriden = db.overrideHealthColor
-    local useCustomColor = generalDB.useCustomHealthColor
-    local customColor = generalDB.customHealthColor
-    local useSmoothHealthColor = generalDB.useSmoothHealthColor
-    if (isOverriden) then
-        useCustomColor = db.useCustomHealthColor
-        useSmoothHealthColor = db.useSmoothHealthColor
-        customColor = db.customHealthColor
+    local cache = baseFrame._healthColorCache
+    if not cache then
+        cache = {}
+        baseFrame._healthColorCache = cache
     end
-    if (useCustomColor and not useSmoothHealthColor) then
+
+    local isOverriden = db.overrideHealthColor
+    if isOverriden then
+        cache.useCustomColor = db.useCustomHealthColor
+        cache.useSmoothHealthColor = db.useSmoothHealthColor
+        cache.customColor = db.customHealthColor
+        cache.useCustomBackdropColor = db.useCustomBackdropColor
+        cache.customBackdropColor = db.customBackdropColor
+        cache.useClassColoredBackdrop = db.useClassColoredBackdrop
+    else
+        cache.useCustomColor = generalDB.useCustomHealthColor
+        cache.useSmoothHealthColor = generalDB.useSmoothHealthColor
+        cache.customColor = generalDB.customHealthColor
+        cache.useCustomBackdropColor = generalDB.useCustomBackdropColor
+        cache.customBackdropColor = generalDB.customBackdropColor
+        cache.useClassColoredBackdrop = generalDB.useClassColoredBackdrop
+    end
+    cache.valid = true
+    return cache
+end
+
+health.PostUpdateColor = function(self, unit, color)
+    local baseFrame = self:GetParent()
+    local cache = baseFrame._healthColorCache
+    if not cache or not cache.valid then
+        cache = resolveHealthColorSettings(baseFrame)
+    end
+
+    if (cache.useCustomColor and not cache.useSmoothHealthColor) then
+        local customColor = cache.customColor
         if (UnitIsConnected(unit)) then
             self:SetStatusBarColor(customColor.r, customColor.g, customColor.b)
         else
             self:SetStatusBarColor(color:GetRGB())
         end
     end
-    local useCustomBackdropColor = generalDB.useCustomBackdropColor
-    local customBackdropColor = generalDB.customBackdropColor
-    local useClassColoredBackdrop = generalDB.useClassColoredBackdrop
-    if (isOverriden) then
-        useCustomBackdropColor = db.useCustomBackdropColor
-        customBackdropColor = db.customBackdropColor
-        useClassColoredBackdrop = db.useClassColoredBackdrop
-    end
-    if (useCustomBackdropColor) then
+
+    if (cache.useCustomBackdropColor) then
+        local customBackdropColor = cache.customBackdropColor
         self.bg:SetVertexColor(customBackdropColor.r, customBackdropColor.g, customBackdropColor.b)
-    elseif (useClassColoredBackdrop and color) then
-        if (useSmoothHealthColor) then
+    elseif (cache.useClassColoredBackdrop and color) then
+        if (cache.useSmoothHealthColor) then
             if (UnitIsPlayer(unit) or UnitInPartyIsAI(unit)) then
                 local _, class = UnitClass(unit)
                 color = self.__owner.colors.class[class]
@@ -70,6 +88,8 @@ health.Update = function(self, frame)
     local db = frame.db
     local generalDB = frame.generalDB
     local health = frame.Health
+
+    resolveHealthColorSettings(frame)
 
     local useSmoothHealthColor = generalDB.useSmoothHealthColor
     if (db.overrideHealthColor) then

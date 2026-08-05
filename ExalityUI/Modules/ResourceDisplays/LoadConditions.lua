@@ -55,18 +55,27 @@ function loadConditions:MatchesSpec(loadSpecs)
     return specName and tContains(loadSpecs, specName)
 end
 
+function loadConditions:GetParsedPlayerLists(display)
+    local key = (display.onlyLoadOnPlayer or '') .. '\0' .. (display.dontLoadOnPlayer or '')
+    if display._loadParseKey ~= key then
+        display._loadParseKey = key
+        display._onlyLoadList = self:ParseCSVList(display.onlyLoadOnPlayer)
+        display._dontLoadList = self:ParseCSVList(display.dontLoadOnPlayer)
+    end
+    return display._onlyLoadList, display._dontLoadList
+end
+
 function loadConditions:ShouldLoad(display)
     if not display or not display.hasLoadConditions then
         return true
     end
 
     local playerName = UnitName('player')
-    local onlyLoad = self:ParseCSVList(display.onlyLoadOnPlayer)
+    local onlyLoad, dontLoad = self:GetParsedPlayerLists(display)
     if #onlyLoad > 0 and not tContains(onlyLoad, playerName) then
         return false
     end
 
-    local dontLoad = self:ParseCSVList(display.dontLoadOnPlayer)
     if #dontLoad > 0 and tContains(dontLoad, playerName) then
         return false
     end

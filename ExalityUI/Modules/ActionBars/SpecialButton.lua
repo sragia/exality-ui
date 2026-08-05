@@ -379,7 +379,10 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
     end
 
     self:ApplyStanceBarVisibility(frame, barConfig)
-    EXUI:GetModule('action-bars-keybind'):ReassignBindings()
+    if frame.exuiLastStanceCount ~= numForms then
+        frame.exuiLastStanceCount = numForms
+        EXUI:GetModule('action-bars-keybind'):ScheduleReassignBindings()
+    end
 end
 
 special.UpdateAll = function(self, barFrame)
@@ -425,7 +428,7 @@ special.OnBarEvent = function(self, frame, event)
     end
 
     if self.COOLDOWN_ONLY_EVENTS[event] then
-        self:UpdateAll(frame)
+        self:RefreshBarCooldowns(frame)
         return
     end
 

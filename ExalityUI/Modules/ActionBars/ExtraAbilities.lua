@@ -260,11 +260,21 @@ extraAbilities.ApplyStyle = function(self, config)
     end
     self.pendingStyle = false
 
+    local styleSig = barStyle:GetStyleSignature(config)
+    local styleChanged = self.appliedStyleSig ~= styleSig
+    self.appliedStyleSig = styleSig
+
     barStyle:Init()
 
-    self:StyleExtraActionFrame(config)
+    -- Extra Action chrome only needs a full pass when bar config changes.
+    if styleChanged then
+        self:StyleExtraActionFrame(config)
+    end
+    -- Zone ability buttons are recreated by Blizzard; always restyle/hover-hook them.
     self:StyleZoneAbilityFrame(config)
-    self:ConfigureClickThrough()
+    if styleChanged or self.pendingClickThrough then
+        self:ConfigureClickThrough()
+    end
     self:HookAbilityButtonHover()
 end
 
@@ -282,7 +292,7 @@ extraAbilities.ScheduleDeferredRefresh = function(self, withLayout)
     self.refreshScheduled = true
     C_Timer.After(0, function()
         extraAbilities.refreshScheduled = false
-        if not manager.enabled or not self.cachedConfig then
+        if not manager.enabled or not extraAbilities.cachedConfig then
             return
         end
         if InCombatLockdown() then
@@ -292,6 +302,7 @@ extraAbilities.ScheduleDeferredRefresh = function(self, withLayout)
             extraAbilities:ApplyStyle(extraAbilities.cachedConfig)
         end
         if extraAbilities.pendingLayout then
+            extraAbilities.pendingLayout = false
             extraAbilities:ApplyLayout()
         end
     end)

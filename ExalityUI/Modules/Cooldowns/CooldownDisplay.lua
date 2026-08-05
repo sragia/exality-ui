@@ -66,17 +66,24 @@ function cooldownDisplay:GetSpellCooldownData(spellID, ignoreGCD)
     }
 end
 
-function cooldownDisplay:GetItemCooldownData(frame, itemID)
+function cooldownDisplay:GetItemCooldownData(frame, itemID, opts)
+    opts = opts or {}
     local start, duration = C_Item.GetItemCooldown(itemID)
-    local count = C_Item.GetItemCount(itemID, false, true)
 
     if start == nil or duration == nil then
         start, duration = C_Container.GetItemCooldown(itemID)
     end
 
+    local count
+    if opts.includeCount then
+        count = C_Item.GetItemCount(itemID, false, true)
+    end
+
     return {
         durationObject = setDurationFromStart(frame, start, duration, 1),
         count = count,
+        start = start,
+        duration = duration,
     }
 end
 
@@ -84,6 +91,8 @@ function cooldownDisplay:GetEquipmentCooldownData(frame, slotID)
     local start, duration = GetInventoryItemCooldown('player', slotID)
     return {
         durationObject = setDurationFromStart(frame, start, duration, 1),
+        start = start,
+        duration = duration,
     }
 end
 
@@ -127,23 +136,30 @@ function cooldownDisplay:GetTexture(db, cachedSourceID)
     return 'Interface\\Icons\\INV_Misc_QuestionMark', false
 end
 
-local function applyCooldownVisual(frame, durationObject, shouldDesaturate, chargesText)
-    frame.Cooldown:SetCooldownFromDurationObject(durationObject, true)
-    if frame.CooldownTextBinding then
-        frame.CooldownTextBinding:SetDuration(durationObject)
+local function applyCooldownVisual(frame, durationObject, shouldDesaturate, chargesText, timingKey, setCharges)
+    if timingKey == nil or frame._lastCooldownTimingKey ~= timingKey then
+        frame._lastCooldownTimingKey = timingKey
+        frame.Cooldown:SetCooldownFromDurationObject(durationObject, true)
+        if frame.CooldownTextBinding then
+            frame.CooldownTextBinding:SetDuration(durationObject)
+        end
     end
     -- Pass desaturate straight through (may be a secret boolean).
     frame.Texture:SetDesaturated(shouldDesaturate)
     frame.Texture:SetVertexColor(1, 1, 1, 1)
-    if chargesText ~= nil then
+    -- Charge/stack counts are secret under combat restrictions — never compare them.
+    if setCharges then
         frame.StackText:SetText(chargesText)
     end
 end
 
 local function clearCooldownVisual(frame, clearStacks)
-    frame.Cooldown:SetCooldownFromDurationObject(ZERO_DURATION_OBJECT, true)
-    if frame.CooldownTextBinding then
-        frame.CooldownTextBinding:SetDuration(ZERO_DURATION_OBJECT)
+    if frame._lastCooldownTimingKey ~= 'zero' then
+        frame._lastCooldownTimingKey = 'zero'
+        frame.Cooldown:SetCooldownFromDurationObject(ZERO_DURATION_OBJECT, true)
+        if frame.CooldownTextBinding then
+            frame.CooldownTextBinding:SetDuration(ZERO_DURATION_OBJECT)
+        end
     end
     frame.Texture:SetDesaturated(false)
     frame.Texture:SetVertexColor(1, 1, 1, 1)
@@ -151,6 +167,13 @@ local function clearCooldownVisual(frame, clearStacks)
         frame.StackText:SetText('')
     end
     frame.currentCooldownInfo = nil
+end
+
+local function timingKeyFromStartDuration(start, duration)
+    if start == nil or duration == nil then
+        return nil
+    end
+    return tostring(start) .. ':' .. tostring(duration)
 end
 
 function cooldownDisplay:CacheSourceIDs(frame, db)
@@ -167,7 +190,64 @@ function cooldownDisplay:CacheSourceIDs(frame, db)
     end
 end
 
-function cooldownDisplay:RenderCooldown(frame, db)
+function cooldownDisplay:ShouldHandleEvent(frame, event, ...)
+    if event == 'FORCE' then
+        return true, true
+    end
+
+    local source = frame._cooldownSource
+    local sourceID = frame._sourceID
+    if not source then
+        return true, true
+    end
+
+    if event == 'ITEM_DATA_LOAD_RESULT' then
+        if source ~= 'item' then
+            return false, false
+        end
+        local itemID = ...
+        return sourceID and itemID and tonumber(itemID) == sourceID, false
+    end
+
+    if event == 'SPELL_UPDATE_COOLDOWN' or event == 'SPELL_UPDATE_CHARGES' then
+        if source ~= 'spell' then
+            return false, false
+        end
+        local spellID = ...
+        -- Nil spellID means a broad refresh; otherwise only matching icons.
+        if spellID == nil then
+            return true, false
+        end
+        return sourceID and tonumber(spellID) == sourceID, false
+    end
+
+    if event == 'BAG_UPDATE_COOLDOWN' then
+        if source == 'item' then
+            return true, true
+        end
+        return false, false
+    end
+
+    if event == 'PLAYER_EQUIPMENT_CHANGED' then
+        if source == 'equipment' then
+            local slotID = ...
+            if slotID == nil or sourceID == nil then
+                return true, false
+            end
+            return tonumber(slotID) == sourceID, false
+        end
+        if source == 'item' then
+            -- Bags/equipment moves can change usable item counts.
+            return true, true
+        end
+        return false, false
+    end
+
+    return true, source == 'item'
+end
+
+function cooldownDisplay:RenderCooldown(frame, db, opts)
+    opts = opts or {}
     local source = frame._cooldownSource or getCooldownSource(db)
     local sourceID = frame._sourceID
     if sourceID == nil then
@@ -185,31 +265,46 @@ function cooldownDisplay:RenderCooldown(frame, db)
     local cooldownInfo = nil
     local shouldDesaturate = false
     local chargesText = nil
+    local setCharges = false
+    local timingKey = nil
+    local includeItemCount = db.showStacks and (opts.refreshCount ~= false)
 
     if source == 'spell' then
         if sourceID then
             if db.showStacks then
                 local chargeInfo = self:GetSpellChargeData(sourceID)
+                setCharges = true
                 if chargeInfo then
                     cooldownInfo = chargeInfo
+                    -- charges may be secret; pass through to SetText only.
                     chargesText = chargeInfo.charges
+                    timingKey = nil
                 else
                     chargesText = ''
                 end
             else
                 cooldownInfo = self:GetSpellCooldownData(sourceID, db.ignoreGlobalCooldown ~= false)
+                timingKey = nil
             end
         end
     elseif source == 'item' then
         if sourceID then
-            cooldownInfo = self:GetItemCooldownData(frame, sourceID)
+            cooldownInfo = self:GetItemCooldownData(frame, sourceID, { includeCount = includeItemCount })
+            timingKey = timingKeyFromStartDuration(cooldownInfo.start, cooldownInfo.duration)
             if db.showStacks then
-                chargesText = cooldownInfo.count
+                setCharges = true
+                if includeItemCount then
+                    chargesText = cooldownInfo.count
+                    frame._cachedItemCount = cooldownInfo.count
+                else
+                    chargesText = frame._cachedItemCount
+                end
             end
         end
     elseif source == 'equipment' then
         if sourceID then
             cooldownInfo = self:GetEquipmentCooldownData(frame, sourceID)
+            timingKey = timingKeyFromStartDuration(cooldownInfo.start, cooldownInfo.duration)
         end
     end
 
@@ -229,7 +324,7 @@ function cooldownDisplay:RenderCooldown(frame, db)
     end
 
     frame.currentCooldownInfo = cooldownInfo
-    applyCooldownVisual(frame, cooldownInfo.durationObject, shouldDesaturate, chargesText)
+    applyCooldownVisual(frame, cooldownInfo.durationObject, shouldDesaturate, chargesText, timingKey, setCharges)
 end
 
 local function applyContentInsets(frame)
@@ -291,24 +386,36 @@ function cooldownDisplay:Create(frame)
     frame.CooldownTextBinding:SetDuration(ZERO_DURATION_OBJECT)
     frame.CooldownTextBinding:SetEnabled(false)
 
-    frame.Events = {
-        'ITEM_DATA_LOAD_RESULT',
-        'SPELL_UPDATE_COOLDOWN',
-        'SPELL_UPDATE_CHARGES',
-        'BAG_UPDATE_COOLDOWN',
-        'PLAYER_EQUIPMENT_CHANGED',
-    }
-
     frame.RegisterFrameEvents = function(selfRef)
         selfRef:UnregisterAllEvents()
-        for _, event in ipairs(selfRef.Events) do
-            selfRef:RegisterEvent(event)
+        local source = selfRef._cooldownSource
+        if source == 'spell' then
+            selfRef:RegisterEvent('SPELL_UPDATE_COOLDOWN')
+            selfRef:RegisterEvent('SPELL_UPDATE_CHARGES')
+        elseif source == 'item' then
+            selfRef:RegisterEvent('ITEM_DATA_LOAD_RESULT')
+            selfRef:RegisterEvent('BAG_UPDATE_COOLDOWN')
+            selfRef:RegisterEvent('PLAYER_EQUIPMENT_CHANGED')
+        elseif source == 'equipment' then
+            selfRef:RegisterEvent('PLAYER_EQUIPMENT_CHANGED')
+            selfRef:RegisterEvent('BAG_UPDATE_COOLDOWN')
+        else
+            selfRef:RegisterEvent('SPELL_UPDATE_COOLDOWN')
+            selfRef:RegisterEvent('SPELL_UPDATE_CHARGES')
+            selfRef:RegisterEvent('BAG_UPDATE_COOLDOWN')
+            selfRef:RegisterEvent('PLAYER_EQUIPMENT_CHANGED')
+            selfRef:RegisterEvent('ITEM_DATA_LOAD_RESULT')
         end
     end
 
     frame.OnChange = function(selfRef, event, ...)
         local db = selfRef.db
         if not db or not db.enable then
+            return
+        end
+
+        local shouldHandle, refreshCount = cooldownDisplay:ShouldHandleEvent(selfRef, event, ...)
+        if not shouldHandle then
             return
         end
 
@@ -329,7 +436,7 @@ function cooldownDisplay:Create(frame)
             selfRef.Texture:SetTexture(texture)
         end
 
-        cooldownDisplay:RenderCooldown(selfRef, db)
+        cooldownDisplay:RenderCooldown(selfRef, db, { refreshCount = refreshCount })
     end
 
     frame:SetScript('OnEvent', frame.OnChange)
@@ -343,8 +450,8 @@ function cooldownDisplay:Update(frame)
     end
 
     frame:Show()
-    frame:RegisterFrameEvents()
     self:CacheSourceIDs(frame, db)
+    frame:RegisterFrameEvents()
 
     EXUI:SetSize(frame, db.width, db.height)
     frame:ClearAllPoints()
