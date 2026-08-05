@@ -19,6 +19,7 @@ local preview = EXUI:GetModule('resource-displays-preview')
 local MODULE_NAME = 'Resource Displays'
 
 preview.toggled = {}
+preview.manual = {}
 preview.userDisabled = {}
 preview.scenario = 'mid'
 
@@ -82,21 +83,39 @@ function preview:Deactivate(displayID)
     core:RefreshDisplayByID(displayID)
 end
 
-function preview:SetToggled(displayID, enabled)
+function preview:SetToggled(displayID, enabled, manual)
     if enabled then
         self.userDisabled[displayID] = nil
         self.toggled[displayID] = true
+        if manual then
+            self.manual[displayID] = true
+        end
         self:SyncEnabledFlag()
         self:Activate(displayID)
         self:RefreshNonPreviewFrames()
         return
     end
 
-    self.userDisabled[displayID] = true
     self.toggled[displayID] = nil
+    self.manual[displayID] = nil
+    if manual then
+        self.userDisabled[displayID] = true
+    end
     self:SyncEnabledFlag()
     self:Deactivate(displayID)
     self:RefreshNonPreviewFrames()
+end
+
+function preview:ClearAutoPreviews(exceptID)
+    local remove = {}
+    for displayID in pairs(self.toggled) do
+        if displayID ~= exceptID and not self.manual[displayID] then
+            remove[#remove + 1] = displayID
+        end
+    end
+    for _, displayID in ipairs(remove) do
+        self:SetToggled(displayID, false)
+    end
 end
 
 function preview:RefreshNonPreviewFrames()
@@ -110,6 +129,7 @@ end
 function preview:Clear()
     local hadAny = self:HasAnyToggled()
     wipe(self.toggled)
+    wipe(self.manual)
     wipe(self.userDisabled)
     self:SyncEnabledFlag()
     if hadAny then
@@ -151,6 +171,8 @@ function preview:Sync()
     end
 
     local itemID = optionsFields.currItemID
+    self:ClearAutoPreviews(itemID)
+
     local currentDisplay = itemID and core:GetDBByDisplayID(itemID)
     if itemID and currentDisplay and currentDisplay.resourceType and not self.userDisabled[itemID] then
         if not self.toggled[itemID] then
@@ -162,6 +184,7 @@ function preview:Sync()
         local display = core:GetDBByDisplayID(displayID)
         if not display or not display.resourceType then
             self.toggled[displayID] = nil
+            self.manual[displayID] = nil
             self:Deactivate(displayID)
         else
             self:Activate(displayID)

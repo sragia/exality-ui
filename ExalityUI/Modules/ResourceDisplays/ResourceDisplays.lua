@@ -280,7 +280,7 @@ core.GetSplitViewItems = function(self)
 
                     onToggle = function(itemID, enabled)
 
-                        preview:SetToggled(itemID, enabled)
+                        preview:SetToggled(itemID, enabled, true)
 
                     end,
 

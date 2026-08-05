@@ -270,7 +270,7 @@ function auraDisplays:GetSplitViewItems()
                 iconOn = icons.eye,
                 iconOff = icons.eyeOff,
                 onToggle = function(itemID, enabled)
-                    preview:SetToggled(itemID, enabled)
+                    preview:SetToggled(itemID, enabled, true)
                 end,
             },
             contextMenuItems = {

@@ -130,6 +130,7 @@ local PREVIEW_SCENARIOS = {
 }
 
 preview.toggled = {}
+preview.manual = {}
 preview.userDisabled = {}
 preview.states = {}
 
@@ -210,18 +211,36 @@ function preview:IsConfiguring(displayID)
     return self.toggled[displayID] == true and self:IsOptionsOpen()
 end
 
-function preview:SetToggled(displayID, enabled)
+function preview:SetToggled(displayID, enabled, manual)
     if enabled then
         self.userDisabled[displayID] = nil
         self.toggled[displayID] = true
+        if manual then
+            self.manual[displayID] = true
+        end
         self:Activate(displayID)
         self:Refresh(displayID)
         return
     end
 
-    self.userDisabled[displayID] = true
     self.toggled[displayID] = nil
+    self.manual[displayID] = nil
+    if manual then
+        self.userDisabled[displayID] = true
+    end
     self:Deactivate(displayID)
+end
+
+function preview:ClearAutoPreviews(exceptID)
+    local remove = {}
+    for displayID in pairs(self.toggled) do
+        if displayID ~= exceptID and not self.manual[displayID] then
+            remove[#remove + 1] = displayID
+        end
+    end
+    for _, displayID in ipairs(remove) do
+        self:SetToggled(displayID, false)
+    end
 end
 
 function preview:SyncPreviewToggles()
@@ -305,6 +324,8 @@ function preview:Sync()
     end
 
     local itemID = optionsFields.currItemID
+    self:ClearAutoPreviews(itemID)
+
     if itemID and auraDisplays:GetDisplay(itemID) and not self.userDisabled[itemID] then
         if not self.toggled[itemID] then
             self:SetToggled(itemID, true)
@@ -314,6 +335,7 @@ function preview:Sync()
     for displayID in pairs(self.toggled) do
         if not auraDisplays:GetDisplay(displayID) then
             self.toggled[displayID] = nil
+            self.manual[displayID] = nil
             self:Deactivate(displayID)
         else
             self:Activate(displayID)
@@ -335,6 +357,7 @@ function preview:Clear()
         self:Deactivate(displayID)
     end
     wipe(self.toggled)
+    wipe(self.manual)
     wipe(self.userDisabled)
 end
 
