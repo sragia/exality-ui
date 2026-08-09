@@ -19,7 +19,7 @@ EXUI.const = {
         accentLight     = { 1, 110 / 255, 51 / 255, 1 },          -- #FF6E33  button hover
         accentDark      = { 184 / 255, 51 / 255, 0, 1 },          -- #B83300  pressed / deep accent
 
-        background      = { 23 / 255, 20 / 255, 18 / 255, 1 },    -- #image.png  main window bg
+        background      = { 23 / 255, 20 / 255, 18 / 255, 1 },    -- #171412  main window bg
         backgroundLight = { 38 / 255, 32 / 255, 28 / 255, 1 },    -- #26201C  elevated rows / submenu
         backgroundDeep  = { 13 / 255, 11 / 255, 10 / 255, 1 },    -- #0D0B0A  deepest dark
         backgroundPanel = { 48 / 255, 40 / 255, 34 / 255, 0.4 },  -- #302822  panels / tabs / header
