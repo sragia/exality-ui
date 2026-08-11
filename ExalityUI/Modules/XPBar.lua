@@ -91,6 +91,10 @@ xpBar.GetOrder = function(self)
     return 20
 end
 
+xpBar.GetProfileExportSpec = function(self)
+    return { id = 'xp-bar', keys = { 'xpBar' } }
+end
+
 xpBar.GetOptions = function(self)
     return {
         {
@@ -492,7 +496,6 @@ xpBar.CreateFrame = function(self)
         self.Data:SetValue('relativeAnchor', relativePoint)
         self.Data:SetValue('xOffset', xOfs)
         self.Data:SetValue('yOffset', yOfs)
-        self:Configure()
     end, nil, function()
         if (self.Data:GetValue('enable')) then
             self:HandleVisibility()
@@ -508,7 +511,7 @@ xpBar.ApplyContentInsets = function(self)
     local inset = EXUI:ScalePixels(1, self.frame)
     self.frame.StatusBarContainer:ClearAllPoints()
     self.frame.StatusBarContainer:SetPoint('TOPLEFT', self.frame, 'TOPLEFT', inset, -inset)
-    self.frame.StatusBarContainer:SetPoint('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', -inset, inset)
+    self.frame.StatusBarContainer:SetPoint('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', -inset, 0)
 
     self.frame.ElementFrame:ClearAllPoints()
     self.frame.ElementFrame:SetPoint('TOPLEFT', self.frame, 'TOPLEFT', inset, -inset)

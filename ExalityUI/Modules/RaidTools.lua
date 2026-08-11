@@ -87,6 +87,14 @@ raidToolsModule.GetOrder = function(self)
     return 10
 end
 
+raidToolsModule.GetProfileExportSpec = function(self)
+    local keys = {}
+    for k in pairs(self:GetDefaults()) do
+        keys[#keys + 1] = k
+    end
+    return { id = 'raid-tools', keys = keys }
+end
+
 raidToolsModule.GetDefaults = function(self)
     return {
         brezzEnabled = true,
@@ -1047,7 +1055,6 @@ raidToolsModule.CreateBrezz = function(self)
         data:SetDataByKey('brezzRelativePoint', relativePoint)
         data:SetDataByKey('brezzXOff', xOfs)
         data:SetDataByKey('brezzYOff', yOfs)
-        raidToolsModule:CreateOrRefreshBrezz()
     end, function(frame)
         raidToolsModule.brezzEditorShowing = true
         raidToolsModule.brezzFrame:Show()

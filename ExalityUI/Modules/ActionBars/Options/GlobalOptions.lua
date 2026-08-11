@@ -22,12 +22,15 @@ local ORIENTATION = {
     vertical = 'Vertical',
 }
 
-local function appendFields(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-    return target
-end
+local GLOW_TYPES = {
+    libbuttonglow = 'LibButtonGlow (Default)',
+    button = 'LibCustomGlow: Action Button Glow',
+    pixel = 'LibCustomGlow: Pixel Glow',
+    autocast = 'LibCustomGlow: Autocast Shine',
+    proc = 'LibCustomGlow: Proc Glow',
+}
+
+local appendFields = EXUI.utils.append
 
 globalOptions.GetVisibilityOptions = function()
     return VISIBILITY
@@ -35,6 +38,10 @@ end
 
 globalOptions.GetOrientationOptions = function()
     return ORIENTATION
+end
+
+globalOptions.GetGlowTypeOptions = function()
+    return GLOW_TYPES
 end
 
 globalOptions.GetFontOptions = function()
@@ -263,7 +270,7 @@ globalOptions.GetOptions = function(self, mod, section)
 
     if section == 'buttons' then
         return {
-            { type = 'title', label = 'Global Button Defaults', width = 100 },
+            { type = 'title',  label = 'Global Button Defaults', width = 100 },
             {
                 type = 'range',
                 label = 'Width',
@@ -393,6 +400,192 @@ globalOptions.GetOptions = function(self, mod, section)
                 currentValue = function() return db.global.visibility end,
                 onChange = function(v)
                     db.global.visibility = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
+            },
+            { type = 'spacer', width = 100 },
+            { type = 'title',  label = 'Glow',                   width = 100 },
+            {
+                type = 'dropdown',
+                label = 'Action Proc Glow',
+                name = 'global_glowType',
+                width = 50,
+                getOptions = function() return self:GetGlowTypeOptions() end,
+                currentValue = function() return db.global.glowType or 'libbuttonglow' end,
+                onChange = function(v)
+                    db.global.glowType = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                    mod:RefreshBars()
+                    EXUI:GetModule('options-fields'):RefreshOptions()
+                end,
+            },
+            {
+                type = 'color-picker',
+                label = 'Glow Color',
+                name = 'global_glowColor',
+                width = 50,
+                depends = function() return (db.global.glowType or 'libbuttonglow') ~= 'libbuttonglow' end,
+                currentValue = function()
+                    return db.global.glowColor or { r = 0.95, g = 0.95, b = 0.32, a = 1 }
+                end,
+                onChange = function(v)
+                    db.global.glowColor = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Glow Frequency',
+                name = 'global_glowFrequency',
+                width = 50,
+                min = 0.05,
+                max = 3,
+                step = 0.01,
+                depends = function() return (db.global.glowType or 'libbuttonglow') ~= 'proc' end,
+                currentValue = function() return db.global.glowFrequency or 0.25 end,
+                onChange = function(v)
+                    db.global.glowFrequency = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Glow Frame Level',
+                name = 'global_glowFrameLevel',
+                width = 50,
+                min = 1,
+                max = 20,
+                step = 1,
+                depends = function() return (db.global.glowType or 'libbuttonglow') ~= 'libbuttonglow' end,
+                currentValue = function() return db.global.glowFrameLevel or 8 end,
+                onChange = function(v)
+                    db.global.glowFrameLevel = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Pixel Lines',
+                name = 'global_glowPixelLines',
+                width = 50,
+                min = 1,
+                max = 20,
+                step = 1,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'pixel' end,
+                currentValue = function() return db.global.glowPixelLines or 8 end,
+                onChange = function(v)
+                    db.global.glowPixelLines = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Pixel Length',
+                name = 'global_glowPixelLength',
+                width = 50,
+                min = 1,
+                max = 24,
+                step = 1,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'pixel' end,
+                currentValue = function() return db.global.glowPixelLength or 8 end,
+                onChange = function(v)
+                    db.global.glowPixelLength = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Pixel Thickness',
+                name = 'global_glowPixelThickness',
+                width = 50,
+                min = 1,
+                max = 5,
+                step = 1,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'pixel' end,
+                currentValue = function() return db.global.glowPixelThickness or 1 end,
+                onChange = function(v)
+                    db.global.glowPixelThickness = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'toggle',
+                label = 'Pixel Border',
+                name = 'global_glowPixelBorder',
+                width = 100,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'pixel' end,
+                currentValue = function() return db.global.glowPixelBorder ~= false end,
+                onChange = function(v)
+                    db.global.glowPixelBorder = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Autocast Particles',
+                name = 'global_glowAutoCastParticles',
+                width = 50,
+                min = 1,
+                max = 12,
+                step = 1,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'autocast' end,
+                currentValue = function() return db.global.glowAutoCastParticles or 4 end,
+                onChange = function(v)
+                    db.global.glowAutoCastParticles = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Autocast Scale',
+                name = 'global_glowAutoCastScale',
+                width = 50,
+                min = 0.5,
+                max = 2,
+                step = 0.05,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'autocast' end,
+                currentValue = function() return db.global.glowAutoCastScale or 1 end,
+                onChange = function(v)
+                    db.global.glowAutoCastScale = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Proc Duration',
+                name = 'global_glowProcDuration',
+                width = 50,
+                min = 0.2,
+                max = 3,
+                step = 0.05,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'proc' end,
+                currentValue = function() return db.global.glowProcDuration or 1 end,
+                onChange = function(v)
+                    db.global.glowProcDuration = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
+                end,
+            },
+            {
+                type = 'toggle',
+                label = 'Proc Start Animation',
+                name = 'global_glowProcStartAnim',
+                width = 100,
+                depends = function() return (db.global.glowType or 'libbuttonglow') == 'proc' end,
+                currentValue = function() return db.global.glowProcStartAnim ~= false end,
+                onChange = function(v)
+                    db.global.glowProcStartAnim = v
+                    mod.Data:SetDB(db)
+                    EXUI:GetModule('action-bars-glow'):ApplySettings()
                 end,
             },
         }

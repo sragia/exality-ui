@@ -316,7 +316,7 @@ core:AddOption({
                         ufCore:UpdateValueForUnit('general', 'damageAbsorbColor', value)
                         ufCore:UpdateAllFrames()
                     end,
-                    width = 20
+                    width = 30
                 },
                 {
                     type = 'color-picker',

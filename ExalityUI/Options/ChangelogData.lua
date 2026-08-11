@@ -2,15 +2,74 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
-# |cffdb49000.3.0|r
+# |cffdb49000.9.0|r
 
-- Visual update for options.
-- Added minimap styling.
-- Pixel Perfect improvements.
-- [Skins] Skin Game Menu.
-- [Raid Tools] Battle Res rewrite — masked icon, configurable timer position, visibility modes.
-- [Character Frame] Fix stats issue with secrets.
-- [Action Bars] Implemented Action Bar initial version. Might have some bugs, so be aware of it.
+This major update marks the first step of 1.0.0, as feature wise it's basically quite complete of what I currently want from this addon. Most major things are there, things that are missing mainly are Bags and Nameplates, both of which personally I think other addons handle quite well.
+There's ton of new stuff added, and while in my testing things are working quite well, there's still a lot of polishing that will need to happen and many bugs that I haven't found yet to fix.
+
+## General
+- Updated options. Adjusted styling, made them more compact (aka smaller), sidebar menu is collapsable.
+- Improved Pixel Perfect across the board. Most if not all elements should now look much closer to what is set.
+- Floating combat text font now is also replaced with the configured font.
+
+## Aura Displays |cffeb7a34New|r
+New module for displaying auras using new 12.1 aura system.
+Create aura displays and place them anywhere on your screen. Adjust visual look, what unit to show it for, what filters to use, and what kind of conditions to load them on.
+
+## Action Bars |cffeb7a34New|r
+Fairly basic action bar module. Adjust visual look of each bar, quick keybind mode.
+There are couple things built in it that I have always wanted from action bars and some other stuff:
+- Non-Square buttons. Generally AB addons make you make them square as that's the default Blizzard style, but I wanted some bars to have rectangle buttons.
+- Showing CD on charges instead of only showing when charges = 0. There were some addons that did this already, this was more just something to add on top.
+- Spell Picker (|cffdb4900Ctrl + Right Click|r) to pick spells/consumables from spellbook or bags. Just easier way to setup bars.
+- Custom Glow. Added LibCustomGlow that allows you to have some wider choice of glows to pick from.
+- CD Text location adjustments.
+
+## Minimap |cffeb7a34New|r
+Minimap styling. Adjust size, clock, zone name, button styling on it.
+
+## Objective Tracker |cffeb7a34New|r
+Custom objective tracker replacing default blizzard one. Allows to have more styling options. Easier filtering of objectives via quick filter bar at the top of tracker.
+Easier untracking of the quests/recipes/achievements by just middle clicking on them.
+
+## Mythic Plus Timer |cffeb7a34New|r
+As complimentary to the objective tracker, added M+ timer. Fairly basic functionality.
+Mostly meant as something that is there to use while also using my Objective Tracker as other M+ Timers will not be able to hide them easily. However there's option to hide my Objective Tracker in M+ setting.
+
+## Unit Frames
+Aura Rework. Now you can make as many displays on each unit frame as you want, you can reuse the same display for multiple units. Have much more powerful filters to use.
+Old aura settings will no longer be available and you will need to redo them, sorry.
+
+Additionally:
+- Added targetting border color change for current target and mouseover for party/raid frames.
+- Fixed party frame size in edit mode.
+- Fixed Mythic visibility (1-4 grp) staying on after leaving Mythic raid.
+- Added options to Dispel Overlay to show also when there's any dispellable auras present, that anyone in raid/grp can dispel or anything at all.
+
+## Profiles
+Profiles moved completely to it's own window. Added partial profile import/export, you can choose which modules to export now.
+
+## Cooldowns & Resource Displays
+Updated both module options to match new style better, and also added some more additional options to use, like color curve where you can adjust the color of the resource display bar depending on value.
+Or some improved CD options like desature on cooldown.
+
+## Character Frame
+- Fix temp enchant applying throwing error.
+- Update slot border visuals a bit to not be as "chaotic".
+- Dim icons that enchant is not for.
+- Add Sets and Titles tabs like in default character frame.
+- Add Currency and Reputation display
+
+## Skinning
+
+Added a lot more blizzard window skins. You can also now enable/disable individual skins.
+There will be more in future probably. Skinning these frames are boring.
+
+## Edit Mode
+Improved Edit mod, added X/Y offset editor, improved selecting frames that are overlapping, added snap mode, nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.
+
+## Misc
+- Added loot pickup notification option under Tweaks
 
 # |cffdb49000.2.8|r
 

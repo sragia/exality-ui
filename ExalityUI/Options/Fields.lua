@@ -102,6 +102,10 @@ optionsFields.HasInnerTabs = function(self, module, itemId)
 end
 
 optionsFields.ClearInnerTabs = function(self)
+    local selected = optionsController:GetSelectedModule()
+    if selected and selected.module and selected.module.TeardownOptionsChrome then
+        selected.module:TeardownOptionsChrome()
+    end
     if self.innerTabs then
         self.innerTabs:Destroy()
         self.innerTabs = nil
@@ -119,6 +123,11 @@ optionsFields.UseSplitViewContainer = function(self)
 end
 
 optionsFields.AddInnerTabs = function(self, module)
+    local selected = optionsController:GetSelectedModule()
+    if selected and selected.module and selected.module.TeardownOptionsChrome then
+        selected.module:TeardownOptionsChrome()
+    end
+
     if (self.innerTabs) then
         self.innerTabs:Destroy()
         self.innerTabs = nil
@@ -156,6 +165,10 @@ optionsFields.AddInnerTabs = function(self, module)
         self.splitView.scrollFrame:Hide()
     end
     self.container = self.innerTabs.container
+
+    if module.UpdateOptionsChrome then
+        module:UpdateOptionsChrome(self)
+    end
 end
 
 optionsFields.RefreshSplitViewForTab = function(self)
@@ -225,6 +238,9 @@ optionsFields.Refresh = function(self)
 
     self:InvalidateFieldCache()
     for _, module in pairs(optionsController:GetAllModules()) do
+        if module.module and module.module.TeardownOptionsChrome then
+            module.module:TeardownOptionsChrome()
+        end
         if (module.optionHandler) then
             module.optionHandler(self.container, true)
         end
@@ -278,8 +294,17 @@ end
 
 optionsFields.RefreshOptions = function(self)
     self:InvalidateFieldCache(self:GetFieldCacheKey())
-    C_Timer.After(0.3, function()
-        self:RefreshFields()
+    self:RefreshFields()
+end
+
+optionsFields.RefreshOptionsDelayed = function(self, delay)
+    delay = delay or 0.2
+    if self._refreshOptionsTimer then
+        self._refreshOptionsTimer:Cancel()
+    end
+    self._refreshOptionsTimer = C_Timer.NewTimer(delay, function()
+        self._refreshOptionsTimer = nil
+        self:RefreshOptions()
     end)
 end
 
@@ -292,7 +317,8 @@ optionsFields.GetFieldCacheKey = function(self)
     if not moduleName then
         return nil
     end
-    return string.format('%s:%s:%s', moduleName, self.currItemID or '', self.currTabID or '')
+    local groupID = module.module.currGroupID or ''
+    return string.format('%s:%s:%s:%s', moduleName, self.currItemID or '', self.currTabID or '', groupID)
 end
 
 optionsFields.InvalidateFieldCache = function(self, key)
@@ -308,18 +334,7 @@ optionsFields.InvalidateFieldCache = function(self, key)
     end
 
     if key then
-        local cached = self.fieldCache[key]
-        if cached then
-            for _, field in ipairs(cached) do
-                destroyField(field)
-            end
-            self.fieldCache[key] = nil
-        end
-        for i = #self.fields, 1, -1 do
-            if destroyed[self.fields[i]] then
-                table.remove(self.fields, i)
-            end
-        end
+        self.fieldCache[key] = nil
         return
     end
 
@@ -337,6 +352,29 @@ end
 
 optionsFields.HideActiveFields = function(self)
     for _, field in ipairs(self.fields) do
+        field:Hide()
+    end
+end
+
+optionsFields.IsFieldInCache = function(self, field)
+    for _, cached in pairs(self.fieldCache) do
+        for _, cachedField in ipairs(cached) do
+            if cachedField == field then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+optionsFields.ReleaseField = function(self, field)
+    if self:IsFieldInCache(field) then
+        field:Hide()
+        return
+    end
+    if field.Destroy then
+        field:Destroy()
+    else
         field:Hide()
     end
 end
@@ -418,8 +456,12 @@ optionsFields.RefreshFields = function(self)
         return
     end
 
-    self:HideActiveFields()
-    self.fields = {}
+    if currentModule.UpdateOptionsChrome then
+        currentModule:UpdateOptionsChrome(self)
+    end
+
+    local oldFields = self.fields or {}
+    local newFields = {}
 
     if self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
         self.splitView:UpdateScroll()
@@ -429,8 +471,21 @@ optionsFields.RefreshFields = function(self)
     if cacheKey and self.fieldCache[cacheKey] then
         for _, fieldFrame in ipairs(self.fieldCache[cacheKey]) do
             fieldFrame:SetParent(self.container)
+            if fieldFrame.SetOptionData and fieldFrame.optionData then
+                fieldFrame.suppressOnChange = true
+                fieldFrame:SetOptionData(fieldFrame.optionData)
+                fieldFrame.suppressOnChange = false
+            elseif fieldFrame.GetState and fieldFrame.SetState and fieldFrame.optionData then
+                fieldFrame.suppressOnChange = true
+                local value = 0
+                if fieldFrame.optionData.currentValue then
+                    value = fieldFrame.optionData.currentValue()
+                end
+                fieldFrame:SetState(value)
+                fieldFrame.suppressOnChange = false
+            end
             fieldFrame:Show()
-            table.insert(self.fields, fieldFrame)
+            table.insert(newFields, fieldFrame)
         end
     else
         local builtFields = {}
@@ -445,6 +500,7 @@ optionsFields.RefreshFields = function(self)
                         if (fieldFrame) then
                             fieldFrame:SetOptionData(funcField)
                             fieldFrame:SetParent(self.container)
+                            fieldFrame:Show()
                             table.insert(builtFields, fieldFrame)
                         end
                     end
@@ -455,13 +511,29 @@ optionsFields.RefreshFields = function(self)
                 if (fieldFrame) then
                     fieldFrame:SetOptionData(field)
                     fieldFrame:SetParent(self.container)
+                    fieldFrame:Show()
                     table.insert(builtFields, fieldFrame)
                 end
             end
         end
-        self.fields = builtFields
+        newFields = builtFields
         if cacheKey then
             self.fieldCache[cacheKey] = builtFields
+        end
+    end
+
+    self.fields = newFields
+
+    for _, oldField in ipairs(oldFields) do
+        local keep = false
+        for _, newField in ipairs(newFields) do
+            if oldField == newField then
+                keep = true
+                break
+            end
+        end
+        if not keep then
+            self:ReleaseField(oldField)
         end
     end
 
@@ -473,6 +545,12 @@ optionsFields.RefreshFields = function(self)
     elseif self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
         self.splitView:UpdateScroll()
     end
+
+    C_Timer.After(0, function()
+        if EXFrames.RefreshPixelPerfect then
+            EXFrames:RefreshPixelPerfect()
+        end
+    end)
 end
 
 optionsFields.RefreshItemList = function(self)
@@ -536,17 +614,41 @@ optionsFields.GetField = function(self, field)
             local f = EXFrames:GetFrame('description'):Create()
             return f
         end,
+        ['disclaimer'] = function()
+            local f = EXFrames:GetFrame('disclaimer'):Create()
+            return f
+        end,
         ['edit-box'] = function()
             local f = EXFrames:GetFrame('edit-box-input'):Create({})
             f:SetHeight(40)
+            return f
+        end,
+        ['spell-id-input'] = function()
+            local f = EXFrames:GetFrame('spell-id-input'):Create({})
+            return f
+        end,
+        ['cooldowns-spell-id-input'] = function()
+            local f = EXUI:GetModule('cooldowns-spell-id-input'):Create({})
+            return f
+        end,
+        ['cooldowns-item-id-input'] = function()
+            local f = EXUI:GetModule('cooldowns-item-id-input'):Create({})
             return f
         end,
         ['checkbox'] = function()
             local f = EXFrames:GetFrame('checkbox'):Create()
             return f
         end,
+        ['tri-state-checkbox'] = function()
+            local f = EXFrames:GetFrame('tri-state-checkbox'):Create()
+            return f
+        end,
         ['custom-texts-list-item'] = function()
             local f = EXUI:GetModule('custom-texts-list-item'):Create()
+            return f
+        end,
+        ['resource-color-curve'] = function()
+            local f = EXUI:GetModule('options-resource-color-curve'):Create()
             return f
         end,
         ['anchor-point'] = function()

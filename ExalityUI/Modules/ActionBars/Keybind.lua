@@ -23,8 +23,10 @@ local function getBindingKeys(commandName)
     if not commandName then
         return keys
     end
-    for i = 1, select('#', GetBindingKey(commandName)) do
-        local key = select(i, GetBindingKey(commandName))
+    local a, b, c, d, e, f = GetBindingKey(commandName)
+    local values = { a, b, c, d, e, f }
+    for i = 1, #values do
+        local key = values[i]
         if key and key ~= '' then
             keys[#keys + 1] = key
         end
@@ -163,6 +165,17 @@ keybind.HousingStateChanged = function(self, active)
     end
 end
 
+keybind.ScheduleReassignBindings = function(self)
+    if self.reassignScheduled then
+        return
+    end
+    self.reassignScheduled = true
+    C_Timer.After(0, function()
+        keybind.reassignScheduled = false
+        keybind:ReassignBindings()
+    end)
+end
+
 keybind.ReassignBindings = function(self)
     if not manager.enabled or self.inHousing then
         return
@@ -212,16 +225,16 @@ keybind.HookBindingEvents = function(self)
         self.eventFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
         self.eventFrame:SetScript('OnEvent', function(_, event)
             if event == 'UPDATE_BINDINGS' then
-                keybind:ReassignBindings()
+                keybind:ScheduleReassignBindings()
             elseif event == 'PLAYER_REGEN_ENABLED' and keybind.pendingReassign then
-                keybind:ReassignBindings()
+                keybind:ScheduleReassignBindings()
             end
         end)
     end
 
     if EventRegistry then
         EventRegistry:RegisterCallback('KeybindListener.RebindSuccess', function()
-            keybind:ReassignBindings()
+            keybind:ScheduleReassignBindings()
         end, keybind)
         EventRegistry:RegisterCallback('HouseEditor.StateUpdated', function(_, active)
             keybind:HousingStateChanged(active)

@@ -82,6 +82,14 @@ manager.RefreshBar = function(self, barId)
         barMod:Configure(frame, self:GetDB())
         if barId == 'stance' then
             stateController:UpdateStanceBar()
+        elseif barMod:IsStateControlledBar(barId) and not barMod:IsBarEditorActive(frame) then
+            if barId == 'pet' then
+                stateController:UpdatePetBar()
+            elseif barId == 'override' then
+                stateController:UpdateOverrideBar()
+            elseif barId == 'possess' then
+                stateController:UpdatePossessBar()
+            end
         end
     end
 end
@@ -113,6 +121,10 @@ end
 manager.Disable = function(self)
     if not self.enabled then return end
     self.enabled = false
+    local spellPicker = EXUI:GetModule('action-bars-spell-picker')
+    if spellPicker and spellPicker.Hide then
+        spellPicker:Hide()
+    end
     stateController:Shutdown()
     stateDriver:Shutdown()
     for barId in pairs(barMod.instances) do

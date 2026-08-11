@@ -4,6 +4,9 @@ local EXUI = select(2, ...)
 ---@class EXUIOptionsController
 local optionsController = EXUI:GetModule('options-controller')
 
+---@class EXUIOptionsFields
+local optionsFields = EXUI:GetModule('options-fields')
+
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
@@ -13,10 +16,20 @@ local editor = EXUI:GetModule('editor')
 ---@class EXUICooldownDisplay
 local cooldownDisplay = EXUI:GetModule('cooldown-display')
 
----@class EXUIOptionsFields
-local optionsFields = EXUI:GetModule('options-fields')
+---@class EXUICooldownsDefaults
+local defaults = EXUI:GetModule('cooldowns-defaults')
 
-local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
+---@class EXUICooldownsGeneralOptions
+local generalOptions = EXUI:GetModule('cooldowns-general-options')
+
+---@class EXUICooldownsSourceOptions
+local sourceOptions = EXUI:GetModule('cooldowns-source-options')
+
+---@class EXUICooldownsDisplayOptions
+local displayOptions = EXUI:GetModule('cooldowns-display-options')
+
+---@class EXUICooldownsLoadOptions
+local loadOptions = EXUI:GetModule('cooldowns-load-options')
 
 ---@class EXUICooldownsModule
 local cooldowns = EXUI:GetModule('cooldowns')
@@ -24,63 +37,41 @@ local cooldowns = EXUI:GetModule('cooldowns')
 cooldowns.framePool = CreateFramePool('Frame', UIParent, 'BackdropTemplate')
 cooldowns.frames = {}
 
+local EQUIPMENT_SLOTS = {
+    1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19,
+}
+local SLOTNAME_BY_ID = {
+    [1] = 'HEADSLOT',
+    [2] = 'NECKSLOT',
+    [3] = 'SHOULDERSLOT',
+    [5] = 'CHESTSLOT',
+    [6] = 'WAISTSLOT',
+    [7] = 'LEGSSLOT',
+    [8] = 'FEETSLOT',
+    [9] = 'WRISTSLOT',
+    [10] = 'HANDSSLOT',
+    [11] = 'FINGER0SLOT',
+    [12] = 'FINGER1SLOT',
+    [13] = 'TRINKET0SLOT',
+    [14] = 'TRINKET1SLOT',
+    [15] = 'BACKSLOT',
+    [16] = 'MAINHANDSLOT',
+    [17] = 'SECONDARYHANDSLOT',
+    [19] = 'TABARDSLOT',
+}
+
+cooldowns.useTabs = false
+cooldowns.useSplitView = true
+cooldowns.useInnerTabs = true
+
 cooldowns.eventHandler = CreateFrame('Frame')
 cooldowns.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
-cooldowns.eventHandler:SetScript('OnEvent', function(self, event, ...)
-    if (event == 'PLAYER_ENTERING_WORLD') then
+cooldowns.eventHandler:SetScript('OnEvent', function(_, event)
+    if event == 'PLAYER_ENTERING_WORLD' then
         cooldowns:InitFrames()
     end
 end)
 
-cooldowns.DEFAULTS = {
-    enable = true,
-    name = 'New Cooldown',
-    showStacks = false,
-    isItem = false,
-    spellID = '',
-    itemID = '',
-    -- Load Conditions
-    hasLoadConditions = false,
-    onlyLoadOnPlayer = '',
-    dontLoadOnPlayer = '',
-    -- Size
-    width = 80,
-    height = 80,
-    zoom = 0,
-    -- Border
-    borderColor = { r = 0, g = 0, b = 0, a = 1 },
-    -- Position
-    anchorPoint = 'CENTER',
-    relativePoint = 'CENTER',
-    XOff = 0,
-    YOff = 0,
-    frameStrata = 'LOW',
-    frameLevel = 10,
-    -- CD Text
-    font = 'DMSans',
-    fontSize = 12,
-    fontFlag = 'OUTLINE',
-    fontAnchorPoint = 'CENTER',
-    fontRelativePoint = 'CENTER',
-    fontXOff = 0,
-    fontYOff = 0,
-    -- Charge Text
-    chargeFont = 'DMSans',
-    chargeFontSize = 12,
-    chargeFontFlag = 'OUTLINE',
-    chargeFontAnchorPoint = 'CENTER',
-    chargeFontRelativePoint = 'CENTER',
-    chargeFontXOff = 0,
-    chargeFontYOff = 0,
-}
-
-
-----------------------------
---------- Options ----------
-----------------------------
-
-cooldowns.useTabs = false
-cooldowns.useSplitView = true
 cooldowns.splitViewExtraButton = {
     text = 'Create New',
     color = { 249 / 255, 95 / 255, 9 / 255, 1 },
@@ -89,775 +80,229 @@ cooldowns.splitViewExtraButton = {
         cooldowns:UpdateAll()
         optionsFields:Refresh()
         optionsFields:SetItemID(frame.ID)
-    end
+    end,
 }
 
-cooldowns.Init = function(self)
+function cooldowns:Init()
+    self:EnsureDB()
+    EXUI:GetModule('cooldowns-spell-index'):Init()
+    EXUI:GetModule('cooldowns-item-index'):Init()
     optionsController:RegisterModule(self)
 end
 
-cooldowns.GetName = function(self)
+function cooldowns:GetName()
     return 'Cooldowns'
 end
 
-cooldowns.GetOrder = function(self)
+function cooldowns:GetOrder()
     return 50
 end
 
-cooldowns.GetSplitViewItems = function(self)
-    local items = {}
-    local db = cooldowns:GetBaseDB()
+function cooldowns:GetProfileExportSpec()
+    return { id = 'cooldowns', keys = { 'cooldowns' } }
+end
 
-    for ID, cdDB in EXUI.utils.spairs(db, function(t, a, b) return t[a].createdAt < t[b].createdAt end) do
-        table.insert(items, {
-            label = cdDB.name,
-            ID = ID
-        })
+function cooldowns:IsCooldownEntry(ID, cdDB)
+    if defaults:IsMetadataKey(ID) then
+        return false
+    end
+    return type(cdDB) == 'table'
+end
+
+function cooldowns:GetSplitViewItems()
+    local db = self:EnsureDB()
+    local items = {}
+
+    for ID, cdDB in EXUI.utils.spairs(db, function(t, a, b)
+        local cdA = t[a]
+        local cdB = t[b]
+        if type(cdA) ~= 'table' or type(cdB) ~= 'table' then
+            return tostring(a) < tostring(b)
+        end
+        return (cdA.createdAt or 0) < (cdB.createdAt or 0)
+    end) do
+        if self:IsCooldownEntry(ID, cdDB) then
+            table.insert(items, {
+                label = cdDB.name or ID,
+                ID = ID,
+                contextMenuItems = {
+                    {
+                        label = 'Duplicate',
+                        color = { 2 / 255, 145 / 255, 227 / 255, 1 },
+                        onClick = function(itemID)
+                            local newID = self:DuplicateCD(itemID)
+                            if newID then
+                                optionsFields:Refresh()
+                                optionsFields:SetItemID(newID)
+                            end
+                        end,
+                    },
+                    {
+                        label = 'Delete',
+                        color = EXUI.EXFrames.Theme.danger,
+                        onClick = function(itemID)
+                            self:DeleteById(itemID)
+                            optionsFields:Refresh()
+                        end,
+                    },
+                },
+            })
+        end
     end
 
     return items
 end
 
-cooldowns.GetOptions = function(self, currTabID, currItemID)
-    if (not currItemID) then
-        return {}
-    end
-
-    local db = self:GetCDDBByID(currItemID)
-    if (not db or next(db) == nil) then
+function cooldowns:GetSectionTabs(itemId)
+    if not itemId then
         return {}
     end
 
     return {
-        {
-            type = 'toggle',
-            label = 'Enable',
-            name = 'enable',
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'enable', value)
-                self:UpdateById(currItemID)
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'enable')
-            end,
-            width = 100
-        },
-        {
-            type = 'edit-box',
-            label = 'Name',
-            name = 'name',
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'name')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'name', value)
-                self:UpdateById(currItemID)
-                optionsFields:RefreshItemList()
-            end,
-            width = 50
-        },
-        {
-            type = 'spacer',
-            width = 50
-        },
-        {
-            type = 'dropdown',
-            label = 'Cooldown Type',
-            name = 'cooldownType',
-            getOptions = function()
-                return {
-                    ['item'] = 'Item',
-                    ['spell'] = 'Spell',
-                }
-            end,
-            currentValue = function()
-                local isItem = self:GetValueForCD(currItemID, 'isItem')
-                return isItem and 'item' or 'spell'
-            end,
-            onChange = function(value)
-                if (value == 'item') then
-                    self:UpdateValueForCD(currItemID, 'isItem', true)
-                else
-                    self:UpdateValueForCD(currItemID, 'isItem', false)
-                end
-                self:UpdateById(currItemID)
-                optionsFields:RefreshOptions()
-            end,
-            width = 50,
-        },
-        {
-            type = 'toggle',
-            label = 'Show Stacks',
-            name = 'showStacks',
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'showStacks', value)
-                self:UpdateById(currItemID)
-                optionsFields:RefreshOptions()
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            width = 100,
-        },
-        {
-            type = 'edit-box',
-            label = 'Item ID',
-            name = 'itemID',
-            depends = function()
-                return self:GetValueForCD(currItemID, 'isItem')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'itemID')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'itemID', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 50
-        },
-        {
-            type = 'edit-box',
-            label = 'Spell ID',
-            name = 'spellID',
-            depends = function()
-                return not self:GetValueForCD(currItemID, 'isItem')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'spellID')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'spellID', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 50
-        },
-        {
-            type = 'title',
-            label = 'Size & Position',
-            width = 100,
-            size = 14
-        },
-        {
-            type = 'range',
-            label = 'Width',
-            name = 'width',
-            min = 1,
-            max = 1000,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'width')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'width', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'range',
-            label = 'Height',
-            name = 'height',
-            min = 1,
-            max = 100,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'height')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'height', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'spacer',
-            width = 60
-        },
-        {
-            type = 'anchor-point',
-            label = 'Anchor Point',
-            name = 'anchorPoint',
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'anchorPoint')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'anchorPoint', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'anchor-point',
-            label = 'Relative Anchor Point',
-            name = 'relativePoint',
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'relativePoint')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'relativePoint', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'spacer',
-            width = 54
-        },
-        {
-            type = 'range',
-            label = 'X Offset',
-            name = 'XOff',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'XOff')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'XOff', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'range',
-            label = 'Y Offset',
-            name = 'YOff',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'YOff')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'YOff', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'spacer',
-            width = 54
-        },
-        {
-            type = 'dropdown',
-            label = 'Frame Strata',
-            name = 'frameStrata',
-            getOptions = function()
-                return EXUI.const.frameStrata
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'frameStrata')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'frameStrata', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 22
-        },
-        {
-            type = 'range',
-            label = 'Frame Level',
-            name = 'frameLevel',
-            min = 0,
-            max = 100,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'frameLevel')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'frameLevel', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'title',
-            label = 'Style',
-            size = 14,
-            width = 100
-        },
-        {
-            type = 'range',
-            label = 'Zoom',
-            name = 'zoom',
-            min = 0,
-            max = 100,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'zoom')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'zoom', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'color-picker',
-            label = 'Border Color',
-            name = 'borderColor',
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'borderColor')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'borderColor', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 80
-        },
-        {
-            type = 'dropdown',
-            label = 'CD Font',
-            name = 'font',
-            getOptions = function()
-                local fonts = LSM:List('font')
-                local options = {}
-                for _, font in ipairs(fonts) do
-                    options[font] = font
-                end
-                return options
-            end,
-            isFontDropdown = true,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'font')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'font', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'dropdown',
-            label = 'Font Flag',
-            name = 'fontFlag',
-            getOptions = function()
-                return EXUI.const.fontFlags
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'fontFlag')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'fontFlag', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'range',
-            label = 'Size',
-            name = 'fontSize',
-            min = 1,
-            max = 40,
-            step = 1,
-            width = 20,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'fontSize')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'fontSize', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'spacer',
-            width = 34
-        },
-        {
-            type = 'anchor-point',
-            label = 'CD Anchor Point',
-            name = 'fontAnchorPoint',
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'fontAnchorPoint')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'fontAnchorPoint', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'anchor-point',
-            label = 'CR Relative Anchor Point',
-            name = 'fontRelativePoint',
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'fontRelativePoint')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'fontRelativePoint', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'spacer',
-            width = 54
-        },
-        {
-            type = 'range',
-            label = 'X Offset',
-            name = 'fontXOff',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 23,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'fontXOff')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'fontXOff', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'range',
-            label = 'Y Offset',
-            name = 'fontYOff',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 23,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'fontYOff')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'fontYOff', value)
-                self:UpdateById(currItemID)
-            end
-        },
-
-        --------------- Stack Text ---------------
-        {
-            type = 'title',
-            label = 'Stacks Text',
-            width = 100,
-            size = 14,
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end
-        },
-        {
-            type = 'dropdown',
-            label = 'Stacks Font',
-            name = 'chargeFont',
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            getOptions = function()
-                local fonts = LSM:List('font')
-                local options = {}
-                for _, font in ipairs(fonts) do
-                    options[font] = font
-                end
-                return options
-            end,
-            isFontDropdown = true,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'chargeFont')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'chargeFont', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'dropdown',
-            label = 'Stacks Font Flag',
-            name = 'chargeFontFlag',
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            getOptions = function()
-                return EXUI.const.fontFlags
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'chargeFontFlag')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'chargeFontFlag', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'range',
-            label = 'Stacks Font Size',
-            name = 'chargeFontSize',
-            min = 1,
-            max = 40,
-            step = 1,
-            width = 20,
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'chargeFontSize')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'chargeFontSize', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'spacer',
-            width = 34,
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end
-        },
-        {
-            type = 'anchor-point',
-            label = 'Stacks Anchor Point',
-            name = 'chargeFontAnchorPoint',
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'chargeFontAnchorPoint')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'chargeFontAnchorPoint', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'anchor-point',
-            label = 'Stacks Relative Anchor Point',
-            name = 'chargeFontRelativePoint',
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'chargeFontRelativePoint')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'chargeFontRelativePoint', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 23
-        },
-        {
-            type = 'spacer',
-            width = 54
-        },
-        {
-            type = 'range',
-            label = 'Stacks X Offset',
-            name = 'chargeFontXOff',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 23,
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'chargeFontXOff')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'chargeFontXOff', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'range',
-            label = 'Stacks Y Offset',
-            name = 'chargeFontYOff',
-            min = -1000,
-            max = 1000,
-            step = 1,
-            width = 23,
-            depends = function()
-                return self:GetValueForCD(currItemID, 'showStacks')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'chargeFontYOff')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'chargeFontYOff', value)
-                self:UpdateById(currItemID)
-            end
-        },
-        {
-            type = 'title',
-            label = 'Actions',
-            size = 14,
-            width = 100
-        },
-        {
-            type = 'toggle',
-            label = 'Enable Load Condtions',
-            name = 'hasLoadConditions',
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'hasLoadConditions')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'hasLoadConditions', value)
-                self:UpdateById(currItemID)
-                optionsFields:RefreshOptions()
-            end,
-            width = 100
-        },
-        {
-            type = 'edit-box',
-            label = 'Load Only on Player/s',
-            name = 'onlyLoadOnPlayer',
-            tooltip = {
-                text = 'Comma separated list of players to load the cooldown on.'
-            },
-            depends = function()
-                return self:GetValueForCD(currItemID, 'hasLoadConditions')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'onlyLoadOnPlayer')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'onlyLoadOnPlayer', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 40
-        },
-        {
-            type = 'spacer',
-            width = 60
-        },
-        {
-            type = 'edit-box',
-            label = 'Dont Load on Player/s',
-            name = 'dontLoadOnPlayer',
-            tooltip = {
-                text = 'Comma separated list of players to not load the cooldown on.'
-            },
-            depends = function()
-                return self:GetValueForCD(currItemID, 'hasLoadConditions')
-            end,
-            currentValue = function()
-                return self:GetValueForCD(currItemID, 'dontLoadOnPlayer')
-            end,
-            onChange = function(value)
-                self:UpdateValueForCD(currItemID, 'dontLoadOnPlayer', value)
-                self:UpdateById(currItemID)
-            end,
-            width = 40
-        },
-        {
-            type = 'spacer',
-            width = 60
-        },
-        {
-            type = 'button',
-            label = 'Duplicate',
-            onClick = function()
-                local newID = self:DuplicateCD(currItemID)
-                optionsFields:Refresh()
-                optionsFields:SetItemID(newID)
-            end,
-            width = 16,
-            color = { 2 / 255, 145 / 255, 227 / 255, 1 }
-        },
-        {
-            type = 'button',
-            label = 'Delete',
-            onClick = function()
-                self:DeleteById(currItemID)
-                optionsFields:Refresh()
-            end,
-            width = 16,
-            color = { 171 / 255, 0, 20 / 255, 1 }
-        }
+        { ID = 'general', label = 'General' },
+        { ID = 'source', label = 'Source' },
+        { ID = 'display', label = 'Display' },
+        { ID = 'load', label = 'Load' },
     }
 end
 
-
-
-----------------------------
------- Display Control -----
-----------------------------
-
-cooldowns.CreateFrame = function(self)
-    local frame = self.framePool:Acquire()
-    frame.Destroy = function(self)
-        cooldowns.framePool:Release(self)
+function cooldowns:GetOptions(currTabID, currItemID)
+    if not currItemID then
+        return {}
     end
 
-    frame:SetBackdrop(EXUI.const.backdrop.DEFAULT)
-    frame:SetBackdropColor(0, 0, 0, 0.4)
-    frame:SetBackdropBorderColor(0, 0, 0, 1)
+    local db = self:GetCDDBByID(currItemID)
+    if not db or next(db) == nil then
+        return {}
+    end
 
+    local section = currTabID or 'general'
+    if section == 'general' then
+        return generalOptions:GetOptions(currItemID)
+    end
+    if section == 'source' then
+        return sourceOptions:GetOptions(currItemID)
+    end
+    if section == 'display' then
+        return displayOptions:GetOptions(currItemID)
+    end
+    if section == 'load' then
+        return loadOptions:GetOptions(currItemID)
+    end
+
+    return {}
+end
+
+function cooldowns:GetEquipmentSlotOptions()
+    local options = {}
+    for _, slotID in ipairs(EQUIPMENT_SLOTS) do
+        local slotName = SLOTNAME_BY_ID[slotID]
+        local label = slotName and _G[slotName] or nil
+        if slotID == 11 then
+            label = 'Finger 1'
+        elseif slotID == 12 then
+            label = 'Finger 2'
+        elseif slotID == 13 then
+            label = 'Trinket 1'
+        elseif slotID == 14 then
+            label = 'Trinket 2'
+        end
+        if not label then
+            label = string.format('Slot %d', slotID)
+        end
+        options[slotID] = label
+    end
+    return options
+end
+
+function cooldowns:CreateFrame()
+    local frame = self.framePool:Acquire()
+    frame.Destroy = function(selfRef)
+        cooldowns.framePool:Release(selfRef)
+    end
+
+    EXUI:ApplySolidBorder(frame, 1, { 0, 0, 0, 1 }, { 0, 0, 0, 0.4 }, { register = false })
+    EXUI:RegisterSnapFrame(frame)
     return frame
 end
 
-cooldowns.ClearFrame = function(self, frame)
+function cooldowns:ClearFrame(frame)
     frame:ClearAllPoints()
     frame:UnregisterAllEvents()
     frame:Destroy()
 end
 
-cooldowns.CreateNew = function(self)
-    local ID = EXUI.utils.generateRandomString(10)
-
-    return self:Create(ID)
+function cooldowns:CreateNew()
+    local newDisplay = defaults:BuildNewDisplay()
+    local db = self:GetBaseDB()
+    db[newDisplay.ID] = newDisplay
+    self:SaveBaseDB(db)
+    return self:Create(newDisplay.ID)
 end
 
-cooldowns.Create = function(self, ID)
-    local frame = self:CreateFrame()
+function cooldowns:Create(ID)
+    local frame = self.frames[ID]
+    if frame then
+        return frame
+    end
+
+    frame = self:CreateFrame()
     frame.ID = ID
     self.frames[ID] = frame
-
     cooldownDisplay:Create(frame)
-
     return frame
 end
 
-cooldowns.UpdateById = function(self, ID)
+function cooldowns:UpdateById(ID)
     local frame = self.frames[ID]
-    if (frame) then
-        self:SetDefaults(ID)
-        if (not self:CheckLoadConditions(ID)) then
-            frame:Hide()
-            frame:UnregisterAllEvents()
-            return
-        end
-        frame:Show()
-        frame.db = self:GetCDDBByID(ID)
-        cooldownDisplay:Update(frame)
+    if not frame then
+        return
+    end
 
-        if (not editor:IsFrameRegistered(frame)) then
-            editor:RegisterFrameForEditor(frame, 'CD: ' .. frame.db.name, function(frame)
-                local point, _, relativePoint, XOff, YOff = frame:GetPoint(1)
-                self:UpdateValueForCD(ID, 'anchorPoint', point)
-                self:UpdateValueForCD(ID, 'relativePoint', relativePoint)
-                self:UpdateValueForCD(ID, 'XOff', XOff)
-                self:UpdateValueForCD(ID, 'YOff', YOff)
-            end)
-        else
-            editor:UpdateFrameLabel(frame, 'CD: ' .. frame.db.name)
-        end
+    self:SetDefaults(ID)
+
+    if not self:CheckLoadConditions(ID) then
+        frame:Hide()
+        frame:UnregisterAllEvents()
+        return
+    end
+
+    frame:Show()
+    frame.db = self:GetCDDBByID(ID)
+    cooldownDisplay:Update(frame)
+
+    if not editor:IsFrameRegistered(frame) then
+        editor:RegisterFrameForEditor(frame, 'CD: ' .. frame.db.name, function(refFrame)
+            local point, _, relativePoint, XOff, YOff = refFrame:GetPoint(1)
+            self:UpdateValueForCD(ID, 'anchorPoint', point)
+            self:UpdateValueForCD(ID, 'relativePoint', relativePoint)
+            self:UpdateValueForCD(ID, 'XOff', XOff)
+            self:UpdateValueForCD(ID, 'YOff', YOff)
+        end)
+    else
+        editor:UpdateFrameLabel(frame, 'CD: ' .. frame.db.name)
     end
 end
 
-cooldowns.CheckLoadConditions = function(self, ID)
+function cooldowns:CheckLoadConditions(ID)
     local db = self:GetCDDBByID(ID)
-    if (not db.hasLoadConditions) then
+    if not db or not db.hasLoadConditions then
         return true
     end
-    local playerName = UnitName('player')
 
+    local playerName = UnitName('player')
     local onlyLoadOnPlayer = db.onlyLoadOnPlayer
-    if (onlyLoadOnPlayer ~= '') then
+    if onlyLoadOnPlayer ~= '' then
         local players = { strsplit(',', onlyLoadOnPlayer) }
-        if (not tContains(players, playerName)) then
+        if not tContains(players, playerName) then
             return false
         end
     end
 
     local dontLoadOnPlayer = db.dontLoadOnPlayer
-    if (dontLoadOnPlayer ~= '') then
+    if dontLoadOnPlayer ~= '' then
         local players = { strsplit(',', dontLoadOnPlayer) }
-        if (tContains(players, playerName)) then
+        if tContains(players, playerName) then
             return false
         end
     end
@@ -865,89 +310,103 @@ cooldowns.CheckLoadConditions = function(self, ID)
     return true
 end
 
-cooldowns.UpdateAll = function(self)
+function cooldowns:UpdateAll()
     for ID in pairs(self.frames) do
         self:UpdateById(ID)
     end
 end
 
-cooldowns.DeleteById = function(self, ID)
+function cooldowns:DeleteById(ID)
     local frame = self.frames[ID]
-    if (frame) then
+    if frame then
         self:ClearFrame(frame)
         self.frames[ID] = nil
     end
     self:DeleteCDFromDB(ID)
 end
 
-cooldowns.InitFrames = function(self)
-    local db = self:GetBaseDB()
-    for ID in pairs(db) do
-        self:Create(ID)
+function cooldowns:InitFrames()
+    local db = self:EnsureDB()
+    for ID, entry in pairs(db) do
+        if self:IsCooldownEntry(ID, entry) then
+            self:Create(ID)
+        end
     end
-
     self:UpdateAll()
 end
 
-----------------------------
------------- DB ------------
-----------------------------
-
-cooldowns.GetBaseDB = function(self)
-    local db = data:GetDataByKey('cooldowns') or {}
+function cooldowns:GetBaseDB()
+    local db = data:GetDataByKey('cooldowns')
+    if not db then
+        db = {}
+        data:SetDataByKey('cooldowns', db)
+    end
     return db
 end
 
-cooldowns.SaveBaseDB = function(self, db)
+function cooldowns:SaveBaseDB(db)
     data:SetDataByKey('cooldowns', db)
 end
 
-cooldowns.GetCDDBByID = function(self, cdID)
+function cooldowns:EnsureDB()
     local db = self:GetBaseDB()
-    return db[cdID] or {}
+    if db.__exuiDefaultsVersion ~= defaults.SCHEMA_VERSION then
+        defaults:MergeIntoDB(db)
+        self:SaveBaseDB(db)
+    end
+    return db
 end
 
-cooldowns.UpdateValueForCD = function(self, cdID, key, value)
-    local db = self:GetBaseDB()
-    db[cdID] = db[cdID] or {}
+function cooldowns:GetCDDBByID(cdID)
+    local db = self:EnsureDB()
+    return db[cdID]
+end
+
+function cooldowns:UpdateValueForCD(cdID, key, value)
+    local db = self:EnsureDB()
+    db[cdID] = db[cdID] or defaults:CopyTable(defaults.DISPLAY)
     db[cdID][key] = value
+    if key == 'cooldownSource' then
+        db[cdID].isItem = value == 'item'
+    end
     self:SaveBaseDB(db)
 end
 
-cooldowns.GetValueForCD = function(self, cdID, key)
+function cooldowns:GetValueForCD(cdID, key)
     local cdDB = self:GetCDDBByID(cdID)
-    return cdDB[key]
+    return cdDB and cdDB[key]
 end
 
-cooldowns.DeleteCDFromDB = function(self, cdID)
-    local db = self:GetBaseDB()
+function cooldowns:DeleteCDFromDB(cdID)
+    local db = self:EnsureDB()
     db[cdID] = nil
     self:SaveBaseDB(db)
 end
 
-cooldowns.SetDefaults = function(self, cdID)
-    local db = self:GetBaseDB()
+function cooldowns:SetDefaults(cdID)
+    local db = self:EnsureDB()
     db[cdID] = db[cdID] or {}
-    if (not db[cdID].createdAt) then
+    if not db[cdID].createdAt then
         db[cdID].createdAt = time()
     end
-    for key, value in pairs(self.DEFAULTS) do
-        if (db[cdID][key] == nil) then
-            db[cdID][key] = value
-        end
-    end
+    defaults:MergeDisplayDefaults(db[cdID])
     self:SaveBaseDB(db)
 end
 
-cooldowns.DuplicateCD = function(self, cdID)
+function cooldowns:DuplicateCD(cdID)
+    local db = self:EnsureDB()
+    if not db[cdID] then
+        return nil
+    end
+
     local newID = EXUI.utils.generateRandomString(10)
-    local db = self:GetBaseDB()
     db[newID] = EXUI.utils.deepCloneTable(db[cdID])
-    db[newID].name = db[newID].name .. ' (Copy)'
+    db[newID].name = (db[newID].name or 'Cooldown') .. ' (Copy)'
     db[newID].createdAt = time()
+    db[newID].ID = newID
     self:SaveBaseDB(db)
+
     self:Create(newID)
     self:UpdateById(newID)
-
     return newID
 end

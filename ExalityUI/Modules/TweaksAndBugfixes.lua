@@ -42,6 +42,10 @@ tweaksAndBugfixes.GetOrder = function(self)
     return 90
 end
 
+tweaksAndBugfixes.GetProfileExportSpec = function(self)
+    return { id = 'tweaks-and-bugfixes', keys = { 'tweaks-and-bugfixes' } }
+end
+
 tweaksAndBugfixes.GetOptions = function(self)
     local options = {
         {
@@ -245,5 +249,75 @@ tweaksAndBugfixes:RegisterTweak('almost-full-bags', {
     disable = function()
         EXUI:UnregisterEventHandler('BAG_UPDATE_DELAYED', 'almost-full-bags')
         Notifications:Remove('almost-full-bags')
+    end,
+})
+
+tweaksAndBugfixes:RegisterTweak('loot-tracker', {
+    name = 'Loot pickup notifications',
+    type = 'tweak',
+    enable = function()
+        local nextFallbackId = 0
+
+        local function BuildMessage(link, qty)
+            if qty then
+                return link .. ' x' .. qty
+            end
+            return link
+        end
+
+        local function ShowLootNotification(id, message, icon)
+            Notifications:Add({
+                id = 'loot-tracker-' .. tostring(id),
+                duration = 4,
+                message = message,
+                icon = icon,
+            })
+        end
+
+        EXUI:RegisterEventHandler({ 'CHAT_MSG_LOOT', 'CHAT_MSG_CURRENCY' }, 'loot-tracker',
+            function(event, text, _, _, _, _, _, _, _, _, _, lineID, guid)
+                if not text then return end
+
+                local notificationId = lineID
+                if not notificationId then
+                    nextFallbackId = nextFallbackId + 1
+                    notificationId = nextFallbackId
+                end
+
+                if event == 'CHAT_MSG_LOOT' then
+                    if guid ~= UnitGUID('player') then return end
+
+                    local itemId = text:match('item:(%d+)')
+                    if not itemId then return end
+
+                    local link = text:match('|c%x+|Hitem:.-|h.-|h|r')
+                    if not link then
+                        link = select(2, C_Item.GetItemInfo(itemId))
+                    end
+                    if not link then return end
+
+                    local qty = text:match('x(%d+)')
+                    local icon = C_Item.GetItemIconByID(itemId)
+                    ShowLootNotification(notificationId, BuildMessage(link, qty), icon)
+                elseif event == 'CHAT_MSG_CURRENCY' then
+                    local currencyId = text:match('currency:(%d+)')
+                    if not currencyId then return end
+
+                    local link = text:match('|c%x+|Hcurrency:.-|h.-|h|r')
+                    if not link then
+                        link = C_CurrencyInfo.GetCurrencyLink(tonumber(currencyId))
+                    end
+                    if not link then return end
+
+                    local qty = text:match('x(%d+)')
+                    local info = C_CurrencyInfo.GetCurrencyInfo(tonumber(currencyId))
+                    local icon = info and info.iconFileID
+                    ShowLootNotification(notificationId, BuildMessage(link, qty), icon)
+                end
+            end
+        )
+    end,
+    disable = function()
+        EXUI:UnregisterEventHandler({ 'CHAT_MSG_LOOT', 'CHAT_MSG_CURRENCY' }, 'loot-tracker')
     end,
 })

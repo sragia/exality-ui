@@ -1,7 +1,8 @@
-## Interface: 120007
+## Interface: 120100, 120007
 ## Title: ExalityUI
 ## Notes: TBD
 ## Author: Exality
+## X-License: GPL v2
 ## SavedVariables: ExalityUIData
 ## SavedVariablesPerCharacter: ExalityUICharData
 ## Version: @project-version@
@@ -18,6 +19,7 @@ Libs/libdatabroker-1-1/LibDataBroker-1.1.lua
 Libs/LibQTip-1.0/lib.xml
 Libs/LibDBIcon-1.0/LibDBIcon-1.0.lua
 Libs/LibButtonGlow-1.0/LibButtonGlow-1.0.lua
+Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua
 Libs/LibActionButton-1.0/LibActionButton-1.0.lua
 
 ExalityFrames/ExalityFrames.xml
@@ -44,12 +46,11 @@ Options/ReloadDialog.lua
 Options/Controller.lua
 Options/NavIcons.lua
 Options/Editor.lua
+Options/EditorOptionBar.lua
 Options/Main.lua
 Options/ModuleSelector.lua
+Options/Frames/ResourceColorCurve.lua
 Options/Fields.lua
-
-# UF Options
-Modules/UnitFrames/Options/UFOptions.xml
 
 # Modules
 Modules/Notifications.lua
@@ -58,9 +59,16 @@ Modules/General.lua
 Modules/RaidTools.lua
 Modules/ResourceDisplays/ResourceDisplays.xml
 Modules/Cooldowns/Cooldowns.xml
+Modules/AuraDisplays/AuraDisplays.xml
+Modules/UnitFrames/Auras/Auras.xml
 Modules/XPBar.lua
+Modules/ObjectiveTracker/ObjectiveTracker.xml
+Modules/MythicPlusTimer/MythicPlusTimer.xml
 Modules/ActionBars/ActionBars.xml
 Modules/TweaksAndBugfixes.lua
+
+# UF Options
+Modules/UnitFrames/Options/UFOptions.xml
 
 # UnitFrames
 Modules/UnitFrames/Core.lua

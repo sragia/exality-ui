@@ -1,20 +1,31 @@
-<Ui xmlns="http://www.blizzard.com/wow/ui/">
-	<!-- Core Module File -->
-	<Script file="ResourceDisplays.lua"/> 
-
-	<!-- Power Type Modules -->
-	<Script file="PowerType/GenericPower.lua"/>
-	<Script file="PowerType/Stagger.lua"/>
-	<Script file="PowerType/HolyPower.lua"/>
-	<Script file="PowerType/ComboPoints.lua"/>
-	<Script file="PowerType/Runes.lua"/>
-	<Script file="PowerType/SoulShards.lua"/>
-	<Script file="PowerType/Chi.lua"/>
-	<Script file="PowerType/SoulFragments.lua"/>
-	<Script file="PowerType/Maelstrom.lua"/>
-	<Script file="PowerType/Essence.lua"/>
-
-	<!-- Elements Modules -->
-	<Script file="Elements/StatusBar.lua"/>
-	<Script file="Elements/Text.lua"/>
-</Ui>
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Defaults.lua"/>
+	<Script file="Helpers.lua"/>
+	<Script file="Visibility.lua"/>
+	<Script file="LoadConditions.lua"/>
+	<Script file="Options/GeneralOptions.lua"/>
+	<Script file="Options/DisplayOptions.lua"/>
+	<Script file="Options/LoadOptions.lua"/>
+	<Script file="PowerType/SegmentBase.lua"/>
+	<Script file="ResourceDisplays.lua"/>
+	<Script file="Preview.lua"/>
+
+	<Script file="PowerType/GenericPower.lua"/>
+	<Script file="PowerType/Stagger.lua"/>
+	<Script file="PowerType/HolyPower.lua"/>
+	<Script file="PowerType/ComboPoints.lua"/>
+	<Script file="PowerType/Runes.lua"/>
+	<Script file="PowerType/SoulShards.lua"/>
+	<Script file="PowerType/Chi.lua"/>
+	<Script file="PowerType/SoulFragments.lua"/>
+	<Script file="PowerType/Maelstrom.lua"/>
+	<Script file="PowerType/Essence.lua"/>
+	<Script file="PowerType/EbonMight.lua"/>
+	<Script file="PowerType/DevourerFury.lua"/>
+	<Script file="PowerType/BalanceEclipse.lua"/>
+	<Script file="PowerType/TipOfTheSpear.lua"/>
+
+	<Script file="Elements/StatusBar.lua"/>
+	<Script file="Elements/Text.lua"/>
+</Ui>
+

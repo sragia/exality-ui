@@ -345,13 +345,7 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
     end
 
     for i, button in ipairs(frame.buttons) do
-        if i <= numForms then
-            EXUI:SetSize(button, barConfig.width, barConfig.height)
-            if button.Update then
-                button:Update()
-            end
-            self:ApplyStyle(button, 'stance', barConfig)
-        else
+        if i > numForms then
             button:Hide()
         end
     end
@@ -372,8 +366,12 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
 
     for i = 1, numForms do
         local button = frame.buttons[i]
-        if button and button.Update then
-            button:Update()
+        if button then
+            EXUI:SetSize(button, barConfig.width, barConfig.height)
+            self:ApplyStyle(button, 'stance', barConfig)
+            if button.Update then
+                button:Update()
+            end
         end
     end
     for i = numForms + 1, #frame.buttons do
@@ -381,7 +379,10 @@ special.UpdateStanceButtons = function(self, frame, barConfig)
     end
 
     self:ApplyStanceBarVisibility(frame, barConfig)
-    EXUI:GetModule('action-bars-keybind'):ReassignBindings()
+    if frame.exuiLastStanceCount ~= numForms then
+        frame.exuiLastStanceCount = numForms
+        EXUI:GetModule('action-bars-keybind'):ScheduleReassignBindings()
+    end
 end
 
 special.UpdateAll = function(self, barFrame)
@@ -427,7 +428,7 @@ special.OnBarEvent = function(self, frame, event)
     end
 
     if self.COOLDOWN_ONLY_EVENTS[event] then
-        self:UpdateAll(frame)
+        self:RefreshBarCooldowns(frame)
         return
     end
 

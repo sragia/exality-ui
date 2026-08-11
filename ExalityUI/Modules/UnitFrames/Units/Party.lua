@@ -77,76 +77,6 @@ party.Init = function(self)
         -- Power
         ['powerEnable'] = true,
         ['powerHeight'] = 3,
-        -- Debuffs
-        ['debuffsEnable'] = true,
-        ['debuffsAnchorPoint'] = 'TOPRIGHT',
-        ['debuffsRelativeAnchorPoint'] = 'RIGHT',
-        ['debuffsXOff'] = -2,
-        ['debuffsYOff'] = 20,
-        ['debuffsIconWidth'] = 27,
-        ['debuffsIconHeight'] = 19,
-        ['debuffsSpacing'] = 2,
-        ['debuffsNum'] = 4,
-        ['debuffsColNum'] = 6,
-        ['debuffsAnchorToBuffs'] = false,
-        ['debuffsCountFont'] = 'DMSans',
-        ['debuffsCountFontSize'] = 15,
-        ['debuffsCountFontFlag'] = 'OUTLINE',
-        ['debuffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['debuffsCountAnchorPoint'] = 'CENTER',
-        ['debuffsCountRelativeAnchorPoint'] = 'TOPRIGHT',
-        ['debuffsCountXOff'] = 0,
-        ['debuffsCountYOff'] = 0,
-        ['debuffsDurationFont'] = 'DMSans',
-        ['debuffsDurationFontSize'] = 10,
-        ['debuffsDurationFontFlag'] = 'OUTLINE',
-        ['debuffsFilters'] = {
-            HELPFUL = false,
-            HARMFUL = true,
-            RAID = false,
-            PLAYER = false,
-            INCLUDE_NAME_PLATE_ONLY = false,
-            CROWD_CONTROL = false,
-            BIG_DEFENSIVE = false,
-            RAID_PLAYER_DISPELLABLE = false,
-            RAID_IN_COMBAT = true,
-            IMPORTANT = false
-        },
-        -- Buffs
-        ['buffsEnable'] = false,
-        ['buffsAnchorPoint'] = 'BOTTOMLEFT',
-        ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
-        ['buffsXOff'] = 0,
-        ['buffsYOff'] = 2,
-        ['buffsIconWidth'] = 20,
-        ['buffsIconHeight'] = 20,
-        ['buffsSpacing'] = 2,
-        ['buffsNum'] = 32,
-        ['buffsColNum'] = 6,
-        ['buffsAnchorToDebuffs'] = false,
-        ['buffsCountFont'] = 'DMSans',
-        ['buffsCountFontSize'] = 12,
-        ['buffsCountFontFlag'] = 'OUTLINE',
-        ['buffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['buffsCountAnchorPoint'] = 'CENTER',
-        ['buffsCountRelativeAnchorPoint'] = 'CENTER',
-        ['buffsCountXOff'] = 0,
-        ['buffsCountYOff'] = 0,
-        ['buffsDurationFont'] = 'DMSans',
-        ['buffsDurationFontSize'] = 12,
-        ['buffsDurationFontFlag'] = 'OUTLINE',
-        ['buffsFilters'] = {
-            HELPFUL = true,
-            HARMFUL = false,
-            RAID = false,
-            PLAYER = false,
-            INCLUDE_NAME_PLATE_ONLY = false,
-            CROWD_CONTROL = false,
-            BIG_DEFENSIVE = false,
-            RAID_PLAYER_DISPELLABLE = false,
-            RAID_IN_COMBAT = true,
-            IMPORTANT = false
-        },
         -- Raid Roles
         ['raidRolesEnable'] = true,
         ['raidRolesAnchorPoint'] = 'LEFT',
@@ -186,25 +116,6 @@ party.Init = function(self)
         ['summonXOff'] = 0,
         ['summonYOff'] = 0,
         ['summonScale'] = 1,
-        -- Private Auras
-        ['privateAurasEnable'] = false,
-        ['privateAurasMaxNum'] = 5,
-        ['privateAurasIconWidth'] = 20,
-        ['privateAurasDisableBorder'] = false,
-        ['privateAurasDisableTooltip'] = false,
-        ['privateAurasIconHeight'] = 20,
-        ['privateAurasSpacingX'] = 1,
-        ['privateAurasSpacingY'] = 1,
-        ['privateAurasGrowthX'] = 'LEFT',
-        ['privateAurasGrowthY'] = 'UP',
-        ['privateAurasBorderScale'] = 1,
-        ['privateAurasDisableCooldownSpiral'] = false,
-        ['privateAurasDisableCooldownText'] = false,
-        ['privateAurasMaxCols'] = 6,
-        ['privateAurasAnchorPoint'] = 'CENTER',
-        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
-        ['privateAurasXOff'] = 0,
-        ['privateAurasYOff'] = 0,
         -- Absorbs
         ['damageAbsorbEnable'] = true,
         ['damageAbsorbShowOverIndicator'] = false,
@@ -228,43 +139,22 @@ party.Init = function(self)
         ['groupRoleIndicatorHideTank'] = true,
         ['groupRoleIndicatorHideHealer'] = false,
         ['groupRoleIndicatorHideDamager'] = true,
-        -- Custom Auras
-        ['aurasEnable'] = false,
-        ['aurasAnchorPoint'] = 'CENTER',
-        ['aurasRelativeAnchorPoint'] = 'CENTER',
-        ['aurasXOff'] = 0,
-        ['aurasYOff'] = 0,
-        ['aurasIconWidth'] = 20,
-        ['aurasIconHeight'] = 20,
-        ['aurasFilters'] = {
-            HELPFUL = false,
-            HARMFUL = false,
-            RAID = false,
-            PLAYER = false,
-            INCLUDE_NAME_PLATE_ONLY = false,
-            CROWD_CONTROL = false,
-            BIG_DEFENSIVE = false,
-            RAID_PLAYER_DISPELLABLE = false,
-            RAID_IN_COMBAT = false
-        },
-        ['aurasSpacing'] = 2,
-        ['aurasNum'] = 32,
-        ['aurasColNum'] = 6,
-        ['aurasAnchorToDebuffs'] = false,
-        ['aurasCountFont'] = 'DMSans',
-        ['aurasCountFontSize'] = 12,
-        ['aurasCountFontFlag'] = 'OUTLINE',
-        ['aurasCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['aurasCountAnchorPoint'] = 'CENTER',
-        ['aurasCountRelativeAnchorPoint'] = 'CENTER',
-        ['aurasCountXOff'] = 0,
-        ['aurasCountYOff'] = 0,
-        ['aurasDurationFont'] = 'DMSans',
-        ['aurasDurationFontSize'] = 12,
-        ['aurasDurationFontFlag'] = 'OUTLINE',
         -- Dispel Overlay
         ['dispelOverlayEnable'] = true,
-        ['dispelOverlayAlpha'] = 1
+        ['dispelOverlayFilter'] = 'RAID',
+        ['dispelOverlayAlpha'] = 1,
+        ['dispelOverlayShowOverlay'] = true,
+        ['dispelOverlayShowIcon'] = false,
+        ['dispelOverlayIconSize'] = 16,
+        ['dispelOverlayAnchorPoint'] = 'CENTER',
+        ['dispelOverlayRelativeAnchorPoint'] = 'CENTER',
+        ['dispelOverlayXOff'] = 0,
+        ['dispelOverlayYOff'] = 0,
+        -- Targeting
+        ['targetBorderEnable'] = true,
+        ['targetBorderColor'] = { r = 1, g = 1, b = 1, a = 1 },
+        ['mouseoverBorderEnable'] = false,
+        ['mouseoverBorderColor'] = { r = 1, g = 1, b = 1, a = 0.7 },
     })
 end
 
@@ -277,8 +167,6 @@ party.Create = function(self, frame, unit)
     frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
     frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
-    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame, 'HELPFUL|RAID', 'party')
-    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame, 'HARMFUL|RAID', 'party')
     frame.RaidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator'):Create(frame)
     frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
     frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
@@ -287,11 +175,10 @@ party.Create = function(self, frame, unit)
     frame.ReadyCheckIndicator = EXUI:GetModule('uf-element-ready-check-indicator'):Create(frame)
     frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
-    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.GroupRoleIndicator = EXUI:GetModule('uf-element-group-role-indicator'):Create(frame)
-    frame.Auras = EXUI:GetModule('uf-element-auras'):Create(frame, 'party')
     frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
+    frame.SelectionHighlight = EXUI:GetModule('uf-element-selection-highlight'):Create(frame)
 
     frame.Update = function(self) party:Update(self) end
 

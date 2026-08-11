@@ -7,7 +7,7 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 ---@class EXUIActionBarsDefaults
 local defaults = EXUI:GetModule('action-bars-defaults')
 
-defaults.SCHEMA_VERSION = 1
+defaults.SCHEMA_VERSION = 3
 defaults._barTemplates = {}
 
 local function textDefaults()
@@ -37,6 +37,18 @@ defaults.GLOBAL = {
     showCooldownSwipe = true,
     showCooldownText = true,
     hideCooldownCharge = false,
+    glowType = 'libbuttonglow',
+    glowColor = { r = 0.95, g = 0.95, b = 0.32, a = 1 },
+    glowFrequency = 0.25,
+    glowFrameLevel = 8,
+    glowPixelLines = 8,
+    glowPixelLength = 8,
+    glowPixelThickness = 1,
+    glowPixelBorder = true,
+    glowAutoCastParticles = 4,
+    glowAutoCastScale = 1,
+    glowProcDuration = 1,
+    glowProcStartAnim = true,
     visibility = 'always',
     hotkey = textDefaults(),
     count = {

@@ -9,15 +9,6 @@ local EXFrames = EXUI.EXFrames
 EXFrames:Configure({
     logoPath = [[Interface/Addons/ExalityUI/Assets/Images/logo_icon.png]],
     defaultFontPath = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
-    scalePixel = function(value, region, minPixels)
-        return EXUI:ScalePixel(value, region, minPixels)
-    end,
-    snapFrame = function(frame)
-        EXUI:SnapFrameToPixels(frame)
-    end,
-    addPixelPerfectBorder = function(frame, thickness, options)
-        return EXUI:AddPixelPerfectBorder(frame, thickness, options)
-    end,
 })
 
 EXUI.const = {
@@ -34,21 +25,22 @@ EXUI.const = {
         backgroundPanel = { 48 / 255, 40 / 255, 34 / 255, 0.4 },  -- #302822  panels / tabs / header
 
 
-        border       = { 61 / 255, 53 / 255, 48 / 255, 1 },    -- #3D3530  warm neutral border
-        borderActive = { 217 / 255, 69 / 255, 16 / 255, 1 },   -- #D94510  selected border
-        text         = { 237 / 255, 230 / 255, 223 / 255, 1 }, -- #EDE6DF  warm off-white
-        textMuted    = { 138 / 255, 128 / 255, 118 / 255, 1 }, -- #8A8076
-        danger       = { 232 / 255, 48 / 255, 80 / 255, 1 },   -- #E83050  close / destructive
-        dangerHover  = { 245 / 255, 64 / 255, 96 / 255, 1 },   -- #F54060  close hover
-        success      = { 107 / 255, 168 / 255, 50 / 255, 1 },  -- #6BA832  success
-        successDark  = { 82 / 255, 130 / 255, 38 / 255, 1 },   -- #528226  success dark
-        inProgress   = { 245 / 255, 160 / 255, 32 / 255, 1 },  -- #F5A020  amber progress
-        faded        = { 28 / 255, 24 / 255, 22 / 255, 1 },    -- #1C1816  muted button bg
-        gray         = { 110 / 255, 100 / 255, 92 / 255, 1 },  -- #6E645C
+        border         = { 61 / 255, 53 / 255, 48 / 255, 1 },      -- #3D3530  warm neutral border
+        borderActive   = { 217 / 255, 69 / 255, 16 / 255, 1 },     -- #D94510  selected border
+        borderInactive = { 168 / 255, 158 / 255, 148 / 255, 0.8 }, -- #A89E94  editor unselected
+        text           = { 237 / 255, 230 / 255, 223 / 255, 1 },   -- #EDE6DF  warm off-white
+        textMuted      = { 138 / 255, 128 / 255, 118 / 255, 1 },   -- #8A8076
+        danger         = { 232 / 255, 48 / 255, 80 / 255, 1 },     -- #E83050  close / destructive
+        dangerHover    = { 245 / 255, 64 / 255, 96 / 255, 1 },     -- #F54060  close hover
+        success        = { 107 / 255, 168 / 255, 50 / 255, 1 },    -- #6BA832  success
+        successDark    = { 82 / 255, 130 / 255, 38 / 255, 1 },     -- #528226  success dark
+        inProgress     = { 245 / 255, 160 / 255, 32 / 255, 1 },    -- #F5A020  amber progress
+        faded          = { 28 / 255, 24 / 255, 22 / 255, 1 },      -- #1C1816  muted button bg
+        gray           = { 110 / 255, 100 / 255, 92 / 255, 1 },    -- #6E645C
 
-        minimap = {
-            buttonBg = { 13 / 255, 11 / 255, 10 / 255, 1 },     -- #0D0B0A  ldb / drawer buttons
-            mailButtonBg = { 92 / 255, 34 / 255, 8 / 255, 1 },  -- #5C2208  dark accent blend for mail
+        minimap        = {
+            buttonBg = { 13 / 255, 11 / 255, 10 / 255, 1 },    -- #0D0B0A  ldb / drawer buttons
+            mailButtonBg = { 92 / 255, 34 / 255, 8 / 255, 1 }, -- #5C2208  dark accent blend for mail
         },
     },
     textures = {
@@ -58,6 +50,7 @@ EXUI.const = {
             resizeBtnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Frames/expand-highlight]],
             closeBtn = [[Interface/Addons/ExalityUI/Assets/Images/Frames/close-btn]],
             closeIcon = [[Interface/Addons/ExalityUI/Assets/Images/Icons/x.png]],
+            copyIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/copy.png]],
             statusBar = [[Interface/Addons/ExalityUI/Assets/Images/Frames/statusBar]],
             iconMask = [[Interface/Addons/ExalityUI/Assets/Images/Frames/icon-mask]],
             titleBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/title-bg.png]],
@@ -99,6 +92,12 @@ EXUI.const = {
                 minimize = [[Interface/Addons/ExalityUI/Assets/Images/Icons/minimize.png]],
                 chevronLeft = [[Interface/Addons/ExalityUI/Assets/Images/Icons/chevron-left.png]],
                 chevronRight = [[Interface/Addons/ExalityUI/Assets/Images/Icons/chevron-right.png]],
+                plus = [[Interface/Addons/ExalityUI/Assets/Images/Icons/plus.png]],
+                duplicate = [[Interface/Addons/ExalityUI/Assets/Images/Icons/duplicate.png]],
+                delete = [[Interface/Addons/ExalityUI/Assets/Images/Icons/delete.png]],
+                eye = [[Interface/Addons/ExalityUI/Assets/Images/Icons/eye.png]],
+                eyeOff = [[Interface/Addons/ExalityUI/Assets/Images/Icons/eye-off.png]],
+                auraTypeBorder = [[Interface/Addons/ExalityUI/Assets/Images/Icons/aura-type-border.png]],
             },
             previewIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/preview_icon.png]],
         },
@@ -119,11 +118,25 @@ EXUI.const = {
                 epic = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-epic.png]],
                 legendary = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-legendary.png]],
                 max = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-max.png]],
+                supermax = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-supermax.png]],
             },
             highlight = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/highlight.png]],
             dot = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/dot.png]],
             toBlizzIcon = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/to-blizz-icon.png]],
             characterGlow = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/character-glow.png]],
+            check = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/check.png]],
+            coins = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/coins.png]],
+            users = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/users.png]],
+            tabGlow = EXFrames.assets.textures.tabs.glow,
+            panel = {
+                bg = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/panel-bg.png]],
+                border = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/panel-border.png]],
+            },
+            input = {
+                bg = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/input-bg.png]],
+                border = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/input-border.png]],
+                buttonBg = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/button-bg.png]],
+            },
             gem = {
                 empty = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/gem-empty.png]],
                 border = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-gem.png]],
@@ -146,6 +159,8 @@ EXUI.const = {
         },
         skins = {
             btnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Skins/btn-highlight.png]],
+            lfgLeftBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-bg.jpg]],
+            lfgLeftBtnBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-btn-bg.png]],
         }
     },
     masque = {
@@ -156,8 +171,8 @@ EXUI.const = {
         }
     },
     fonts = {
-        Bahnschrift = [[Interface/Addons/ExalityUI/Assets/Fonts/bahnschrift.ttf]],
-        DEFAULT = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]],
+        Bahnschrift = [[Interface\AddOns\ExalityUI\Assets\Fonts\bahnschrift.ttf]],
+        DEFAULT = [[Interface\AddOns\ExalityUI\Assets\Fonts\DMSans.ttf]],
     },
     backdrop = {
         DEFAULT = {
@@ -185,15 +200,6 @@ EXUI.const = {
             }
         end
     },
-    ilvlColors = {
-        -- Midnight --
-        { ilvl = 200, str = "ff26ff3f" }, { ilvl = 540, str = "ff26ffba" },
-        { ilvl = 230, str = "ff26e2ff" }, { ilvl = 560, str = "ff26a0ff" },
-        { ilvl = 240, str = "ff2663ff" }, { ilvl = 580, str = "ff8e26ff" },
-        { ilvl = 250, str = "ffe226ff" }, { ilvl = 600, str = "ffff2696" },
-        { ilvl = 260, str = "ffff2634" }, { ilvl = 620, str = "ffff7526" },
-        { ilvl = 277, str = "ffffc526" }
-    },
     anchorPoints = {
         TOPLEFT = 'TOPLEFT',
         TOPRIGHT = 'TOPRIGHT',
@@ -205,15 +211,16 @@ EXUI.const = {
         LEFT = 'LEFT',
         RIGHT = 'RIGHT',
     },
+    -- Ordered lowest → highest to match in-game frame strata stacking.
     frameStrata = {
-        BACKGROUND = 'BACKGROUND',
-        LOW = 'LOW',
-        MEDIUM = 'MEDIUM',
-        HIGH = 'HIGH',
-        DIALOG = 'DIALOG',
-        FULLSCREEN = 'FULLSCREEN',
-        FULLSCREEN_DIALOG = 'FULLSCREEN_DIALOG',
-        TOOLTIP = 'TOOLTIP',
+        BACKGROUND = { label = 'BACKGROUND', order = 1 },
+        LOW = { label = 'LOW', order = 2 },
+        MEDIUM = { label = 'MEDIUM', order = 3 },
+        HIGH = { label = 'HIGH', order = 4 },
+        DIALOG = { label = 'DIALOG', order = 5 },
+        FULLSCREEN = { label = 'FULLSCREEN', order = 6 },
+        FULLSCREEN_DIALOG = { label = 'FULLSCREEN_DIALOG', order = 7 },
+        TOOLTIP = { label = 'TOOLTIP', order = 8 },
     },
     fontFlags = {
         OUTLINE = 'OUTLINE',
@@ -231,5 +238,15 @@ EXUI.const = {
     }
 }
 
+local ilvlBorders = EXUI.const.textures.characterFrame.border
+EXUI.const.ilvlColors = {
+    { ilvl = 0,   color = 'ffffffff', border = ilvlBorders.empty },
+    { ilvl = 279, color = 'ff26ff3f', border = ilvlBorders.uncommon },
+    { ilvl = 292, color = 'ff26e2ff', border = ilvlBorders.rare },
+    { ilvl = 305, color = 'ffe226ff', border = ilvlBorders.epic },
+    { ilvl = 318, color = 'ffffc526', border = ilvlBorders.legendary },
+    { ilvl = 334, color = 'ffff2634', border = ilvlBorders.max },
+    { ilvl = 344, color = 'FFF6FF00', border = ilvlBorders.supermax },
+}
 
 EXFrames:SetTheme(EXUI.const.theme)

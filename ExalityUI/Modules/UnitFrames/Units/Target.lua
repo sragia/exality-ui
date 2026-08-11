@@ -120,76 +120,6 @@ target.Init = function(self)
         ['castbarEmpoweredStageColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['castbarSparkWidth'] = 1,
         ['castbarSparkColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        -- Debuffs
-        ['debuffsEnable'] = true,
-        ['debuffsAnchorPoint'] = 'BOTTOMLEFT',
-        ['debuffsRelativeAnchorPoint'] = 'BOTTOMRIGHT',
-        ['debuffsXOff'] = 1,
-        ['debuffsYOff'] = 0,
-        ['debuffsIconWidth'] = 40,
-        ['debuffsIconHeight'] = 40,
-        ['debuffsFilters'] = {
-            HELPFUL = false,
-            HARMFUL = true,
-            RAID = false,
-            PLAYER = true,
-            INCLUDE_NAME_PLATE_ONLY = false,
-            CROWD_CONTROL = false,
-            BIG_DEFENSIVE = false,
-            RAID_PLAYER_DISPELLABLE = false,
-            RAID_IN_COMBAT = false,
-            IMPORTANT = false
-        },
-        ['debuffsSpacing'] = 1,
-        ['debuffsNum'] = 32,
-        ['debuffsColNum'] = 6,
-        ['debuffsAnchorToBuffs'] = false,
-        ['debuffsCountFont'] = 'DMSans',
-        ['debuffsCountFontSize'] = 17,
-        ['debuffsCountFontFlag'] = 'OUTLINE',
-        ['debuffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['debuffsCountAnchorPoint'] = 'CENTER',
-        ['debuffsCountRelativeAnchorPoint'] = 'TOPRIGHT',
-        ['debuffsCountXOff'] = -5,
-        ['debuffsCountYOff'] = -3,
-        ['debuffsDurationFont'] = 'DMSans',
-        ['debuffsDurationFontSize'] = 19,
-        ['debuffsDurationFontFlag'] = 'OUTLINE',
-        -- Buffs
-        ['buffsEnable'] = true,
-        ['buffsAnchorPoint'] = 'BOTTOMLEFT',
-        ['buffsRelativeAnchorPoint'] = 'TOPLEFT',
-        ['buffsXOff'] = 0,
-        ['buffsYOff'] = 2,
-        ['buffsIconWidth'] = 30,
-        ['buffsIconHeight'] = 30,
-        ['buffsFilters'] = {
-            HELPFUL = true,
-            HARMFUL = false,
-            RAID = false,
-            PLAYER = false,
-            INCLUDE_NAME_PLATE_ONLY = false,
-            CROWD_CONTROL = false,
-            BIG_DEFENSIVE = false,
-            RAID_PLAYER_DISPELLABLE = false,
-            RAID_IN_COMBAT = false,
-            IMPORTANT = false
-        },
-        ['buffsSpacing'] = 2,
-        ['buffsNum'] = 32,
-        ['buffsColNum'] = 6,
-        ['buffsAnchorToDebuffs'] = false,
-        ['buffsCountFont'] = 'DMSans',
-        ['buffsCountFontSize'] = 12,
-        ['buffsCountFontFlag'] = 'OUTLINE',
-        ['buffsCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['buffsCountAnchorPoint'] = 'CENTER',
-        ['buffsCountRelativeAnchorPoint'] = 'CENTER',
-        ['buffsCountXOff'] = 0,
-        ['buffsCountYOff'] = 0,
-        ['buffsDurationFont'] = 'DMSans',
-        ['buffsDurationFontSize'] = 12,
-        ['buffsDurationFontFlag'] = 'OUTLINE',
         -- Absorbs
         ['damageAbsorbEnable'] = true,
         ['damageAbsorbShowOverIndicator'] = true,
@@ -214,25 +144,6 @@ target.Init = function(self)
         ['phaseIndicatorXOff'] = 0,
         ['phaseIndicatorYOff'] = 0,
         ['phaseIndicatorScale'] = 1,
-        -- Private Auras
-        ['privateAurasEnable'] = false,
-        ['privateAurasMaxNum'] = 5,
-        ['privateAurasIconWidth'] = 20,
-        ['privateAurasDisableBorder'] = false,
-        ['privateAurasDisableTooltip'] = false,
-        ['privateAurasIconHeight'] = 20,
-        ['privateAurasSpacingX'] = 1,
-        ['privateAurasSpacingY'] = 1,
-        ['privateAurasGrowthX'] = 'LEFT',
-        ['privateAurasGrowthY'] = 'UP',
-        ['privateAurasBorderScale'] = 1,
-        ['privateAurasDisableCooldownSpiral'] = false,
-        ['privateAurasDisableCooldownText'] = false,
-        ['privateAurasMaxCols'] = 6,
-        ['privateAurasAnchorPoint'] = 'CENTER',
-        ['privateAurasRelativeAnchorPoint'] = 'CENTER',
-        ['privateAurasXOff'] = 0,
-        ['privateAurasYOff'] = 0,
         -- Summon Indicator
         ['summonEnable'] = false,
         ['summonAnchorPoint'] = 'TOP',
@@ -240,43 +151,17 @@ target.Init = function(self)
         ['summonXOff'] = 0,
         ['summonYOff'] = 0,
         ['summonScale'] = 1,
-        -- Custom Auras
-        ['aurasEnable'] = false,
-        ['aurasAnchorPoint'] = 'CENTER',
-        ['aurasRelativeAnchorPoint'] = 'CENTER',
-        ['aurasXOff'] = 0,
-        ['aurasYOff'] = 0,
-        ['aurasIconWidth'] = 20,
-        ['aurasIconHeight'] = 20,
-        ['aurasFilters'] = {
-            HELPFUL = false,
-            HARMFUL = false,
-            RAID = false,
-            PLAYER = false,
-            INCLUDE_NAME_PLATE_ONLY = false,
-            CROWD_CONTROL = false,
-            BIG_DEFENSIVE = false,
-            RAID_PLAYER_DISPELLABLE = false,
-            RAID_IN_COMBAT = false
-        },
-        ['aurasSpacing'] = 2,
-        ['aurasNum'] = 32,
-        ['aurasColNum'] = 6,
-        ['aurasAnchorToDebuffs'] = false,
-        ['aurasCountFont'] = 'DMSans',
-        ['aurasCountFontSize'] = 12,
-        ['aurasCountFontFlag'] = 'OUTLINE',
-        ['aurasCountFontColor'] = { r = 1, g = 1, b = 1, a = 1 },
-        ['aurasCountAnchorPoint'] = 'CENTER',
-        ['aurasCountRelativeAnchorPoint'] = 'CENTER',
-        ['aurasCountXOff'] = 0,
-        ['aurasCountYOff'] = 0,
-        ['aurasDurationFont'] = 'DMSans',
-        ['aurasDurationFontSize'] = 12,
-        ['aurasDurationFontFlag'] = 'OUTLINE',
         -- Dispel Overlay
         ['dispelOverlayEnable'] = false,
-        ['dispelOverlayAlpha'] = 1
+        ['dispelOverlayFilter'] = 'RAID',
+        ['dispelOverlayAlpha'] = 1,
+        ['dispelOverlayShowOverlay'] = true,
+        ['dispelOverlayShowIcon'] = false,
+        ['dispelOverlayIconSize'] = 16,
+        ['dispelOverlayAnchorPoint'] = 'CENTER',
+        ['dispelOverlayRelativeAnchorPoint'] = 'CENTER',
+        ['dispelOverlayXOff'] = 0,
+        ['dispelOverlayYOff'] = 0
     })
 end
 
@@ -292,24 +177,15 @@ target.Create = function(self, frame)
     frame.RaidRoles = EXUI:GetModule('uf-element-raid-roles'):Create(frame)
     frame.CombatIndicator = EXUI:GetModule('uf-element-combat-indicator'):Create(frame)
     frame.Castbar = EXUI:GetModule('uf-element-cast-bar'):Create(frame)
-    frame.Buffs = EXUI:GetModule('uf-element-buffs'):Create(frame, 'HELPFUL', 'target')
-    frame.Debuffs = EXUI:GetModule('uf-element-debuffs'):Create(frame, 'HARMFUL', 'target')
     frame.HealthPrediction = EXUI:GetModule('uf-element-healthprediction'):Create(frame)
     frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
     frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
-    frame.PrivateAuras = EXUI:GetModule('uf-element-private-auras'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
-    frame.Auras = EXUI:GetModule('uf-element-auras'):Create(frame, 'target')
     frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Target', function(frame)
-        local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
-        core:UpdateValueForUnit(self.unit, 'positionAnchorPoint', point)
-        core:UpdateValueForUnit(self.unit, 'positionRelativePoint', relativePoint)
-        core:UpdateValueForUnit(self.unit, 'positionXOff', xOfs)
-        core:UpdateValueForUnit(self.unit, 'positionYOff', yOfs)
-        core:UpdateFrameForUnit(self.unit)
+        core:PersistEditorFramePosition(frame, self.unit)
     end, function(frame)
         frame.editor:SetEditorAsMovable()
     end)

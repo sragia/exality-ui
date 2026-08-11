@@ -1,0 +1,19 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Defaults.lua"/>
+	<Script file="SpellIndex.lua"/>
+	<Script file="ConfigResolver.lua"/>
+	<Script file="LoadConditions.lua"/>
+	<Script file="UnitResolver.lua"/>
+	<Script file="Layout.lua"/>
+	<Script file="DurationFormat.lua"/>
+	<Script file="ButtonStyle.lua"/>
+	<Script file="Preview.lua"/>
+	<Script file="Container.lua"/>
+	<Script file="Display.lua"/>
+	<Script file="Options/GroupNav.lua"/>
+	<Script file="Options/ContainerOptions.lua"/>
+	<Script file="Options/VisualOptions.lua"/>
+	<Script file="Options/ConditionsOptions.lua"/>
+	<Script file="Options/LoadOptions.lua"/>
+	<Script file="AuraDisplays.lua"/>
+</Ui>

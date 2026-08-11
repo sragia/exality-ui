@@ -13,12 +13,7 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIActionBarsBarOptions
 local barOptions = EXUI:GetModule('action-bars-bar-options')
 
-local function appendFields(target, source)
-    for _, field in ipairs(source) do
-        table.insert(target, field)
-    end
-    return target
-end
+local appendFields = EXUI.utils.append
 
 barOptions.GetPositionFields = function(self, mod, db, scope, onRefresh)
     local function save(refresh)

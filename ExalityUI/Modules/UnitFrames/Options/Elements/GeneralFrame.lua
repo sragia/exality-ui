@@ -25,7 +25,7 @@ local function getTextureDisplayValue(globalKey)
 end
 
 generalFrame.GetOptions = function(self, unit)
-    return {
+    local options = {
         {
             type = 'toggle',
             label = 'Enable',
@@ -335,7 +335,7 @@ generalFrame.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'damageAbsorbColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 20
+            width = 30
         },
         {
             type = 'color-picker',
@@ -354,4 +354,76 @@ generalFrame.GetOptions = function(self, unit)
             width = 20
         },
     }
+
+    if unit == 'party' or unit == 'raid' then
+        table.insert(options, {
+            type = 'title',
+            label = 'Targeting',
+            accent = EXUI.const.colors.accentSecondary,
+            width = 100,
+            size = 14
+        })
+        table.insert(options, {
+            type = 'toggle',
+            label = 'Highlight Target',
+            name = 'targetBorderEnable',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'targetBorderEnable')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'targetBorderEnable', value)
+                core:UpdateFrameForUnit(unit)
+                optionsCore:RefreshCurrentView()
+            end,
+            width = 100
+        })
+        table.insert(options, {
+            type = 'color-picker',
+            label = 'Target Border Color',
+            name = 'targetBorderColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'targetBorderColor')
+            end,
+            depends = function()
+                return core:GetValueForUnit(unit, 'targetBorderEnable')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'targetBorderColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        })
+        table.insert(options, {
+            type = 'toggle',
+            label = 'Highlight Mouseover',
+            name = 'mouseoverBorderEnable',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'mouseoverBorderEnable')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'mouseoverBorderEnable', value)
+                core:UpdateFrameForUnit(unit)
+                optionsCore:RefreshCurrentView()
+            end,
+            width = 100
+        })
+        table.insert(options, {
+            type = 'color-picker',
+            label = 'Mouseover Border Color',
+            name = 'mouseoverBorderColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'mouseoverBorderColor')
+            end,
+            depends = function()
+                return core:GetValueForUnit(unit, 'mouseoverBorderEnable')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'mouseoverBorderColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        })
+    end
+
+    return options
 end

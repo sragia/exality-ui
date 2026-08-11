@@ -41,6 +41,16 @@ core.POWER_COLORS = {
 }
 
 local MAX_GROUPS = 8
+local RAID_MEMBERS_PER_GROUP = 5
+local PARTY_MEMBERS = 5
+
+-- Party editor/position target is a plain container; secure SpawnHeader is the child.
+core.GetPartySecureHeader = function(self, header)
+    if not header then
+        return nil
+    end
+    return header.partyHeader or header
+end
 
 core.Init = function(self)
     tags:RegisterCustomTags()
@@ -81,6 +91,7 @@ core.SharedStyle = function(frame, unit)
 
 
     if (unit == 'party') then
+        frame.exuiUnitType = 'party'
         table.insert(core.partyFrames, frame)
         if (frame.Update) then
             -- Update on next frame to update with correct unit
@@ -90,6 +101,7 @@ core.SharedStyle = function(frame, unit)
         end
     end
     if (unit == 'raid') then
+        frame.exuiUnitType = 'raid'
         table.insert(core.raidFrames, frame)
         if (frame.Update) then
             -- Update on next frame to update with correct unit
@@ -168,6 +180,9 @@ core.CreateOrUpdatePlayerGroup = function(self, oUF, unit, data)
         end
         header = core.headers[unit]
         if (not header) then
+            -- Container owns edit-mode size/position (like raid). SpawnHeader
+            -- auto-sizes to children, so the overlay must not live on it.
+            header = CreateFrame('Frame', 'ExalityUI_PartyContainer', UIParent)
             local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
             local unitHeight = self:GetValueForUnit('party', 'sizeHeight')
             data.attributes['oUF-initialConfigFunction'] =
@@ -181,11 +196,17 @@ if not unit then
     end
 end
 self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
-            header = oUF:SpawnHeader(nil, nil, data.attributes)
+            local partyHeader = oUF:SpawnHeader(nil, nil, data.attributes)
+            partyHeader:SetPoint('TOPLEFT', header, 'TOPLEFT', 0, 0)
             if (data.visibility) then
-                header.originalVisibility = data.visibility
-                header:SetVisibility(data.visibility)
+                partyHeader.originalVisibility = data.visibility
+                partyHeader:SetVisibility(data.visibility)
             end
+            local auraCount = EXUI:GetModule('uf-auras-apply'):GetRequiredAuraContainerCount('party')
+            if partyHeader.SetNumAuraContainers then
+                partyHeader:SetNumAuraContainers(auraCount)
+            end
+            header.partyHeader = partyHeader
             core.headers[unit] = header
         end
     elseif (unit == 'raid') then
@@ -200,6 +221,7 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
             header.groupHeaders = {}
 
             -- Spawnheader for each raid group
+            local auraCount = EXUI:GetModule('uf-auras-apply'):GetRequiredAuraContainerCount('raid')
             for i = 1, 8 do
                 local groupHeader = oUF:SpawnHeader(nil, nil, {
                     groupFilter = i,
@@ -207,6 +229,9 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
                     showPlayer = true,
                     showParty = false
                 })
+                if groupHeader.SetNumAuraContainers then
+                    groupHeader:SetNumAuraContainers(auraCount)
+                end
                 table.insert(header.groupHeaders, groupHeader)
                 groupHeader.group = i
                 groupHeader:SetPoint('TOPLEFT', header, 'TOPLEFT', 0, 0) --  Adjust later
@@ -221,13 +246,8 @@ self:SetWidth(%d); self:SetHeight(%d);]], unitWidth, unitHeight)
     header:Show()
 
     self:UpdateHeader(unit)
-    editor:RegisterFrameForEditor(header, unit .. ' Frames', function(frame)
-        local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
-        self:UpdateValueForUnit(unit, 'positionAnchorPoint', point)
-        self:UpdateValueForUnit(unit, 'positionRelativePoint', relativePoint)
-        self:UpdateValueForUnit(unit, 'positionXOff', xOfs)
-        self:UpdateValueForUnit(unit, 'positionYOff', yOfs)
-        self:UpdateHeader(unit)
+    editor:RegisterFrameForEditor(header, EXUI.utils.capitalize(unit) .. ' Frames', function(frame)
+        core:PersistEditorFramePosition(frame, unit)
     end, function(frame)
         frame.editor:SetEditorAsMovable()
     end)
@@ -242,16 +262,24 @@ core.SnapUnitFrame = function(self, frame)
 end
 
 core.ApplyUnitFrameLayout = function(self, frame, db)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled and frame.editor then
+        return
+    end
     frame:ClearAllPoints()
-    EXUI:SetPoint(frame, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    frame:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     EXUI:SetSize(frame, db.sizeWidth, db.sizeHeight)
     self:SnapUnitFrame(frame)
 end
 
 core.ApplyContainerLayout = function(self, container, db, width, height)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled and container.editor then
+        return
+    end
     container:ClearAllPoints()
     EXUI:SetSize(container, width, height)
-    EXUI:SetPoint(container, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    container:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
     EXUI:SnapFrameToPixels(container)
 end
 
@@ -329,17 +357,7 @@ core.UpdateFrame = function(self, frame)
         EXUI:GetModule('uf-element-cast-bar'):Update(frame)
     end
 
-    if (frame.Buffs) then
-        EXUI:GetModule('uf-element-buffs'):Update(frame)
-    end
-
-    if (frame.Debuffs) then
-        EXUI:GetModule('uf-element-debuffs'):Update(frame)
-    end
-
-    if (frame.Auras) then
-        EXUI:GetModule('uf-element-auras'):Update(frame)
-    end
+    EXUI:GetModule('uf-auras-apply'):UpdateFrame(frame)
 
     if (frame.Offline) then
         EXUI:GetModule('uf-element-offline'):Update(frame)
@@ -351,10 +369,6 @@ core.UpdateFrame = function(self, frame)
 
     if (frame.SummonIndicator) then
         EXUI:GetModule('uf-element-summon-indicator'):Update(frame)
-    end
-
-    if (frame.PrivateAuras) then
-        EXUI:GetModule('uf-element-private-auras'):Update(frame)
     end
 
     if (frame.CustomTexts) then
@@ -371,6 +385,10 @@ core.UpdateFrame = function(self, frame)
 
     if (frame.DispelOverlay) then
         EXUI:GetModule('uf-element-dispel-overlay'):Update(frame)
+    end
+
+    if (frame.SelectionHighlight) then
+        EXUI:GetModule('uf-element-selection-highlight'):Update(frame)
     end
 
     frame:UpdateTags()
@@ -454,7 +472,35 @@ core.DisableHeader = function(self, header)
     header:Hide()
 end
 
+core.PersistEditorFramePosition = function(self, frame, unit)
+    if not frame or frame:GetNumPoints() == 0 then
+        return
+    end
+
+    local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
+    self:UpdateValueForUnit(unit, 'positionAnchorPoint', point)
+    self:UpdateValueForUnit(unit, 'positionRelativePoint', relativePoint)
+    self:UpdateValueForUnit(unit, 'positionXOff', xOfs or 0)
+    self:UpdateValueForUnit(unit, 'positionYOff', yOfs or 0)
+
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled then
+        return
+    end
+
+    if unit == 'party' or unit == 'raid' then
+        self:UpdateHeader(unit)
+    else
+        self:UpdateFrameForUnit(unit)
+    end
+end
+
 core.UpdateHeader = function(self, unit)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled then
+        return
+    end
+
     local header = core.headers[unit]
     if (not header) then return end
 
@@ -470,36 +516,152 @@ core.UpdateHeader = function(self, unit)
             end
         else
             -- Party
-            self:DisableHeader(header)
+            self:DisableHeader(self:GetPartySecureHeader(header))
+            header:Hide()
         end
         return
     end
     if (header.isDisabled) then
         -- Re-enable header
         if (not header.groupHeaders) then
-            -- Party, raid is going to be re-enabled in UpdateRaidLayout
-            header:SetAttribute('showPlayer', true)
-            header:SetAttribute('showSolo', true)
-            header:SetAttribute('showParty', true)
-            header:SetAttribute('showRaid', false)
-            header:SetVisibility(header.originalVisibility)
+            local partyHeader = self:GetPartySecureHeader(header)
+            if (not partyHeader.isFake) then
+                partyHeader:SetAttribute('showPlayer', true)
+                partyHeader:SetAttribute('showSolo', true)
+                partyHeader:SetAttribute('showParty', true)
+                partyHeader:SetAttribute('showRaid', false)
+                if partyHeader.originalVisibility then
+                    partyHeader:SetVisibility(partyHeader.originalVisibility)
+                end
+            end
             header:Show()
         end
     end
     header.isDisabled = false
 
     header:ClearAllPoints()
-    EXUI:SetPoint(header, db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
+    header:SetPoint(db.positionAnchorPoint, UIParent, db.positionRelativePoint, db.positionXOff, db.positionYOff)
 
     if (header.groupHeaders) then
         -- Raid
         self:UpdateRaidLayout(header)
-        EXUI:SnapFrameToPixels(header)
+        local editorModule = EXUI:GetModule('editor')
+        if not (editorModule and editorModule.enabled) then
+            EXUI:SnapFrameToPixels(header)
+        end
     else
-        -- Party
-        header:SetAttribute('yOffset', -EXUI:ScalePixel(db.spacing, header))
-        EXUI:SnapFrameToPixels(header)
+        local partyHeader = self:GetPartySecureHeader(header)
+        if (not partyHeader.isFake) then
+            partyHeader:SetAttribute('showPlayer', true)
+            partyHeader:SetAttribute('showSolo', true)
+            partyHeader:SetAttribute('showParty', true)
+            partyHeader:SetAttribute('showRaid', false)
+            if partyHeader.originalVisibility then
+                partyHeader:SetVisibility(partyHeader.originalVisibility)
+            end
+        end
+        self:UpdatePartyLayout(header)
+        local editorModule = EXUI:GetModule('editor')
+        if not (editorModule and editorModule.enabled) then
+            EXUI:SnapFrameToPixels(header)
+        end
     end
+end
+
+core.UpdatePartyLayout = function(self, header)
+    if not header then
+        return
+    end
+
+    local unitWidth = self:GetValueForUnit('party', 'sizeWidth')
+    local unitHeight = self:GetValueForUnit('party', 'sizeHeight')
+    local spacing = EXUI:ScalePixel(self:GetValueForUnit('party', 'spacing'), header)
+    local partyHeader = self:GetPartySecureHeader(header)
+    partyHeader:SetAttribute('yOffset', -spacing)
+    local containerHeight = unitHeight * PARTY_MEMBERS + spacing * math.max(0, PARTY_MEMBERS - 1)
+    -- Size the container (edit overlay target), not the SpawnHeader child.
+    EXUI:SetSize(header, unitWidth, containerHeight)
+end
+
+core.ApplyEditorGroupLayout = function(self, unit, options)
+    local header = self.headers[unit]
+    if not header then
+        return
+    end
+
+    options = options or {}
+    if unit == 'party' then
+        self:UpdatePartyLayout(header)
+    elseif unit == 'raid' then
+        if options.sizeOnly then
+            -- Edit Mode overlays only need the container footprint.
+            self:UpdateRaidContainerSize(header)
+        else
+            self:UpdateRaidLayout(header)
+        end
+    end
+end
+
+-- Edit Mode: make party/raid headers selectable without ForceShow fakes.
+-- ForceShow(startingIndex=-4) is what freezes Edit Mode open.
+core.PrepareGroupHeaderForEditor = function(self, unit)
+    if InCombatLockdown() then
+        return
+    end
+
+    local header = self.headers[unit]
+    if not header then
+        return
+    end
+
+    if unit == 'party' then
+        header:Show()
+        local partyHeader = self:GetPartySecureHeader(header)
+        if IsInGroup() and not IsInRaid() then
+            -- Already in party: re-assert visibility so roster configures children.
+            if partyHeader.originalVisibility then
+                partyHeader:SetVisibility(partyHeader.originalVisibility)
+            end
+            return
+        end
+        if partyHeader._editorVisibility then
+            return
+        end
+        partyHeader._editorVisibility = true
+        -- Show the secure header only; do not touch startingIndex (no fake members).
+        partyHeader:SetVisibility('solo')
+    elseif unit == 'raid' then
+        -- Editor is registered on the plain container, not the secure groups.
+        header:Show()
+    end
+end
+
+core.RestoreGroupHeadersAfterEditor = function(self)
+    if InCombatLockdown() then
+        return
+    end
+
+    local party = self.headers.party
+    local partyHeader = party and self:GetPartySecureHeader(party)
+    if partyHeader and partyHeader._editorVisibility then
+        partyHeader._editorVisibility = nil
+        partyHeader:SetVisibility(partyHeader.originalVisibility or 'party')
+    end
+end
+
+core.UpdateRaidContainerSize = function(self, container)
+    if not container then
+        return
+    end
+
+    local unitWidth = self:GetValueForUnit('raid', 'sizeWidth')
+    local unitHeight = self:GetValueForUnit('raid', 'sizeHeight')
+    local spacingX = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingX'), container)
+    local spacingY = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingY'), container)
+    local columnCount = #container.groupHeaders
+    local containerWidth = unitWidth * columnCount + spacingX * math.max(0, columnCount - 1)
+    local containerHeight = unitHeight * RAID_MEMBERS_PER_GROUP + spacingY * math.max(0, RAID_MEMBERS_PER_GROUP - 1)
+    EXUI:SetSize(container, containerWidth, containerHeight)
 end
 
 core.UpdateRaidLayout = function(self, container)
@@ -508,13 +670,10 @@ core.UpdateRaidLayout = function(self, container)
     local unitHeight = self:GetValueForUnit('raid', 'sizeHeight')
     local spacingX = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingX'), container)
     local spacingY = EXUI:ScalePixel(self:GetValueForUnit('raid', 'spacingY'), container)
-    local numGroups = #container.groupHeaders
-    local totalHeight = unitHeight * numGroups + spacingY * (numGroups - 1)
-    EXUI:SetSize(container, unitWidth * 8 + spacingX * 7, totalHeight)
-    EXUI:SetPoint(container, 'CENTER', 0, 0)
+    local maxGroups = MAX_GROUPS
+    self:UpdateRaidContainerSize(container)
 
     local groupDirection = self:GetValueForUnit('raid', 'groupDirection') -- LEFT / RIGHT
-    local maxGroups = MAX_GROUPS
     for i = 1, #container.groupHeaders do
         container.groupHeaders[i]:SetAttribute('yOffset', -spacingY)
         container.groupHeaders[i]:ClearAllPoints()
@@ -582,14 +741,15 @@ core.CheckRaidDificulty = function(self)
     local _, instanceType, difficulty = GetInstanceInfo()
     local raidHeader = core.headers['raid']
     if (not raidHeader) then return end
-    if (instanceType == 'raid') then
-        if (difficulty == 16) then
-            -- Mythic
-            MAX_GROUPS = 4
-        else
-            -- Flex
-            MAX_GROUPS = 8
-        end
+
+    local maxGroups = 8
+    if (instanceType == 'raid' and difficulty == 16) then
+        -- Mythic raid: only groups 1-4 are used
+        maxGroups = 4
+    end
+
+    if (MAX_GROUPS ~= maxGroups) then
+        MAX_GROUPS = maxGroups
         self:UpdateRaidLayout(raidHeader)
     end
 end
@@ -624,6 +784,21 @@ EXUI:RegisterEventHandler(
     'raid-check-difficulty',
     function()
         core:CheckRaidDificulty()
+    end
+)
+
+EXUI:RegisterEventHandler(
+    { 'GROUP_ROSTER_UPDATE' },
+    'uf-party-header-refresh',
+    function()
+        if InCombatLockdown() then
+            return
+        end
+        -- Re-assert party secure visibility so roster can configure children
+        -- (SecureGroupHeader_Update only runs while the header IsVisible).
+        if core.headers.party then
+            core:UpdateHeader('party')
+        end
     end
 )
 
@@ -685,13 +860,56 @@ core.DisableElementForFrame = function(self, frame, element)
     frame:DisableElement(element)
 end
 
+-- Spread ForceFrame work across frames so Edit Mode / preview open stays responsive.
+local FORCE_SHOW_BATCH = 5
+
+core.CancelPendingForceShow = function(self)
+    self.forceShowGeneration = (self.forceShowGeneration or 0) + 1
+end
+
+core.ForceShowFramesDeferred = function(self, frames, isStillForced)
+    self.forceShowGeneration = (self.forceShowGeneration or 0) + 1
+    local gen = self.forceShowGeneration
+    local index = 1
+
+    local function forceBatch()
+        if gen ~= self.forceShowGeneration then
+            return
+        end
+        if isStillForced and not isStillForced() then
+            return
+        end
+
+        local last = math.min(index + FORCE_SHOW_BATCH - 1, #frames)
+        for i = index, last do
+            if gen ~= self.forceShowGeneration then
+                return
+            end
+            local frame = frames[i]
+            if frame then
+                self.forcedFrames[frame.unit] = frame
+                self:ForceFrame(frame)
+            end
+        end
+
+        index = last + 1
+        if index <= #frames then
+            C_Timer.After(0, forceBatch)
+        end
+    end
+
+    C_Timer.After(0, forceBatch)
+end
+
 -- For Options. Force Show frames for editting
-core.ForceShow = function(self, unit)
+core.ForceShow = function(self, unit, options)
+    options = options or {}
     if (InCombatLockdown()) then return end
     if (unit == 'party') then
-        if (IsInGroup() and not IsInRaid()) then return end
-        local header = core.headers[unit]
-        if (not header) then return end
+        if not options.editorPreview and IsInGroup() and not IsInRaid() then return end
+        local container = core.headers[unit]
+        if (not container) then return end
+        local header = self:GetPartySecureHeader(container)
         header:SetAttribute('EXUI-forcedUnit', 'party')
         header:SetAttribute('showSolo', nil)
         header:SetAttribute('showParty', nil)
@@ -699,17 +917,13 @@ core.ForceShow = function(self, unit)
         header:SetAttribute('startingIndex', -4)
         header:SetVisibility('solo')
         header.isFake = true
+        container:Show()
         self.forcedHeaders[unit] = header
-        C_Timer.After(0, function()
-            for _, frame in ipairs(core.partyFrames) do
-                if (frame) then
-                    self.forcedFrames[frame.unit] = frame
-                    self:ForceFrame(frame)
-                end
-            end
+        self:ForceShowFramesDeferred(core.partyFrames, function()
+            return header.isFake
         end)
     elseif (unit == 'raid') then
-        if (IsInRaid()) then return end
+        if not options.editorPreview and IsInRaid() then return end
         local header = core.headers[unit]
         if (not header) then return end
         for _, groupHeader in ipairs(header.groupHeaders) do
@@ -724,12 +938,11 @@ core.ForceShow = function(self, unit)
                 self.forcedHeaders[unit .. groupHeader.group] = groupHeader
             end
         end
-        for _, frame in ipairs(core.raidFrames) do
-            if (frame) then
-                self.forcedFrames[frame.unit] = frame
-                self:ForceFrame(frame)
-            end
-        end
+        -- Raid can be ~40 frames; never Update them all in one EnableEditor call.
+        self:ForceShowFramesDeferred(core.raidFrames, function()
+            local first = header.groupHeaders and header.groupHeaders[1]
+            return first and first.isFake
+        end)
     elseif (self.groupUnits[unit]) then
         for i = 1, self.groupUnits[unit] do
             local frame = self.frames[unit .. i]
@@ -771,15 +984,22 @@ end
 core.Unforce = function(self, unit)
     if (InCombatLockdown()) then return end
 
+    if (unit == 'party' or unit == 'raid') then
+        self:CancelPendingForceShow()
+    end
+
     if (unit == 'party') then
-        local header = core.headers[unit]
-        if (not header) then return end
+        local container = core.headers[unit]
+        if (not container) then return end
+        local header = self:GetPartySecureHeader(container)
         header.isFake = false
-        header:SetVisibility(header.originalVisibility)
         header:SetAttribute('showSolo', true)
         header:SetAttribute('showParty', true)
-        header:SetAttribute('showRaid', true)
+        header:SetAttribute('showRaid', false)
         header:SetAttribute('startingIndex', 1)
+        if header.originalVisibility then
+            header:SetVisibility(header.originalVisibility)
+        end
         self.forcedHeaders[unit] = nil
         for _, frame in ipairs(core.partyFrames) do
             if (frame) then
@@ -846,6 +1066,7 @@ core.UnforceFrame = function(self, frame)
 end
 
 core.UnforceAll = function(self)
+    self:CancelPendingForceShow()
     for _, frame in pairs(self.forcedFrames) do
         if (frame) then
             self:UnforceFrame(frame)

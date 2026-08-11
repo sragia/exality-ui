@@ -10,9 +10,6 @@ local data = EXUI:GetModule('data')
 ---@class ExalityFramesPanelFrame
 local panel = EXFrames:GetFrame('panel-frame')
 
----@class ExalityFramesSlimDropdownInput
-local slimDropdown = EXFrames:GetFrame('slim-dropdown-input')
-
 ---@class ExalityFramesButton
 local button = EXFrames:GetFrame('button')
 
@@ -34,8 +31,8 @@ local profiles = EXUI:GetModule('profiles')
 local optionsMain = EXUI:GetModule('options-main')
 
 local LAYOUT = {
-    expanded = { window = { 980, 680 }, nav = 160, info = 80 },
-    compact = { window = { 856, 680 }, nav = 36, info = 0 },
+    expanded = { window = { 980, 725 }, nav = 160, info = 80 },
+    compact = { window = { 856, 725 }, nav = 36, info = 0 },
 }
 
 local NAV_ANIM_DURATION = 0.2
@@ -47,7 +44,6 @@ local menuItemFrame = EXFrames:GetFrame('menu-item')
 
 optionsMain.window = nil
 optionsMain.profileSwitcher = nil
-optionsMain.editModeDialog = nil
 optionsMain.isNavCompact = false
 optionsMain.LAYOUT = LAYOUT
 
@@ -170,54 +166,30 @@ optionsMain.CreateWindow = function(self)
         size = layout.window,
         title = '',
         onClose = function()
-            EXUI:GetModule('uf-core'):UnforceAll()
+            if not editor:IsEditorEnabled() then
+                EXUI:GetModule('uf-core'):UnforceAll()
+            end
             optionsModuleSelector:HideFlyout()
         end
     })
 
     self.isNavCompact = isCompact
 
-    -- Profile Selector
-    local profilePanel = panel:Create()
-    profilePanel:SetWidth(230)
-    profilePanel:SetParent(window)
-    profilePanel:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
-    profilePanel:SetPoint('BOTTOMRIGHT', window.close, 'BOTTOMLEFT', -5, 0)
-    profilePanel:Show()
-
-    local profileLabel = profilePanel:CreateFontString(nil, 'OVERLAY')
-    profileLabel:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
-    profileLabel:SetPoint('LEFT', 5, 0)
-    profileLabel:SetWidth(0)
-    profileLabel:SetText('Profile:')
-    profileLabel:Show()
-
-    local profileSelector = slimDropdown:Create({
-        initial = data:GetCurrentProfile(),
-        onChange = function(value)
-            data:SetCurrentProfile(value)
-            ReloadUI()
-        end,
-        height = 25,
-        width = 150,
-        options = data:GetAllProfiles()
-    }, profilePanel)
-    profileSelector:SetPoint('LEFT', profileLabel, 'RIGHT', 5, 0)
-
+    -- Profiles (gear opens Profiles window)
     local profileSettingsButton = button:Create({
         text = '',
         onClick = function()
             profiles:Show()
         end,
         color = { 0.19, 0.19, 0.19, 1 },
-        size = { 25, 25 },
+        size = { 28, 28 },
         icon = {
             texture = EXUI.const.textures.frame.settingsIcon,
             width = 18,
             height = 18
         }
-    }, profilePanel)
-    profileSettingsButton:SetPoint('LEFT', profileSelector, 'RIGHT', 5, 0)
+    }, window)
+    profileSettingsButton:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
 
     local modulesPanel = panel:Create()
     modulesPanel:SetParent(window.container)
@@ -281,39 +253,31 @@ optionsMain.CreateWindow = function(self)
         optionsModuleSelector:SetCompactMode(true)
     end
 
-    self.editModeDialog = EXFrames:GetFrame('dialog-frame'):Create()
-    self.editModeDialog:SetText(
-        'You are now in edit mode. You can now edit the UI by dragging and dropping elements. Exit edit mode to save your changes.')
-    self.editModeDialog:SetButtons({
-        {
-            text = 'Exit Edit Mode',
-            onClick = function()
-                editor:DisableEditor()
-                self.editModeDialog:HideDialog()
-                self:Show()
-                local optionsController = EXUI:GetModule('options-controller')
-                optionsController:SetSelectedModule(optionsController:GetSelectedModuleName())
-            end,
-            color = { 158 / 255, 0, 32 / 255, 1 }
-        }
-    })
+    editor.onExitEditMode = function()
+        optionsMain:Show()
+        local optionsController = EXUI:GetModule('options-controller')
+        optionsController:SetSelectedModule(optionsController:GetSelectedModuleName())
+    end
 
     local editModeBtn = button:Create({
         text = 'Edit Mode',
         onClick = function()
             editor:EnableEditor()
-            self.editModeDialog:ShowDialog()
             self.window:HideWindow()
         end,
         size = { 86, 28 },
         color = EXUI.const.theme.faded
     }, configPanel)
-    editModeBtn:SetPoint('RIGHT', profilePanel, 'LEFT', -5, 0)
+    editModeBtn:SetPoint('RIGHT', profileSettingsButton, 'LEFT', -5, 0)
 
     return window
 end
 
 optionsMain.Show = function(self)
+    if InCombatLockdown() then
+        EXUI.utils.printOut('You cannot open options during combat.')
+        return
+    end
     if (not self.window) then
         self.window = self:CreateWindow()
     end

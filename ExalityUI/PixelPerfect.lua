@@ -6,13 +6,21 @@ local pixelPerfect = EXUI:GetModule('pixel-perfect')
 pixelPerfect.UIScale = 1
 pixelPerfect.borders = {}
 pixelPerfect.snapFrames = {}
+pixelPerfect.cachedUIParentScale = nil
+
+function pixelPerfect:InvalidateScaleCache()
+    self.cachedUIParentScale = nil
+end
 
 ---@param region? Frame
 function pixelPerfect:GetLayoutScale(region)
-    if region and region.GetEffectiveScale then
+    if region and region ~= UIParent and region.GetEffectiveScale then
         return region:GetEffectiveScale()
     end
-    return UIParent:GetEffectiveScale()
+    if not self.cachedUIParentScale then
+        self.cachedUIParentScale = UIParent:GetEffectiveScale()
+    end
+    return self.cachedUIParentScale
 end
 
 ---@param region? Frame
@@ -109,6 +117,11 @@ end
 ---Align a frame's screen rect to the physical pixel grid.
 ---@param frame Frame
 function EXUI:SnapFrameToPixels(frame)
+    local editorModule = EXUI:GetModule('editor')
+    if editorModule and editorModule.enabled and frame.editor then
+        return
+    end
+
     local point, relativeTo, relativePoint = frame:GetPoint(1)
     if not point then
         return
@@ -168,9 +181,9 @@ end
 
 function EXUI:SetPoint(frame, point, arg2, arg3, arg4, arg5)
     if (type(arg2) == 'number') then
-        frame:SetPoint(point, self:ScalePixel(arg2, frame), self:ScalePixel(arg3, frame))
+        frame:SetPoint(point, self:ScalePixel(arg2 or 0, frame), self:ScalePixel(arg3 or 0, frame))
     else
-        frame:SetPoint(point, arg2, arg3, self:ScalePixel(arg4, frame), self:ScalePixel(arg5, frame))
+        frame:SetPoint(point, arg2, arg3, self:ScalePixel(arg4 or 0, frame), self:ScalePixel(arg5 or 0, frame))
     end
 end
 
@@ -182,39 +195,53 @@ end
 local function applyBorderThickness(border, thickness, region)
     local size = EXUI:ScalePixels(thickness, region)
     local frame = border.anchor
+    local sideOut = 0
+    if border.outwardSides then
+        sideOut = EXUI:ScalePixels(1, region)
+    end
+    local bottomOffset = 0
+    if border.outwardBottom ~= false then
+        bottomOffset = -EXUI:ScalePixels(1, region)
+    end
 
     border.Top:ClearAllPoints()
     border.Top:SetHeight(size)
-    border.Top:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
-    border.Top:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
+    border.Top:SetSnapToPixelGrid(false)
+    border.Top:SetPoint('TOPLEFT', frame, 'TOPLEFT', -sideOut, 0)
+    border.Top:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', sideOut, 0)
 
     border.Bottom:ClearAllPoints()
     border.Bottom:SetHeight(size)
     border.Bottom:SetSnapToPixelGrid(false)
-    local bottomNudge = EXUI:ScalePixels(1, region)
-    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, -bottomNudge)
-    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, -bottomNudge)
+    border.Bottom:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', -sideOut, bottomOffset)
+    border.Bottom:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', sideOut, bottomOffset)
 
     border.Left:ClearAllPoints()
     border.Left:SetWidth(size)
-    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
-    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, 0)
+    border.Left:SetSnapToPixelGrid(false)
+    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', -sideOut, 0)
+    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', -sideOut, bottomOffset)
 
     border.Right:ClearAllPoints()
     border.Right:SetWidth(size)
-    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
-    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
+    border.Right:SetSnapToPixelGrid(false)
+    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', sideOut, 0)
+    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', sideOut, bottomOffset)
 end
 
-function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor)
+function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor, options)
     borderSize = borderSize or 1
+    options = options or {}
     frame:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
     if bgColor then
         frame:SetBackdropColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
     end
     if not frame.PPBorder then
-        frame.PPBorder = self:AddPixelPerfectBorder(frame, borderSize)
+        frame.PPBorder = self:AddPixelPerfectBorder(frame, borderSize, options)
     else
+        if options.outwardBottom ~= nil then
+            frame.PPBorder.outwardBottom = options.outwardBottom
+        end
         frame.PPBorder:SetBorderThickness(borderSize)
     end
     if borderColor then
@@ -223,7 +250,7 @@ function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor)
 end
 
 ---Border textures live on the anchor frame so OVERLAY text stays above them.
----@param options? { layer?: string, register?: boolean }
+---@param options? { layer?: string, register?: boolean, outwardBottom?: boolean, outwardSides?: boolean }
 function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     thickness = thickness or 1
     options = options or {}
@@ -233,6 +260,8 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     local border = {
         anchor = frame,
         thicknessPixels = thickness,
+        outwardBottom = options.outwardBottom,
+        outwardSides = options.outwardSides,
     }
 
     border.Top = frame:CreateTexture(nil, layer, nil, 1)
@@ -265,6 +294,20 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
         applyBorderThickness(self, self.thicknessPixels, self.anchor)
     end
 
+    border.Show = function(self)
+        self.Top:Show()
+        self.Bottom:Show()
+        self.Left:Show()
+        self.Right:Show()
+    end
+
+    border.Hide = function(self)
+        self.Top:Hide()
+        self.Bottom:Hide()
+        self.Left:Hide()
+        self.Right:Hide()
+    end
+
     if register then
         table.insert(pixelPerfect.borders, border)
     end
@@ -279,11 +322,12 @@ local function refreshUnitFrameBorder(frame)
 end
 
 pixelPerfect.Refresh = function(self)
+    self:InvalidateScaleCache()
     local snapped = {}
     for i = #self.borders, 1, -1 do
         local border = self.borders[i]
         if border.anchor and border.anchor:IsShown() then
-            if not snapped[border.anchor] then
+            if not snapped[border.anchor] and border.anchor:GetNumPoints() == 1 then
                 EXUI:SnapFrameToPixels(border.anchor)
                 snapped[border.anchor] = true
             end
@@ -311,6 +355,7 @@ pixelPerfect.Refresh = function(self)
 end
 
 pixelPerfect.Initialize = function(self)
+    self:InvalidateScaleCache()
     self.UIScale = UIParent:GetScale()
     self:Refresh()
 end

@@ -104,23 +104,45 @@ local function ForEachMenuButton(frame, callback)
 end
 
 local STRIP_OPTIONS = { keepHighlight = true, blockHighlightAtlas = true }
+local HIGHLIGHT_ALPHA = 0.6
+local HIGHLIGHT_MARGINS = 10
+
+local function ApplyGameMenuHighlight(button)
+    if (not button.exuiHighlightConfigured) then
+        button.exuiHighlightConfigured = true
+
+        if (button.SetHighlightAtlas and not button.exuiHighlightAtlasBlocked) then
+            button.exuiHighlightAtlasBlocked = true
+            button.SetHighlightAtlas = function() end
+        end
+
+        button:SetHighlightTexture(EXUI.const.textures.skins.btnHighlight, 'BLEND')
+    end
+
+    local highlight = button:GetHighlightTexture()
+    if (not highlight) then return end
+
+    highlight:ClearAllPoints()
+    highlight:SetAllPoints(button)
+    highlight:SetTexCoord(0, 1, 0, 1)
+    highlight:SetTextureSliceMargins(HIGHLIGHT_MARGINS, HIGHLIGHT_MARGINS, HIGHLIGHT_MARGINS, HIGHLIGHT_MARGINS)
+    highlight:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    highlight:SetVertexColor(unpack(GetTheme().accent))
+    highlight:SetAlpha(HIGHLIGHT_ALPHA)
+end
 
 function gameMenuSkin:SkinButton(button)
     if (not button) then return end
 
+    skins:SkinPanelButton(button, { fontSize = FONT_SIZE })
     button.exuiHighlightConfigured = nil
-
-    skins:StripThreeSliceButton(button, STRIP_OPTIONS)
-    skins:ApplyPanelButtonBackground(button)
-    skins:ApplyPanelButtonHighlight(button)
-
-    skins:StylePanelButtonText(button, FONT_SIZE)
-    skins:ApplyPanelButtonState(button, 'NORMAL')
+    ApplyGameMenuHighlight(button)
 
     if (button.UpdateButton and not button.exuiUpdateHooked) then
         button.exuiUpdateHooked = true
         hooksecurefunc(button, 'UpdateButton', function(self, buttonState)
             skins:StripThreeSliceButton(self, STRIP_OPTIONS)
+            ApplyGameMenuHighlight(self)
             skins:ApplyPanelButtonBackground(self)
             skins:ApplyPanelButtonState(self, buttonState)
             skins:StylePanelButtonText(self, FONT_SIZE)
@@ -204,6 +226,7 @@ function gameMenuSkin:InstallHooks()
         hooksecurefunc(ThreeSliceButtonMixin, 'UpdateButton', function(button, buttonState)
             if (button:GetParent() ~= GameMenuFrame) then return end
             skins:StripThreeSliceButton(button, STRIP_OPTIONS)
+            ApplyGameMenuHighlight(button)
             skins:ApplyPanelButtonBackground(button)
             skins:ApplyPanelButtonState(button, buttonState)
             skins:StylePanelButtonText(button, FONT_SIZE)
@@ -220,7 +243,7 @@ function gameMenuSkin:InstallHooks()
     if (ThreeSliceButtonMixin and ThreeSliceButtonMixin.OnMouseUp) then
         hooksecurefunc(ThreeSliceButtonMixin, 'OnMouseUp', function(button)
             if (button:GetParent() ~= GameMenuFrame) then return end
-            skins:ApplyPanelButtonState(button, 'NORMAL')
+            skins:ApplyPanelButtonState(button, button:IsMouseOver() and 'HOVERED' or 'NORMAL')
         end)
     end
 
@@ -228,7 +251,7 @@ function gameMenuSkin:InstallHooks()
         hooksecurefunc(ThreeSliceButtonMixin, 'InitButton', function(button)
             if (button:GetParent() ~= GameMenuFrame) then return end
             button.exuiHighlightConfigured = nil
-            skins:ApplyPanelButtonHighlight(button)
+            ApplyGameMenuHighlight(button)
         end)
     end
 
@@ -255,6 +278,8 @@ function gameMenuSkin:Install()
 end
 
 gameMenuSkin.Init = function(self)
+    if (not skins:IsEnabled('GameMenu')) then return end
+
     if (GameMenuFrame) then
         self:Install()
         return

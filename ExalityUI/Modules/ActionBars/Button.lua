@@ -9,6 +9,9 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 ---@class EXUIActionBarsStyle
 local barStyle = EXUI:GetModule('action-bars-style')
 
+---@class EXUIActionBarsSpellPicker
+local spellPicker = EXUI:GetModule('action-bars-spell-picker')
+
 ---@class EXUIActionBarsButton
 local buttonMod = EXUI:GetModule('action-bars-button')
 
@@ -49,6 +52,7 @@ buttonMod.CreateActionButton = function(self, barId, index, header, barConfig)
     end
 
     barStyle:ApplyToButton(button, barId, barConfig, commandName)
+    spellPicker:RegisterButton(button)
 
     if not InCombatLockdown() and button.UpdateAction then
         button:UpdateAction()

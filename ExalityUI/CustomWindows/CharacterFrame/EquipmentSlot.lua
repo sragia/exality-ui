@@ -30,6 +30,28 @@ local SLOTNAME_BY_ID = {
     [19] = 'TABARDSLOT'
 }
 
+-- Blizzard paper doll buttons (trusted PickupInventoryItem for oils/enchants)
+local BLIZZARD_SLOT_BUTTONS = {
+    [1] = 'CharacterHeadSlot',
+    [2] = 'CharacterNeckSlot',
+    [3] = 'CharacterShoulderSlot',
+    [4] = 'CharacterShirtSlot',
+    [5] = 'CharacterChestSlot',
+    [6] = 'CharacterWaistSlot',
+    [7] = 'CharacterLegsSlot',
+    [8] = 'CharacterFeetSlot',
+    [9] = 'CharacterWristSlot',
+    [10] = 'CharacterHandsSlot',
+    [11] = 'CharacterFinger0Slot',
+    [12] = 'CharacterFinger1Slot',
+    [13] = 'CharacterTrinket0Slot',
+    [14] = 'CharacterTrinket1Slot',
+    [15] = 'CharacterBackSlot',
+    [16] = 'CharacterMainHandSlot',
+    [17] = 'CharacterSecondaryHandSlot',
+    [19] = 'CharacterTabardSlot',
+}
+
 local autoEquipSlotIds = {
     1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19
 }
@@ -48,32 +70,9 @@ local EVENTS = {
     "AZERITE_EMPOWERED_ITEM_SELECTION_UPDATED",
     "BAG_UPDATE_COOLDOWN"
 }
---[[
-Midnight (S1)
-Veteran 1 - 233
-Champ 1 - 246
-Hero 1 - 259
-Mythic 1 - 272
-]]
-
-local ILVL_RARITY = {
-    { ilvl = 0,   color = 'ffffffff', border = EXUI.const.textures.characterFrame.border.empty },
-    { ilvl = 100, color = 'ff26ff3f', border = EXUI.const.textures.characterFrame.border.uncommon },
-    { ilvl = 233, color = 'ff26e2ff', border = EXUI.const.textures.characterFrame.border.rare },
-    { ilvl = 259, color = 'ffe226ff', border = EXUI.const.textures.characterFrame.border.epic },
-    { ilvl = 279, color = 'ffffc526', border = EXUI.const.textures.characterFrame.border.legendary },
-    { ilvl = 289, color = 'ffff2634', border = EXUI.const.textures.characterFrame.border.max },
-}
 
 equipmentSlot.GetItemColorAndBorder = function(self, ilvl)
-    local result = ILVL_RARITY[1]
-    for i = 1, #ILVL_RARITY do
-        if ilvl >= ILVL_RARITY[i].ilvl then
-            result = ILVL_RARITY[i]
-        else
-            break
-        end
-    end
+    local result = EXUI.utils.getIlvlInfo(ilvl)
     return result.color, result.border
 end
 
@@ -147,7 +146,8 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot:SetAttribute('type2', 'item')
     slot:SetAttribute('item', slotId)
     slot:RegisterForDrag('LeftButton')
-    slot:RegisterForClicks('LeftButtonUp', 'RightButtonUp', 'RightButtonDown')
+    -- Both up/down required for SecureActionButton actions to fire reliably
+    slot:RegisterForClicks('LeftButtonUp', 'LeftButtonDown', 'RightButtonUp', 'RightButtonDown')
     slot.Side = side
     slot.Index = index
     slot.slotId = slotId
@@ -195,12 +195,29 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot.Highlight.FadeOut:SetScript('OnFinished', function() slot.Highlight:SetAlpha(0) end)
     slot.Highlight:SetAlpha(0)
 
-    local cooldown = CreateFrame('Cooldown', nil, slot)
+    local cooldown = CreateFrame('Cooldown', nil, slot, 'CooldownFrameTemplate')
     slot.Cooldown = cooldown
     cooldown:SetAllPoints()
     cooldown:SetSwipeColor(0, 0, 0, 0.6)
+    cooldown:SetDrawEdge(false)
     cooldown:SetCountdownFont('ExalityUI_EQUIPMENT_SLOT_CD_Font')
-    cooldown:SetSwipeTexture(EXUI.const.textures.frame.bg)
+    slot.AnchorCooldownText = function(self)
+        local countdown = self.Cooldown.GetCountdownFontString and self.Cooldown:GetCountdownFontString()
+        if not countdown then
+            return
+        end
+        countdown:ClearAllPoints()
+        countdown:SetPoint('BOTTOMLEFT', self.Cooldown, 'BOTTOMLEFT', 4, 3)
+        countdown:SetJustifyH('LEFT')
+    end
+    slot:AnchorCooldownText()
+
+    -- Dim overlay for invalid enchant / temp-enchant targets (below Border OVERLAY)
+    local itemContextOverlay = overlayFrame:CreateTexture(nil, 'ARTWORK', nil, 1)
+    slot.ItemContextOverlay = itemContextOverlay
+    itemContextOverlay:SetAllPoints(slot)
+    itemContextOverlay:SetColorTexture(0, 0, 0, 0.8)
+    itemContextOverlay:Hide()
 
     -- Enchant Text
     local enchantText = overlayFrame:CreateFontString(nil, 'OVERLAY')
@@ -261,6 +278,28 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
         end
     end
 
+    -- Oils / profession enchants use spell-targeting (SpellCanTargetItem), not a cursor item.
+    -- Addon PickupInventoryItem is forbidden in that state; PaperDoll uses PickupInventoryItem from
+    -- trusted UI. Proxy the click to the matching Blizzard slot via SecureActionButton type="click".
+    slot:SetScript('PreClick', function(self, button)
+        if (button ~= 'LeftButton' or InCombatLockdown()) then
+            return
+        end
+
+        if (SpellCanTargetItem() or SpellCanTargetItemID()) then
+            local blizzSlot = _G[BLIZZARD_SLOT_BUTTONS[self:GetID()]]
+            if (blizzSlot) then
+                self:SetAttribute('type1', 'click')
+                self:SetAttribute('clickbutton', blizzSlot)
+                self.spellTargetClick = true
+                return
+            end
+        end
+
+        self:SetAttribute('type1', nil)
+        self:SetAttribute('clickbutton', nil)
+    end)
+
     slot.OnClick = function(self, button)
         if (IsModifiedClick()) then
             local itemLocation = ItemLocation:CreateFromEquipmentSlot(self:GetID());
@@ -310,13 +349,44 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot:SetScript('OnDragStart', function(self)
         self:OnClick('LeftButton')
     end)
-    slot:SetScript('PostClick', slot.OnClick)
+    -- Insecure pickup only on mouse-up. Mouse-down is reserved for SecureActionButton (and would
+    -- also clear spellTargetClick too early when ActionButtonUseKeyDown is on).
+    slot:SetScript('PostClick', function(self, button, down)
+        if (button == 'LeftButton' and down) then
+            return
+        end
+        if (self.spellTargetClick) then
+            self.spellTargetClick = nil
+            return
+        end
+        self:OnClick(button)
+    end)
     slot:SetScript('OnReceiveDrag', function(self)
         self:OnClick('LeftButton')
     end)
     slot:SetScript('OnShow', function(self)
         self:Update()
+        self:UpdateItemContextMatching()
+        ItemButtonUtil.RegisterCallback(ItemButtonUtil.Event.ItemContextChanged, self.OnItemContextChanged, self)
     end)
+
+    slot:SetScript('OnHide', function(self)
+        ItemButtonUtil.UnregisterCallback(ItemButtonUtil.Event.ItemContextChanged, self)
+    end)
+
+    slot.GetItemContextMatchResult = function(self)
+        return ItemButtonUtil.GetItemContextMatchResultForItem(ItemLocation:CreateFromEquipmentSlot(self:GetID()))
+    end
+
+    slot.OnItemContextChanged = function(self)
+        self:UpdateItemContextMatching()
+    end
+
+    slot.UpdateItemContextMatching = function(self)
+        local result = self:GetItemContextMatchResult()
+        local shouldDim = result == ItemButtonUtil.ItemContextMatchResult.Mismatch
+        self.ItemContextOverlay:SetShown(shouldDim)
+    end
 
     slot:SetScript('OnEnter', function(self)
         self:RegisterEvent("MODIFIER_STATE_CHANGED");
@@ -370,6 +440,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             self.Border:SetTexture(border)
             local start, duration = GetInventoryItemCooldown("player", self:GetID());
             self.Cooldown:SetCooldown(start, duration)
+            self:AnchorCooldownText()
 
             -- Enchant
             local enchant = EXUI.utils.GetItemEnchant(itemLink)
@@ -394,6 +465,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             self.EnchantText:SetText('')
             self:AddGems(nil) -- Clear Gems
         end
+        self:UpdateItemContextMatching()
     end
 
     slot:SetScript('OnEvent', function(self, event, ...)

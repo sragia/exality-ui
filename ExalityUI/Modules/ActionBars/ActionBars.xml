@@ -4,8 +4,10 @@
     <Script file="ConfigResolver.lua"/>
     <Script file="Layout.lua"/>
     <Script file="Style.lua"/>
+    <Script file="Glow.lua"/>
     <Script file="CooldownDebug.lua"/>
     <Script file="Button.lua"/>
+    <Script file="SpellPicker.lua"/>
     <Script file="SpecialButton.lua"/>
     <Script file="StateDriver.lua"/>
     <Script file="Bar.lua"/>

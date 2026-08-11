@@ -923,6 +923,10 @@ minimap.GetOrder = function(self)
     return 60
 end
 
+minimap.GetProfileExportSpec = function(self)
+    return { id = 'minimap', keys = { 'minimap' } }
+end
+
 minimap.GetTabs = function(self)
     return {
         { ID = 'general', label = 'General' },
@@ -3258,7 +3262,6 @@ minimap.RegisterEditorFrames = function(self)
         self.Data:SetValue('relativeAnchor', relativePoint)
         self.Data:SetValue('xOffset', xOfs)
         self.Data:SetValue('yOffset', yOfs)
-        self:ConfigureMinimap()
     end, editorOnShow)
 end
 

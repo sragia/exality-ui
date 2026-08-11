@@ -19,13 +19,57 @@ local specialButton = EXUI:GetModule('action-bars-special-button')
 ---@class EXUIActionBarsStateDriver
 local stateDriver = EXUI:GetModule('action-bars-state-driver')
 
+---@class EXUIActionBarsStateController
+local stateController = EXUI:GetModule('action-bars-state')
+
 ---@class EXUIOptionsEditor
 local editor = EXUI:GetModule('editor')
 
 ---@class EXUIActionBarsBar
 local barMod = EXUI:GetModule('action-bars-bar')
 
+local STATE_VISIBILITY_BARS = {
+    pet = true,
+    override = true,
+    possess = true,
+}
+
 barMod.instances = {}
+
+barMod.IsStateControlledBar = function(self, barId)
+    return STATE_VISIBILITY_BARS[barId] == true
+end
+
+barMod.IsBarEditorActive = function(self, frame)
+    return frame and frame.editor and frame.editor:IsShown()
+end
+
+barMod.ApplyStateControlledVisibility = function(self, frame, config, db)
+    local barId = frame.barId
+    if not self:IsStateControlledBar(barId) then
+        return false
+    end
+
+    if self:IsBarEditorActive(frame) then
+        if not config.enable or config.visibility == 'hidden' then
+            frame:Hide()
+        else
+            specialButton:UpdateAll(frame)
+            frame:Show()
+            frame:SetAlpha(1)
+        end
+        return true
+    end
+
+    if barId == 'pet' then
+        stateController:UpdatePetBar(db)
+    elseif barId == 'override' then
+        stateController:UpdateOverrideBar(db)
+    elseif barId == 'possess' then
+        stateController:UpdatePossessBar(db)
+    end
+    return true
+end
 
 barMod.Create = function(self, barId, db)
     local def = definitions:Get(barId)
@@ -98,7 +142,15 @@ barMod.RegisterEditor = function(self, frame, barId)
 
     local actionBars = EXUI:GetModule('action-bars')
     editor:RegisterFrameForEditor(frame, configResolver:GetBarConfig(actionBars:GetDB(), barId).name or barId, function(movedFrame)
+        if movedFrame:GetNumPoints() == 0 then
+            return
+        end
         local point, _, relativePoint, xOfs, yOfs = movedFrame:GetPoint(1)
+        if not point then
+            return
+        end
+        xOfs = xOfs or 0
+        yOfs = yOfs or 0
         local currentDb = actionBars:GetDB()
         local barDb = currentDb.bars[barId]
         barDb.anchorPoint = point
@@ -106,10 +158,15 @@ barMod.RegisterEditor = function(self, frame, barId)
         barDb.xOffset = xOfs
         barDb.yOffset = yOfs
         actionBars.Data:SetDB(currentDb)
-        EXUI:SetPoint(frame, point, UIParent, relativePoint, xOfs, yOfs)
+        if not editor.enabled then
+            barMod:Configure(movedFrame, currentDb)
+        end
     end, function()
         frame._exuiSavedAlpha = frame:GetAlpha()
         frame:SetAlpha(1)
+        if barMod:IsStateControlledBar(barId) then
+            specialButton:UpdateAll(frame)
+        end
         frame.editor:SetEditorAsMovable()
         barMod:SetEditMode(frame, true)
     end, function()
@@ -152,7 +209,7 @@ barMod.Configure = function(self, frame, db)
         return
     end
 
-    EXUI:SetPoint(frame, config.anchorPoint, UIParent, config.relativeAnchor, config.xOffset, config.yOffset)
+    EXUI:SetPoint(frame, config.anchorPoint, UIParent, config.relativeAnchor, config.xOffset or 0, config.yOffset or 0)
 
     if barId == 'stance' then
         frame.exuiLastConfig = config
@@ -166,26 +223,26 @@ barMod.Configure = function(self, frame, db)
             local commandName = definitions:GetCommandName(barId, button.id or i)
             buttonMod:Refresh(button, barId, config)
         elseif specialButton.ApplyStyle and barId ~= 'stance' then
-            specialButton:ApplyStyle(button, barId, config)
             EXUI:SetSize(button, config.width, config.height)
+            specialButton:ApplyStyle(button, barId, config)
         elseif barId == 'stance' and button:IsShown() then
             EXUI:SetSize(button, config.width, config.height)
         end
     end
 
-    if config.visibility ~= 'hidden' then
-        if barId == 'stance' then
-            specialButton:ApplyStanceBarVisibility(frame, config)
-        else
-            frame:Show()
-            if frame.editor and frame.editor:IsShown() then
-                frame:SetAlpha(1)
-            else
-                self:UpdateVisibilityAlpha(frame, config, frame.isHovering)
-            end
-        end
-    else
+    if config.visibility == 'hidden' then
         frame:Hide()
+    elseif barId == 'stance' then
+        specialButton:ApplyStanceBarVisibility(frame, config)
+    elseif self:ApplyStateControlledVisibility(frame, config, db) then
+        -- pet / override / possess visibility handled by game state
+    else
+        frame:Show()
+        if frame.editor and frame.editor:IsShown() then
+            frame:SetAlpha(1)
+        else
+            self:UpdateVisibilityAlpha(frame, config, frame.isHovering)
+        end
     end
 
     if frame.editorRegistered then

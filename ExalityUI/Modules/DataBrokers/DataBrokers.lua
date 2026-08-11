@@ -58,6 +58,10 @@ dataBrokers.GetOrder = function(self)
     return 70
 end
 
+dataBrokers.GetProfileExportSpec = function(self)
+    return { id = 'data-brokers', keys = { 'data-brokers' } }
+end
+
 dataBrokers.GetSplitViewItems = function(self)
     local items = {}
     local db = dataBrokers.Data:GetBaseDB()
@@ -435,7 +439,6 @@ dataBrokers.Displays = {
             dataBrokers.Data:UpdateValueForBroker(id, 'relativeAnchor', relativePoint)
             dataBrokers.Data:UpdateValueForBroker(id, 'XOff', xOfs)
             dataBrokers.Data:UpdateValueForBroker(id, 'YOff', yOfs)
-            self:UpdateById(id)
         end)
         return frame
     end,

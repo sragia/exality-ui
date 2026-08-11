@@ -10,12 +10,12 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
+---@class EXUISkins
+local skins = EXUI:GetModule('skins')
+
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
 ----------------
-local _, screenHeight = GetPhysicalScreenSize()
-local defaultUIScale = 768 / screenHeight
-
 ---@class EXUIGeneralModule
 local generalModule = EXUI:GetModule('general-module')
 
@@ -24,6 +24,7 @@ generalModule.bottomVignette = nil
 generalModule.Init = function(self)
     optionsController:RegisterModule(self)
     data:UpdateDefaults(self:GetDefaults())
+    skins:EnsureDefaults()
 
     self:SetupUIScale()
     self.paperDoll:Init()
@@ -39,9 +40,21 @@ generalModule.GetOrder = function(self)
     return 10
 end
 
+generalModule.GetProfileExportSpec = function(self)
+    local keys = {}
+    for k in pairs(self:GetDefaults()) do
+        keys[#keys + 1] = k
+    end
+    table.insert(keys, 'uiScale')
+    table.insert(keys, 'showMinimap')
+    table.insert(keys, 'minimapIcon')
+    return { id = 'general', keys = keys }
+end
+
 generalModule.GetDefaults = function(self)
     return {
-        uiScale = defaultUIScale,
+        skinsEnabled = true,
+        skins = skins:GetDefaultSkins(),
         paperDollEnabled = true,
         replaceFonts = true,
         font = 'DMSans',
@@ -50,7 +63,7 @@ generalModule.GetDefaults = function(self)
 end
 
 generalModule.GetOptions = function(self)
-    return {
+    local options = {
         {
             label = 'UI Scale',
             name = 'uiScale',
@@ -60,10 +73,14 @@ generalModule.GetOptions = function(self)
             step = 0.001,
             width = 25,
             currentValue = function()
-                return data:GetDataByKey('uiScale')
+                local stored = data:GetData().uiScale
+                if type(stored) == 'number' then
+                    return stored
+                end
+                return UIParent:GetScale()
             end,
             onChange = function(value)
-                if (value == data:GetDataByKey('uiScale')) then return end
+                if (value == data:GetData().uiScale) then return end
                 data:SetDataByKey('uiScale', value)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end
@@ -82,76 +99,146 @@ generalModule.GetOptions = function(self)
             color = { 219 / 255, 73 / 255, 0, 1 }
         },
         {
-            label = 'Paper Doll Improvements',
-            name = 'paperDollEnabled',
-            type = 'toggle',
-            onChange = function(value)
-                data:SetDataByKey('paperDollEnabled', value)
-                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('paperDollEnabled')
-            end,
+            type = 'title',
+            label = 'Skins',
             width = 100,
         },
         {
-            label = 'Add Bottom Vignette',
-            name = 'bottomVignette',
+            label = 'Enable Skins',
+            name = 'skinsEnabled',
             type = 'toggle',
             onChange = function(value)
-                data:SetDataByKey('bottomVignette', value)
-                generalModule:Refresh()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('bottomVignette')
-            end,
-            width = 100,
-        },
-        {
-            label = 'Replace All Fonts',
-            name = 'replaceFonts',
-            type = 'toggle',
-            onChange = function(value)
-                data:SetDataByKey('replaceFonts', value)
+                data:SetDataByKey('skinsEnabled', value)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
                 optionsFields:RefreshOptions()
             end,
             currentValue = function()
-                return data:GetDataByKey('replaceFonts')
+                return data:GetDataByKey('skinsEnabled') ~= false
             end,
             width = 100,
         },
-        {
-            label = 'Replacement Font',
-            name = 'font',
-            type = 'dropdown',
-            getOptions = function()
-                local fonts = LSM:List('font')
-                table.sort(fonts)
-                local options = {}
-                for _, font in ipairs(fonts) do
-                    options[font] = font
-                end
-                return options
-            end,
+    }
+
+    for _, entry in ipairs(skins.list) do
+        local skinKey = entry.key
+        table.insert(options, {
+            label = entry.label,
+            name = 'skin_' .. skinKey,
+            type = 'checkbox',
             depends = function()
-                return data:GetDataByKey('replaceFonts')
+                return data:GetDataByKey('skinsEnabled') ~= false
             end,
-            isFontDropdown = true,
+            tooltip = entry.tooltip and { text = entry.tooltip } or nil,
             onChange = function(value)
-                data:SetDataByKey('font', value)
+                local db = data:GetDataByKey('skins')
+                if (type(db) ~= 'table') then
+                    db = skins:GetDefaultSkins()
+                end
+                db[skinKey] = value
+                data:SetDataByKey('skins', db)
                 EXUI:GetModule('options-reload-dialog'):ShowDialog()
             end,
             currentValue = function()
-                return data:GetDataByKey('font')
+                local db = data:GetDataByKey('skins')
+                if (type(db) ~= 'table' or db[skinKey] == nil) then
+                    return skins:GetEntryDefaultEnabled(skinKey)
+                end
+                return db[skinKey] and true or false
             end,
             width = 33,
-        }
-    }
+        })
+    end
+
+    table.insert(options, { type = 'spacer', width = 100 })
+    table.insert(options, {
+        label = 'Paper Doll Improvements',
+        name = 'paperDollEnabled',
+        type = 'toggle',
+        onChange = function(value)
+            data:SetDataByKey('paperDollEnabled', value)
+            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+        end,
+        currentValue = function()
+            return data:GetDataByKey('paperDollEnabled')
+        end,
+        width = 100,
+    })
+    table.insert(options, {
+        label = 'Add Bottom Vignette',
+        name = 'bottomVignette',
+        type = 'toggle',
+        onChange = function(value)
+            data:SetDataByKey('bottomVignette', value)
+            generalModule:Refresh()
+        end,
+        currentValue = function()
+            return data:GetDataByKey('bottomVignette')
+        end,
+        width = 100,
+    })
+    table.insert(options, {
+        label = 'Replace All Fonts',
+        name = 'replaceFonts',
+        type = 'toggle',
+        onChange = function(value)
+            data:SetDataByKey('replaceFonts', value)
+            -- Damage numbers need a full logout; UI fonts apply on reload
+            EXUI:GetModule('options-reload-dialog'):ShowDialog(
+                'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
+            )
+            optionsFields:RefreshOptions()
+        end,
+        currentValue = function()
+            return data:GetDataByKey('replaceFonts')
+        end,
+        width = 100,
+    })
+    table.insert(options, {
+        label = 'Replacement Font',
+        name = 'font',
+        type = 'dropdown',
+        getOptions = function()
+            local fonts = LSM:List('font')
+            table.sort(fonts)
+            local fontOptions = {}
+            for _, font in ipairs(fonts) do
+                fontOptions[font] = font
+            end
+            return fontOptions
+        end,
+        depends = function()
+            return data:GetDataByKey('replaceFonts')
+        end,
+        isFontDropdown = true,
+        onChange = function(value)
+            data:SetDataByKey('font', value)
+            EXUI:GetModule('options-reload-dialog'):ShowDialog(
+                'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
+            )
+        end,
+        currentValue = function()
+            return data:GetDataByKey('font')
+        end,
+        width = 33,
+    })
+    table.insert(options, {
+        type = 'disclaimer',
+        label =
+        'Relog (character select) is required for floating damage numbers to use the new font. A /reload is not enough.',
+        name = 'fontRelogNotice',
+        width = 100,
+        depends = function()
+            return data:GetDataByKey('replaceFonts')
+        end,
+    })
+
+    return options
 end
 
 generalModule.UpdateUIScale = function(self)
-    local uiScale = data:GetDataByKey('uiScale') or defaultUIScale
+    -- GetDataByKey returns {} for missing keys; read the raw profile value for scalars.
+    local stored = data:GetData().uiScale
+    local uiScale = type(stored) == 'number' and stored or UIParent:GetScale()
     UIParent:SetScale(uiScale)
     EXUI:GetModule('pixel-perfect'):Initialize()
     if EXUI.EXFrames and EXUI.EXFrames.RefreshPixelPerfect then
@@ -161,12 +248,23 @@ generalModule.UpdateUIScale = function(self)
     if ufCore and ufCore.UpdateAllFrames then
         ufCore:UpdateAllFrames()
     end
+    local editor = EXUI:GetModule('editor')
+    if editor and editor.frames then
+        for _, entry in ipairs(editor.frames) do
+            if entry.frame.editor and entry.frame.editor:IsShown() then
+                editor:FinalizeFrameMove(entry.frame)
+            end
+        end
+    end
 end
 
 -- Only called on load
 generalModule.SetupUIScale = function(self)
     EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'general-module', function(event, scale)
         EXUI:UnregisterEventHandler('PLAYER_ENTERING_WORLD', 'general-module')
+        if type(data:GetData().uiScale) ~= 'number' then
+            data:SetDataByKey('uiScale', UIParent:GetScale())
+        end
         generalModule:UpdateUIScale()
     end)
     EXUI:RegisterEventHandler('UI_SCALE_CHANGED', 'general-module', function(event, scale)
@@ -505,6 +603,12 @@ generalModule.fonts = {
     Init = function(self)
         if (not data:GetDataByKey('replaceFonts')) then return end
         self:UpdateFonts()
+        -- World damage font is cached by the engine; re-apply after world load
+        EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'general-fonts', function()
+            if (data:GetDataByKey('replaceFonts')) then
+                generalModule.fonts:UpdateFonts()
+            end
+        end)
     end,
     fontsToReplace = {
         "SystemFont_Shadow_Small_Outline",
@@ -951,14 +1055,36 @@ generalModule.fonts = {
         "ObjectiveTrackerLineFont",
         "ObjectiveTrackerHeaderFont",
     },
+    -- Engine world-text paths need AddOns + backslashes (SetFont is more forgiving)
+    NormalizeFontPath = function(_, path)
+        if (type(path) ~= 'string') then return path end
+        return path:gsub('/', '\\'):gsub('[Aa][Dd][Dd][Oo][Nn][Ss]', 'AddOns')
+    end,
     UpdateFonts = function(self)
-        local defaultFont = LSM:Fetch('font', data:GetDataByKey('font'))
+        local fontName = data:GetDataByKey('font')
+        if (type(fontName) ~= 'string') then return end
+        local defaultFont = LSM:Fetch('font', fontName)
         if (not defaultFont) then return end
+        -- World floating damage/heal numbers read this path (not a FontObject).
+        -- Requires a full logout to take effect; /reload is not enough.
+        DAMAGE_TEXT_FONT = self:NormalizeFontPath(defaultFont)
+        local objectiveTrackerModule = EXUI:GetModule('objective-tracker')
+        local otModuleActive = objectiveTrackerModule.ManagesObjectiveTrackerFonts
+            and objectiveTrackerModule:ManagesObjectiveTrackerFonts()
         for _, font in ipairs(self.fontsToReplace) do
             if (type(font) == 'string') then
-                font = _G[font]
-            end
-            if (type(font) == 'table') then
+                if (otModuleActive and font:find('ObjectiveTracker')) then
+                    -- Objective Tracker module owns these fonts
+                else
+                    font = _G[font]
+                    if (type(font) == 'table') then
+                        local _, size, style = font:GetFont()
+                        if (size > 0) then
+                            font:SetFont(defaultFont, size, style)
+                        end
+                    end
+                end
+            elseif (type(font) == 'table') then
                 local _, size, style = font:GetFont()
                 if (size > 0) then
                     font:SetFont(defaultFont, size, style)

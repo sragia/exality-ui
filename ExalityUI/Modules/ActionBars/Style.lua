@@ -156,6 +156,52 @@ style.ShouldUseMasque = function(self, barConfig)
     return barConfig and barConfig.useMasque and Masque ~= nil
 end
 
+style.GetCooldownSignature = function(self, barConfig)
+    if not barConfig then
+        return ''
+    end
+    local cooldown = barConfig.cooldown or {}
+    local color = cooldown.color or {}
+    return table.concat({
+        barConfig.showCooldownSwipe ~= false and '1' or '0',
+        barConfig.showCooldownText ~= false and '1' or '0',
+        barConfig.hideCooldownCharge and '1' or '0',
+        cooldown.enabled ~= false and '1' or '0',
+        tostring(cooldown.font or ''),
+        tostring(cooldown.fontSize or 0),
+        tostring(cooldown.fontFlag or ''),
+        tostring(cooldown.anchorPoint or ''),
+        tostring(cooldown.relativePoint or ''),
+        tostring(cooldown.xOffset or 0),
+        tostring(cooldown.yOffset or 0),
+        tostring(color.r or 1),
+        tostring(color.g or 1),
+        tostring(color.b or 1),
+        tostring(color.a or 1),
+    }, ':')
+end
+
+style.GetStyleSignature = function(self, barConfig)
+    if not barConfig then
+        return ''
+    end
+    local backdrop = barConfig.backdropColor or {}
+    return table.concat({
+        tostring(barConfig.width or 0),
+        tostring(barConfig.height or 0),
+        tostring(barConfig.zoom or 0),
+        barConfig.showBorder and '1' or '0',
+        barConfig.showBackdrop and '1' or '0',
+        barConfig.useMasque and '1' or '0',
+        barConfig.showBlizzardArtwork and '1' or '0',
+        self:GetCooldownSignature(barConfig),
+        tostring(backdrop.r or 0),
+        tostring(backdrop.g or 0),
+        tostring(backdrop.b or 0),
+        tostring(backdrop.a or 0),
+    }, ':')
+end
+
 style.BuildLABConfig = function(self, barConfig, commandName)
     local useMasque = self:ShouldUseMasque(barConfig)
     local hideLabBorder = useMasque and not barConfig.showBorder or not useMasque
@@ -210,22 +256,34 @@ style.ShouldShowCooldownText = function(self, barConfig)
         and barConfig.cooldown.enabled ~= false
 end
 
-style.ApplyCooldownText = function(self, cooldown, button, barConfig)
+style.ApplyCooldownText = function(self, cooldown, button, barConfig, force)
     if not cooldown or not barConfig then
         return
     end
 
     local show = self:ShouldShowCooldownText(barConfig)
+    local textSig = self:GetCooldownSignature(barConfig) .. ':' .. (show and '1' or '0')
+    if not force and cooldown.exuiTextSig == textSig then
+        return
+    end
+
     if cooldown.SetHideCountdownNumbers then
         cooldown:SetHideCountdownNumbers(not show)
     end
-    if not show or not cooldown.GetCountdownFontString then
+    if not show then
+        cooldown.exuiTextSig = textSig
+        return
+    end
+    if not cooldown.GetCountdownFontString then
         return
     end
 
     local textConfig = barConfig.cooldown
     local fontString = cooldown:GetCountdownFontString()
     if not fontString then
+        -- Fontstring is created lazily when a cooldown starts; leave sig unset
+        -- so the next LAB update can finish styling.
+        cooldown.exuiTextSig = nil
         return
     end
 
@@ -246,42 +304,105 @@ style.ApplyCooldownText = function(self, cooldown, button, barConfig)
         fontString:SetJustifyH(EXUI.utils.getJustifyHFromAnchor(textConfig.anchorPoint))
     end
     fontString:Show()
+    cooldown.exuiTextSig = textSig
 end
 
-style.ApplyCooldownSettings = function(self, button, barConfig)
+style.ShouldHideRegularCooldownText = function(self, button, barConfig, show)
+    if not show then
+        return true
+    end
+    -- While charge cooldown is active, hide the regular countdown so both don't stack.
+    if not barConfig.hideCooldownCharge
+        and button.chargeCooldown
+        and button.chargeCooldown:IsShown()
+        and button.cooldown
+        and button.cooldown:IsShown() then
+        return true
+    end
+    return false
+end
+
+style.ApplyCooldownSettings = function(self, button, barConfig, force)
     if not button or not barConfig then
         return
     end
 
-    local showSwipe = barConfig.showCooldownSwipe ~= false
-    if button.cooldown and button.cooldown.SetDrawSwipe then
-        button.cooldown:SetDrawSwipe(showSwipe)
-    end
+    local cdSig = self:GetCooldownSignature(barConfig)
+    local settingsChanged = force or button.exuiCooldownSig ~= cdSig
+    local show = self:ShouldShowCooldownText(barConfig)
 
-    self:ApplyCooldownText(button.cooldown, button, barConfig)
-
-    if button.chargeCooldown then
-        if barConfig.hideCooldownCharge then
-            if button.chargeCooldown.SetHideCountdownNumbers then
-                button.chargeCooldown:SetHideCountdownNumbers(true)
+    if settingsChanged then
+        button.exuiCooldownSig = cdSig
+        local showSwipe = barConfig.showCooldownSwipe ~= false
+        if button.cooldown and button.cooldown.SetDrawSwipe then
+            button.cooldown:SetDrawSwipe(showSwipe)
+        end
+        self:ApplyCooldownText(button.cooldown, button, barConfig, true)
+        if button.chargeCooldown then
+            if barConfig.hideCooldownCharge then
+                if button.chargeCooldown.SetHideCountdownNumbers then
+                    button.chargeCooldown:SetHideCountdownNumbers(true)
+                end
+                button.chargeCooldown.exuiTextSig = nil
+            else
+                self:ApplyCooldownText(button.chargeCooldown, button, barConfig, true)
             end
-        else
-            self:ApplyCooldownText(button.chargeCooldown, button, barConfig)
+        end
+    else
+        -- Font/anchors stay cached, but LAB and charge-overlap logic can clobber
+        -- SetHideCountdownNumbers every update — always reassert visibility.
+        if button.chargeCooldown and not barConfig.hideCooldownCharge then
+            if button.chargeCooldown.exuiTextSig == nil then
+                self:ApplyCooldownText(button.chargeCooldown, button, barConfig, true)
+            elseif button.chargeCooldown.SetHideCountdownNumbers then
+                button.chargeCooldown:SetHideCountdownNumbers(not show)
+            end
         end
     end
 
-    if (not barConfig.hideCooldownCharge) then
-        C_Timer.After(0.1, function()
-            if (button.cooldown:IsShown() and button.chargeCooldown:IsShown()) then
-                button.cooldown:SetHideCountdownNumbers(true)
+    if button.cooldown and button.cooldown.SetHideCountdownNumbers then
+        local hideRegular = self:ShouldHideRegularCooldownText(button, barConfig, show)
+        button.cooldown:SetHideCountdownNumbers(hideRegular)
+        -- Countdown fontstrings are often created lazily when a CD starts; style once,
+        -- and keep them shown after LAB updates.
+        if show and not hideRegular and button.cooldown.GetCountdownFontString then
+            if button.cooldown.exuiTextSig == nil then
+                self:ApplyCooldownText(button.cooldown, button, barConfig, true)
+            else
+                local fontString = button.cooldown:GetCountdownFontString()
+                if fontString and fontString.Show then
+                    fontString:Show()
+                end
             end
-        end)
+        end
+    end
+
+    -- Prefer an immediate check; only defer once if charge cooldown may appear shortly after.
+    if not barConfig.hideCooldownCharge and button.cooldown and button.chargeCooldown then
+        if button.cooldown:IsShown() and button.chargeCooldown:IsShown() then
+            button.cooldown:SetHideCountdownNumbers(true)
+        elseif not button.exuiChargeCdTimerPending then
+            button.exuiChargeCdTimerPending = true
+            C_Timer.After(0.1, function()
+                button.exuiChargeCdTimerPending = nil
+                if not button.cooldown or not button.cooldown.SetHideCountdownNumbers then
+                    return
+                end
+                local stillShow = style:ShouldShowCooldownText(barConfig)
+                button.cooldown:SetHideCountdownNumbers(
+                    style:ShouldHideRegularCooldownText(button, barConfig, stillShow)
+                )
+            end)
+        end
     end
 end
 
 style.ApplyDefaultBorder = function(self, button, alpha)
     if button.NormalTexture then
         button.NormalTexture:SetAlpha(0)
+    end
+    if button.PPBorder then
+        button.PPBorder:Hide()
     end
 
     local border = self:EnsureBorderTexture(button)
@@ -302,6 +423,9 @@ style.HideDefaultBorder = function(self, button)
     if button.exuiBorderOverlay then
         button.exuiBorderOverlay:Hide()
     end
+    if button.PPBorder then
+        button.PPBorder:Hide()
+    end
 end
 
 style.HideBlizzardButtonChrome = function(self, button)
@@ -316,7 +440,7 @@ style.HideBlizzardButtonChrome = function(self, button)
     end
 end
 
-style.ApplyIconLayout = function(self, button, barConfig)
+style.ApplyIconLayout = function(self, button, barConfig, force)
     self:NormalizeAbilityButtonIcon(button)
     if not button.icon then
         return
@@ -324,6 +448,9 @@ style.ApplyIconLayout = function(self, button, barConfig)
 
     local w, h = barConfig.width, barConfig.height
     local sizeChanged = button.exuiLayoutWidth ~= w or button.exuiLayoutHeight ~= h
+    if not force and not sizeChanged and button.exuiLayoutApplied then
+        return
+    end
 
     -- SmallActionButtonTemplate (stance/pet/possess) hardcodes mask/cooldown insets in OnLoad.
     button.icon:ClearAllPoints()
@@ -334,9 +461,23 @@ style.ApplyIconLayout = function(self, button, barConfig)
         button.IconMask:SetAllPoints(button.icon)
     end
 
-    if button.cooldown then
-        button.cooldown:ClearAllPoints()
-        button.cooldown:SetAllPoints(button.icon)
+    local cooldowns = {
+        button.cooldown,
+        button.Cooldown,
+        button.chargeCooldown,
+        button.ChargeCooldown,
+        button.lossOfControlCooldown,
+    }
+    for _, cooldown in ipairs(cooldowns) do
+        if cooldown then
+            cooldown:ClearAllPoints()
+            cooldown:SetAllPoints(button.icon)
+        end
+    end
+
+    if button.AutoCastOverlay then
+        button.AutoCastOverlay:ClearAllPoints()
+        button.AutoCastOverlay:SetAllPoints(button)
     end
 
     if button.Flash then
@@ -344,9 +485,10 @@ style.ApplyIconLayout = function(self, button, barConfig)
         button.Flash:SetAllPoints(button)
     end
 
+    button.exuiLayoutWidth = w
+    button.exuiLayoutHeight = h
+    button.exuiLayoutApplied = true
     if sizeChanged then
-        button.exuiLayoutWidth = w
-        button.exuiLayoutHeight = h
         self:ApplyCooldownSettings(button, barConfig)
     end
 end
@@ -355,10 +497,31 @@ style.ApplyIconMask = function(self, button, barConfig)
     if not button.IconMask then
         return
     end
-    if barConfig.width ~= barConfig.height then
-        button.IconMask:Hide()
-    else
+    -- SmallActionButtonTemplate masks clip icons inward; only keep for Blizzard artwork mode.
+    if barConfig.showBlizzardArtwork and barConfig.width == barConfig.height then
         button.IconMask:Show()
+    else
+        button.IconMask:Hide()
+    end
+end
+
+-- Highlight.png is an ADD glow (dark center, soft bright rim). Cropping killed press/hover
+-- feedback; keep full texels + ADD, and inset slightly so the rim doesn't bloom onto neighbors.
+local HIGHLIGHT_INSET = 1
+
+local function applyOverlayTexture(texture, button, file, color, alpha, drawLayer)
+    if not texture then
+        return
+    end
+    texture:ClearAllPoints()
+    texture:SetPoint('TOPLEFT', button, 'TOPLEFT', HIGHLIGHT_INSET, -HIGHLIGHT_INSET)
+    texture:SetPoint('BOTTOMRIGHT', button, 'BOTTOMRIGHT', -HIGHLIGHT_INSET, HIGHLIGHT_INSET)
+    texture:SetTexture(file)
+    texture:SetTexCoord(0, 1, 0, 1)
+    texture:SetBlendMode('ADD')
+    texture:SetVertexColor(color[1], color[2], color[3], alpha)
+    if drawLayer then
+        texture:SetDrawLayer(drawLayer)
     end
 end
 
@@ -374,38 +537,19 @@ style.ApplyButtonHighlight = function(self, button)
         button:SetHighlightTexture(highlightTexture, 'ADD')
     end
 
-    local highlight = button:GetHighlightTexture()
-    if highlight then
-        highlight:ClearAllPoints()
-        highlight:SetAllPoints(button)
-        highlight:SetTexture(highlightTexture)
-        highlight:SetBlendMode('ADD')
-        highlight:SetVertexColor(accent[1], accent[2], accent[3], 0.55)
-    end
+    applyOverlayTexture(button:GetHighlightTexture(), button, highlightTexture, accent, 0.55)
 
     local pushed = button.GetPushedTexture and button:GetPushedTexture()
     if pushed then
-        if not button.exuiPushedConfigured then
-            button.exuiPushedConfigured = true
-            pushed:SetTexture(highlightTexture)
-            pushed:SetBlendMode('ADD')
-        end
-        pushed:ClearAllPoints()
-        pushed:SetAllPoints(button)
-        pushed:SetVertexColor(EXUI.const.theme.accentDark[1], EXUI.const.theme.accentDark[2],
-            EXUI.const.theme.accentDark[3], 0.65)
+        button.exuiPushedConfigured = true
+        -- Match Blizzard: pushed must sit above the icon or press feedback disappears under it.
+        applyOverlayTexture(pushed, button, highlightTexture, EXUI.const.theme.accentDark, 0.65, 'OVERLAY')
     end
 
     local checked = button.GetCheckedTexture and button:GetCheckedTexture()
     if checked then
-        if not button.exuiCheckedConfigured then
-            button.exuiCheckedConfigured = true
-            checked:SetTexture(highlightTexture)
-            checked:SetBlendMode('ADD')
-        end
-        checked:ClearAllPoints()
-        checked:SetAllPoints(button)
-        checked:SetVertexColor(accent[1], accent[2], accent[3], 0.45)
+        button.exuiCheckedConfigured = true
+        applyOverlayTexture(checked, button, highlightTexture, accent, 0.45, 'OVERLAY')
     end
 
     if button.Flash and not button.exuiFlashConfigured then
@@ -415,8 +559,9 @@ style.ApplyButtonHighlight = function(self, button)
     end
     if button.SpellHighlightTexture and not button.exuiSpellHighlightConfigured then
         button.exuiSpellHighlightConfigured = true
-        button.SpellHighlightTexture:ClearAllPoints()
-        button.SpellHighlightTexture:SetAllPoints(button)
+        applyOverlayTexture(button.SpellHighlightTexture, button,
+            EXUI.const.masque.rectangle.spellHighlight or highlightTexture,
+            { EXUI.const.theme.accentDark[1], EXUI.const.theme.accentDark[2], EXUI.const.theme.accentDark[3] }, 1, 'OVERLAY')
     end
 end
 
@@ -532,6 +677,8 @@ style.StyleMasqueButton = function(self, button, barConfig)
         return
     end
 
+    self:HideDefaultBorder(button)
+
     local needsReskin = self:NormalTextureIsQuickslot(button)
     self:FixMasqueNormalRegion(button)
 
@@ -553,7 +700,9 @@ style.ApplyButtonStyle = function(self, button, barConfig)
         return
     end
 
-    self:ApplyIconLayout(button, barConfig)
+    button.exuiStyleSig = self:GetStyleSignature(barConfig)
+    button.exuiLastEmpty = self:ButtonIsEmpty(button)
+    self:ApplyIconLayout(button, barConfig, true)
 
     if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
         self:StyleMasqueButton(button, barConfig)
@@ -582,16 +731,40 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
         return
     end
 
-    self:ApplyIconLayout(button, barConfig)
+    local styleSig = self:GetStyleSignature(barConfig)
+    local styleChanged = button.exuiStyleSig ~= styleSig
+    local isEmpty = self:ButtonIsEmpty(button)
+    local emptyChanged = button.exuiLastEmpty ~= isEmpty
+    button.exuiLastEmpty = isEmpty
+
+    if styleChanged then
+        button.exuiStyleSig = styleSig
+        button.exuiLayoutApplied = false
+        button.exuiCooldownSig = nil
+        self:ApplyIconLayout(button, barConfig, true)
+    end
 
     if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
-        self:StyleMasqueButton(button, barConfig)
-    else
+        if styleChanged then
+            self:StyleMasqueButton(button, barConfig)
+        elseif emptyChanged and Masque and Masque.SetEmpty then
+            Masque:SetEmpty(button, isEmpty)
+        end
+    elseif styleChanged or emptyChanged or isEmpty then
+        -- LAB Update re-shows SlotBackground on empty slots and can shove
+        -- HighlightTexture outside the button when hideElements.border is set.
+        -- Skip full chrome work on filled buttons when style/empty state is stable.
         self:StyleNonMasqueButtonChrome(button, barConfig)
     end
-    self:UpdateSlotBackdrop(button, barConfig)
-    self:ApplyCooldownSettings(button, barConfig)
-    self:ApplyTextVisibility(button, barConfig)
+
+    if styleChanged or emptyChanged then
+        self:UpdateSlotBackdrop(button, barConfig)
+    end
+
+    self:ApplyCooldownSettings(button, barConfig, styleChanged)
+    if styleChanged or emptyChanged then
+        self:ApplyTextVisibility(button, barConfig)
+    end
 end
 
 style.OnButtonUpdated = function(self, button, barConfig)
