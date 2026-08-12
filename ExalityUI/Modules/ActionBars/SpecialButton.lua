@@ -55,12 +55,6 @@ special.BAR_EVENTS = {
         'PLAYER_MOUNT_DISPLAY_CHANGED',
         'PLAYER_REGEN_ENABLED',
     },
-    possess = {
-        'PLAYER_ENTERING_WORLD',
-        'UPDATE_POSSESS_BAR',
-        'UPDATE_VEHICLE_ACTIONBAR',
-        'PLAYER_REGEN_ENABLED',
-    },
 }
 
 special.COOLDOWN_ONLY_EVENTS = {
@@ -193,49 +187,6 @@ special.CreatePetButton = function(self, barId, index, header, barConfig)
         end
 
         self:UpdateCooldownOnly()
-    end
-    button.UpdateAction = button.Update
-
-    EXUI:SetSize(button, barConfig.width, barConfig.height)
-    special:ApplyStyle(button, barId, barConfig)
-    return button
-end
-
-special.CreatePossessButton = function(self, barId, index, header, barConfig)
-    local name = 'EXUIActionBar_' .. barId .. '_' .. index
-    local button = CreateFrame('CheckButton', name, header, 'PossessButtonTemplate')
-    button:SetID(index)
-    button.index = index
-    button.id = index
-    button.exuiBarId = barId
-    button.commandName = definitions:GetCommandName(barId, index)
-    bindTemplateChildren(button)
-
-    button.UpdateCooldownOnly = function() end
-
-    button.Update = function(self)
-        local id = self:GetID()
-        local texture = GetPossessInfo(id)
-
-        if self.icon then
-            if texture then
-                self.icon:SetTexture(texture)
-                self.icon:Show()
-                self.icon:SetVertexColor(1.0, 1.0, 1.0)
-                self.icon:SetDesaturated(false)
-            else
-                self.icon:Hide()
-            end
-        end
-
-        if self.cooldown then
-            self.cooldown:Hide()
-        end
-
-        self:SetChecked(false)
-        if (not InCombatLockdown()) then
-            self:Enable()
-        end
     end
     button.UpdateAction = button.Update
 

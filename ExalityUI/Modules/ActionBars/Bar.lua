@@ -31,7 +31,6 @@ local barMod = EXUI:GetModule('action-bars-bar')
 local STATE_VISIBILITY_BARS = {
     pet = true,
     override = true,
-    possess = true,
 }
 
 barMod.instances = {}
@@ -65,8 +64,6 @@ barMod.ApplyStateControlledVisibility = function(self, frame, config, db)
         stateController:UpdatePetBar(db)
     elseif barId == 'override' then
         stateController:UpdateOverrideBar(db)
-    elseif barId == 'possess' then
-        stateController:UpdatePossessBar(db)
     end
     return true
 end
@@ -95,8 +92,6 @@ barMod.Create = function(self, barId, db)
             button = specialButton:CreateStanceButton(barId, i, header, config)
         elseif def.barType == 'pet' then
             button = specialButton:CreatePetButton(barId, i, header, config)
-        elseif def.barType == 'possess' then
-            button = specialButton:CreatePossessButton(barId, i, header, config)
         elseif def.barType == 'override' then
             button = buttonMod:CreateActionButton(barId, i, header, config)
         end
@@ -127,7 +122,7 @@ barMod.Create = function(self, barId, db)
         stateDriver:ApplyToFrame(frame, config.states)
     end
 
-    if def.barType == 'stance' or def.barType == 'pet' or def.barType == 'possess' then
+    if def.barType == 'stance' or def.barType == 'pet' then
         specialButton:InitBarEvents(frame, def.barType)
     end
 
@@ -235,7 +230,7 @@ barMod.Configure = function(self, frame, db)
     elseif barId == 'stance' then
         specialButton:ApplyStanceBarVisibility(frame, config)
     elseif self:ApplyStateControlledVisibility(frame, config, db) then
-        -- pet / override / possess visibility handled by game state
+        -- pet / override visibility handled by game state
     else
         frame:Show()
         if frame.editor and frame.editor:IsShown() then

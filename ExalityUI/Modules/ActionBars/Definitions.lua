@@ -6,7 +6,7 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 
 definitions.PLAYER_BAR_IDS = { 'bar1', 'bar2', 'bar3', 'bar4', 'bar5', 'bar6', 'bar7', 'bar8' }
 
-definitions.SPECIAL_BAR_IDS = { 'stance', 'pet', 'possess', 'extra', 'override' }
+definitions.SPECIAL_BAR_IDS = { 'stance', 'pet', 'extra', 'override' }
 
 definitions.ALL_BAR_IDS = {}
 
@@ -126,16 +126,6 @@ definitions.BARS = {
         commandPrefix = 'BONUSACTIONBUTTON',
         defaultEnabled = true,
         defaultAnchor = { point = 'CENTER', relativePoint = 'CENTER', x = 0, y = 0 },
-    },
-    possess = {
-        id = 'possess',
-        label = 'Possess Bar',
-        blizzardFrame = 'PossessActionBar',
-        barType = 'possess',
-        numButtons = 12,
-        commandPrefix = 'MULTICASTACTIONBUTTON',
-        defaultEnabled = true,
-        defaultAnchor = { point = 'CENTER', relativePoint = 'CENTER', x = 0, y = 40 },
     },
     extra = {
         id = 'extra',

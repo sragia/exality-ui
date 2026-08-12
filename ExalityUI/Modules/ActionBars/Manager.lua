@@ -87,8 +87,6 @@ manager.RefreshBar = function(self, barId)
                 stateController:UpdatePetBar()
             elseif barId == 'override' then
                 stateController:UpdateOverrideBar()
-            elseif barId == 'possess' then
-                stateController:UpdatePossessBar()
             end
         end
     end

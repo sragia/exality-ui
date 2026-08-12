@@ -49,9 +49,32 @@ state.pendingUpdate = false
 state.pendingVisibility = false
 state.pendingSlots = false
 
-state.IsOverrideBarActive = function(self)
+-- Blizzard shows OverrideActionBar only for skinned vehicle/override UIs.
+state.IsSkinnedOverrideBarActive = function(self)
     return (C_ActionBar.HasVehicleActionBar() and UnitVehicleSkin('player') and UnitVehicleSkin('player') ~= '')
         or (C_ActionBar.HasOverrideActionBar() and C_ActionBar.GetOverrideBarSkin() and C_ActionBar.GetOverrideBarSkin() ~= 0)
+end
+
+-- Prefer bar1 paging when "Possess / Vehicle Pages" is enabled (default).
+state.ShouldPageBar1ForPossess = function(self, db)
+    db = db or actionBars:GetDB()
+    local bar1 = db.bars and db.bars.bar1
+    local states = bar1 and bar1.states
+    return not states or states.possess ~= false
+end
+
+state.GetOverrideActionPage = function(self)
+    if C_ActionBar.HasVehicleActionBar() then
+        return C_ActionBar.GetVehicleBarIndex()
+    end
+    if C_ActionBar.HasOverrideActionBar() then
+        return C_ActionBar.GetOverrideBarIndex()
+    end
+    return nil
+end
+
+state.IsOverrideBarActive = function(self)
+    return self:IsSkinnedOverrideBarActive()
 end
 
 state.UpdateBar1Visibility = function(self, db)
@@ -68,9 +91,12 @@ state.UpdateBar1Visibility = function(self, db)
         return
     end
 
-    if self:IsOverrideBarActive() then
-        self:TrySetFrameShown(frame, false)
-        return
+    if self:IsSkinnedOverrideBarActive() and not self:ShouldPageBar1ForPossess(db) then
+        local overrideConfig = configResolver:GetBarConfig(db, 'override')
+        if overrideConfig.enable then
+            self:TrySetFrameShown(frame, false)
+            return
+        end
     end
 
     self:TrySetFrameShown(frame, true)
@@ -82,23 +108,31 @@ state.UpdateOverrideBar = function(self, db)
         return
     end
 
-    local showOverride = self:IsOverrideBarActive()
+    db = db or actionBars:GetDB()
 
-    if not showOverride or C_PetBattles.IsInBattle() then
+    if self:ShouldPageBar1ForPossess(db)
+        or not self:IsSkinnedOverrideBarActive()
+        or C_PetBattles.IsInBattle() then
         self:TrySetFrameShown(frame, false)
         return
     end
 
-    local page = C_ActionBar.GetOverrideBarIndex()
+    local page = self:GetOverrideActionPage()
+    if not page then
+        self:TrySetFrameShown(frame, false)
+        return
+    end
+
     for i, button in ipairs(frame.buttons) do
         local slot = (page - 1) * 12 + i
         buttonMod:SetActionSlot(button, slot)
     end
 
-    db = db or actionBars:GetDB()
     local config = configResolver:GetBarConfig(db, 'override')
     if config.enable then
         self:TrySetFrameShown(frame, true)
+    else
+        self:TrySetFrameShown(frame, false)
     end
 end
 
@@ -139,24 +173,6 @@ state.UpdatePetBar = function(self, db)
         specialButton:UpdateAll(frame)
         db = db or actionBars:GetDB()
         local config = configResolver:GetBarConfig(db, 'pet')
-        if config.enable then
-            self:TrySetFrameShown(frame, true)
-        end
-    else
-        self:TrySetFrameShown(frame, false)
-    end
-end
-
-state.UpdatePossessBar = function(self, db)
-    local frame = barMod:Get('possess')
-    if not frame then
-        return
-    end
-
-    if C_ActionBar.IsPossessBarVisible() then
-        specialButton:UpdateAll(frame)
-        db = db or actionBars:GetDB()
-        local config = configResolver:GetBarConfig(db, 'possess')
         if config.enable then
             self:TrySetFrameShown(frame, true)
         end
@@ -229,7 +245,6 @@ state.ApplyAll = function(self, db)
     self:UpdateOverrideBar(db)
     self:UpdateStanceBar(db)
     self:UpdatePetBar(db)
-    self:UpdatePossessBar(db)
 end
 
 state.UpdateAll = function(self, event)

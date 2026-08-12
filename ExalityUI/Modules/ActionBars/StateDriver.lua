@@ -67,7 +67,7 @@ stateDriver.BuildDriverString = function(self, statesConfig)
     local parts = {}
 
     if statesConfig.possess ~= false then
-        table_insert(parts, '[overridebar][possessbar][shapeshift]possess;[bonusbar:5]dragon')
+        table_insert(parts, '[overridebar][vehicleui][possessbar][shapeshift]possess;[bonusbar:5]dragon')
     end
 
     for _, mod in ipairs({ 'ctrl', 'alt', 'shift' }) do

@@ -5,6 +5,7 @@ EXUI.changelog = [[
 # |cffdb49000.9.2|r
 - [Action Bars] Fix issue with button highlight going out of container
 - [Resource Displays] Fix issue with preview staying shown after options switch/window close
+- [Action Bars] Possess Bar replaces Bar 1
 
 # |cffdb49000.9.0|r
 
