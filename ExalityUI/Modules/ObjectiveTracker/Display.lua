@@ -22,6 +22,7 @@ display.blockFrames = {}
 display.lineFrames = {}
 display.progressBarFrames = {}
 display.challengeModeBlockFrames = {}
+display.scenarioHeaderTimerFrames = {}
 display.SCENARIO_CATEGORY_ID = 'scenario'
 display.inEncounter = false
 
@@ -280,6 +281,7 @@ end
 
 function display:ReleaseLayout()
     self:StopChallengeModeTimerWatch()
+    self:StopScenarioHeaderTimerWatch()
 
     for _, frame in ipairs(self.progressBarFrames) do
         self.progressBarPool:Release(frame)
@@ -289,6 +291,7 @@ function display:ReleaseLayout()
     end
     for _, frame in ipairs(self.blockFrames) do
         frame.challengeModeTimer = nil
+        frame.scenarioHeaderTimer = nil
         self:ReleaseBlockPOI(frame)
         self.blockPool:Release(frame)
     end
@@ -300,6 +303,7 @@ function display:ReleaseLayout()
     wipe(self.blockFrames)
     wipe(self.categoryFrames)
     wipe(self.challengeModeBlockFrames)
+    wipe(self.scenarioHeaderTimerFrames)
 end
 
 function display:EnsurePOIPool()
@@ -564,9 +568,63 @@ function display:AppendBlockRow(frame, element, blockHeight, spacing, db)
     return blockHeight + spacing.lineSpacing + element:GetHeight()
 end
 
+function display:FormatColorCode(color)
+    return CreateColor(color.r, color.g, color.b, color.a or 1)
+end
+
+function display:GetScenarioHeaderTimeRemaining(headerTimer)
+    if not headerTimer or not headerTimer.widgetID
+        or not C_UIWidgetManager
+        or not C_UIWidgetManager.GetScenarioHeaderTimerWidgetVisualizationInfo
+        or not Enum
+        or not Enum.WidgetShownState then
+        return nil
+    end
+
+    local info = C_UIWidgetManager.GetScenarioHeaderTimerWidgetVisualizationInfo(headerTimer.widgetID)
+    if not info or info.shownState == Enum.WidgetShownState.Hidden then
+        return nil
+    end
+
+    local timerValue = math.max(info.timerMin, math.min(info.timerMax, info.timerValue))
+    return math.max(0, timerValue - info.timerMin)
+end
+
+function display:SetScenarioStageLineText(stageLine, stageLabel, timeRemaining, db)
+    if not stageLine or not stageLine.text then
+        return
+    end
+
+    local stageColor = self:GetColor(db, 'BlockHeader')
+    if timeRemaining == nil then
+        stageLine.text:SetText(stageLabel or '')
+        stageLine.text:SetTextColor(stageColor.r, stageColor.g, stageColor.b)
+        return
+    end
+
+    local timerColor = self:GetColor(db, 'NormalHighlight')
+    local timerText = SecondsToClock(timeRemaining)
+    if stageLabel and stageLabel ~= '' then
+        stageLine.text:SetText(self:FormatColorCode(timerColor):WrapTextInColorCode(timerText)
+            .. ' '
+            .. self:FormatColorCode(stageColor):WrapTextInColorCode(stageLabel))
+    else
+        stageLine.text:SetText(self:FormatColorCode(timerColor):WrapTextInColorCode(timerText))
+    end
+    stageLine.text:SetTextColor(1, 1, 1)
+end
+
 function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
     local stage = block.stage
-    if not stage or not stage.total or stage.total <= 0 then
+    if not stage then
+        return blockHeight
+    end
+
+    local showStage = stage.total and stage.total > 1
+    local headerTimer = stage.headerTimer
+    local timeRemaining = headerTimer and (headerTimer.timeRemaining or self:GetScenarioHeaderTimeRemaining(headerTimer))
+    local hasTimer = timeRemaining ~= nil
+    if not showStage and not hasTimer then
         return blockHeight
     end
 
@@ -577,8 +635,12 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
     local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
     local lineFontPath, lineFontSize, lineFontFlag = self:GetFont(db.lineFont, db.lineFontSize, db.lineFontFlag)
 
-    if stage.total > 1 then
-        local stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
+    local stageLabel
+    if showStage then
+        stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
+    end
+
+    if showStage or hasTimer then
         local stageLine = self.linePool:Acquire()
         stageLine:SetParent(frame)
         stageLine:Show()
@@ -598,14 +660,21 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
         stageLine.text:SetMaxLines(0)
         stageLine.text:SetNonSpaceWrap(false)
         stageLine.text:SetFont(headerFontPath, headerFontSize, headerFontFlag)
-        stageLine.text:SetText(stageLabel)
-        local stageColor = self:GetColor(db, 'BlockHeader')
-        stageLine.text:SetTextColor(stageColor.r, stageColor.g, stageColor.b)
+        self:SetScenarioStageLineText(stageLine, stageLabel, hasTimer and timeRemaining or nil, db)
 
         local stageHeight = self:MeasureFontString(stageLine.text, headerFontSize, lineTextWidth, headerFontFlag)
         stageLine:SetHeight(stageHeight)
         blockHeight = self:AppendBlockRow(frame, stageLine, blockHeight, spacing)
         self.lineFrames[#self.lineFrames + 1] = stageLine
+
+        if hasTimer and headerTimer and headerTimer.widgetID then
+            frame.scenarioHeaderTimer = {
+                widgetID = headerTimer.widgetID,
+                stageLabel = stageLabel,
+                stageLine = stageLine,
+            }
+            self.scenarioHeaderTimerFrames[#self.scenarioHeaderTimerFrames + 1] = frame.scenarioHeaderTimer
+        end
     end
 
     local description = stage.description
@@ -647,6 +716,48 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
     end
 
     return blockHeight
+end
+
+function display:UpdateScenarioHeaderTimers()
+    local db = objectiveTracker.Data:GetDB()
+    local needsRebuild = false
+
+    for _, timer in ipairs(self.scenarioHeaderTimerFrames) do
+        local timeRemaining = self:GetScenarioHeaderTimeRemaining(timer)
+        if timeRemaining == nil then
+            needsRebuild = true
+        else
+            self:SetScenarioStageLineText(timer.stageLine, timer.stageLabel, timeRemaining, db)
+        end
+    end
+
+    if needsRebuild then
+        self:RequestUpdate()
+    end
+end
+
+function display:StartScenarioHeaderTimerWatch()
+    if #self.scenarioHeaderTimerFrames == 0 then
+        self:StopScenarioHeaderTimerWatch()
+        return
+    end
+
+    if self.scenarioHeaderTimerTicker then
+        self:UpdateScenarioHeaderTimers()
+        return
+    end
+
+    self.scenarioHeaderTimerTicker = C_Timer.NewTicker(0.1, function()
+        display:UpdateScenarioHeaderTimers()
+    end)
+    self:UpdateScenarioHeaderTimers()
+end
+
+function display:StopScenarioHeaderTimerWatch()
+    if self.scenarioHeaderTimerTicker then
+        self.scenarioHeaderTimerTicker:Cancel()
+        self.scenarioHeaderTimerTicker = nil
+    end
 end
 
 function display:GetChallengeModeTimeLeft(challengeMode)
@@ -1739,12 +1850,14 @@ function display:Update()
     if self:IsSuppressedByMythicPlusTimer() then
         self.frame:Hide()
         self:StopChallengeModeTimerWatch()
+        self:StopScenarioHeaderTimerWatch()
         return
     end
 
     if self:ShouldHideInMythicPlus(db) then
         self.frame:Hide()
         self:StopChallengeModeTimerWatch()
+        self:StopScenarioHeaderTimerWatch()
         return
     end
 
@@ -1756,18 +1869,21 @@ function display:Update()
     if db.containerCollapsed then
         self:ApplyTrackerVisibility(db, categories)
         self:StopChallengeModeTimerWatch()
+        self:StopScenarioHeaderTimerWatch()
         return
     end
 
     if #categories == 0 and db.autoHideWhenEmpty and not objectiveTracker.editorShowing then
         self.frame:Hide()
         self:StopChallengeModeTimerWatch()
+        self:StopScenarioHeaderTimerWatch()
         return
     end
 
     self.frame:Show()
     self:LayoutCategories(categories, db)
     self:StartChallengeModeTimerWatch()
+    self:StartScenarioHeaderTimerWatch()
 end
 
 function display:Show()
@@ -1779,6 +1895,7 @@ end
 function display:Hide()
     self:CancelPendingUpdate()
     self:StopChallengeModeTimerWatch()
+    self:StopScenarioHeaderTimerWatch()
     self:StopSmoothScroll()
     self.scrollTarget = nil
     if self.frame then

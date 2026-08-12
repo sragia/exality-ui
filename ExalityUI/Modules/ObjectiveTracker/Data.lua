@@ -600,6 +600,38 @@ function trackerData:GetChallengeModeInfo()
     }
 end
 
+function trackerData:GetScenarioHeaderTimerInfo(widgetSetID)
+    if not widgetSetID
+        or not C_UIWidgetManager
+        or not C_UIWidgetManager.GetAllWidgetsBySetID
+        or not C_UIWidgetManager.GetScenarioHeaderTimerWidgetVisualizationInfo
+        or not Enum
+        or not Enum.UIWidgetVisualizationType
+        or not Enum.WidgetShownState then
+        return nil
+    end
+
+    local widgets = C_UIWidgetManager.GetAllWidgetsBySetID(widgetSetID)
+    if not widgets then
+        return nil
+    end
+
+    for _, widget in ipairs(widgets) do
+        if widget.widgetType == Enum.UIWidgetVisualizationType.ScenarioHeaderTimer then
+            local info = C_UIWidgetManager.GetScenarioHeaderTimerWidgetVisualizationInfo(widget.widgetID)
+            if info and info.shownState ~= Enum.WidgetShownState.Hidden then
+                local timerValue = math.max(info.timerMin, math.min(info.timerMax, info.timerValue))
+                return {
+                    widgetID = widget.widgetID,
+                    timeRemaining = math.max(0, timerValue - info.timerMin),
+                }
+            end
+        end
+    end
+
+    return nil
+end
+
 function trackerData:CollectScenarioBlocks()
     local blocks = {}
     if not C_Scenario or not C_Scenario.IsInScenario or not C_Scenario.IsInScenario() then
@@ -611,7 +643,7 @@ function trackerData:CollectScenarioBlocks()
         return blocks
     end
 
-    local stageName, stageDescription, numCriteria, _, _, _, _, _, _, weightedProgress = C_Scenario.GetStepInfo()
+    local stageName, stageDescription, numCriteria, _, _, _, _, _, _, weightedProgress, _, widgetSetID = C_Scenario.GetStepInfo()
     local showCriteria = not C_Scenario.ShouldShowCriteria or C_Scenario.ShouldShowCriteria()
     local objectives = {}
 
@@ -637,14 +669,16 @@ function trackerData:CollectScenarioBlocks()
         end
     end
 
+    local headerTimer = self:GetScenarioHeaderTimerInfo(widgetSetID)
     local stage
-    if currentStage and numStages and numStages > 0 then
+    if (currentStage and numStages and numStages > 0) or headerTimer then
         stage = {
             current = currentStage,
             total = numStages,
             title = stageName,
             description = stageDescription,
             weightedProgress = showCriteria and weightedProgress or nil,
+            headerTimer = headerTimer,
         }
     end
 
