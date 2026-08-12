@@ -428,8 +428,8 @@ dispelOverlay.Update = function(self, frame)
 
     if container then
         self:ApplyFilter(container, db.dispelOverlayFilter)
-        if frame.unit then
-            SafeCall(container, 'SetUnit', frame.unit)
+        if frame.__unit then
+            SafeCall(container, 'SetUnit', frame.__unit)
         end
         SafeCall(container, 'SetEnabled', true)
         SafeCall(container, 'Show')

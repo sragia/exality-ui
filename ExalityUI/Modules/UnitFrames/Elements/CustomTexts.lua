@@ -37,7 +37,7 @@ end
 customTexts.Update = function(self, frame)
     local CustomTexts = frame.CustomTexts
 
-    local unit = frame.unit
+    local unit = frame.__unit
     if (frame.isFake) then
         unit = frame.originalUnit
     end

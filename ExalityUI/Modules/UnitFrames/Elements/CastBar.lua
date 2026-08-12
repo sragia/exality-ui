@@ -222,15 +222,15 @@ castBar.UpdateMover = function(self, baseFrame)
     end
 
     if (not editor:IsFrameRegistered(container) and not baseFrame.db.castbarAnchorToFrame) then
-        local label = EXUI.utils.capitalize(baseFrame.unit)
+        local label = EXUI.utils.capitalize(baseFrame.__unit)
 
         editor:RegisterFrameForEditor(container, label .. ' Cast Bar', function(frame)
             local point, _, relativePoint, xOfs, yOfs = frame:GetPoint(1)
-            core:UpdateValueForUnit(baseFrame.unit, 'castbarAnchorPointUIParent', point)
-            core:UpdateValueForUnit(baseFrame.unit, 'castbarRelativeAnchorPointUIParent', relativePoint)
-            core:UpdateValueForUnit(baseFrame.unit, 'castbarXOffUIParent', xOfs)
-            core:UpdateValueForUnit(baseFrame.unit, 'castbarYOffUIParent', yOfs)
-            core:UpdateFrameForUnit(baseFrame.unit)
+            core:UpdateValueForUnit(baseFrame.__unit, 'castbarAnchorPointUIParent', point)
+            core:UpdateValueForUnit(baseFrame.__unit, 'castbarRelativeAnchorPointUIParent', relativePoint)
+            core:UpdateValueForUnit(baseFrame.__unit, 'castbarXOffUIParent', xOfs)
+            core:UpdateValueForUnit(baseFrame.__unit, 'castbarYOffUIParent', yOfs)
+            core:UpdateFrameForUnit(baseFrame.__unit)
         end)
     elseif (editor:IsFrameRegistered(container) and baseFrame.db.castbarAnchorToFrame) then
         editor:UnregisterFrameForEditor(container)

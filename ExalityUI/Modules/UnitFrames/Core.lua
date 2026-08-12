@@ -293,10 +293,10 @@ core.Base = function(self, frame)
     frame.ElementFrame = elementFrame
     EXUI:RegisterSnapFrame(frame)
 
-    if (not self.groupUnitMap[frame.unit]) then
-        frame.db = self:GetDBForUnit(frame.unit)
+    if (not self.groupUnitMap[frame.__unit]) then
+        frame.db = self:GetDBForUnit(frame.__unit)
     else
-        frame.db = self:GetDBForUnit(self.groupUnitMap[frame.unit])
+        frame.db = self:GetDBForUnit(self.groupUnitMap[frame.__unit])
     end
 
     frame.generalDB = self:GetDBForUnit('general')
@@ -405,9 +405,9 @@ core.AddTooltip = function(self, frame)
 
         GameTooltip:SetOwner(self, 'ANCHOR_NONE')
         GameTooltip_SetDefaultAnchor(GameTooltip, self)
-        GameTooltip:SetUnit(self.unit)
+        GameTooltip:SetUnit(self.__unit)
         self.UpdateTooltip = function(self)
-            GameTooltip:SetUnit(frame.unit)
+            GameTooltip:SetUnit(self.__unit)
         end
     end)
     frame:SetScript('OnLeave', function(self)
@@ -852,7 +852,7 @@ core.GetValueForUnit = function(self, unit, key)
 end
 
 core.EnableElementForFrame = function(self, frame, element)
-    if (frame.unit == 'party' or frame.unit == 'raid') then return end
+    if (frame.__unit == 'party' or frame.__unit == 'raid') then return end
     frame:EnableElement(element)
 end
 
@@ -887,7 +887,7 @@ core.ForceShowFramesDeferred = function(self, frames, isStillForced)
             end
             local frame = frames[i]
             if frame then
-                self.forcedFrames[frame.unit] = frame
+                self.forcedFrames[frame.__unit] = frame
                 self:ForceFrame(frame)
             end
         end
@@ -962,8 +962,8 @@ end
 
 core.ForceFrame = function(self, frame)
     if (frame.isFake) then return end
-    frame.originalUnit = frame.unit
-    frame.unit = 'player'
+    frame.originalUnit = frame.__unit
+    frame.__unit = 'player'
     frame.isFake = true
 
     frame:EnableMouse(false)
@@ -1003,7 +1003,7 @@ core.Unforce = function(self, unit)
         self.forcedHeaders[unit] = nil
         for _, frame in ipairs(core.partyFrames) do
             if (frame) then
-                self.forcedFrames[frame.unit] = nil
+                self.forcedFrames[frame.__unit] = nil
                 self:UnforceFrame(frame)
             end
         end
@@ -1023,7 +1023,7 @@ core.Unforce = function(self, unit)
         end
         for _, frame in ipairs(core.raidFrames) do
             if (frame) then
-                self.forcedFrames[frame.unit] = nil
+                self.forcedFrames[frame.__unit] = nil
                 self:UnforceFrame(frame)
             end
         end
@@ -1047,7 +1047,7 @@ end
 
 core.UnforceFrame = function(self, frame)
     if (not frame.isFake) then return end
-    frame.unit = frame.originalUnit
+    frame.__unit = frame.originalUnit
     frame:EnableMouse(true)
 
     if (frame.elementPreviews) then

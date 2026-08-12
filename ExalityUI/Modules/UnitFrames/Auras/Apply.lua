@@ -185,8 +185,8 @@ function apply:ApplyItemEnchantments(container, containerConfig, display)
 
     local slots = {
         { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
-        { key = 'itemEnchantOffHand', slot = ITEM_ENCHANT_SLOT.OffHand },
-        { key = 'itemEnchantRanged', slot = ITEM_ENCHANT_SLOT.Ranged },
+        { key = 'itemEnchantOffHand',  slot = ITEM_ENCHANT_SLOT.OffHand },
+        { key = 'itemEnchantRanged',   slot = ITEM_ENCHANT_SLOT.Ranged },
     }
 
     for _, entry in ipairs(slots) do
@@ -295,8 +295,8 @@ function apply:ConfigureContainer(frame, displayID, display, container)
         container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
     end
 
-    if container.SetUnit and frame.unit then
-        container:SetUnit(frame.unit)
+    if container.SetUnit and frame.__unit then
+        container:SetUnit(frame.__unit)
     end
     if container.SetEnabled then
         container:SetEnabled(display.enable ~= false)
@@ -363,8 +363,8 @@ function apply:UpdateFrame(frame)
                 if container.SetFlowLayoutMaximumLineSize then
                     container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
                 end
-                if container.SetUnit and frame.unit then
-                    container:SetUnit(frame.unit)
+                if container.SetUnit and frame.__unit then
+                    container:SetUnit(frame.__unit)
                 end
                 if container.SetEnabled then
                     container:SetEnabled(display.enable ~= false)

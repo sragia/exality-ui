@@ -20,7 +20,7 @@ local function ApplyBorderColor(frame, color)
 end
 
 local function GetUnitToken(frame)
-    return frame.displayedUnit or frame.unit
+    return frame.displayedUnit or frame.__unit
 end
 
 selectionHighlight.Update = function(self, frame)

@@ -427,8 +427,8 @@ function ufAuras:GetUnitTypeForFrame(frame)
         end
     end
 
-    -- ForceShow remaps frame.unit to 'player'; prefer the real unit token.
-    local unit = (frame.isFake and frame.originalUnit) or frame.unit or frame.originalUnit
+    -- ForceShow remaps frame.__unit to 'player'; prefer the real unit token.
+    local unit = (frame.isFake and frame.originalUnit) or frame.__unit or frame.originalUnit
     if not unit then return nil end
     if ufCore.groupUnitMap and ufCore.groupUnitMap[unit] then
         return ufCore.groupUnitMap[unit]
