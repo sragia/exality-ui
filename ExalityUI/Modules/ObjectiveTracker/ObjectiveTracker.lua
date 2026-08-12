@@ -29,9 +29,40 @@ objectiveTracker.enabled = false
 objectiveTracker.editorShowing = false
 objectiveTracker.useTabs = true
 
+local function PatchShouldShowMawBuffs()
+    if objectiveTracker.mawBuffsPatched or type(ShouldShowMawBuffs) ~= 'function' then
+        return
+    end
+    objectiveTracker.mawBuffsPatched = true
+
+    ShouldShowMawBuffs = function()
+        if canaccesssecrets and not canaccesssecrets() then
+            return false
+        end
+
+        local ok, auraData = pcall(C_UnitAuras.GetAuraDataByIndex, 'player', 1, 'MAW')
+        if not ok then
+            return false
+        end
+
+        local hasMawBuff = auraData and auraData.icon
+        return IsInJailersTower() or hasMawBuff or false
+    end
+end
+
+if EventUtil and EventUtil.ContinueOnAddOnLoaded then
+    EventUtil.ContinueOnAddOnLoaded('Blizzard_MawBuffs', PatchShouldShowMawBuffs)
+else
+    PatchShouldShowMawBuffs()
+end
+
 objectiveTracker.Init = function(self)
     self.Data:UpdateDefaults(defaults:GetDefaults())
     optionsController:RegisterModule(self)
+
+    if self.Data:GetValue('enable') and ObjectiveTrackerManager then
+        ObjectiveTrackerManager:SetCanAddModules(false)
+    end
 
     if self.Data:GetValue('enable') then
         self:Enable()
@@ -136,5 +167,5 @@ objectiveTracker.Disable = function(self)
 end
 
 objectiveTracker.ManagesObjectiveTrackerFonts = function(self)
-    return false
+    return self.enabled
 end

@@ -1787,12 +1787,47 @@ function display:Hide()
     self:ReleaseLayout()
 end
 
-function display:SyncBlizzardWorldQuestState()
-    if objectiveTracker.enabled then
+function display:CanSafelyUpdateBlizzardTracker()
+    return not canaccesssecrets or canaccesssecrets()
+end
+
+function display:GetBlizzardOrderedModules()
+    return {
+        ScenarioObjectiveTracker,
+        UIWidgetObjectiveTracker,
+        CampaignQuestObjectiveTracker,
+        QuestObjectiveTracker,
+        AdventureObjectiveTracker,
+        AchievementObjectiveTracker,
+        MonthlyActivitiesObjectiveTracker,
+        InitiativeTasksObjectiveTracker,
+        ProfessionsRecipeTracker,
+        BonusObjectiveTracker,
+        WorldQuestObjectiveTracker,
+    }
+end
+
+function display:SuppressBlizzardModules()
+    if not ObjectiveTrackerManager then
         return
     end
-    if ObjectiveTrackerManager and ObjectiveTrackerManager.UpdateAll then
-        ObjectiveTrackerManager:UpdateAll()
+    ObjectiveTrackerManager:SetCanAddModules(false)
+    ObjectiveTrackerManager:RemoveAllModules()
+end
+
+function display:RestoreBlizzardModules()
+    if not ObjectiveTrackerManager or not ObjectiveTrackerFrame then
+        return
+    end
+
+    ObjectiveTrackerManager:SetCanAddModules(true)
+
+    local orderedModules = self:GetBlizzardOrderedModules()
+    ObjectiveTrackerManager:AssignModulesOrder(orderedModules)
+    for _, module in ipairs(orderedModules) do
+        if module then
+            ObjectiveTrackerManager:SetModuleContainer(module, ObjectiveTrackerFrame)
+        end
     end
 end
 
@@ -1815,7 +1850,6 @@ function display:RegisterEvents()
             display.inEncounter = false
         elseif event == 'ZONE_CHANGED' or event == 'ZONE_CHANGED_NEW_AREA' or event == 'PLAYER_ENTERING_WORLD' then
             display:SyncEncounterState()
-            display:SyncBlizzardWorldQuestState()
         end
         display:RequestUpdate()
     end)
@@ -1841,13 +1875,15 @@ function display:HideBlizzardTracker()
             end
         end)
     end
+    self:SuppressBlizzardModules()
     ObjectiveTrackerFrame:Hide()
 end
 
 function display:ShowBlizzardTracker()
+    self:RestoreBlizzardModules()
     if ObjectiveTrackerFrame then
         ObjectiveTrackerFrame:Show()
-        if ObjectiveTrackerManager then
+        if ObjectiveTrackerManager and self:CanSafelyUpdateBlizzardTracker() then
             ObjectiveTrackerManager:UpdateAll()
         end
     end

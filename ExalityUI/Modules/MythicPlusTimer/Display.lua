@@ -733,7 +733,7 @@ end
 function display:ShowBlizzardTracker()
     if ObjectiveTrackerFrame then
         ObjectiveTrackerFrame:Show()
-        if ObjectiveTrackerManager then
+        if ObjectiveTrackerManager and (not canaccesssecrets or canaccesssecrets()) then
             ObjectiveTrackerManager:UpdateAll()
         end
     end

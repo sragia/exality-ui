@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+
+- Anything in ExalityUI/Libs is off bounds. You can't change code in there under any circumstances, unless explicitly allowed
+- Do NOT write longwinded comments that add no value to the code base. Code base should be kept clean.
