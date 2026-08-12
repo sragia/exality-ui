@@ -2,6 +2,9 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.9.2|r
+- [Action Bars] Fix issue with button highlight going out of container
+
 # |cffdb49000.9.0|r
 
 This major update marks the first step of 1.0.0, as feature wise it's basically quite complete of what I currently want from this addon. Most major things are there, things that are missing mainly are Bags and Nameplates, both of which personally I think other addons handle quite well.

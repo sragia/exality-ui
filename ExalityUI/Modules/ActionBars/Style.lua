@@ -753,8 +753,11 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
     elseif styleChanged or emptyChanged or isEmpty then
         -- LAB Update re-shows SlotBackground on empty slots and can shove
         -- HighlightTexture outside the button when hideElements.border is set.
-        -- Skip full chrome work on filled buttons when style/empty state is stable.
         self:StyleNonMasqueButtonChrome(button, barConfig)
+    else
+        -- Filled slots: LAB still repositions Highlight/Checked to 52x51 @ -2.5.
+        -- Skip full chrome, but always clamp overlays back inside the button.
+        self:ApplyButtonHighlight(button)
     end
 
     if styleChanged or emptyChanged then
