@@ -954,10 +954,9 @@ core.ShouldShowDisplay = function(self, displayID, frame)
 
     end
 
-    if preview:HasAnyToggled() then
-
+    -- While configuring RD, only show displays explicitly toggled for preview.
+    if preview:HasActivePreviews() then
         return preview:IsToggled(displayID)
-
     end
 
     if not self:CheckLoadConditions(displayID) then
@@ -973,7 +972,7 @@ core.ShouldShowDisplay = function(self, displayID, frame)
     end
 
     if frame.IsActive and not frame:IsActive() then
-        return preview:IsActive(displayID)
+        return false
     end
 
     return true
@@ -1005,7 +1004,7 @@ core.RefreshDisplayByID = function(self, displayID)
 
     local shouldShow = self:ShouldShowDisplay(displayID, frame)
 
-    local inEditor = not preview:HasAnyToggled() and (editor.activeFrame == frame or (frame.editor and frame.editor:IsShown()))
+    local inEditor = not preview:HasActivePreviews() and (editor.activeFrame == frame or (frame.editor and frame.editor:IsShown()))
 
 
 

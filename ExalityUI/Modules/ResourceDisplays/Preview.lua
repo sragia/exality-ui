@@ -51,8 +51,20 @@ preview.MOCK_VALUES = {
     ['Tip of the Spear'] = { empty = 0, mid = 2, full = 5 },
 }
 
+function preview:IsOptionsOpen()
+    return optionsMain.window and optionsMain.window:IsShown()
+end
+
+function preview:IsConfiguring()
+    return self:IsOptionsOpen() and optionsController:GetSelectedModuleName() == MODULE_NAME
+end
+
 function preview:HasAnyToggled()
     return next(self.toggled) ~= nil
+end
+
+function preview:HasActivePreviews()
+    return self:IsConfiguring() and self:HasAnyToggled()
 end
 
 function preview:IsToggled(displayID)
@@ -60,18 +72,18 @@ function preview:IsToggled(displayID)
 end
 
 function preview:IsActive(displayID)
-    return self:IsToggled(displayID)
+    return self:HasActivePreviews() and self:IsToggled(displayID)
 end
 
 function preview:ShouldUsePreview(frame)
     if not frame or not frame.displayID then
         return false
     end
-    return self:IsToggled(frame.displayID)
+    return self:IsActive(frame.displayID)
 end
 
 function preview:SyncEnabledFlag()
-    self.enabled = self:HasAnyToggled()
+    self.enabled = self:HasActivePreviews()
 end
 
 function preview:Activate(displayID)
@@ -133,8 +145,10 @@ function preview:Clear()
     wipe(self.userDisabled)
     self:SyncEnabledFlag()
     if hadAny then
+        -- Drop mock values and re-apply live visibility/load rules.
         core:RefreshAllFrames()
     end
+    core:TeardownOptionsChrome()
 end
 
 function preview:SyncPreviewToggles()
@@ -143,10 +157,6 @@ function preview:SyncPreviewToggles()
             return preview:IsToggled(id)
         end)
     end
-end
-
-function preview:IsOptionsOpen()
-    return optionsMain.window and optionsMain.window:IsShown()
 end
 
 function preview:HookSplitViewSelection(splitView)
@@ -165,7 +175,7 @@ function preview:HookSplitViewSelection(splitView)
 end
 
 function preview:Sync()
-    if not self:IsOptionsOpen() or optionsController:GetSelectedModuleName() ~= MODULE_NAME then
+    if not self:IsConfiguring() then
         self:Clear()
         return
     end
@@ -269,8 +279,12 @@ function preview:Init()
         return
     end
 
+    if not optionsController.observable then
+        optionsController:Init()
+    end
+
     optionsController:Observe('selectedModule', function()
-        self:Sync()
+        preview:Sync()
     end)
 
     hooksecurefunc(optionsFields, 'AddSplitView', function(self, module)
@@ -280,11 +294,11 @@ function preview:Init()
     end)
 
     hooksecurefunc(optionsFields, 'RefreshFields', function()
-        self:Sync()
+        preview:Sync()
     end)
 
     hooksecurefunc(optionsFields, 'Refresh', function()
-        self:Sync()
+        preview:Sync()
     end)
 
     hooksecurefunc(optionsMain, 'Show', function()
@@ -315,9 +329,14 @@ function preview:HookOptionsWindow(window)
     local previousOnClose = window.onClose
     window.onClose = function()
         preview:Clear()
-        core:TeardownOptionsChrome()
         if previousOnClose then
             previousOnClose()
         end
     end
+
+    -- HideWindow fades out first; onClose runs while still shown. Re-clear on
+    -- actual hide so mock preview can't stick after the options window is gone.
+    window:HookScript('OnHide', function()
+        preview:Clear()
+    end)
 end
