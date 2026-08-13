@@ -216,8 +216,8 @@ local function ApplyNavCrumbSpacing(navBar)
 end
 
 local function SkinNavBar(navBar)
-    if (not navBar or navBar.exuiSkinned) then return end
-    navBar.exuiSkinned = true
+    if (not navBar or navBar.exuiWorldMapNav) then return end
+    navBar.exuiWorldMapNav = true
     local th = GetTheme()
 
     -- Direct regions cover the tiled CS_HelpTextures background and the InsetBorder* pieces.
@@ -238,6 +238,18 @@ local function SkinNavBar(navBar)
         skins:SkinIconButton(navBar.overflow, { strip = { 'HighlightTexture' } })
     end
 
+    if (type(NavBar_CheckLength) == 'function') then
+        NavBar_CheckLength(navBar)
+    end
+end
+
+local function RefreshNavBarButtons(navBar)
+    if (not navBar or not navBar.exuiWorldMapNav) then return end
+    ApplyNavCrumbSpacing(navBar)
+    for _, button in ipairs(navBar.navList or {}) do
+        SkinNavButton(button)
+        UpdateNavButtonLayout(button)
+    end
     if (type(NavBar_CheckLength) == 'function') then
         NavBar_CheckLength(navBar)
     end
@@ -287,7 +299,7 @@ local function SkinSidePanelToggleButton(button, direction)
 
     button:SetSize(SIDE_PANEL_TOGGLE_SIZE, SIDE_PANEL_TOGGLE_SIZE)
     ApplySidePanelToggleBackground(button, false)
-    skins:AddBorder(button)
+    skins:AddBorder(button, { skipRefreshHooks = true })
 
     local icon = button:CreateTexture(nil, 'OVERLAY')
     icon:SetTexture(GetSidePanelChevronTexture(direction))
@@ -345,6 +357,35 @@ local function AdjustTitleBarLayout(map)
     end
 end
 
+-- Pin acquire calls protected mouse APIs. If this addon tainted ShowUIPanel, wrap
+-- Blizzard's originals so SetPropagateMouseClicks/SetPassThroughButtons stay legal
+-- and secret map-type checks run in secure code.
+function worldMapSkin:ProtectPinMouseCalls()
+    if (self.pinMouseCallsProtected or type(securecallfunction) ~= 'function') then
+        return
+    end
+
+    if (SuperTrackablePinMixin and SuperTrackablePinMixin.OnAcquired and not SuperTrackablePinMixin.exuiOnAcquiredWrapped) then
+        SuperTrackablePinMixin.exuiOnAcquiredWrapped = true
+        local onAcquired = SuperTrackablePinMixin.OnAcquired
+        function SuperTrackablePinMixin:OnAcquired(...)
+            return securecallfunction(onAcquired, self, ...)
+        end
+    end
+
+    if (WorldMapFrame and WorldMapFrame.AcquirePin and not WorldMapFrame.exuiAcquirePinWrapped) then
+        WorldMapFrame.exuiAcquirePinWrapped = true
+        local acquirePin = WorldMapFrame.AcquirePin
+        function WorldMapFrame:AcquirePin(...)
+            return securecallfunction(acquirePin, self, ...)
+        end
+    end
+
+    if (SuperTrackablePinMixin and SuperTrackablePinMixin.exuiOnAcquiredWrapped and WorldMapFrame and WorldMapFrame.exuiAcquirePinWrapped) then
+        self.pinMouseCallsProtected = true
+    end
+end
+
 function worldMapSkin:SkinFrame()
     local map = WorldMapFrame
     if (not map or not map.BorderFrame) then return end
@@ -356,6 +397,7 @@ function worldMapSkin:SkinFrame()
         -- the border stays on BorderFrame (HIGH strata) so it draws above everything.
         backdropAnchor = map,
         backdropAlpha = MAP_BG_ALPHA,
+        skipRefreshHooks = true,
     })
 
     local maxMin = map.BorderFrame.MaximizeMinimizeFrame
@@ -369,54 +411,82 @@ function worldMapSkin:SkinFrame()
     AdjustTitleBarLayout(map)
 end
 
+-- Defer skin work; running it inside map OnShow taints pin acquire.
+function worldMapSkin:ScheduleSkinFrame()
+    if (self.skinFrameScheduled) then return end
+    self.skinFrameScheduled = true
+    C_Timer.After(0, function()
+        self.skinFrameScheduled = false
+        if (InCombatLockdown()) then
+            self.pendingSkinFrame = true
+            return
+        end
+        self:SkinFrame()
+    end)
+end
+
+function worldMapSkin:ScheduleNavRefresh()
+    local navBar = WorldMapFrame and WorldMapFrame.NavBar
+    if (not navBar or not navBar.exuiWorldMapNav or self.navRefreshScheduled) then return end
+    self.navRefreshScheduled = true
+    C_Timer.After(0, function()
+        self.navRefreshScheduled = false
+        if (InCombatLockdown()) then
+            self.pendingSkinFrame = true
+            return
+        end
+        RefreshNavBarButtons(WorldMapFrame and WorldMapFrame.NavBar)
+    end)
+end
+
 function worldMapSkin:InstallHooks()
     if (self.hooksInstalled) then return end
     self.hooksInstalled = true
 
-    -- Maximize/Minimize re-apply a NineSlice layout (auto re-stripped via the shared
-    -- ApplyLayout hook), re-show the portrait, and re-indent the nav bar. Hook the
-    -- frame methods (not the WorldMapMaximized/Minimized events, which fire before
-    -- the layout changes) so the skin re-applies after Blizzard is done.
     hooksecurefunc(WorldMapFrame, 'Minimize', function()
-        self:SkinFrame()
+        self:ScheduleSkinFrame()
     end)
     hooksecurefunc(WorldMapFrame, 'Maximize', function()
-        self:SkinFrame()
+        self:ScheduleSkinFrame()
     end)
 
-    -- Breadcrumb buttons are created/reused dynamically as the shown map changes.
-    if (type(NavBar_AddButton) == 'function') then
-        hooksecurefunc('NavBar_AddButton', function(navBar)
-            if (not navBar.exuiSkinned) then return end
-            ApplyNavCrumbSpacing(navBar)
-            local button = navBar.navList and navBar.navList[#navBar.navList]
-            SkinNavButton(button)
-            UpdateNavButtonLayout(button)
-            if (type(NavBar_CheckLength) == 'function') then
-                NavBar_CheckLength(navBar)
-            end
+    if (EventRegistry and EventRegistry.RegisterCallback) then
+        EventRegistry:RegisterCallback('WorldMapOnShow', function()
+            self:ScheduleSkinFrame()
+            self:ScheduleNavRefresh()
         end)
     end
+
+    EXUI:RegisterEventHandler('PLAYER_REGEN_ENABLED', 'skin-WorldMap', function()
+        if (not self.pendingSkinFrame) then return end
+        self.pendingSkinFrame = false
+        self:SkinFrame()
+    end)
 end
 
 function worldMapSkin:Install()
     if (self.installed or not WorldMapFrame) then return end
     self.installed = true
 
+    self:ProtectPinMouseCalls()
     self:InstallHooks()
     self:SkinFrame()
 end
 
 worldMapSkin.Init = function(self)
-    if (not skins:IsEnabled('WorldMap')) then return end
+    self:ProtectPinMouseCalls()
 
-    if (WorldMapFrame) then
-        self:Install()
+    if (not WorldMapFrame) then
+        EXUI:RegisterEventHandler('ADDON_LOADED', 'skin-WorldMap', function(_, addon)
+            if (addon ~= 'Blizzard_WorldMap') then return end
+            self:ProtectPinMouseCalls()
+            if (skins:IsEnabled('WorldMap')) then
+                self:Install()
+            end
+        end)
         return
     end
 
-    EXUI:RegisterEventHandler('ADDON_LOADED', 'skin-WorldMap', function(_, addon)
-        if (addon ~= 'Blizzard_WorldMap') then return end
-        self:Install()
-    end)
+    if (not skins:IsEnabled('WorldMap')) then return end
+    self:Install()
 end

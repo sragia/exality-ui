@@ -274,7 +274,7 @@ local function HookAddBorderRefresh(frame)
 end
 
 ---1px pixel-perfect border on an overlay child frame so it draws above Blizzard art.
----@param options? { thickness?: number, color?: number[], level?: number, levelOffset?: number }
+---@param options? { thickness?: number, color?: number[], level?: number, levelOffset?: number, skipRefreshHooks?: boolean }
 skins.AddBorder = function(self, frame, options)
     options = options or {}
     local thickness = options.thickness or 1
@@ -286,7 +286,10 @@ skins.AddBorder = function(self, frame, options)
         overlay:EnableMouse(false)
         overlay.border = EXUI:AddPixelPerfectBorder(overlay, thickness, { register = false, layer = 'OVERLAY' })
         frame.exuiBorderOverlay = overlay
-        HookAddBorderRefresh(frame)
+        -- OnShow/OnSizeChanged hooks taint callers (e.g. ShowUIPanel → world map pin acquire).
+        if (not options.skipRefreshHooks) then
+            HookAddBorderRefresh(frame)
+        end
     end
 
     local overlay = frame.exuiBorderOverlay
@@ -1650,7 +1653,7 @@ skins.SkinMinimalScrollBar = function(self, scrollBar)
 end
 
 ---Generic skin for the PortraitFrame/ButtonFrame template family (map, quest popup, ...).
----@param options? { hidePortrait?: boolean, titleSize?: number, backdropColor?: number[], backdropAlpha?: number, backdropAnchor?: Frame, skipBackdrop?: boolean, skipBorder?: boolean }
+---@param options? { hidePortrait?: boolean, titleSize?: number, backdropColor?: number[], backdropAlpha?: number, backdropAnchor?: Frame, skipBackdrop?: boolean, skipBorder?: boolean, skipRefreshHooks?: boolean }
 skins.SkinPanelFrame = function(self, frame, options)
     if (not frame) then return end
     options = options or {}
@@ -1686,6 +1689,6 @@ skins.SkinPanelFrame = function(self, frame, options)
         })
     end
     if (not options.skipBorder) then
-        self:AddBorder(frame)
+        self:AddBorder(frame, { skipRefreshHooks = options.skipRefreshHooks })
     end
 end

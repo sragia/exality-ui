@@ -156,6 +156,12 @@ party.Init = function(self)
         ['mouseoverBorderEnable'] = false,
         ['mouseoverBorderColor'] = { r = 1, g = 1, b = 1, a = 0.7 },
     })
+
+    local shouldShowBlizzardFrame = core:GetValueForUnit('party', 'showBlizzardFrame') and
+        not core:GetValueForUnit('party', 'enable')
+    if not shouldShowBlizzardFrame then
+        EXUI:GetModule('uf-unit-raid'):DisableBlizzard()
+    end
 end
 
 party.Create = function(self, frame, unit)

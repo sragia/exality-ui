@@ -168,54 +168,115 @@ raid.Init = function(self)
     self:DisableBlizzard()
 end
 
--- Basically stolen from ElvUI, hope they dont mind.
+-- Hide Blizzard compact raid/party frames by reparenting them to a permanently
+-- hidden frame. Show/Hide hooks alone fail mid-combat on roster updates.
 raid.DisableBlizzard = function(self)
-    UIParent:UnregisterEvent('GROUP_ROSTER_UPDATE')
-    local frame = _G.CompactRaidFrameContainer
-    frame:UnregisterAllEvents()
-    pcall(frame.Hide, frame)
+    if self._blizzardDisabled then
+        return
+    end
+    self._blizzardDisabled = true
 
-    local disableElements = {
-        frame.healthBar or frame.healthbar or frame.HealthBar or nil,
-        frame.manabar or frame.ManaBar or nil,
-        frame.castBar or frame.spellbar or nil,
-        frame.petFrame or frame.PetFrame or nil,
-        frame.powerBarAlt or frame.PowerBarAlt or nil,
-        frame.CastingBarFrame or nil,
-        frame.CcRemoverFrame or nil,
-        frame.classPowerBar or nil,
-        frame.DebuffFrame or nil,
-        frame.BuffFrame or nil,
-        frame.totFrame or nil
-    }
+    local hiddenParent = CreateFrame('Frame')
+    hiddenParent:Hide()
 
-    for _, element in ipairs(disableElements) do
-        if (element) then
-            element:UnregisterAllEvents()
+    local pending = {}
+
+    local function safeReparent(frame)
+        if not frame then
+            return
+        end
+        if InCombatLockdown() and frame.IsProtected and frame:IsProtected() then
+            pending[frame] = true
+            return
+        end
+        frame:SetParent(hiddenParent)
+        pending[frame] = nil
+    end
+
+    local function handleFrame(frame, skipReparent)
+        if not frame then
+            return
+        end
+
+        frame:UnregisterAllEvents()
+        pcall(frame.Hide, frame)
+
+        if not skipReparent then
+            safeReparent(frame)
+            hooksecurefunc(frame, 'SetParent', function(hooked, parent)
+                if parent ~= hiddenParent then
+                    safeReparent(hooked)
+                end
+            end)
+        end
+
+        local health = frame.healthBar or frame.healthbar or frame.HealthBar
+            or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)
+        if health then
+            health:UnregisterAllEvents()
+        end
+        local power = frame.manabar or frame.ManaBar
+        if power then
+            power:UnregisterAllEvents()
+        end
+        local castbar = frame.castBar or frame.spellbar or frame.CastingBarFrame
+        if castbar then
+            castbar:UnregisterAllEvents()
+        end
+        local altpower = frame.powerBarAlt or frame.PowerBarAlt
+        if altpower then
+            altpower:UnregisterAllEvents()
+        end
+        local buffs = frame.BuffFrame or frame.AurasFrame
+        if buffs then
+            buffs:UnregisterAllEvents()
+        end
+        local debuffs = frame.DebuffFrame
+        if debuffs then
+            debuffs:UnregisterAllEvents()
+        end
+        local pet = frame.petFrame or frame.PetFrame
+        if pet then
+            pet:UnregisterAllEvents()
         end
     end
 
-    hooksecurefunc(frame, 'Show', frame.Hide)
-    hooksecurefunc(frame, 'SetShown', function(self, shown)
-        if (shown) then
-            self:Hide()
-        end
-    end)
-
-
-    if (_G.CompactRaidFrameManager) then
-        _G.CompactRaidFrameManager:UnregisterAllEvents()
-        _G.CompactRaidFrameManager:Hide()
-        hooksecurefunc(_G.CompactRaidFrameManager, 'Show', _G.CompactRaidFrameManager.Hide)
-        hooksecurefunc(_G.CompactRaidFrameManager, 'SetShown', function(self, shown)
-            if (shown) then
-                self:Hide()
-            end
+    handleFrame(_G.CompactRaidFrameContainer)
+    if _G.CompactRaidFrameContainer then
+        _G.CompactRaidFrameContainer:HookScript('OnShow', function(frame)
+            frame:Hide()
         end)
     end
+
+    handleFrame(_G.CompactRaidFrameManager)
     if CompactRaidFrameManager_SetSetting then
         CompactRaidFrameManager_SetSetting('IsShown', '0')
     end
+
+    -- Party / raid-style party (re-shown by Blizzard on GROUP_ROSTER_UPDATE).
+    if _G.PartyFrame then
+        handleFrame(_G.PartyFrame)
+        if _G.PartyFrame.PartyMemberFramePool then
+            for memberFrame in _G.PartyFrame.PartyMemberFramePool:EnumerateActive() do
+                handleFrame(memberFrame, true)
+            end
+        end
+    end
+    handleFrame(_G.CompactPartyFrame)
+    local membersPerGroup = _G.MEMBERS_PER_RAID_GROUP or 5
+    for i = 1, membersPerGroup do
+        handleFrame(_G['CompactPartyFrameMember' .. i])
+    end
+
+    EXUI:RegisterEventHandler(
+        { 'PLAYER_REGEN_ENABLED' },
+        'uf-blizzard-disable',
+        function()
+            for frame in pairs(pending) do
+                safeReparent(frame)
+            end
+        end
+    )
 end
 
 raid.Create = function(self, frame, unit)

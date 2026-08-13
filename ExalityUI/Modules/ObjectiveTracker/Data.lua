@@ -600,6 +600,83 @@ function trackerData:GetChallengeModeInfo()
     }
 end
 
+function trackerData:FormatDelveTierText(tierText, tier)
+    if tierText and tierText ~= '' then
+        local numericTier = tonumber(tierText)
+        if numericTier then
+            if RECENT_ALLY_DELVE_TIER_LABEL then
+                return RECENT_ALLY_DELVE_TIER_LABEL:format(numericTier)
+            end
+            return string.format('Tier %d', numericTier)
+        end
+        return tierText
+    end
+
+    if tier then
+        if RECENT_ALLY_DELVE_TIER_LABEL then
+            return RECENT_ALLY_DELVE_TIER_LABEL:format(tier)
+        end
+        return string.format('Tier %d', tier)
+    end
+
+    return nil
+end
+
+function trackerData:GetScenarioHeaderDelvesInfo(widgetSetID)
+    if not widgetSetID
+        or not C_UIWidgetManager
+        or not C_UIWidgetManager.GetAllWidgetsBySetID
+        or not C_UIWidgetManager.GetScenarioHeaderDelvesWidgetVisualizationInfo
+        or not Enum
+        or not Enum.UIWidgetVisualizationType
+        or not Enum.WidgetShownState then
+        return nil
+    end
+
+    local widgets = C_UIWidgetManager.GetAllWidgetsBySetID(widgetSetID)
+    if not widgets then
+        return nil
+    end
+
+    for _, widget in ipairs(widgets) do
+        if widget.widgetType == Enum.UIWidgetVisualizationType.ScenarioHeaderDelves then
+            local info = C_UIWidgetManager.GetScenarioHeaderDelvesWidgetVisualizationInfo(widget.widgetID)
+            if info and info.shownState ~= Enum.WidgetShownState.Hidden then
+                local tierText = self:FormatDelveTierText(info.tierText)
+                if tierText then
+                    return {
+                        widgetID = widget.widgetID,
+                        tierText = tierText,
+                    }
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+function trackerData:GetActiveDelveInfo()
+    if not C_DelvesUI or not C_DelvesUI.HasActiveDelve or not C_DelvesUI.HasActiveDelve() then
+        return nil
+    end
+
+    local tierInfo = C_DelvesUI.GetActiveDelveTier and C_DelvesUI.GetActiveDelveTier()
+    if not tierInfo or not tierInfo.tier then
+        return nil
+    end
+
+    local tierText = self:FormatDelveTierText(nil, tierInfo.tier)
+    if not tierText then
+        return nil
+    end
+
+    return {
+        tier = tierInfo.tier,
+        tierText = tierText,
+    }
+end
+
 function trackerData:GetScenarioHeaderTimerInfo(widgetSetID)
     if not widgetSetID
         or not C_UIWidgetManager
@@ -670,6 +747,7 @@ function trackerData:CollectScenarioBlocks()
     end
 
     local headerTimer = self:GetScenarioHeaderTimerInfo(widgetSetID)
+    local delve = self:GetScenarioHeaderDelvesInfo(widgetSetID) or self:GetActiveDelveInfo()
     local stage
     if (currentStage and numStages and numStages > 0) or headerTimer then
         stage = {
@@ -688,6 +766,7 @@ function trackerData:CollectScenarioBlocks()
         title = name,
         canUntrack = false,
         stage = stage,
+        delve = delve,
         challengeMode = self:GetChallengeModeInfo(),
         objectives = objectives,
     })

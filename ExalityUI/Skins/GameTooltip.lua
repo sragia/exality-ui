@@ -7,57 +7,46 @@ local skins = EXUI:GetModule('skins')
 ---@class EXUIGameTooltipSkin
 local gameTooltipSkin = EXUI:GetModule('skin-GameTooltip')
 
-local function SkinTooltip(tooltip)
-    skins:StripNineSlice(tooltip)
-
-    local backdrop = CreateFrame('Frame', nil, tooltip)
-    backdrop:SetAllPoints()
-    backdrop:SetFrameLevel(0)
-    if (tooltip:GetFrameLevel() == 0) then
-        tooltip:SetFrameLevel(1)
-    end
-    local tex = backdrop:CreateTexture()
+-- Never SetFrameLevel on GameTooltip (or its Blizzard children): that permanently
+-- taints the tooltip and breaks Blizzard widget layout on secret text heights
+-- (map vignette / AreaPOI tooltips → UIWidgetTemplateTextWithState).
+local function AddSolidBackdrop(frame, alpha)
+    local tex = frame:CreateTexture(nil, 'BACKGROUND', nil, -8)
     tex:SetTexture(EXUI.const.textures.frame.solidBg)
     tex:SetAllPoints()
-    tex:SetVertexColor(0, 0, 0, 0.6)
+    tex:SetVertexColor(0, 0, 0, alpha)
+    return tex
+end
 
-    local border = EXUI:AddPixelPerfectBorder(backdrop, 1, { register = false })
+local function SkinTooltip(tooltip)
+    if tooltip.exuiSkinned then return end
+    tooltip.exuiSkinned = true
+
+    skins:StripNineSlice(tooltip)
+
+    AddSolidBackdrop(tooltip, 0.6)
+    local border = EXUI:AddPixelPerfectBorder(tooltip, 1, { register = false, layer = 'BACKGROUND' })
     border:SetBorderColor(0, 0, 0, 1)
 
     if (tooltip.CompareHeader) then
         skins:StripAllTextures(tooltip.CompareHeader)
-
-        local compareBackdrop = CreateFrame('Frame', nil, tooltip.CompareHeader)
-        compareBackdrop:SetAllPoints()
-        compareBackdrop:SetFrameLevel(0)
-        local tex = compareBackdrop:CreateTexture()
-        tex:SetTexture(EXUI.const.textures.frame.solidBg)
-        tex:SetAllPoints()
-        tex:SetVertexColor(0, 0, 0, 0.6)
-        local compareBorder = EXUI:AddPixelPerfectBorder(compareBackdrop, 1, { register = false })
+        AddSolidBackdrop(tooltip.CompareHeader, 0.6)
+        local compareBorder = EXUI:AddPixelPerfectBorder(tooltip.CompareHeader, 1, {
+            register = false,
+            layer = 'BACKGROUND',
+        })
         compareBorder:SetBorderColor(0, 0, 0, 1)
-
-        if (tooltip.CompareHeader:GetFrameLevel() == 0) then
-            tooltip.CompareHeader:SetFrameLevel(1)
-        end
     end
+
     if (tooltip.StatusBar) then
         tooltip.StatusBar:SetStatusBarTexture(EXUI.const.textures.frame.statusBar)
-        local sbBackdrop = CreateFrame('Frame', nil, tooltip.StatusBar)
-        sbBackdrop:SetAllPoints()
-        sbBackdrop:SetFrameLevel(0)
-        local tex = sbBackdrop:CreateTexture()
-        tex:SetTexture(EXUI.const.textures.frame.solidBg)
-        tex:SetAllPoints()
-        tex:SetVertexColor(0, 0, 0, 0.4)
-        local statusBarBorder = EXUI:AddPixelPerfectBorder(sbBackdrop, 1, { register = false })
+        tooltip.StatusBar.bg = AddSolidBackdrop(tooltip.StatusBar, 0.4)
+        local statusBarBorder = EXUI:AddPixelPerfectBorder(tooltip.StatusBar, 1, {
+            register = false,
+            layer = 'BACKGROUND',
+        })
         statusBarBorder:SetBorderColor(0, 0, 0, 1)
-
-        if (tooltip.StatusBar:GetFrameLevel() == 0) then
-            tooltip.StatusBar:SetFrameLevel(1)
-        end
         tooltip.StatusBar:SetHeight(5)
-        tooltip.StatusBar.bg = sbBackdrop
     end
 end
 
@@ -81,7 +70,24 @@ local function SkinAuraButtonTooltips()
     })
 end
 
+-- Blizzard TextWithState widgets measure secret string heights; arithmetic fails if
+-- GameTooltip_AddWidgetSet runs under addon taint (common on map pin OnEnter).
+local function ProtectTooltipWidgetSets()
+    if gameTooltipSkin.addWidgetSetWrapped then return end
+    if type(securecallfunction) ~= 'function' or type(GameTooltip_AddWidgetSet) ~= 'function' then
+        return
+    end
+
+    gameTooltipSkin.addWidgetSetWrapped = true
+    local addWidgetSet = GameTooltip_AddWidgetSet
+    function GameTooltip_AddWidgetSet(...)
+        return securecallfunction(addWidgetSet, ...)
+    end
+end
+
 gameTooltipSkin.Init = function(self)
+    ProtectTooltipWidgetSets()
+
     if (not skins:IsEnabled('GameTooltip')) then return end
 
     SkinTooltip(GameTooltip)

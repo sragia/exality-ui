@@ -823,6 +823,46 @@ function display:StopChallengeModeTimerWatch()
     end
 end
 
+function display:AppendDelveSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+    local delve = block.delve
+    if not delve or not delve.tierText or delve.tierText == '' then
+        return blockHeight
+    end
+
+    local align = self:GetTextAlign(db)
+    local isRightAlign = align == 'RIGHT'
+    local lineTextWidth = blockWidth - lineIndent
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+
+    local tierLine = self.linePool:Acquire()
+    tierLine:SetParent(frame)
+    tierLine:Show()
+    tierLine:SetWidth(blockWidth)
+    tierLine.text = tierLine.text or tierLine:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    tierLine.text:SetParent(tierLine)
+    tierLine.text:ClearAllPoints()
+    if isRightAlign then
+        tierLine.text:SetPoint('TOPLEFT', tierLine, 'TOPLEFT', 0, 0)
+        tierLine.text:SetPoint('TOPRIGHT', tierLine, 'TOPRIGHT', -lineIndent, 0)
+    else
+        tierLine.text:SetPoint('TOPLEFT', tierLine, 'TOPLEFT', lineIndent, 0)
+        tierLine.text:SetPoint('TOPRIGHT', tierLine, 'TOPRIGHT', 0, 0)
+    end
+    tierLine.text:SetJustifyH(align)
+    tierLine.text:SetWordWrap(false)
+    tierLine.text:SetFont(headerFontPath, headerFontSize, headerFontFlag)
+    tierLine.text:SetText(delve.tierText)
+    local tierColor = self:GetColor(db, 'BlockHeader')
+    tierLine.text:SetTextColor(tierColor.r, tierColor.g, tierColor.b)
+
+    local tierHeight = self:MeasureFontString(tierLine.text, headerFontSize, lineTextWidth, headerFontFlag)
+    tierLine:SetHeight(tierHeight)
+    blockHeight = self:AppendBlockRow(frame, tierLine, blockHeight, spacing)
+    self.lineFrames[#self.lineFrames + 1] = tierLine
+
+    return blockHeight
+end
+
 function display:AppendChallengeModeSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
     local challengeMode = block.challengeMode
     if not challengeMode then
@@ -1583,6 +1623,7 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
     local questID = block.untrackId or block.id
 
     blockHeight = self:AppendChallengeModeSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+    blockHeight = self:AppendDelveSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
     blockHeight = self:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
 
     for lineIndex, objective in ipairs(block.objectives or {}) do

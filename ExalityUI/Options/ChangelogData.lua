@@ -7,6 +7,9 @@ EXUI.changelog = [[
 - [Resource Displays] Fix issue with preview staying shown after options switch/window close
 - [Action Bars] Possess Bar replaces Bar 1
 - [Objective Tracker] Fix issue of scenarios missing timer.
+- [Objective Tracker] Show delve tier.
+- [Unit Frames] Keep Blizzard party/raid frames hidden across roster changes in combat.
+- [Skins] Some fixes for taints happening all over the place. Still more to do, i know...
 
 # |cffdb49000.9.0|r
 
