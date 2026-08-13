@@ -17,9 +17,11 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
 ----------------
 ---@class EXUIGeneralModule
+---@field pendingUIScale boolean
 local generalModule = EXUI:GetModule('general-module')
 
 generalModule.bottomVignette = nil
+generalModule.pendingUIScale = false
 
 generalModule.Init = function(self)
     optionsController:RegisterModule(self)
@@ -235,11 +237,19 @@ generalModule.GetOptions = function(self)
     return options
 end
 
-generalModule.UpdateUIScale = function(self)
-    -- GetDataByKey returns {} for missing keys; read the raw profile value for scalars.
+generalModule.UpdateUIScale = function(self, applyScale)
     local stored = data:GetData().uiScale
-    local uiScale = type(stored) == 'number' and stored or UIParent:GetScale()
-    UIParent:SetScale(uiScale)
+    if applyScale and type(stored) == 'number' then
+        if InCombatLockdown() then
+            self.pendingUIScale = true
+        else
+            self.pendingUIScale = false
+            if math.abs(UIParent:GetScale() - stored) > 0.0001 then
+                UIParent:SetScale(stored)
+            end
+        end
+    end
+
     EXUI:GetModule('pixel-perfect'):Initialize()
     if EXUI.EXFrames and EXUI.EXFrames.RefreshPixelPerfect then
         EXUI.EXFrames:RefreshPixelPerfect()
@@ -260,18 +270,27 @@ end
 
 -- Only called on load
 generalModule.SetupUIScale = function(self)
-    EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'general-module', function(event, scale)
-        EXUI:UnregisterEventHandler('PLAYER_ENTERING_WORLD', 'general-module')
-        if type(data:GetData().uiScale) ~= 'number' then
-            data:SetDataByKey('uiScale', UIParent:GetScale())
+    if type(data:GetData().uiScale) ~= 'number' then
+        data:SetDataByKey('uiScale', UIParent:GetScale())
+    end
+
+    local function ScheduleScaleUpdate()
+        C_Timer.After(0.05, function()
+            generalModule:UpdateUIScale(true)
+        end)
+    end
+
+    EXUI:RegisterEventHandler({
+        'PLAYER_LOGIN',
+        'PLAYER_ENTERING_WORLD',
+        'UI_SCALE_CHANGED',
+        'DISPLAY_SIZE_CHANGED',
+    }, 'general-module', ScheduleScaleUpdate)
+
+    EXUI:RegisterEventHandler('PLAYER_REGEN_ENABLED', 'general-module-scale', function()
+        if generalModule.pendingUIScale then
+            generalModule:UpdateUIScale(true)
         end
-        generalModule:UpdateUIScale()
-    end)
-    EXUI:RegisterEventHandler('UI_SCALE_CHANGED', 'general-module', function(event, scale)
-        generalModule:UpdateUIScale()
-    end)
-    EXUI:RegisterEventHandler('DISPLAY_SIZE_CHANGED', 'general-module', function(event, scale)
-        generalModule:UpdateUIScale()
     end)
 end
 

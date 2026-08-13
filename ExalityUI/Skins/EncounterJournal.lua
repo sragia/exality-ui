@@ -814,19 +814,22 @@ local function SkinNavButton(button)
 end
 
 local function SkinNavBar(navBar)
-    if (not navBar or navBar.exuiEJNav) then return end
-    navBar.exuiEJNav = true
-    local th = GetTheme()
+    if (not navBar) then return end
 
-    skins:StripAllTextures(navBar)
-    if (navBar.overlay) then
-        skins:StripAllTextures(navBar.overlay)
-    end
-    for _, key in ipairs({ 'InsetBorderBottomLeft', 'InsetBorderBottomRight', 'InsetBorderBottom', 'InsetBorderLeft', 'InsetBorderRight' }) do
-        if (navBar[key]) then skins:StripTexture(navBar[key]) end
-    end
+    if (not navBar.exuiEJNav) then
+        navBar.exuiEJNav = true
+        local th = GetTheme()
 
-    skins:AddBackdrop(navBar, { color = th.background, alpha = 0.85 })
+        skins:StripAllTextures(navBar)
+        if (navBar.overlay) then
+            skins:StripAllTextures(navBar.overlay)
+        end
+        for _, key in ipairs({ 'InsetBorderBottomLeft', 'InsetBorderBottomRight', 'InsetBorderBottom', 'InsetBorderLeft', 'InsetBorderRight' }) do
+            if (navBar[key]) then skins:StripTexture(navBar[key]) end
+        end
+
+        skins:AddBackdrop(navBar, { color = th.background, alpha = 0.85 })
+    end
 
     for _, button in ipairs(navBar.navList or {}) do
         button.xoffset = NAV_CRUMB_SPACING
@@ -969,6 +972,7 @@ function encounterJournalSkin:InstallDescriptionHooks()
         if (not encounter) then return end
         ApplyEncounterInfoBackgrounds(encounter.info)
         ApplyEncounterContentDescriptions(encounter)
+        SkinNavBar(EncounterJournal.navBar)
     end)
 end
 
@@ -1014,16 +1018,6 @@ function encounterJournalSkin:InstallTabHooks()
         end)
     end
 
-    if (type(NavBar_AddButton) == 'function') then
-        hooksecurefunc('NavBar_AddButton', function(navBar)
-            if (not navBar or not navBar.exuiEJNav) then return end
-            local button = navBar.navList and navBar.navList[#navBar.navList]
-            if (button) then
-                button.xoffset = NAV_CRUMB_SPACING
-                SkinNavButton(button)
-            end
-        end)
-    end
 end
 
 function encounterJournalSkin:SkinFrame()

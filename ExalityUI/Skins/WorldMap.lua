@@ -52,6 +52,9 @@ local function SkinMaxMinButton(button, mode)
     button:HookScript('OnLeave', function()
         setGlyphColor(GetTheme().textMuted)
     end)
+    button:HookScript('OnClick', function()
+        worldMapSkin:ScheduleSkinFrame()
+    end)
 end
 
 local NAV_CRUMB_SPACING = 2
@@ -357,35 +360,6 @@ local function AdjustTitleBarLayout(map)
     end
 end
 
--- Pin acquire calls protected mouse APIs. If this addon tainted ShowUIPanel, wrap
--- Blizzard's originals so SetPropagateMouseClicks/SetPassThroughButtons stay legal
--- and secret map-type checks run in secure code.
-function worldMapSkin:ProtectPinMouseCalls()
-    if (self.pinMouseCallsProtected or type(securecallfunction) ~= 'function') then
-        return
-    end
-
-    if (SuperTrackablePinMixin and SuperTrackablePinMixin.OnAcquired and not SuperTrackablePinMixin.exuiOnAcquiredWrapped) then
-        SuperTrackablePinMixin.exuiOnAcquiredWrapped = true
-        local onAcquired = SuperTrackablePinMixin.OnAcquired
-        function SuperTrackablePinMixin:OnAcquired(...)
-            return securecallfunction(onAcquired, self, ...)
-        end
-    end
-
-    if (WorldMapFrame and WorldMapFrame.AcquirePin and not WorldMapFrame.exuiAcquirePinWrapped) then
-        WorldMapFrame.exuiAcquirePinWrapped = true
-        local acquirePin = WorldMapFrame.AcquirePin
-        function WorldMapFrame:AcquirePin(...)
-            return securecallfunction(acquirePin, self, ...)
-        end
-    end
-
-    if (SuperTrackablePinMixin and SuperTrackablePinMixin.exuiOnAcquiredWrapped and WorldMapFrame and WorldMapFrame.exuiAcquirePinWrapped) then
-        self.pinMouseCallsProtected = true
-    end
-end
-
 function worldMapSkin:SkinFrame()
     local map = WorldMapFrame
     if (not map or not map.BorderFrame) then return end
@@ -443,13 +417,8 @@ function worldMapSkin:InstallHooks()
     if (self.hooksInstalled) then return end
     self.hooksInstalled = true
 
-    hooksecurefunc(WorldMapFrame, 'Minimize', function()
-        self:ScheduleSkinFrame()
-    end)
-    hooksecurefunc(WorldMapFrame, 'Maximize', function()
-        self:ScheduleSkinFrame()
-    end)
-
+    -- Do not hooksecurefunc Minimize/Maximize: first OnShow calls them before
+    -- SetMapID (needUpdateDisplayState), which taints vignette/flight pin acquire.
     if (EventRegistry and EventRegistry.RegisterCallback) then
         EventRegistry:RegisterCallback('WorldMapOnShow', function()
             self:ScheduleSkinFrame()
@@ -468,25 +437,20 @@ function worldMapSkin:Install()
     if (self.installed or not WorldMapFrame) then return end
     self.installed = true
 
-    self:ProtectPinMouseCalls()
     self:InstallHooks()
     self:SkinFrame()
 end
 
 worldMapSkin.Init = function(self)
-    self:ProtectPinMouseCalls()
+    if (not skins:IsEnabled('WorldMap')) then return end
 
-    if (not WorldMapFrame) then
-        EXUI:RegisterEventHandler('ADDON_LOADED', 'skin-WorldMap', function(_, addon)
-            if (addon ~= 'Blizzard_WorldMap') then return end
-            self:ProtectPinMouseCalls()
-            if (skins:IsEnabled('WorldMap')) then
-                self:Install()
-            end
-        end)
+    if (WorldMapFrame) then
+        self:Install()
         return
     end
 
-    if (not skins:IsEnabled('WorldMap')) then return end
-    self:Install()
+    EXUI:RegisterEventHandler('ADDON_LOADED', 'skin-WorldMap', function(_, addon)
+        if (addon ~= 'Blizzard_WorldMap') then return end
+        self:Install()
+    end)
 end

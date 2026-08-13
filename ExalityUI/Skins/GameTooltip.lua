@@ -70,24 +70,7 @@ local function SkinAuraButtonTooltips()
     })
 end
 
--- Blizzard TextWithState widgets measure secret string heights; arithmetic fails if
--- GameTooltip_AddWidgetSet runs under addon taint (common on map pin OnEnter).
-local function ProtectTooltipWidgetSets()
-    if gameTooltipSkin.addWidgetSetWrapped then return end
-    if type(securecallfunction) ~= 'function' or type(GameTooltip_AddWidgetSet) ~= 'function' then
-        return
-    end
-
-    gameTooltipSkin.addWidgetSetWrapped = true
-    local addWidgetSet = GameTooltip_AddWidgetSet
-    function GameTooltip_AddWidgetSet(...)
-        return securecallfunction(addWidgetSet, ...)
-    end
-end
-
 gameTooltipSkin.Init = function(self)
-    ProtectTooltipWidgetSets()
-
     if (not skins:IsEnabled('GameTooltip')) then return end
 
     SkinTooltip(GameTooltip)

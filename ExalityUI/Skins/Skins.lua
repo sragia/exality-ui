@@ -101,14 +101,6 @@ local function StripNineSliceContainer(nineSliceTextures, container)
     end
 end
 
--- Re-strip after Blizzard reapplies a layout. Never replace piece methods with addon
--- functions: secure callers (e.g. GameTooltip_OnHide) get tainted and error on secret values.
-hooksecurefunc(NineSliceUtil, 'ApplyLayout', function(container)
-    if (container.exuiNineSliceStripped) then
-        StripNineSliceContainer(skins.NineSliceTextures, container)
-    end
-end)
-
 skins.StripNineSlice = function(self, frame)
     if (frame.NineSlice) then
         StripNineSliceContainer(self.NineSliceTextures, frame.NineSlice)
