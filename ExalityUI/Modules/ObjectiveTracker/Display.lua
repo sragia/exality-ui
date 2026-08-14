@@ -70,6 +70,8 @@ display.EVENTS = {
     'CURRENCY_DISPLAY_UPDATE',
     'SCENARIO_UPDATE',
     'SCENARIO_CRITERIA_UPDATE',
+    'UPDATE_UI_WIDGET',
+    'ACTIVE_DELVE_DATA_UPDATE',
     'CHALLENGE_MODE_START',
     'CHALLENGE_MODE_COMPLETED',
     'CHALLENGE_MODE_RESET',
@@ -590,41 +592,130 @@ function display:GetScenarioHeaderTimeRemaining(headerTimer)
     return math.max(0, timerValue - info.timerMin)
 end
 
-function display:SetScenarioStageLineText(stageLine, stageLabel, timeRemaining, db)
+function display:SetScenarioStageLineText(stageLine, stageLabel, timeRemaining, db, tierText)
     if not stageLine or not stageLine.text then
         return
     end
 
     local stageColor = self:GetColor(db, 'BlockHeader')
+    local white = self:GetColor(db, 'NormalHighlight')
+    local hasTier = tierText and tierText ~= ''
+    local hasStage = stageLabel and stageLabel ~= ''
+
+    local parts = {}
+    if hasTier then
+        parts[#parts + 1] = self:FormatColorCode(white):WrapTextInColorCode(tierText)
+    end
+    if hasStage then
+        parts[#parts + 1] = self:FormatColorCode(stageColor):WrapTextInColorCode(stageLabel)
+    end
+    local label = table.concat(parts, ' - ')
+
     if timeRemaining == nil then
-        stageLine.text:SetText(stageLabel or '')
-        stageLine.text:SetTextColor(stageColor.r, stageColor.g, stageColor.b)
+        stageLine.text:SetText(label)
+        stageLine.text:SetTextColor(1, 1, 1)
         return
     end
 
     local timerColor = self:GetColor(db, 'NormalHighlight')
     local timerText = SecondsToClock(timeRemaining)
-    if stageLabel and stageLabel ~= '' then
-        stageLine.text:SetText(self:FormatColorCode(timerColor):WrapTextInColorCode(timerText)
-            .. ' '
-            .. self:FormatColorCode(stageColor):WrapTextInColorCode(stageLabel))
+    if label ~= '' then
+        stageLine.text:SetText(self:FormatColorCode(timerColor):WrapTextInColorCode(timerText) .. ' ' .. label)
     else
         stageLine.text:SetText(self:FormatColorCode(timerColor):WrapTextInColorCode(timerText))
     end
     stageLine.text:SetTextColor(1, 1, 1)
 end
 
-function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
-    local stage = block.stage
-    if not stage then
+function display:FormatDelveCurrencyText(currency, iconSize)
+    if not currency then
+        return nil
+    end
+
+    local parts = {}
+    if currency.leadingText and currency.leadingText ~= '' then
+        parts[#parts + 1] = currency.leadingText
+    end
+    if currency.iconFileID and currency.iconFileID ~= 0 then
+        iconSize = iconSize or 14
+        if CreateTextureMarkup then
+            parts[#parts + 1] = CreateTextureMarkup(currency.iconFileID, 64, 64, iconSize, iconSize, 0, 1, 0, 1)
+        else
+            parts[#parts + 1] = string.format('|T%d:%d:%d|t', currency.iconFileID, iconSize, iconSize)
+        end
+    end
+    if currency.text and currency.text ~= '' then
+        parts[#parts + 1] = currency.text
+    end
+    if #parts == 0 then
+        return nil
+    end
+
+    return table.concat(parts, ' ')
+end
+
+function display:AppendDelveCurrencies(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+    local currencies = block.delve and block.delve.currencies
+    if not currencies or #currencies == 0 then
         return blockHeight
     end
 
-    local showStage = stage.total and stage.total > 1
-    local headerTimer = stage.headerTimer
+    local align = self:GetTextAlign(db)
+    local isRightAlign = align == 'RIGHT'
+    local lineTextWidth = blockWidth - lineIndent
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local iconSize = math.max(12, headerFontSize)
+
+    for _, currency in ipairs(currencies) do
+        local currencyText = self:FormatDelveCurrencyText(currency, iconSize)
+        if currencyText then
+            local currencyLine = self.linePool:Acquire()
+            currencyLine:SetParent(frame)
+            currencyLine:Show()
+            currencyLine:SetWidth(blockWidth)
+            currencyLine.text = currencyLine.text or currencyLine:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+            currencyLine.text:SetParent(currencyLine)
+            currencyLine.text:ClearAllPoints()
+            if isRightAlign then
+                currencyLine.text:SetPoint('TOPLEFT', currencyLine, 'TOPLEFT', 0, 0)
+                currencyLine.text:SetPoint('TOPRIGHT', currencyLine, 'TOPRIGHT', -lineIndent, 0)
+            else
+                currencyLine.text:SetPoint('TOPLEFT', currencyLine, 'TOPLEFT', lineIndent, 0)
+                currencyLine.text:SetPoint('TOPRIGHT', currencyLine, 'TOPRIGHT', 0, 0)
+            end
+            currencyLine.text:SetJustifyH(align)
+            currencyLine.text:SetWordWrap(false)
+            currencyLine.text:SetFont(headerFontPath, headerFontSize, headerFontFlag)
+            currencyLine.text:SetText(currencyText)
+            local colorKey = currency.isCurrencyMaxed and 'Failed' or 'BlockHeader'
+            local currencyColor = self:GetColor(db, colorKey)
+            currencyLine.text:SetTextColor(currencyColor.r, currencyColor.g, currencyColor.b)
+
+            local currencyHeight = self:MeasureFontString(currencyLine.text, headerFontSize, lineTextWidth, headerFontFlag)
+            currencyLine:SetHeight(currencyHeight)
+            blockHeight = self:AppendBlockRow(frame, currencyLine, blockHeight, spacing)
+            self.lineFrames[#self.lineFrames + 1] = currencyLine
+        end
+    end
+
+    return blockHeight
+end
+
+function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+    local stage = block.stage
+    local delve = block.delve
+    local hasTier = delve and delve.tierText and delve.tierText ~= ''
+    local hasLives = delve and delve.currencies and #delve.currencies > 0
+    if not stage and not hasTier and not hasLives then
+        return blockHeight
+    end
+
+    local showStage = stage and stage.total and stage.total > 1
+    local headerTimer = stage and stage.headerTimer
     local timeRemaining = headerTimer and (headerTimer.timeRemaining or self:GetScenarioHeaderTimeRemaining(headerTimer))
     local hasTimer = timeRemaining ~= nil
-    if not showStage and not hasTimer then
+    local showStageLine = showStage or hasTimer or hasTier
+    if not showStageLine and not hasLives then
         return blockHeight
     end
 
@@ -639,8 +730,9 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
     if showStage then
         stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
     end
+    local tierText = hasTier and delve.tierText or nil
 
-    if showStage or hasTimer then
+    if showStageLine then
         local stageLine = self.linePool:Acquire()
         stageLine:SetParent(frame)
         stageLine:Show()
@@ -660,7 +752,7 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
         stageLine.text:SetMaxLines(0)
         stageLine.text:SetNonSpaceWrap(false)
         stageLine.text:SetFont(headerFontPath, headerFontSize, headerFontFlag)
-        self:SetScenarioStageLineText(stageLine, stageLabel, hasTimer and timeRemaining or nil, db)
+        self:SetScenarioStageLineText(stageLine, stageLabel, hasTimer and timeRemaining or nil, db, tierText)
 
         local stageHeight = self:MeasureFontString(stageLine.text, headerFontSize, lineTextWidth, headerFontFlag)
         stageLine:SetHeight(stageHeight)
@@ -671,14 +763,17 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
             frame.scenarioHeaderTimer = {
                 widgetID = headerTimer.widgetID,
                 stageLabel = stageLabel,
+                tierText = tierText,
                 stageLine = stageLine,
             }
             self.scenarioHeaderTimerFrames[#self.scenarioHeaderTimerFrames + 1] = frame.scenarioHeaderTimer
         end
     end
 
-    local description = stage.description
-    if description and description ~= '' then
+    blockHeight = self:AppendDelveCurrencies(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+
+    local description = stage and stage.description
+    if (showStage or hasTimer) and description and description ~= '' then
         local descLine = self.linePool:Acquire()
         descLine:SetParent(frame)
         descLine:Show()
@@ -708,7 +803,7 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
         self.lineFrames[#self.lineFrames + 1] = descLine
     end
 
-    if stage.weightedProgress ~= nil then
+    if (showStage or hasTimer) and stage and stage.weightedProgress ~= nil then
         local progressFrame = self:AcquireProgressBar(frame, blockWidth, lineIndent, isRightAlign, db)
         self:SetProgressBarPercent(progressFrame, stage.weightedProgress)
         blockHeight = self:AppendBlockRow(frame, progressFrame, blockHeight, spacing, db)
@@ -727,7 +822,7 @@ function display:UpdateScenarioHeaderTimers()
         if timeRemaining == nil then
             needsRebuild = true
         else
-            self:SetScenarioStageLineText(timer.stageLine, timer.stageLabel, timeRemaining, db)
+            self:SetScenarioStageLineText(timer.stageLine, timer.stageLabel, timeRemaining, db, timer.tierText)
         end
     end
 
@@ -821,46 +916,6 @@ function display:StopChallengeModeTimerWatch()
         self.challengeModeTicker:Cancel()
         self.challengeModeTicker = nil
     end
-end
-
-function display:AppendDelveSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
-    local delve = block.delve
-    if not delve or not delve.tierText or delve.tierText == '' then
-        return blockHeight
-    end
-
-    local align = self:GetTextAlign(db)
-    local isRightAlign = align == 'RIGHT'
-    local lineTextWidth = blockWidth - lineIndent
-    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
-
-    local tierLine = self.linePool:Acquire()
-    tierLine:SetParent(frame)
-    tierLine:Show()
-    tierLine:SetWidth(blockWidth)
-    tierLine.text = tierLine.text or tierLine:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
-    tierLine.text:SetParent(tierLine)
-    tierLine.text:ClearAllPoints()
-    if isRightAlign then
-        tierLine.text:SetPoint('TOPLEFT', tierLine, 'TOPLEFT', 0, 0)
-        tierLine.text:SetPoint('TOPRIGHT', tierLine, 'TOPRIGHT', -lineIndent, 0)
-    else
-        tierLine.text:SetPoint('TOPLEFT', tierLine, 'TOPLEFT', lineIndent, 0)
-        tierLine.text:SetPoint('TOPRIGHT', tierLine, 'TOPRIGHT', 0, 0)
-    end
-    tierLine.text:SetJustifyH(align)
-    tierLine.text:SetWordWrap(false)
-    tierLine.text:SetFont(headerFontPath, headerFontSize, headerFontFlag)
-    tierLine.text:SetText(delve.tierText)
-    local tierColor = self:GetColor(db, 'BlockHeader')
-    tierLine.text:SetTextColor(tierColor.r, tierColor.g, tierColor.b)
-
-    local tierHeight = self:MeasureFontString(tierLine.text, headerFontSize, lineTextWidth, headerFontFlag)
-    tierLine:SetHeight(tierHeight)
-    blockHeight = self:AppendBlockRow(frame, tierLine, blockHeight, spacing)
-    self.lineFrames[#self.lineFrames + 1] = tierLine
-
-    return blockHeight
 end
 
 function display:AppendChallengeModeSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
@@ -1623,7 +1678,6 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
     local questID = block.untrackId or block.id
 
     blockHeight = self:AppendChallengeModeSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
-    blockHeight = self:AppendDelveSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
     blockHeight = self:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
 
     for lineIndex, objective in ipairs(block.objectives or {}) do
@@ -1998,7 +2052,7 @@ function display:RegisterEvents()
     for _, event in ipairs(self.EVENTS) do
         self.eventFrame:RegisterEvent(event)
     end
-    self.eventFrame:SetScript('OnEvent', function(_, event)
+    self.eventFrame:SetScript('OnEvent', function(_, event, ...)
         if not objectiveTracker.enabled then
             return
         end
@@ -2008,6 +2062,14 @@ function display:RegisterEvents()
             display.inEncounter = false
         elseif event == 'ZONE_CHANGED' or event == 'ZONE_CHANGED_NEW_AREA' or event == 'PLAYER_ENTERING_WORLD' then
             display:SyncEncounterState()
+        elseif event == 'UPDATE_UI_WIDGET' then
+            local widgetInfo = ...
+            if not widgetInfo
+                or not Enum
+                or not Enum.UIWidgetVisualizationType
+                or widgetInfo.widgetType ~= Enum.UIWidgetVisualizationType.ScenarioHeaderDelves then
+                return
+            end
         end
         display:RequestUpdate()
     end)

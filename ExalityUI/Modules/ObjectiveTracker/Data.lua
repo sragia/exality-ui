@@ -622,6 +622,30 @@ function trackerData:FormatDelveTierText(tierText, tier)
     return nil
 end
 
+function trackerData:CollectDelveCurrencies(info)
+    local currencies = {}
+    if not info or not info.currencies then
+        return currencies
+    end
+
+    for _, currencyInfo in ipairs(info.currencies) do
+        local hasText = (currencyInfo.text and currencyInfo.text ~= '')
+            or (currencyInfo.leadingText and currencyInfo.leadingText ~= '')
+        local hasIcon = currencyInfo.iconFileID and currencyInfo.iconFileID ~= 0
+        if hasText or hasIcon then
+            currencies[#currencies + 1] = {
+                iconFileID = currencyInfo.iconFileID,
+                text = currencyInfo.text,
+                leadingText = currencyInfo.leadingText,
+                tooltip = currencyInfo.tooltip,
+                isCurrencyMaxed = currencyInfo.isCurrencyMaxed,
+            }
+        end
+    end
+
+    return currencies
+end
+
 function trackerData:GetScenarioHeaderDelvesInfo(widgetSetID)
     if not widgetSetID
         or not C_UIWidgetManager
@@ -643,10 +667,12 @@ function trackerData:GetScenarioHeaderDelvesInfo(widgetSetID)
             local info = C_UIWidgetManager.GetScenarioHeaderDelvesWidgetVisualizationInfo(widget.widgetID)
             if info and info.shownState ~= Enum.WidgetShownState.Hidden then
                 local tierText = self:FormatDelveTierText(info.tierText)
-                if tierText then
+                local currencies = self:CollectDelveCurrencies(info)
+                if tierText or #currencies > 0 then
                     return {
                         widgetID = widget.widgetID,
                         tierText = tierText,
+                        currencies = currencies,
                     }
                 end
             end

@@ -2,6 +2,9 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.9.3|r
+= [Objective Tracker] Update delve display to show remaining lives
+
 # |cffdb49000.9.2|r
 - [Action Bars] Fix issue with button highlight going out of container
 - [Resource Displays] Fix issue with preview staying shown after options switch/window close
