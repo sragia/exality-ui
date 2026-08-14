@@ -201,6 +201,16 @@ local function makeWorldQuestBlock(questID, treatAsInArea)
     }
 end
 
+local function isQuestAutoComplete(questID)
+    if QuestCache then
+        local quest = QuestCache:Get(questID)
+        if quest then
+            return quest.isAutoComplete
+        end
+    end
+    return false
+end
+
 local function shouldShowStandardQuest(questID)
     if C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(questID) then
         return false
@@ -220,12 +230,114 @@ local function shouldShowStandardQuest(questID)
     return true
 end
 
+function trackerData:ShouldDisplayAutoQuest(questID)
+    if not questID then
+        return false
+    end
+    if C_QuestLog.IsQuestBounty and C_QuestLog.IsQuestBounty(questID) then
+        return false
+    end
+    if QuestCache then
+        local quest = QuestCache:Get(questID)
+        if quest and quest.IsDisabledForSession and quest:IsDisabledForSession() then
+            return false
+        end
+    end
+    return true
+end
+
+function trackerData:CollectAutoQuestPopUpBlocks()
+    local blocks = {}
+    if SplashFrame and SplashFrame:IsShown() then
+        return blocks
+    end
+    if not GetNumAutoQuestPopUps or not GetAutoQuestPopUp then
+        return blocks
+    end
+
+    for i = 1, GetNumAutoQuestPopUps() do
+        local questID, popUpType = GetAutoQuestPopUp(i)
+        if questID and self:ShouldDisplayAutoQuest(questID) then
+            local questTitle = C_QuestLog.GetTitleForQuestID(questID)
+            if questTitle and questTitle ~= '' then
+                local isCompletePopUp = popUpType == 'COMPLETE'
+                local headerText
+                local instructionText
+                if isCompletePopUp then
+                    if C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(questID) then
+                        headerText = QUEST_WATCH_POPUP_CLICK_TO_COMPLETE_TASK or 'Click to complete task'
+                    else
+                        headerText = QUEST_WATCH_POPUP_CLICK_TO_COMPLETE or 'Click to complete quest'
+                    end
+                else
+                    headerText = QUEST_WATCH_POPUP_QUEST_DISCOVERED or 'Quest Discovered!'
+                    instructionText = QUEST_WATCH_POPUP_CLICK_TO_VIEW or 'Click to view quest'
+                end
+
+                local objectives = {
+                    { text = questTitle, colorKey = 'NormalHighlight' },
+                }
+                if instructionText then
+                    objectives[#objectives + 1] = { text = instructionText }
+                end
+
+                addBlock(blocks, {
+                    id = 'autoquest:' .. questID .. ':' .. (popUpType or ''),
+                    title = headerText,
+                    canUntrack = false,
+                    untrackType = 'quest',
+                    untrackId = questID,
+                    isAutoQuestPopUp = true,
+                    autoQuestPopUpType = popUpType,
+                    isComplete = isCompletePopUp,
+                    isAutoComplete = isCompletePopUp,
+                    objectives = objectives,
+                })
+            end
+        end
+    end
+
+    return blocks
+end
+
+function trackerData:GetAutoQuestPopUpBlocks()
+    if not self.autoQuestPopUpBlocks then
+        self.autoQuestPopUpBlocks = self:CollectAutoQuestPopUpBlocks()
+    end
+    return self.autoQuestPopUpBlocks
+end
+
 function trackerData:CollectQuestBlocks(categoryId, filterFn)
     local blocks = {}
+    local popupQuestIDs = {}
+
+    for _, popup in ipairs(self:GetAutoQuestPopUpBlocks()) do
+        local questID = popup.untrackId
+        if questID then
+            local isCampaign = isCampaignQuest(questID)
+            local belongsHere = (categoryId == 'campaign' and isCampaign)
+                or (categoryId == 'quests' and not isCampaign)
+            if belongsHere then
+                popup.categoryId = categoryId
+                addBlock(blocks, popup)
+                popupQuestIDs[questID] = true
+            end
+        end
+    end
+
     for i = 1, C_QuestLog.GetNumQuestWatches() do
         local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
-        if questID and filterFn(questID) then
+        if questID and filterFn(questID) and not popupQuestIDs[questID] then
             local title = C_QuestLog.GetTitleForQuestID(questID) or ('Quest ' .. questID)
+            local isComplete = C_QuestLog.IsComplete(questID)
+            local isAutoComplete = isQuestAutoComplete(questID)
+            local objectives = getQuestObjectives(questID)
+            if isComplete and isAutoComplete then
+                objectives = {
+                    { text = QUEST_WATCH_QUEST_COMPLETE or 'Quest complete', finished = true },
+                    { text = QUEST_WATCH_CLICK_TO_COMPLETE or 'Click to complete', colorKey = 'NormalHighlight' },
+                }
+            end
             addBlock(blocks, {
                 id = questID,
                 categoryId = categoryId,
@@ -234,9 +346,10 @@ function trackerData:CollectQuestBlocks(categoryId, filterFn)
                 untrackType = 'quest',
                 untrackId = questID,
                 isSuperTracked = C_SuperTrack and C_SuperTrack.GetSuperTrackedQuestID() == questID,
-                isComplete = C_QuestLog.IsComplete(questID),
+                isComplete = isComplete,
+                isAutoComplete = isAutoComplete,
                 isWorldQuest = isWorldQuest(questID),
-                objectives = getQuestObjectives(questID),
+                objectives = objectives,
             })
         end
     end
@@ -898,6 +1011,7 @@ end
 function trackerData:InvalidateCategoryCache()
     self.categoryCacheValid = false
     self.blocksByCategory = nil
+    self.autoQuestPopUpBlocks = nil
     self.cachedPresent = nil
     self.cachedPresentCount = 0
 end

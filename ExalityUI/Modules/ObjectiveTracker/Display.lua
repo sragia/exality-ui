@@ -50,6 +50,7 @@ display.COLLAPSE_ICON_SIZE = 10
 display.COLLAPSE_BUTTON_RIGHT_INSET = 2
 display.SCROLL_WHEEL_STEP = 48
 display.SCROLL_SMOOTH_SPEED = 18
+display.AUTO_QUEST_POPUP_PAD = 6
 
 display.EVENTS = {
     'PLAYER_ENTERING_WORLD',
@@ -58,6 +59,7 @@ display.EVENTS = {
     'QUEST_LOG_UPDATE',
     'QUEST_WATCH_LIST_CHANGED',
     'QUEST_ACCEPTED',
+    'QUEST_AUTOCOMPLETE',
     'QUEST_TURNED_IN',
     'QUEST_REMOVED',
     'QUEST_POI_UPDATE',
@@ -113,6 +115,41 @@ function display:OpenBlockDetails(blockData)
     end
 end
 
+function display:HandleAutoQuestClick(blockData)
+    local questID = blockData.untrackId
+    if not questID then
+        return false
+    end
+
+    if blockData.isAutoQuestPopUp then
+        if blockData.autoQuestPopUpType == 'OFFER' then
+            if ShowQuestOffer then
+                ShowQuestOffer(questID)
+            end
+        elseif ShowQuestComplete then
+            ShowQuestComplete(questID)
+        end
+        if RemoveAutoQuestPopUp then
+            RemoveAutoQuestPopUp(questID)
+        end
+        self:RequestUpdate()
+        return true
+    end
+
+    if blockData.untrackType == 'quest' and blockData.isComplete and blockData.isAutoComplete then
+        if RemoveAutoQuestPopUp then
+            RemoveAutoQuestPopUp(questID)
+        end
+        if ShowQuestComplete then
+            ShowQuestComplete(questID)
+        end
+        self:RequestUpdate()
+        return true
+    end
+
+    return false
+end
+
 function display:HandleBlockTitleClick(blockData, mouseButton)
     if not blockData then
         return
@@ -123,6 +160,10 @@ function display:HandleBlockTitleClick(blockData, mouseButton)
             trackerData:UntrackBlock(blockData)
             objectiveTracker:Update()
         end
+        return
+    end
+
+    if self:HandleAutoQuestClick(blockData) then
         return
     end
 
@@ -295,6 +336,7 @@ function display:ReleaseLayout()
         frame.challengeModeTimer = nil
         frame.scenarioHeaderTimer = nil
         self:ReleaseBlockPOI(frame)
+        self:ClearAutoQuestPopUpStyle(frame)
         self.blockPool:Release(frame)
     end
     for _, frame in ipairs(self.categoryFrames) do
@@ -344,7 +386,7 @@ end
 
 function display:AttachQuestPOI(frame, block, db)
     self:ReleaseBlockPOI(frame)
-    if block.untrackType ~= 'quest' or not self:ShouldShowQuestPOI(db) then
+    if block.isAutoQuestPopUp or block.untrackType ~= 'quest' or not self:ShouldShowQuestPOI(db) then
         return 0
     end
     if not POIButtonUtil then
@@ -376,6 +418,55 @@ end
 function display:SetBlockTitleColor(frame, block, db)
     local color = self:GetBlockTitleColor(block, db)
     frame.title:SetTextColor(color.r, color.g, color.b)
+end
+
+function display:ApplyAutoQuestPopUpStyle(frame, hovered)
+    if not frame then
+        return
+    end
+
+    local theme = EXUI.const.theme
+    local accent = theme.accent
+    local bg = theme.backgroundLight
+    local deep = theme.backgroundDeep
+    local borderAlpha = hovered and 1 or 0.8
+
+    frame:SetBackdrop({
+        edgeFile = [[Interface\Buttons\WHITE8x8]],
+        edgeSize = 1,
+    })
+    frame:SetBackdropBorderColor(accent[1], accent[2], accent[3], borderAlpha)
+
+    local gradient = frame.autoQuestGradient
+    if not gradient then
+        gradient = frame:CreateTexture(nil, 'BACKGROUND')
+        gradient:SetTexture([[Interface\Buttons\WHITE8x8]])
+        frame.autoQuestGradient = gradient
+    end
+    gradient:ClearAllPoints()
+    gradient:SetPoint('TOPLEFT', frame, 'TOPLEFT', 1, -1)
+    gradient:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -1, 1)
+    gradient:Show()
+
+    local topMix = hovered and 0.55 or 0.4
+    local top = CreateColor(
+        accent[1] * topMix + bg[1] * (1 - topMix),
+        accent[2] * topMix + bg[2] * (1 - topMix),
+        accent[3] * topMix + bg[3] * (1 - topMix),
+        hovered and 0.72 or 0.55
+    )
+    local bottom = CreateColor(deep[1], deep[2], deep[3], hovered and 0.35 or 0.22)
+    gradient:SetGradient('VERTICAL', bottom, top)
+end
+
+function display:ClearAutoQuestPopUpStyle(frame)
+    if not frame then
+        return
+    end
+    frame:SetBackdrop(nil)
+    if frame.autoQuestGradient then
+        frame.autoQuestGradient:Hide()
+    end
 end
 
 function display:GetProgressBarTexture()
@@ -1619,17 +1710,24 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
     local poiOffset = self:AttachQuestPOI(frame, block, db)
     local poiEdgeInset = frame.poiButton and self.POI_EDGE_INSET or 0
     local poiGutter = poiOffset + poiEdgeInset
-    local titleWidth = blockWidth - poiGutter
+    local contentPad = block.isAutoQuestPopUp and self.AUTO_QUEST_POPUP_PAD or 0
+    local titleWidth = blockWidth - poiGutter - contentPad * 2
+
+    if block.isAutoQuestPopUp then
+        self:ApplyAutoQuestPopUpStyle(frame, false)
+    else
+        self:ClearAutoQuestPopUpStyle(frame)
+    end
 
     frame.title = frame.title or frame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
     frame.title:SetParent(frame)
     frame.title:ClearAllPoints()
     if isRightAlign then
-        frame.title:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
-        frame.title:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -poiGutter, 0)
+        frame.title:SetPoint('TOPLEFT', frame, 'TOPLEFT', contentPad, -contentPad)
+        frame.title:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -(poiGutter + contentPad), -contentPad)
     else
-        frame.title:SetPoint('TOPLEFT', frame, 'TOPLEFT', poiGutter, 0)
-        frame.title:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
+        frame.title:SetPoint('TOPLEFT', frame, 'TOPLEFT', poiGutter + contentPad, -contentPad)
+        frame.title:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -contentPad, -contentPad)
     end
     frame.title:SetJustifyH(align)
     frame.title:SetWordWrap(true)
@@ -1663,18 +1761,24 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
         local currentDb = objectiveTracker.Data:GetDB()
         local hover = display:GetColor(currentDb, 'BlockHeaderHighlight')
         frame.title:SetTextColor(hover.r, hover.g, hover.b)
+        if frame.blockData and frame.blockData.isAutoQuestPopUp then
+            display:ApplyAutoQuestPopUpStyle(frame, true)
+        end
     end)
     frame.titleButton:SetScript('OnLeave', function()
         display:SetBlockTitleColor(frame, frame.blockData, objectiveTracker.Data:GetDB())
+        if frame.blockData and frame.blockData.isAutoQuestPopUp then
+            display:ApplyAutoQuestPopUpStyle(frame, false)
+        end
     end)
     frame.titleButton:SetScript('OnClick', function(_, mouseButton)
         display:HandleBlockTitleClick(frame.blockData, mouseButton)
     end)
 
     local lineFontPath, lineFontSize, lineFontFlag = self:GetFont(db.lineFont, db.lineFontSize, db.lineFontFlag)
-    local blockHeight = self:MeasureFontString(frame.title, fontSize, titleWidth, fontFlag)
-    local lineIndent = poiGutter
-    local lineTextWidth = blockWidth - lineIndent
+    local blockHeight = contentPad + self:MeasureFontString(frame.title, fontSize, titleWidth, fontFlag)
+    local lineIndent = poiGutter + contentPad
+    local lineTextWidth = blockWidth - lineIndent - contentPad
     local questID = block.untrackId or block.id
 
     blockHeight = self:AppendChallengeModeSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
@@ -1691,11 +1795,11 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
             lineFrame.text:SetParent(lineFrame)
             lineFrame.text:ClearAllPoints()
             if isRightAlign then
-                lineFrame.text:SetPoint('TOPLEFT', lineFrame, 'TOPLEFT', 0, 0)
+                lineFrame.text:SetPoint('TOPLEFT', lineFrame, 'TOPLEFT', contentPad, 0)
                 lineFrame.text:SetPoint('TOPRIGHT', lineFrame, 'TOPRIGHT', -lineIndent, 0)
             else
                 lineFrame.text:SetPoint('TOPLEFT', lineFrame, 'TOPLEFT', lineIndent, 0)
-                lineFrame.text:SetPoint('TOPRIGHT', lineFrame, 'TOPRIGHT', 0, 0)
+                lineFrame.text:SetPoint('TOPRIGHT', lineFrame, 'TOPRIGHT', -contentPad, 0)
             end
             lineFrame.text:SetJustifyH(align)
             lineFrame.text:SetWordWrap(true)
@@ -1704,7 +1808,7 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
             lineFrame.text:SetFont(lineFontPath, lineFontSize, lineFontFlag)
             lineFrame.text:SetText(objective.text)
 
-            local colorKey = objective.failed and 'Failed' or (objective.finished and 'Complete' or 'Normal')
+            local colorKey = objective.colorKey or (objective.failed and 'Failed' or (objective.finished and 'Complete' or 'Normal'))
             local color = self:GetColor(db, colorKey)
             lineFrame.text:SetTextColor(color.r, color.g, color.b)
 
@@ -1726,9 +1830,17 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
         end
     end
 
-    frame:SetHeight(blockHeight)
+    frame:SetHeight(blockHeight + contentPad)
+
+    if block.isAutoQuestPopUp and frame.titleButton then
+        frame.titleButton:ClearAllPoints()
+        frame.titleButton:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+        frame.titleButton:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
+        frame.titleButton:SetFrameLevel(frame:GetFrameLevel() + 5)
+    end
+
     self.blockFrames[#self.blockFrames + 1] = frame
-    return frame, blockHeight
+    return frame, blockHeight + contentPad
 end
 
 function display:LayoutCategories(categories, db)
@@ -2062,6 +2174,13 @@ function display:RegisterEvents()
             display.inEncounter = false
         elseif event == 'ZONE_CHANGED' or event == 'ZONE_CHANGED_NEW_AREA' or event == 'PLAYER_ENTERING_WORLD' then
             display:SyncEncounterState()
+        elseif event == 'QUEST_AUTOCOMPLETE' then
+            local questID = ...
+            if questID and AddAutoQuestPopUp and AddAutoQuestPopUp(questID, 'COMPLETE') then
+                if PlaySound and SOUNDKIT and SOUNDKIT.UI_AUTO_QUEST_COMPLETE then
+                    PlaySound(SOUNDKIT.UI_AUTO_QUEST_COMPLETE)
+                end
+            end
         elseif event == 'UPDATE_UI_WIDGET' then
             local widgetInfo = ...
             if not widgetInfo
@@ -2073,6 +2192,15 @@ function display:RegisterEvents()
         end
         display:RequestUpdate()
     end)
+
+    if not self.autoQuestPopUpHooked and QuestObjectiveTracker and QuestObjectiveTracker.AddAutoQuestPopUp then
+        self.autoQuestPopUpHooked = true
+        hooksecurefunc(QuestObjectiveTracker, 'AddAutoQuestPopUp', function()
+            if objectiveTracker.enabled then
+                display:RequestUpdate()
+            end
+        end)
+    end
 end
 
 function display:UnregisterEvents()
