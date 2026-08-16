@@ -5,6 +5,7 @@ EXUI.changelog = [[
 # |cffdb49000.9.3|r
 - [Objective Tracker] Update delve display to show remaining lives
 - [Objective Tracker] Show auto completable quests in tracker.
+- [XP Bar] Add reputation watch inside of XP bar. Supports rep/hr
 
 # |cffdb49000.9.2|r
 - [Action Bars] Fix issue with button highlight going out of container

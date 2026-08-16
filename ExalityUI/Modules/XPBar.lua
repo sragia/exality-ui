@@ -31,13 +31,18 @@ xpBar.EVENTS = {
     'UPDATE_EXPANSION_LEVEL',
     'TIME_PLAYED_MSG',
     'ENABLE_XP_GAIN',
-    'DISABLE_XP_GAIN'
+    'DISABLE_XP_GAIN',
+    'UPDATE_FACTION',
+    'MAJOR_FACTION_RENOWN_LEVEL_CHANGED'
 }
 
 xpBar.ticker = nil
 xpBar.maxLevel = 0
 xpBar.startTime = time()
+xpBar.repStartTime = time()
+xpBar.repLevelStartTime = time()
 xpBar.timePlayedThisLevelReq = 0
+xpBar.inReputationMode = false
 xpBar.values = {
     currentXP = UnitXP('player'),
     maxXP = UnitXPMax('player'),
@@ -47,7 +52,24 @@ xpBar.values = {
     timePlayedThisLevel = 0,
     completedQuestXP = 0,
     restedXP = GetXPExhaustion() or 0,
+    currentRep = 0,
+    maxRep = 0,
+    gainedRep = 0,
+    repPerHour = 0,
+    repFactionID = nil,
+    repStandingLevel = nil,
+    repLevelText = '',
 }
+
+local function GetStandingLabel(reaction)
+    if not reaction then
+        return ''
+    end
+    if GetText then
+        return GetText('FACTION_STANDING_LABEL' .. reaction, UnitSex('player')) or ''
+    end
+    return _G['FACTION_STANDING_LABEL' .. reaction] or ''
+end
 
 xpBar.Init = function(self)
     self.Data:UpdateDefaults({
@@ -62,6 +84,7 @@ xpBar.Init = function(self)
         fontSize = 12,
         fontFlag = 'OUTLINE',
         showAtMaxLevel = false,
+        showWatchedReputation = false,
         xpBarColor = { r = 1, g = 210 / 255, b = 0, a = 1 },
         restedBarColor = { r = 0, g = 162 / 255, b = 1, a = 0.2 },
         completedQuestBarColor = { r = 1, g = 72 / 255, b = 0, a = 1 }
@@ -130,6 +153,22 @@ xpBar.GetOptions = function(self)
             end,
             currentValue = function()
                 return self.Data:GetValue('showAtMaxLevel')
+            end,
+            width = 100
+        },
+        {
+            type = 'toggle',
+            label = 'Show Watched Reputation',
+            name = 'showWatchedReputation',
+            onChange = function(value)
+                self.Data:SetValue('showWatchedReputation', value)
+                self:HandleVisibility()
+                if self.frame and self.frame:IsShown() then
+                    self:Update('FORCE')
+                end
+            end,
+            currentValue = function()
+                return self.Data:GetValue('showWatchedReputation')
             end,
             width = 100
         },
@@ -540,23 +579,135 @@ xpBar.Configure = function(self)
         db.completedQuestBarColor.b, db.completedQuestBarColor.a)
 end
 
+xpBar.GetWatchedFaction = function(self)
+    local watched = C_Reputation.GetWatchedFactionData()
+    if not watched or not watched.factionID or watched.factionID == 0 then
+        return nil
+    end
+    if not watched.name or watched.name == '' then
+        return nil
+    end
+    return watched
+end
+
+xpBar.IsReputationMode = function(self)
+    if not self.Data:GetValue('showWatchedReputation') then
+        return false
+    end
+    if UnitLevel('player') < self.maxLevel then
+        return false
+    end
+    return self:GetWatchedFaction() ~= nil
+end
+
+xpBar.GetReputationProgress = function(self)
+    local watched = self:GetWatchedFaction()
+    if not watched then
+        return nil
+    end
+
+    local factionID = watched.factionID
+    local minBar, maxBar, value = watched.currentReactionThreshold, watched.nextReactionThreshold, watched.currentStanding
+    local standingLevel = watched.reaction or 0
+    local levelText = GetStandingLabel(standingLevel)
+
+    local friendship = C_GossipInfo.GetFriendshipReputation(factionID)
+    local friendshipID = friendship and friendship.friendshipFactionID or 0
+
+    if C_Reputation.IsFactionParagonForCurrentPlayer(factionID) then
+        local currentValue, threshold, _, hasRewardPending = C_Reputation.GetFactionParagonInfo(factionID)
+        minBar, maxBar = 0, threshold or 1
+        if currentValue and threshold and threshold > 0 then
+            value = currentValue % threshold
+        else
+            value = 0
+        end
+        if hasRewardPending then
+            value = value + (threshold or 0)
+        end
+        if C_Reputation.IsMajorFaction(factionID) then
+            local major = C_MajorFactions.GetMajorFactionData(factionID)
+            standingLevel = major and major.renownLevel or standingLevel
+            levelText = (RENOWN_LEVEL_LABEL or 'Renown %d'):format(standingLevel)
+        end
+    elseif C_Reputation.IsMajorFaction(factionID) then
+        local major = C_MajorFactions.GetMajorFactionData(factionID)
+        standingLevel = major and major.renownLevel or 0
+        levelText = (RENOWN_LEVEL_LABEL or 'Renown %d'):format(standingLevel)
+        if C_MajorFactions.HasMaximumRenown(factionID) then
+            minBar, maxBar, value = 0, 1, 1
+        else
+            minBar, maxBar = 0, (major and major.renownLevelThreshold) or 1
+            value = major and major.renownReputationEarned or 0
+        end
+    elseif friendshipID > 0 then
+        local ranks = C_GossipInfo.GetFriendshipReputationRanks(factionID)
+        standingLevel = ranks and ranks.currentLevel or 0
+        levelText = friendship.reaction or levelText
+        if friendship.nextThreshold then
+            minBar, maxBar, value = friendship.reactionThreshold, friendship.nextThreshold, friendship.standing
+        else
+            minBar, maxBar, value = 0, 1, 1
+        end
+    else
+        local maxReaction = MAX_REPUTATION_REACTION or 8
+        if standingLevel >= maxReaction then
+            minBar, maxBar, value = 0, 1, 1
+        end
+    end
+
+    maxBar = (maxBar or 1) - (minBar or 0)
+    value = (value or 0) - (minBar or 0)
+    if maxBar <= 0 then
+        maxBar = 1
+        value = 1
+    end
+    if value < 0 then
+        value = 0
+    end
+
+    return {
+        factionID = factionID,
+        current = value,
+        max = maxBar,
+        levelText = levelText,
+        standingLevel = standingLevel,
+    }
+end
+
+xpBar.ShouldShow = function(self)
+    local atMaxLevel = UnitLevel('player') >= self.maxLevel
+    if not atMaxLevel then
+        return true
+    end
+    if self.Data:GetValue('showAtMaxLevel') then
+        return true
+    end
+    return self:IsReputationMode()
+end
+
 xpBar.HandleVisibility = function(self)
     if not self.frame then return end
 
-    local shouldShow = self.maxLevel > UnitLevel('player') or self.Data:GetValue('showAtMaxLevel')
+    local shouldShow = self:ShouldShow()
 
     if shouldShow then
         FrameUtil.RegisterFrameForEvents(self.frame, self.EVENTS)
         self.frame:Show()
         if not self.ticker then
             self.ticker = C_Timer.NewTicker(5, function()
-                self:UpdatePerHourXP()
+                if self.inReputationMode then
+                    self:UpdatePerHourRep()
+                else
+                    self:UpdatePerHourXP()
+                end
                 self:UpdateValues()
             end)
         end
     else
         self.frame:UnregisterAllEvents()
         self.frame:Hide()
+        self.inReputationMode = false
         if self.ticker then
             self.ticker:Cancel()
             self.ticker = nil
@@ -573,22 +724,101 @@ xpBar.SetLogic = function(self, frame)
     end)
 end
 
-xpBar.UpdateValues = function(self)
-    if (not self.values.maxXP or self.values.maxXP == 0) then return end
+xpBar.ResetReputationSession = function(self, progress)
     local now = time()
+    self.repStartTime = now
+    self.repLevelStartTime = now
+    self.values.gainedRep = 0
+    self.values.currentRep = progress.current
+    self.values.maxRep = progress.max
+end
+
+xpBar.UpdateReputation = function(self)
+    local progress = self:GetReputationProgress()
+    if not progress then
+        self:HandleVisibility()
+        return
+    end
+
+    local entered = not self.inReputationMode
+    local factionChanged = self.values.repFactionID ~= progress.factionID
+    local standingUp = not entered and not factionChanged
+        and self.values.repStandingLevel
+        and progress.standingLevel > self.values.repStandingLevel
+
+    if entered or factionChanged then
+        self:ResetReputationSession(progress)
+    else
+        local gained = progress.current - (self.values.currentRep or 0)
+        if gained < 0 then
+            gained = (self.values.maxRep or 0) - (self.values.currentRep or 0) + progress.current
+        end
+        self.values.gainedRep = (self.values.gainedRep or 0) + gained
+        self.values.currentRep = progress.current
+        self.values.maxRep = progress.max
+        if standingUp then
+            self.repLevelStartTime = time()
+        end
+    end
+
+    self.inReputationMode = true
+    self.values.repFactionID = progress.factionID
+    self.values.repStandingLevel = progress.standingLevel
+    self.values.repLevelText = progress.levelText
+
+    self:UpdatePerHourRep()
+    self:UpdateValues()
+end
+
+xpBar.UpdateValues = function(self)
+    local isRep = self.inReputationMode
+    local current = isRep and self.values.currentRep or self.values.currentXP
+    local maxValue = isRep and self.values.maxRep or self.values.maxXP
+    if (not maxValue or maxValue == 0) then return end
+
+    self.frame.RestedBar:SetShown(not isRep)
+    self.frame.CompletedQuestBar:SetShown(not isRep)
+
+    local now = time()
+    local percent = current / maxValue * 100
+
+    self.frame.Texts.CurrentXP:SetText(EXUI.utils.formatNumberWithCommas(current) ..
+        '/' .. EXUI.utils.formatNumberWithCommas(maxValue))
+
+    if isRep then
+        self.frame.Texts.Level:SetText(self.values.repLevelText or '')
+        self.frame.Texts.CurrentXPPercent:SetText(string.format('%.1f%%', percent))
+        self.frame.Texts.ThisLevel:SetText('This Level: ' .. EXUI.utils.formatTime(now - self.repLevelStartTime, true))
+
+        local remaining = maxValue - current
+        if (self.values.repPerHour > 0) then
+            if remaining > 0 then
+                local seconds = math.floor((remaining / self.values.repPerHour) * 3600)
+                self.frame.Texts.Prediction:SetText(string.format('%s - %s Rep/h',
+                    EXUI.utils.formatTime(seconds, true),
+                    EXUI.utils.formatNumber(self.values.repPerHour)))
+            else
+                self.frame.Texts.Prediction:SetText(string.format('%s Rep/h',
+                    EXUI.utils.formatNumber(self.values.repPerHour)))
+            end
+        else
+            self.frame.Texts.Prediction:SetText('N/A Rep/h')
+        end
+
+        self.frame.XPBar:SetMinMaxValues(0, maxValue)
+        self.frame.XPBar:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        return
+    end
 
     local timePlayed = now - (self.timePlayedThisLevelReq - self.values.timePlayedThisLevel)
 
     self.frame.Texts.Level:SetText('Level ' .. self.values.currentLevel)
-    self.frame.Texts.CurrentXP:SetText(EXUI.utils.formatNumberWithCommas(self.values.currentXP) ..
-        '/' .. EXUI.utils.formatNumberWithCommas(self.values.maxXP))
-    local percentXP = self.values.currentXP / self.values.maxXP * 100
     if (self.values.completedQuestXP > 0) then
         local percentXPWithCompletedQuest = (self.values.currentXP +
             self.values.completedQuestXP) / self.values.maxXP * 100
-        self.frame.Texts.CurrentXPPercent:SetText(string.format('%.1f%% (%.1f%%)', percentXP, percentXPWithCompletedQuest))
+        self.frame.Texts.CurrentXPPercent:SetText(string.format('%.1f%% (%.1f%%)', percent, percentXPWithCompletedQuest))
     else
-        self.frame.Texts.CurrentXPPercent:SetText(string.format('%.1f%%', percentXP))
+        self.frame.Texts.CurrentXPPercent:SetText(string.format('%.1f%%', percent))
     end
     self.frame.Texts.ThisLevel:SetText('This Level: ' .. EXUI.utils.formatTime(timePlayed, true))
 
@@ -602,7 +832,6 @@ xpBar.UpdateValues = function(self)
     else
         self.frame.Texts.Prediction:SetText('N/A XP/h')
     end
-
 
     self.frame.XPBar:SetMinMaxValues(0, self.values.maxXP)
     self.frame.XPBar:SetValue(self.values.currentXP, Enum.StatusBarInterpolation.ExponentialEaseOut)
@@ -642,30 +871,19 @@ xpBar.UpdatePerHourXP = function(self)
     self.values.xpPerHour = xpPerHour
 end
 
-xpBar.Update = function(self, event, ...)
+xpBar.UpdatePerHourRep = function(self)
     local now = time()
+    local timePassed = now - self.repStartTime
+    local repPerHour = 0
+    if (timePassed > 0) then
+        repPerHour = self.values.gainedRep / (timePassed / 3600)
+    end
+    self.values.repPerHour = repPerHour
+end
+
+xpBar.UpdateExperience = function(self)
     local currentXP = UnitXP('player')
     local maxXP = UnitXPMax('player')
-    if (event == 'PLAYER_ENTERING_WORLD') then
-        RequestTimePlayed()
-        self:HandleVisibility()
-    elseif (event == 'UPDATE_EXPANSION_LEVEL') then -- Expansion Launch
-        local arg1, arg2, arg3, arg4 = ...
-        local maxExpLevel = max(arg1, arg2, arg3, arg4)
-        self.maxLevel = GetMaxLevelForExpansionLevel(maxExpLevel)
-        self.startTime = time() -- Restart start time
-        self:HandleVisibility()
-    elseif (event == 'PLAYER_LEVEL_UP') then
-        self.timePlayedThisLevelReq = now
-        self.values.timePlayedThisLevel = 0
-        self:HandleVisibility() -- Check if we need to hide cause we reached max level
-    elseif (event == 'TIME_PLAYED_MSG') then
-        local _, timePlayedThisLevel = ...
-        self.timePlayedThisLevelReq = now
-        self.values.timePlayedThisLevel = timePlayedThisLevel
-    elseif (event == 'QUEST_LOG_UPDATE' or (event == 'UNIT_QUEST_LOG_CHANGED' and ... == 'player')) then
-        self:GetCompletedQuestXP()
-    end
 
     if (self.values.currentXP > 0) then
         local gainedXP = currentXP - self.values.currentXP
@@ -688,6 +906,51 @@ xpBar.Update = function(self, event, ...)
     self:UpdateValues()
 end
 
+xpBar.Update = function(self, event, ...)
+    local now = time()
+    if (event == 'PLAYER_ENTERING_WORLD') then
+        self:HandleVisibility()
+        if not self:IsReputationMode() then
+            RequestTimePlayed()
+        end
+    elseif (event == 'UPDATE_EXPANSION_LEVEL') then -- Expansion Launch
+        local arg1, arg2, arg3, arg4 = ...
+        local maxExpLevel = max(arg1, arg2, arg3, arg4)
+        self.maxLevel = GetMaxLevelForExpansionLevel(maxExpLevel)
+        self.startTime = time() -- Restart start time
+        self:HandleVisibility()
+    elseif (event == 'PLAYER_LEVEL_UP') then
+        self.timePlayedThisLevelReq = now
+        self.values.timePlayedThisLevel = 0
+        self:HandleVisibility() -- Check if we need to hide cause we reached max level
+    elseif (event == 'UPDATE_FACTION' or event == 'MAJOR_FACTION_RENOWN_LEVEL_CHANGED') then
+        self:HandleVisibility()
+    elseif (event == 'TIME_PLAYED_MSG') then
+        local _, timePlayedThisLevel = ...
+        self.timePlayedThisLevelReq = now
+        self.values.timePlayedThisLevel = timePlayedThisLevel
+    elseif (event == 'QUEST_LOG_UPDATE' or (event == 'UNIT_QUEST_LOG_CHANGED' and ... == 'player')) then
+        if not self:IsReputationMode() then
+            self:GetCompletedQuestXP()
+        end
+    end
+
+    if not self.frame or not self.frame:IsShown() then
+        return
+    end
+
+    if self:IsReputationMode() then
+        self:UpdateReputation()
+        return
+    end
+
+    if self.inReputationMode then
+        self:GetCompletedQuestXP()
+    end
+    self.inReputationMode = false
+    self:UpdateExperience()
+end
+
 xpBar.Enable = function(self)
     if (not self.frame) then
         self:CreateFrame()
@@ -696,7 +959,9 @@ xpBar.Enable = function(self)
     self:HandleVisibility()
 
     if (self.frame:IsShown()) then
-        self:GetCompletedQuestXP() -- Event where this is requested will not be called on Update here
+        if not self:IsReputationMode() then
+            self:GetCompletedQuestXP() -- Event where this is requested will not be called on Update here
+        end
         self:Update()
     end
 end
@@ -705,6 +970,7 @@ xpBar.Disable = function(self)
     if (self.frame) then
         self.frame:Hide()
         self.frame:UnregisterAllEvents()
+        self.inReputationMode = false
         if self.ticker then
             self.ticker:Cancel()
             self.ticker = nil
