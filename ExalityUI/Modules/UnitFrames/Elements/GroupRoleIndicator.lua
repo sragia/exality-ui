@@ -12,28 +12,30 @@ local atlases = {
     'UI-LFG-RoleIcon-DPS-Micro-Raid',
 }
 
+local function PostUpdate(self, role)
+    if (role == nil) then return end
+    if (self.hideTank and role == Enum.LFGRole.Tank) then
+        self:Hide()
+        return
+    end
+    if (self.hideHealer and role == Enum.LFGRole.Healer) then
+        self:Hide()
+        return
+    end
+    if (self.hideDamager and role == Enum.LFGRole.Damage) then
+        self:Hide()
+        return
+    end
+
+    self:Show()
+end
+
 groupRoleIndicator.Create = function(self, frame)
     local groupRoleIndicator = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
     EXUI:SetSize(groupRoleIndicator, 16, 16)
     groupRoleIndicator:SetPoint('CENTER')
 
-    groupRoleIndicator.PostUpdate = function(self, role)
-        if (not role) then return end
-        if (self.hideTank and role == 'TANK') then
-            self:Hide()
-            return
-        end
-        if (self.hideHealer and role == 'HEALER') then
-            self:Hide()
-            return
-        end
-        if (self.hideDamager and role == 'DAMAGER') then
-            self:Hide()
-            return
-        end
-
-        self:Show()
-    end
+    groupRoleIndicator.PostUpdate = PostUpdate
 
     return groupRoleIndicator
 end
@@ -59,7 +61,7 @@ groupRoleIndicator.Update = function(self, frame)
         db.groupRoleIndicatorRelativeAnchorPoint,
         db.groupRoleIndicatorXOff, db.groupRoleIndicatorYOff)
 
-    if (frame:IsElementPreviewEnabled('grouproleindicator') and not groupRoleIndicator.isPreview) then
+    if (frame:IsElementPreviewEnabled('grouproleindicator') and not GroupRoleIndicator.isPreview) then
         GroupRoleIndicator.PostUpdate = function(self, role)
             self:SetAtlas(atlases[math.random(1, 3)])
             self:Show()
@@ -67,7 +69,7 @@ groupRoleIndicator.Update = function(self, frame)
         GroupRoleIndicator:Show()
         GroupRoleIndicator.isPreview = true
     elseif (not frame:IsElementPreviewEnabled('grouproleindicator') and GroupRoleIndicator.isPreview) then
-        GroupRoleIndicator.PostUpdate = nil
+        GroupRoleIndicator.PostUpdate = PostUpdate
         GroupRoleIndicator.isPreview = false
     end
 end
