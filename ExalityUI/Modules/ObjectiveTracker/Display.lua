@@ -33,6 +33,8 @@ display.progressBarPool = CreateFramePool('Frame', UIParent)
 display.poiPool = nil
 display.scrollTarget = nil
 display.updateScheduled = false
+display.emptyCategories = {}
+display.colorCodeCache = {}
 
 display.POI_TEMPLATE = 'ObjectiveTrackerPOIButtonTemplate'
 display.POI_ICON_OFFSET = 22
@@ -322,6 +324,192 @@ function display:GetColor(db, key)
     return color or defaults.DEFAULT_COLORS[key] or defaults.DEFAULT_COLORS.Normal
 end
 
+local signatureParts = {}
+
+function display:BeginPassCaches(db)
+    self.layoutScale = self.frame and EXUI:GetLayoutScale(self.frame) or EXUI:GetLayoutScale(UIParent)
+    self.passHeaderLineHeight = nil
+    self.passProgressBarSettings = nil
+    self.passDefaultProgressBarColors = nil
+    self.passDb = db
+end
+
+function display:LayoutScalePixel(value, minPixels)
+    if self.layoutScale then
+        return EXUI:ScalePixelWithScale(value, self.layoutScale, minPixels)
+    end
+    return EXUI:ScalePixel(value, self.frame or UIParent, minPixels)
+end
+
+function display:FinishSignature()
+    for i = 1, #signatureParts do
+        local value = signatureParts[i]
+        local valueType = type(value)
+        if valueType ~= 'string' and valueType ~= 'number' then
+            signatureParts[i] = value == nil and '' or tostring(value)
+        end
+    end
+    local signature = table.concat(signatureParts, '\31')
+    wipe(signatureParts)
+    return signature
+end
+
+function display:GetSettingsSignature(db)
+    signatureParts[#signatureParts + 1] = db.width
+    signatureParts[#signatureParts + 1] = db.maxHeight
+    signatureParts[#signatureParts + 1] = db.textAlign
+    signatureParts[#signatureParts + 1] = db.activeFilter
+    signatureParts[#signatureParts + 1] = db.containerCollapsed
+    signatureParts[#signatureParts + 1] = db.hideContainerHeader
+    signatureParts[#signatureParts + 1] = db.hideCollapseButtons
+    signatureParts[#signatureParts + 1] = db.hideModuleMinimizeButtons
+    signatureParts[#signatureParts + 1] = db.showCategoryChips
+    signatureParts[#signatureParts + 1] = db.hideQuestPOI
+    signatureParts[#signatureParts + 1] = db.showCategoryHeaderLine
+    signatureParts[#signatureParts + 1] = db.categoryHeaderLineThickness
+    signatureParts[#signatureParts + 1] = db.categorySpacing
+    signatureParts[#signatureParts + 1] = db.customHeaderStyle
+    signatureParts[#signatureParts + 1] = db.blockHeaderFont
+    signatureParts[#signatureParts + 1] = db.blockHeaderFontSize
+    signatureParts[#signatureParts + 1] = db.blockHeaderFontFlag
+    signatureParts[#signatureParts + 1] = db.lineFont
+    signatureParts[#signatureParts + 1] = db.lineFontSize
+    signatureParts[#signatureParts + 1] = db.lineFontFlag
+    signatureParts[#signatureParts + 1] = db.moduleHeaderFont
+    signatureParts[#signatureParts + 1] = db.moduleHeaderFontSize
+    signatureParts[#signatureParts + 1] = db.moduleHeaderFontFlag
+    signatureParts[#signatureParts + 1] = db.containerFont
+    signatureParts[#signatureParts + 1] = db.containerFontSize
+    signatureParts[#signatureParts + 1] = db.containerFontFlag
+    signatureParts[#signatureParts + 1] = db.progressBarHeight
+    signatureParts[#signatureParts + 1] = db.progressBarBorderThickness
+    signatureParts[#signatureParts + 1] = db.hideOnEncounter or db.hideInCombat
+    signatureParts[#signatureParts + 1] = db.hideInMythicPlus
+    signatureParts[#signatureParts + 1] = db.autoHideWhenEmpty
+    if db.collapsedModules then
+        local collapsedIds = {}
+        for categoryId, collapsed in pairs(db.collapsedModules) do
+            if collapsed then
+                collapsedIds[#collapsedIds + 1] = categoryId
+            end
+        end
+        table.sort(collapsedIds)
+        for i = 1, #collapsedIds do
+            signatureParts[#signatureParts + 1] = collapsedIds[i]
+        end
+    end
+    local colors = db.colors
+    if colors then
+        local colorKeys = {}
+        for key in pairs(colors) do
+            colorKeys[#colorKeys + 1] = key
+        end
+        table.sort(colorKeys)
+        for i = 1, #colorKeys do
+            local color = colors[colorKeys[i]]
+            signatureParts[#signatureParts + 1] = colorKeys[i]
+            if color then
+                signatureParts[#signatureParts + 1] = color.r
+                signatureParts[#signatureParts + 1] = color.g
+                signatureParts[#signatureParts + 1] = color.b
+                signatureParts[#signatureParts + 1] = color.a
+            end
+        end
+    end
+    return self:FinishSignature()
+end
+
+function display:GetStructureKey(categories, db)
+    for _, category in ipairs(categories) do
+        signatureParts[#signatureParts + 1] = category.id
+        signatureParts[#signatureParts + 1] = self:IsCategoryCollapsed(category.id, db) and '1' or '0'
+        for _, block in ipairs(category.blocks) do
+            signatureParts[#signatureParts + 1] = block.id
+            local textCount, barCount = 0, 0
+            for _, objective in ipairs(block.objectives or {}) do
+                if objective.text and objective.text ~= '' then
+                    textCount = textCount + 1
+                end
+                if objective.showProgressBar then
+                    barCount = barCount + 1
+                end
+            end
+            local stage = block.stage
+            local showStage = stage and stage.total and stage.total > 1
+            local hasTimer = stage and stage.headerTimer and stage.headerTimer.widgetID
+            local delveCount = 0
+            if block.delve and block.delve.currencies then
+                delveCount = #block.delve.currencies
+            end
+            signatureParts[#signatureParts + 1] = textCount
+            signatureParts[#signatureParts + 1] = barCount
+            signatureParts[#signatureParts + 1] = showStage and '1' or '0'
+            signatureParts[#signatureParts + 1] = hasTimer and '1' or '0'
+            signatureParts[#signatureParts + 1] = (stage and stage.description and stage.description ~= '') and '1' or '0'
+            signatureParts[#signatureParts + 1] = (stage and stage.weightedProgress ~= nil) and '1' or '0'
+            signatureParts[#signatureParts + 1] = delveCount
+            signatureParts[#signatureParts + 1] = block.challengeMode and '1' or '0'
+            signatureParts[#signatureParts + 1] = block.isAutoQuestPopUp and '1' or '0'
+            signatureParts[#signatureParts + 1] = (block.untrackType == 'quest' and not block.isAutoQuestPopUp) and '1' or '0'
+        end
+    end
+    return self:FinishSignature()
+end
+
+function display:GetContentSignature(categories)
+    for _, category in ipairs(categories) do
+        signatureParts[#signatureParts + 1] = category.id
+        signatureParts[#signatureParts + 1] = category.label
+        for _, block in ipairs(category.blocks) do
+            signatureParts[#signatureParts + 1] = block.id
+            signatureParts[#signatureParts + 1] = block.title
+            signatureParts[#signatureParts + 1] = block.isComplete
+            signatureParts[#signatureParts + 1] = block.isSuperTracked
+            signatureParts[#signatureParts + 1] = block.isAutoQuestPopUp
+            for _, objective in ipairs(block.objectives or {}) do
+                signatureParts[#signatureParts + 1] = objective.text
+                signatureParts[#signatureParts + 1] = objective.finished
+                signatureParts[#signatureParts + 1] = objective.failed
+                signatureParts[#signatureParts + 1] = objective.colorKey
+                signatureParts[#signatureParts + 1] = objective.showProgressBar
+                signatureParts[#signatureParts + 1] = objective.progressPercent
+            end
+            local stage = block.stage
+            if stage then
+                signatureParts[#signatureParts + 1] = stage.current
+                signatureParts[#signatureParts + 1] = stage.total
+                signatureParts[#signatureParts + 1] = stage.title
+                signatureParts[#signatureParts + 1] = stage.description
+                signatureParts[#signatureParts + 1] = stage.weightedProgress
+                signatureParts[#signatureParts + 1] = stage.headerTimer and stage.headerTimer.widgetID
+            end
+            local delve = block.delve
+            if delve then
+                signatureParts[#signatureParts + 1] = delve.tierText
+                for _, currency in ipairs(delve.currencies or {}) do
+                    signatureParts[#signatureParts + 1] = currency.text
+                    signatureParts[#signatureParts + 1] = currency.leadingText
+                    signatureParts[#signatureParts + 1] = currency.iconFileID
+                    signatureParts[#signatureParts + 1] = currency.isCurrencyMaxed
+                end
+            end
+            local challengeMode = block.challengeMode
+            if challengeMode then
+                signatureParts[#signatureParts + 1] = challengeMode.levelText
+                signatureParts[#signatureParts + 1] = challengeMode.timeLimit
+                signatureParts[#signatureParts + 1] = challengeMode.timerID
+            end
+        end
+    end
+    return self:FinishSignature()
+end
+
+function display:TrackOwnedRow(parent, child)
+    parent.ownedRows = parent.ownedRows or {}
+    parent.ownedRows[#parent.ownedRows + 1] = child
+    return child
+end
+
 function display:ReleaseLayout()
     self:StopChallengeModeTimerWatch()
     self:StopScenarioHeaderTimerWatch()
@@ -335,11 +523,19 @@ function display:ReleaseLayout()
     for _, frame in ipairs(self.blockFrames) do
         frame.challengeModeTimer = nil
         frame.scenarioHeaderTimer = nil
+        frame.ownedRows = nil
+        frame.ownedStageLine = nil
+        frame.ownedDescLine = nil
+        frame.ownedDelveLines = nil
+        frame.ownedTextLines = nil
+        frame.ownedProgressBars = nil
+        frame.challengeLevelLine = nil
         self:ReleaseBlockPOI(frame)
         self:ClearAutoQuestPopUpStyle(frame)
         self.blockPool:Release(frame)
     end
     for _, frame in ipairs(self.categoryFrames) do
+        frame.ownedBlockFrames = nil
         self.categoryPool:Release(frame)
     end
     wipe(self.lineFrames)
@@ -348,6 +544,9 @@ function display:ReleaseLayout()
     wipe(self.categoryFrames)
     wipe(self.challengeModeBlockFrames)
     wipe(self.scenarioHeaderTimerFrames)
+    self.lastContentSignature = nil
+    self.lastStructureKey = nil
+    self.lastSettingsSignature = nil
 end
 
 function display:EnsurePOIPool()
@@ -373,6 +572,8 @@ function display:ReleaseBlockPOI(frame)
         self.poiPool:Release(frame.poiButton)
         frame.poiButton = nil
     end
+    frame.poiQuestID = nil
+    frame.poiStyle = nil
 end
 
 function display:GetQuestPOIStyle(block)
@@ -385,19 +586,38 @@ function display:GetQuestPOIStyle(block)
 end
 
 function display:AttachQuestPOI(frame, block, db)
-    self:ReleaseBlockPOI(frame)
     if block.isAutoQuestPopUp or block.untrackType ~= 'quest' or not self:ShouldShowQuestPOI(db) then
+        self:ReleaseBlockPOI(frame)
         return 0
     end
     if not POIButtonUtil then
+        self:ReleaseBlockPOI(frame)
         return 0
     end
+
+    local style = self:GetQuestPOIStyle(block)
+    local questID = block.untrackId
+    if frame.poiButton and frame.poiQuestID == questID then
+        if frame.poiStyle ~= style then
+            frame.poiButton:SetStyle(style)
+            frame.poiStyle = style
+        end
+        frame.poiButton:SetSelected(block.isSuperTracked)
+        if block.isWorldQuest and frame.poiButton.SetPingWorldMap then
+            frame.poiButton:SetPingWorldMap(true)
+        end
+        frame.poiButton:UpdateButtonStyle()
+        frame.poiButton:Show()
+        return self.POI_ICON_OFFSET
+    end
+
+    self:ReleaseBlockPOI(frame)
     self:EnsurePOIPool()
     local poiButton = self.poiPool:Acquire()
     poiButton:SetParent(frame)
     poiButton:SetFrameLevel(frame:GetFrameLevel() + 2)
-    poiButton:SetQuestID(block.untrackId)
-    poiButton:SetStyle(self:GetQuestPOIStyle(block))
+    poiButton:SetQuestID(questID)
+    poiButton:SetStyle(style)
     poiButton:SetSelected(block.isSuperTracked)
     if block.isWorldQuest and poiButton.SetPingWorldMap then
         poiButton:SetPingWorldMap(true)
@@ -405,6 +625,8 @@ function display:AttachQuestPOI(frame, block, db)
     poiButton:UpdateButtonStyle()
     poiButton:Show()
     frame.poiButton = poiButton
+    frame.poiQuestID = questID
+    frame.poiStyle = style
     return self.POI_ICON_OFFSET
 end
 
@@ -477,8 +699,11 @@ function display:GetProgressBarTexture()
 end
 
 function display:GetDefaultProgressBarColors()
+    if self.passDefaultProgressBarColors then
+        return self.passDefaultProgressBarColors
+    end
     local theme = EXUI.const.theme
-    return {
+    local colors = {
         fillColor = {
             r = theme.accent[1],
             g = theme.accent[2],
@@ -498,22 +723,32 @@ function display:GetDefaultProgressBarColors()
             a = theme.border[4] or 1,
         },
     }
+    self.passDefaultProgressBarColors = colors
+    return colors
 end
 
 function display:GetProgressBarSettings(db)
+    if self.passProgressBarSettings then
+        return self.passProgressBarSettings
+    end
     local themeColors = self:GetDefaultProgressBarColors()
-    return {
+    local settings = {
         height = db.progressBarHeight or 12,
         borderThickness = db.progressBarBorderThickness or 1,
         fillColor = db.progressBarFillColor or themeColors.fillColor,
         backgroundColor = db.progressBarBackgroundColor or themeColors.backgroundColor,
         borderColor = db.progressBarBorderColor or themeColors.borderColor,
     }
+    self.passProgressBarSettings = settings
+    return settings
 end
 
 function display:GetProgressBarFrameHeight(db, region)
     local settings = self:GetProgressBarSettings(db)
     local borderThickness = math.max(0, settings.borderThickness)
+    if self.layoutScale then
+        return EXUI:ScalePixelWithScale(settings.height + borderThickness * 2, self.layoutScale)
+    end
     return EXUI:ScalePixels(settings.height + borderThickness * 2, region)
 end
 
@@ -574,7 +809,11 @@ function display:AcquireProgressBar(parent, width, indent, isRightAlign, db)
     frame:SetParent(parent)
     frame:Show()
     frame:SetWidth(width)
-    EXUI:SetHeight(frame, totalLogicalHeight)
+    if self.layoutScale then
+        frame:SetHeight(EXUI:ScalePixelWithScale(totalLogicalHeight, self.layoutScale))
+    else
+        EXUI:SetHeight(frame, totalLogicalHeight)
+    end
 
     if not frame.border then
         frame.border = CreateFrame('Frame', nil, frame)
@@ -584,12 +823,13 @@ function display:AcquireProgressBar(parent, width, indent, isRightAlign, db)
     end
     frame.border:SetParent(frame)
     frame.border:ClearAllPoints()
+    local scale = self.layoutScale or EXUI:GetLayoutScale(frame)
     if isRightAlign then
-        EXUI:SetPoint(frame.border, 'TOPLEFT', frame, 'TOPLEFT', 0, 0)
-        EXUI:SetPoint(frame.border, 'BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -indent, 0)
+        EXUI:SetPointWithScale(frame.border, scale, 'TOPLEFT', frame, 'TOPLEFT', 0, 0)
+        EXUI:SetPointWithScale(frame.border, scale, 'BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -indent, 0)
     else
-        EXUI:SetPoint(frame.border, 'TOPLEFT', frame, 'TOPLEFT', indent, 0)
-        EXUI:SetPoint(frame.border, 'BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
+        EXUI:SetPointWithScale(frame.border, scale, 'TOPLEFT', frame, 'TOPLEFT', indent, 0)
+        EXUI:SetPointWithScale(frame.border, scale, 'BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
     end
 
     local bg = settings.backgroundColor
@@ -623,7 +863,7 @@ function display:AcquireProgressBar(parent, width, indent, isRightAlign, db)
     frame.label:SetParent(frame.bar)
     frame.label:ClearAllPoints()
     local align = self:GetTextAlign(db)
-    local labelPad = EXUI:ScalePixel(4, frame.border)
+    local labelPad = self:LayoutScalePixel(4)
     frame.label:SetJustifyH(align)
     frame.label:SetPoint('TOP', frame.bar, 'TOP', 0, 0)
     frame.label:SetPoint('BOTTOM', frame.bar, 'BOTTOM', 0, 0)
@@ -650,9 +890,9 @@ end
 function display:AppendBlockRow(frame, element, blockHeight, spacing, db)
     element:ClearAllPoints()
     local yOffset = blockHeight + spacing.lineSpacing
-    EXUI:SetPoint(element, 'TOPLEFT', frame, 'TOPLEFT', 0, -yOffset)
-    EXUI:SetPoint(element, 'TOPRIGHT', frame, 'TOPRIGHT', 0, -yOffset)
-    EXUI:SnapFrameToPixels(element)
+    local scale = self.layoutScale or EXUI:GetLayoutScale(frame)
+    EXUI:SetPointWithScale(element, scale, 'TOPLEFT', frame, 'TOPLEFT', 0, -yOffset)
+    EXUI:SetPointWithScale(element, scale, 'TOPRIGHT', frame, 'TOPRIGHT', 0, -yOffset)
 
     if element.border and element.bar and db then
         self:FinalizeProgressBarLayout(element, db)
@@ -662,7 +902,15 @@ function display:AppendBlockRow(frame, element, blockHeight, spacing, db)
 end
 
 function display:FormatColorCode(color)
-    return CreateColor(color.r, color.g, color.b, color.a or 1)
+    self.colorCodeCache = self.colorCodeCache or {}
+    local key = (color.r or 0) .. ',' .. (color.g or 0) .. ',' .. (color.b or 0) .. ',' .. (color.a or 1)
+    local cached = self.colorCodeCache[key]
+    if cached then
+        return cached
+    end
+    cached = CreateColor(color.r, color.g, color.b, color.a or 1)
+    self.colorCodeCache[key] = cached
+    return cached
 end
 
 function display:GetScenarioHeaderTimeRemaining(headerTimer)
@@ -786,6 +1034,9 @@ function display:AppendDelveCurrencies(frame, block, db, blockHeight, blockWidth
             currencyLine:SetHeight(currencyHeight)
             blockHeight = self:AppendBlockRow(frame, currencyLine, blockHeight, spacing)
             self.lineFrames[#self.lineFrames + 1] = currencyLine
+            self:TrackOwnedRow(frame, currencyLine)
+            frame.ownedDelveLines = frame.ownedDelveLines or {}
+            frame.ownedDelveLines[#frame.ownedDelveLines + 1] = currencyLine
         end
     end
 
@@ -849,6 +1100,8 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
         stageLine:SetHeight(stageHeight)
         blockHeight = self:AppendBlockRow(frame, stageLine, blockHeight, spacing)
         self.lineFrames[#self.lineFrames + 1] = stageLine
+        self:TrackOwnedRow(frame, stageLine)
+        frame.ownedStageLine = stageLine
 
         if hasTimer and headerTimer and headerTimer.widgetID then
             frame.scenarioHeaderTimer = {
@@ -892,6 +1145,8 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
         descLine:SetHeight(descHeight)
         blockHeight = self:AppendBlockRow(frame, descLine, blockHeight, spacing)
         self.lineFrames[#self.lineFrames + 1] = descLine
+        self:TrackOwnedRow(frame, descLine)
+        frame.ownedDescLine = descLine
     end
 
     if (showStage or hasTimer) and stage and stage.weightedProgress ~= nil then
@@ -899,6 +1154,8 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
         self:SetProgressBarPercent(progressFrame, stage.weightedProgress)
         blockHeight = self:AppendBlockRow(frame, progressFrame, blockHeight, spacing, db)
         self.progressBarFrames[#self.progressBarFrames + 1] = progressFrame
+        self:TrackOwnedRow(frame, progressFrame)
+        frame.ownedStageProgressBar = progressFrame
     end
 
     return blockHeight
@@ -918,7 +1175,7 @@ function display:UpdateScenarioHeaderTimers()
     end
 
     if needsRebuild then
-        self:RequestUpdate()
+        self:RequestUpdate('SCENARIO_UPDATE')
     end
 end
 
@@ -1046,6 +1303,8 @@ function display:AppendChallengeModeSection(frame, block, db, blockHeight, block
     levelLine:SetHeight(levelHeight)
     blockHeight = self:AppendBlockRow(frame, levelLine, blockHeight, spacing)
     self.lineFrames[#self.lineFrames + 1] = levelLine
+    self:TrackOwnedRow(frame, levelLine)
+    frame.challengeLevelLine = levelLine
 
     local progressFrame
     if challengeMode.timeLimit and challengeMode.timeLimit > 0 then
@@ -1056,6 +1315,7 @@ function display:AppendChallengeModeSection(frame, block, db, blockHeight, block
         self:UpdateChallengeModeTimerLabel(progressFrame, displayTime, db)
         blockHeight = self:AppendBlockRow(frame, progressFrame, blockHeight, spacing, db)
         self.progressBarFrames[#self.progressBarFrames + 1] = progressFrame
+        self:TrackOwnedRow(frame, progressFrame)
     end
 
     frame.challengeModeTimer = {
@@ -1245,6 +1505,7 @@ function display:CreateMainFrame()
 
     self:BindScrollWheel(frame)
     self:BindScrollWheel(frame.scroll)
+    EXUI:RegisterSnapFrame(frame)
 
     self.frame = frame
     return frame
@@ -1541,19 +1802,23 @@ function display:MeasureFontString(fontString, fallbackHeight, textWidth, fontFl
     if not height or height <= 0 then
         height = fallbackHeight
     end
-    local padding = EXUI:ScalePixel(1, self.frame or fontString)
+    local padding = self:LayoutScalePixel(1)
     if fontFlag and fontFlag:find('OUTLINE', 1, true) then
-        padding = padding + EXUI:ScalePixel(1, self.frame or fontString)
+        padding = padding + self:LayoutScalePixel(1)
     end
     return height + padding
 end
 
 function display:GetCategoryHeaderLineHeight(db)
-    if not db.showCategoryHeaderLine then
-        return 0
+    if self.passHeaderLineHeight ~= nil then
+        return self.passHeaderLineHeight
     end
-    local thickness = db.categoryHeaderLineThickness or 1
-    return EXUI:ScalePixel(thickness, self.frame or UIParent)
+    local height = 0
+    if db.showCategoryHeaderLine then
+        height = self:LayoutScalePixel(db.categoryHeaderLineThickness or 1)
+    end
+    self.passHeaderLineHeight = height
+    return height
 end
 
 function display:ApplyCategoryHeaderLine(frame, db)
@@ -1590,6 +1855,8 @@ function display:CreateCategoryFrame(parent, category, db, categoryWidth)
     frame:SetParent(parent)
     frame:Show()
     frame.categoryId = category.id
+    frame.ownedBlockFrames = frame.ownedBlockFrames or {}
+    wipe(frame.ownedBlockFrames)
     frame:SetWidth(categoryWidth)
 
     frame.header = frame.header or CreateFrame('Frame', nil, frame, 'BackdropTemplate')
@@ -1703,6 +1970,18 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
     frame:SetParent(parent)
     frame:Show()
     frame.blockData = block
+    frame.ownedRows = frame.ownedRows or {}
+    wipe(frame.ownedRows)
+    frame.ownedTextLines = frame.ownedTextLines or {}
+    wipe(frame.ownedTextLines)
+    frame.ownedProgressBars = frame.ownedProgressBars or {}
+    wipe(frame.ownedProgressBars)
+    frame.ownedDelveLines = frame.ownedDelveLines or {}
+    wipe(frame.ownedDelveLines)
+    frame.ownedStageLine = nil
+    frame.ownedDescLine = nil
+    frame.ownedStageProgressBar = nil
+    frame.challengeLevelLine = nil
     frame:SetWidth(blockWidth)
 
     local align = self:GetTextAlign(db)
@@ -1816,6 +2095,8 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
             lineFrame:SetHeight(lineHeight)
             blockHeight = self:AppendBlockRow(frame, lineFrame, blockHeight, spacing)
             self.lineFrames[#self.lineFrames + 1] = lineFrame
+            self:TrackOwnedRow(frame, lineFrame)
+            frame.ownedTextLines[#frame.ownedTextLines + 1] = lineFrame
         end
 
         if objective.showProgressBar then
@@ -1827,6 +2108,8 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
             self:SetProgressBarPercent(progressFrame, percent or 0)
             blockHeight = self:AppendBlockRow(frame, progressFrame, blockHeight, spacing, db)
             self.progressBarFrames[#self.progressBarFrames + 1] = progressFrame
+            self:TrackOwnedRow(frame, progressFrame)
+            frame.ownedProgressBars[#frame.ownedProgressBars + 1] = progressFrame
         end
     end
 
@@ -1872,6 +2155,7 @@ function display:LayoutCategories(categories, db)
                 blockFrame:ClearAllPoints()
                 blockFrame:SetPoint('TOPLEFT', blocksContainer, 'TOPLEFT', 0, -blockYOffset)
                 blockFrame:SetPoint('TOPRIGHT', blocksContainer, 'TOPRIGHT', 0, -blockYOffset)
+                categoryFrame.ownedBlockFrames[#categoryFrame.ownedBlockFrames + 1] = blockFrame
                 blockYOffset = blockYOffset + blockHeight + spacing.fromBlockOffsetY * -1
             end
 
@@ -1886,6 +2170,302 @@ function display:LayoutCategories(categories, db)
     content:SetHeight(math.max(1, yOffset))
     local maxScroll = self:GetMaxScroll()
     self:SetScrollPosition(math.min(previousScroll, maxScroll), true)
+    EXUI:SnapFrameToPixels(self.frame)
+end
+
+function display:PatchBlockFrame(frame, block, db, blockWidth)
+    if not frame or not frame.ownedRows then
+        return nil
+    end
+
+    frame.blockData = block
+    local spacing = self:GetSpacing(db)
+    local poiOffset = self:AttachQuestPOI(frame, block, db)
+    local poiEdgeInset = frame.poiButton and self.POI_EDGE_INSET or 0
+    local poiGutter = poiOffset + poiEdgeInset
+    local contentPad = block.isAutoQuestPopUp and self.AUTO_QUEST_POPUP_PAD or 0
+    local titleWidth = blockWidth - poiGutter - contentPad * 2
+    local lineIndent = poiGutter + contentPad
+    local lineTextWidth = blockWidth - lineIndent - contentPad
+
+    if block.isAutoQuestPopUp then
+        self:ApplyAutoQuestPopUpStyle(frame, false)
+    else
+        self:ClearAutoQuestPopUpStyle(frame)
+    end
+
+    local fontPath, fontSize, fontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local lineFontPath, lineFontSize, lineFontFlag = self:GetFont(db.lineFont, db.lineFontSize, db.lineFontFlag)
+    local headerFontPath, headerFontSize, headerFontFlag = fontPath, fontSize, fontFlag
+
+    if frame.title then
+        frame.title:SetFont(fontPath, fontSize, fontFlag)
+        frame.title:SetText(block.title or '')
+        self:SetBlockTitleColor(frame, block, db)
+    end
+
+    if frame.challengeLevelLine and block.challengeMode then
+        frame.challengeLevelLine.text:SetText(block.challengeMode.levelText or '')
+        local levelColor = self:GetColor(db, 'BlockHeader')
+        frame.challengeLevelLine.text:SetTextColor(levelColor.r, levelColor.g, levelColor.b)
+    end
+
+    if frame.challengeModeTimer and frame.challengeModeTimer.progressFrame and block.challengeMode then
+        frame.challengeModeTimer.timerID = block.challengeMode.timerID
+        frame.challengeModeTimer.timeLimit = block.challengeMode.timeLimit
+        local timeLeft = self:GetChallengeModeTimeLeft(block.challengeMode)
+        local displayTime = timeLeft or block.challengeMode.timeLimit or 0
+        if block.challengeMode.timeLimit and block.challengeMode.timeLimit > 0 then
+            frame.challengeModeTimer.progressFrame.bar:SetValue((displayTime / block.challengeMode.timeLimit) * 100)
+        end
+        self:UpdateChallengeModeTimerLabel(frame.challengeModeTimer.progressFrame, displayTime, db)
+    end
+
+    local stage = block.stage
+    local delve = block.delve
+    local showStage = stage and stage.total and stage.total > 1
+    local headerTimer = stage and stage.headerTimer
+    local timeRemaining = headerTimer and (headerTimer.timeRemaining or self:GetScenarioHeaderTimeRemaining(headerTimer))
+    local stageLabel
+    if showStage then
+        stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
+    end
+    local tierText = delve and delve.tierText or nil
+    if frame.ownedStageLine then
+        self:SetScenarioStageLineText(frame.ownedStageLine, stageLabel, timeRemaining, db, tierText)
+        if headerTimer and headerTimer.widgetID then
+            frame.scenarioHeaderTimer = frame.scenarioHeaderTimer or {}
+            frame.scenarioHeaderTimer.widgetID = headerTimer.widgetID
+            frame.scenarioHeaderTimer.stageLabel = stageLabel
+            frame.scenarioHeaderTimer.tierText = tierText
+            frame.scenarioHeaderTimer.stageLine = frame.ownedStageLine
+        end
+    end
+
+    if frame.ownedDelveLines then
+        local iconSize = math.max(12, headerFontSize)
+        local lineIndex = 1
+        for _, currency in ipairs((delve and delve.currencies) or {}) do
+            local currencyText = self:FormatDelveCurrencyText(currency, iconSize)
+            if currencyText then
+                local currencyLine = frame.ownedDelveLines[lineIndex]
+                if not currencyLine then
+                    return nil
+                end
+                currencyLine.text:SetText(currencyText)
+                local colorKey = currency.isCurrencyMaxed and 'Failed' or 'BlockHeader'
+                local currencyColor = self:GetColor(db, colorKey)
+                currencyLine.text:SetTextColor(currencyColor.r, currencyColor.g, currencyColor.b)
+                lineIndex = lineIndex + 1
+            end
+        end
+    end
+
+    if frame.ownedDescLine and stage then
+        frame.ownedDescLine.text:SetText(stage.description or '')
+        local descColor = self:GetColor(db, 'Normal')
+        frame.ownedDescLine.text:SetTextColor(descColor.r, descColor.g, descColor.b)
+    end
+
+    if frame.ownedStageProgressBar and stage and stage.weightedProgress ~= nil then
+        self:SetProgressBarPercent(frame.ownedStageProgressBar, stage.weightedProgress)
+    end
+
+    local textIndex, barIndex = 1, 1
+    local questID = block.untrackId or block.id
+    for _, objective in ipairs(block.objectives or {}) do
+        if objective.text and objective.text ~= '' then
+            local lineFrame = frame.ownedTextLines[textIndex]
+            if not lineFrame then
+                return nil
+            end
+            lineFrame.text:SetFont(lineFontPath, lineFontSize, lineFontFlag)
+            lineFrame.text:SetText(objective.text)
+            local colorKey = objective.colorKey or (objective.failed and 'Failed' or (objective.finished and 'Complete' or 'Normal'))
+            local color = self:GetColor(db, colorKey)
+            lineFrame.text:SetTextColor(color.r, color.g, color.b)
+            textIndex = textIndex + 1
+        end
+        if objective.showProgressBar then
+            local progressFrame = frame.ownedProgressBars[barIndex]
+            if not progressFrame then
+                return nil
+            end
+            local percent = objective.progressPercent
+            if percent == nil and questID then
+                percent = self:GetQuestProgressPercent(questID)
+            end
+            self:SetProgressBarPercent(progressFrame, percent or 0)
+            barIndex = barIndex + 1
+        end
+    end
+
+    local blockHeight = contentPad + self:MeasureFontString(frame.title, fontSize, titleWidth, fontFlag)
+    for _, child in ipairs(frame.ownedRows) do
+        if child.text then
+            local useHeader = child == frame.ownedStageLine or child == frame.challengeLevelLine
+            if not useHeader and frame.ownedDelveLines then
+                for i = 1, #frame.ownedDelveLines do
+                    if frame.ownedDelveLines[i] == child then
+                        useHeader = true
+                        break
+                    end
+                end
+            end
+            local usedFontSize = useHeader and headerFontSize or lineFontSize
+            local usedFlag = useHeader and headerFontFlag or lineFontFlag
+            child:SetHeight(self:MeasureFontString(child.text, usedFontSize, lineTextWidth, usedFlag))
+        end
+        blockHeight = self:AppendBlockRow(frame, child, blockHeight, spacing, db)
+    end
+
+    frame:SetHeight(blockHeight + contentPad)
+    return blockHeight + contentPad
+end
+
+function display:TryPatchLayout(categories, db)
+    if not self.lastStructureKey or self.lastStructureKey ~= self:GetStructureKey(categories, db) then
+        return false
+    end
+    if #self.categoryFrames ~= #categories then
+        return false
+    end
+
+    local spacing = self:GetSpacing(db)
+    local content = self.frame.content
+    local scroll = self.frame.scroll
+    local contentWidth, categoryWidth, blockWidth, leftInset = self:GetLayoutWidths(db)
+    local previousScroll = scroll:GetVerticalScroll()
+    content:SetWidth(contentWidth)
+
+    wipe(self.challengeModeBlockFrames)
+    wipe(self.scenarioHeaderTimerFrames)
+
+    local yOffset = 0
+    for categoryIndex, category in ipairs(categories) do
+        local categoryFrame = self.categoryFrames[categoryIndex]
+        if not categoryFrame or categoryFrame.categoryId ~= category.id then
+            return false
+        end
+        if categoryFrame.title then
+            categoryFrame.title:SetText(category.label)
+        end
+        categoryFrame:SetWidth(categoryWidth)
+        categoryFrame:ClearAllPoints()
+        categoryFrame:SetPoint('TOPLEFT', content, 'TOPLEFT', leftInset, -yOffset)
+
+        local collapsed = self:IsCategoryCollapsed(category.id, db)
+        local headerHeight = categoryFrame.categoryHeaderHeight or spacing.headerHeight
+        local lineHeight = categoryFrame.categoryHeaderLineHeight or self:GetCategoryHeaderLineHeight(db)
+        local categoryHeight = headerHeight + lineHeight
+        if collapsed then
+            categoryFrame.blocksContainer:Hide()
+        else
+            categoryFrame.blocksContainer:Show()
+            local ownedBlocks = categoryFrame.ownedBlockFrames
+            if not ownedBlocks or #ownedBlocks ~= #category.blocks then
+                return false
+            end
+            local blocksContainer = categoryFrame.blocksContainer
+            blocksContainer:SetWidth(blockWidth)
+            local blockYOffset = 0
+            for blockIndex, block in ipairs(category.blocks) do
+                local blockFrame = ownedBlocks[blockIndex]
+                local blockHeight = self:PatchBlockFrame(blockFrame, block, db, blockWidth)
+                if not blockHeight then
+                    return false
+                end
+                blockFrame:ClearAllPoints()
+                blockFrame:SetPoint('TOPLEFT', blocksContainer, 'TOPLEFT', 0, -blockYOffset)
+                blockFrame:SetPoint('TOPRIGHT', blocksContainer, 'TOPRIGHT', 0, -blockYOffset)
+                if blockFrame.challengeModeTimer then
+                    self.challengeModeBlockFrames[#self.challengeModeBlockFrames + 1] = blockFrame
+                end
+                if blockFrame.scenarioHeaderTimer and blockFrame.scenarioHeaderTimer.widgetID then
+                    self.scenarioHeaderTimerFrames[#self.scenarioHeaderTimerFrames + 1] = blockFrame.scenarioHeaderTimer
+                end
+                blockYOffset = blockYOffset + blockHeight + spacing.fromBlockOffsetY * -1
+            end
+            blocksContainer:SetHeight(math.max(1, blockYOffset))
+            categoryHeight = headerHeight + lineHeight + spacing.fromHeaderOffsetY * -1 + blockYOffset
+        end
+
+        categoryFrame:SetHeight(categoryHeight)
+        yOffset = yOffset + categoryHeight + self:GetCategorySpacing(db)
+    end
+
+    content:SetHeight(math.max(1, yOffset))
+    local maxScroll = self:GetMaxScroll()
+    self:SetScrollPosition(math.min(previousScroll, maxScroll), true)
+    return true
+end
+
+function display:TryUpdateDelveHeaderInPlace()
+    if not self.frame or not self.frame:IsShown() then
+        return false
+    end
+
+    local db = objectiveTracker.Data:GetDB()
+    for _, blockFrame in ipairs(self.blockFrames) do
+        local block = blockFrame.blockData
+        if block and block.categoryId == self.SCENARIO_CATEGORY_ID then
+            local widgetID = block.delve and block.delve.widgetID
+            if not widgetID then
+                return false
+            end
+
+            local delve = trackerData:GetScenarioHeaderDelvesInfoByWidgetID(widgetID)
+            if not delve then
+                return false
+            end
+
+            local newCount = 0
+            for _, currency in ipairs(delve.currencies or {}) do
+                if self:FormatDelveCurrencyText(currency) then
+                    newCount = newCount + 1
+                end
+            end
+            local oldCount = blockFrame.ownedDelveLines and #blockFrame.ownedDelveLines or 0
+            if newCount ~= oldCount then
+                return false
+            end
+
+            block.delve = delve
+            local headerFontSize = db.blockHeaderFontSize or 12
+            local iconSize = math.max(12, headerFontSize)
+            local lineIndex = 1
+            for _, currency in ipairs(delve.currencies or {}) do
+                local currencyText = self:FormatDelveCurrencyText(currency, iconSize)
+                if currencyText then
+                    local currencyLine = blockFrame.ownedDelveLines[lineIndex]
+                    currencyLine.text:SetText(currencyText)
+                    local colorKey = currency.isCurrencyMaxed and 'Failed' or 'BlockHeader'
+                    local currencyColor = self:GetColor(db, colorKey)
+                    currencyLine.text:SetTextColor(currencyColor.r, currencyColor.g, currencyColor.b)
+                    lineIndex = lineIndex + 1
+                end
+            end
+
+            if blockFrame.ownedStageLine then
+                local stage = block.stage
+                local showStage = stage and stage.total and stage.total > 1
+                local headerTimer = stage and stage.headerTimer
+                local timeRemaining = headerTimer and self:GetScenarioHeaderTimeRemaining(headerTimer)
+                local stageLabel
+                if showStage then
+                    stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
+                end
+                self:SetScenarioStageLineText(blockFrame.ownedStageLine, stageLabel, timeRemaining, db, delve.tierText)
+                if blockFrame.scenarioHeaderTimer then
+                    blockFrame.scenarioHeaderTimer.tierText = delve.tierText
+                    blockFrame.scenarioHeaderTimer.stageLabel = stageLabel
+                end
+            end
+            return true
+        end
+    end
+
+    return false
 end
 
 function display:ApplyFrameSettings(db)
@@ -1972,23 +2552,20 @@ function display:FilterCategoriesForEncounter(categories, db)
         return categories
     end
 
-    for _, entry in ipairs(defaults.MODULE_ENTRIES) do
-        if entry.id == self.SCENARIO_CATEGORY_ID then
-            local blocks = trackerData:CollectScenarioBlocks()
-            if #blocks > 0 then
-                return {
-                    {
-                        id = entry.id,
-                        label = trackerData:GetCategoryTitle(entry, db),
-                        blocks = blocks,
-                    },
-                }
-            end
-            return {}
-        end
+    local blocks = trackerData:GetCachedScenarioBlocks()
+    if blocks and #blocks > 0 then
+        local entry = defaults:GetModuleEntry(self.SCENARIO_CATEGORY_ID)
+        self.encounterCategoryScratch = self.encounterCategoryScratch or { {} }
+        local filtered = self.encounterCategoryScratch
+        local category = filtered[1]
+        category.id = self.SCENARIO_CATEGORY_ID
+        category.label = entry and trackerData:GetCategoryTitle(entry, db) or (categories[1] and categories[1].label) or 'Scenario'
+        category.blocks = blocks
+        filtered[2] = nil
+        return filtered
     end
 
-    return {}
+    return self.emptyCategories
 end
 
 function display:IsSuppressedByMythicPlusTimer()
@@ -2028,11 +2605,11 @@ function display:CancelPendingUpdate()
     self.updateScheduled = false
 end
 
-function display:RequestUpdate()
+function display:RequestUpdate(event)
     if not objectiveTracker.enabled then
         return
     end
-    trackerData:InvalidateCategoryCache()
+    trackerData:InvalidateForEvent(event)
     if self.updateScheduled then
         return
     end
@@ -2051,8 +2628,8 @@ function display:Update()
         return
     end
 
-    trackerData:InvalidateCategoryCache()
     local db = objectiveTracker.Data:GetDB()
+    self:BeginPassCaches(db)
 
     if self:IsSuppressedByMythicPlusTimer() then
         self.frame:Hide()
@@ -2069,6 +2646,7 @@ function display:Update()
     end
 
     self:ApplyFrameSettings(db)
+    EXUI:SnapFrameToPixels(self.frame)
 
     local categories = trackerData:GetCategories(db)
     categories = self:FilterCategoriesForEncounter(categories, db)
@@ -2088,7 +2666,31 @@ function display:Update()
     end
 
     self.frame:Show()
+
+    local contentSignature = self:GetContentSignature(categories)
+    local settingsSignature = self:GetSettingsSignature(db)
+    local structureKey = self:GetStructureKey(categories, db)
+    if contentSignature == self.lastContentSignature
+        and settingsSignature == self.lastSettingsSignature
+        and structureKey == self.lastStructureKey then
+        self:StartChallengeModeTimerWatch()
+        self:StartScenarioHeaderTimerWatch()
+        return
+    end
+
+    if settingsSignature == self.lastSettingsSignature and self:TryPatchLayout(categories, db) then
+        self.lastContentSignature = contentSignature
+        self.lastStructureKey = structureKey
+        self.lastSettingsSignature = settingsSignature
+        self:StartChallengeModeTimerWatch()
+        self:StartScenarioHeaderTimerWatch()
+        return
+    end
+
     self:LayoutCategories(categories, db)
+    self.lastContentSignature = contentSignature
+    self.lastStructureKey = structureKey
+    self.lastSettingsSignature = settingsSignature
     self:StartChallengeModeTimerWatch()
     self:StartScenarioHeaderTimerWatch()
 end
@@ -2189,8 +2791,11 @@ function display:RegisterEvents()
                 or widgetInfo.widgetType ~= Enum.UIWidgetVisualizationType.ScenarioHeaderDelves then
                 return
             end
+            if display:TryUpdateDelveHeaderInPlace() then
+                return
+            end
         end
-        display:RequestUpdate()
+        display:RequestUpdate(event)
     end)
 
     if not self.autoQuestPopUpHooked and QuestObjectiveTracker and QuestObjectiveTracker.AddAutoQuestPopUp then

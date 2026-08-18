@@ -36,12 +36,20 @@ local function fromPhysicalPixels(pixels, scale)
     return pixels * PixelUtil.GetPixelToUIUnitFactor() / scale
 end
 
+---Snap a UI-unit value to the nearest physical pixel at a precomputed layout scale.
+---@param value number
+---@param scale number
+---@param minPixels? number
+function EXUI:ScalePixelWithScale(value, scale, minPixels)
+    return PixelUtil.GetNearestPixelSize(value, scale, minPixels)
+end
+
 ---Snap a UI-unit value to the nearest physical pixel at the given layout scale.
 ---@param value number
 ---@param region? Frame
 ---@param minPixels? number
 function EXUI:ScalePixel(value, region, minPixels)
-    return PixelUtil.GetNearestPixelSize(value, self:GetLayoutScale(region), minPixels)
+    return self:ScalePixelWithScale(value, self:GetLayoutScale(region), minPixels)
 end
 
 ---Convert a desired physical pixel count into exact UI units.
@@ -180,10 +188,14 @@ function EXUI:SetWidth(frame, width)
 end
 
 function EXUI:SetPoint(frame, point, arg2, arg3, arg4, arg5)
+    self:SetPointWithScale(frame, self:GetLayoutScale(frame), point, arg2, arg3, arg4, arg5)
+end
+
+function EXUI:SetPointWithScale(frame, scale, point, arg2, arg3, arg4, arg5)
     if (type(arg2) == 'number') then
-        frame:SetPoint(point, self:ScalePixel(arg2 or 0, frame), self:ScalePixel(arg3 or 0, frame))
+        frame:SetPoint(point, self:ScalePixelWithScale(arg2 or 0, scale), self:ScalePixelWithScale(arg3 or 0, scale))
     else
-        frame:SetPoint(point, arg2, arg3, self:ScalePixel(arg4 or 0, frame), self:ScalePixel(arg5 or 0, frame))
+        frame:SetPoint(point, arg2, arg3, self:ScalePixelWithScale(arg4 or 0, scale), self:ScalePixelWithScale(arg5 or 0, scale))
     end
 end
 

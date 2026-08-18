@@ -7,6 +7,75 @@ local defaults = EXUI:GetModule('objective-tracker-defaults')
 ---@class EXUIObjectiveTrackerData
 local trackerData = EXUI:GetModule('objective-tracker-data')
 
+local tablePool = {}
+
+local function acquireTable()
+    local item = tablePool[#tablePool]
+    if item then
+        tablePool[#tablePool] = nil
+        return item
+    end
+    return {}
+end
+
+local function releaseTable(item)
+    if not item then
+        return
+    end
+    wipe(item)
+    tablePool[#tablePool + 1] = item
+end
+
+local function recycleObjectives(objectives)
+    if not objectives then
+        return
+    end
+    for i = 1, #objectives do
+        releaseTable(objectives[i])
+        objectives[i] = nil
+    end
+    releaseTable(objectives)
+end
+
+local function recycleCurrencies(currencies)
+    if not currencies then
+        return
+    end
+    for i = 1, #currencies do
+        releaseTable(currencies[i])
+        currencies[i] = nil
+    end
+    releaseTable(currencies)
+end
+
+local function recycleCategoryBlocks(blocks)
+    if not blocks then
+        return
+    end
+    for i = 1, #blocks do
+        local block = blocks[i]
+        if block and not block.isAutoQuestPopUp then
+            recycleObjectives(block.objectives)
+            block.objectives = nil
+            if block.delve then
+                recycleCurrencies(block.delve.currencies)
+                releaseTable(block.delve)
+                block.delve = nil
+            end
+            if block.stage then
+                if block.stage.headerTimer then
+                    releaseTable(block.stage.headerTimer)
+                    block.stage.headerTimer = nil
+                end
+                releaseTable(block.stage)
+                block.stage = nil
+            end
+        end
+        blocks[i] = nil
+    end
+    releaseTable(blocks)
+end
+
 local function addBlock(blocks, block)
     blocks[#blocks + 1] = block
 end
@@ -14,17 +83,17 @@ end
 local function addQuestObjectiveEntry(objectives, text, objectiveType, finished)
     local showProgressBar = objectiveType == 'progressbar' and not finished
     if (text and text ~= '') or showProgressBar then
-        objectives[#objectives + 1] = {
-            text = (text and text ~= '') and text or nil,
-            finished = finished,
-            objectiveType = objectiveType,
-            showProgressBar = showProgressBar,
-        }
+        local entry = acquireTable()
+        entry.text = (text and text ~= '') and text or nil
+        entry.finished = finished
+        entry.objectiveType = objectiveType
+        entry.showProgressBar = showProgressBar
+        objectives[#objectives + 1] = entry
     end
 end
 
 local function getQuestObjectives(questID)
-    local objectives = {}
+    local objectives = acquireTable()
     local questLogIndex = C_QuestLog.GetLogIndexForQuestID(questID)
     if not questLogIndex then
         return objectives
@@ -37,10 +106,10 @@ local function getQuestObjectives(questID)
     end
 
     if #objectives == 0 and C_QuestLog.IsComplete(questID) then
-        objectives[1] = {
-            text = QUEST_WATCH_QUEST_READY or 'Ready for turn-in',
-            finished = true,
-        }
+        local entry = acquireTable()
+        entry.text = QUEST_WATCH_QUEST_READY or 'Ready for turn-in'
+        entry.finished = true
+        objectives[1] = entry
     end
 
     return objectives
@@ -96,7 +165,7 @@ local function getQuestTitle(questID, taskName)
 end
 
 local function getTaskQuestObjectives(questID, numObjectives)
-    local objectives = {}
+    local objectives = acquireTable()
     if numObjectives and numObjectives > 0 and GetQuestObjectiveInfo then
         for objectiveIndex = 1, numObjectives do
             local text, objectiveType, finished = GetQuestObjectiveInfo(questID, objectiveIndex, false)
@@ -104,6 +173,7 @@ local function getTaskQuestObjectives(questID, numObjectives)
         end
     end
     if #objectives == 0 then
+        recycleObjectives(objectives)
         objectives = getQuestObjectives(questID)
     end
     return objectives
@@ -135,7 +205,7 @@ local function getTaskQuestObjectiveCount(questID, knownCount)
 end
 
 local function collectAutomaticWorldQuestCandidates()
-    local candidates = {}
+    local candidates = acquireTable()
 
     if not GetTasksTable then
         return candidates
@@ -333,10 +403,16 @@ function trackerData:CollectQuestBlocks(categoryId, filterFn)
             local isAutoComplete = isQuestAutoComplete(questID)
             local objectives = getQuestObjectives(questID)
             if isComplete and isAutoComplete then
-                objectives = {
-                    { text = QUEST_WATCH_QUEST_COMPLETE or 'Quest complete', finished = true },
-                    { text = QUEST_WATCH_CLICK_TO_COMPLETE or 'Click to complete', colorKey = 'NormalHighlight' },
-                }
+                recycleObjectives(objectives)
+                objectives = acquireTable()
+                local completeEntry = acquireTable()
+                completeEntry.text = QUEST_WATCH_QUEST_COMPLETE or 'Quest complete'
+                completeEntry.finished = true
+                objectives[1] = completeEntry
+                local clickEntry = acquireTable()
+                clickEntry.text = QUEST_WATCH_CLICK_TO_COMPLETE or 'Click to complete'
+                clickEntry.colorKey = 'NormalHighlight'
+                objectives[2] = clickEntry
             end
             addBlock(blocks, {
                 id = questID,
@@ -736,7 +812,7 @@ function trackerData:FormatDelveTierText(tierText, tier)
 end
 
 function trackerData:CollectDelveCurrencies(info)
-    local currencies = {}
+    local currencies = acquireTable()
     if not info or not info.currencies then
         return currencies
     end
@@ -746,13 +822,13 @@ function trackerData:CollectDelveCurrencies(info)
             or (currencyInfo.leadingText and currencyInfo.leadingText ~= '')
         local hasIcon = currencyInfo.iconFileID and currencyInfo.iconFileID ~= 0
         if hasText or hasIcon then
-            currencies[#currencies + 1] = {
-                iconFileID = currencyInfo.iconFileID,
-                text = currencyInfo.text,
-                leadingText = currencyInfo.leadingText,
-                tooltip = currencyInfo.tooltip,
-                isCurrencyMaxed = currencyInfo.isCurrencyMaxed,
-            }
+            local currency = acquireTable()
+            currency.iconFileID = currencyInfo.iconFileID
+            currency.text = currencyInfo.text
+            currency.leadingText = currencyInfo.leadingText
+            currency.tooltip = currencyInfo.tooltip
+            currency.isCurrencyMaxed = currencyInfo.isCurrencyMaxed
+            currencies[#currencies + 1] = currency
         end
     end
 
@@ -782,16 +858,45 @@ function trackerData:GetScenarioHeaderDelvesInfo(widgetSetID)
                 local tierText = self:FormatDelveTierText(info.tierText)
                 local currencies = self:CollectDelveCurrencies(info)
                 if tierText or #currencies > 0 then
-                    return {
-                        widgetID = widget.widgetID,
-                        tierText = tierText,
-                        currencies = currencies,
-                    }
+                    local delve = acquireTable()
+                    delve.widgetID = widget.widgetID
+                    delve.tierText = tierText
+                    delve.currencies = currencies
+                    return delve
                 end
+                recycleCurrencies(currencies)
             end
         end
     end
 
+    return nil
+end
+
+function trackerData:GetScenarioHeaderDelvesInfoByWidgetID(widgetID)
+    if not widgetID
+        or not C_UIWidgetManager
+        or not C_UIWidgetManager.GetScenarioHeaderDelvesWidgetVisualizationInfo
+        or not Enum
+        or not Enum.WidgetShownState then
+        return nil
+    end
+
+    local info = C_UIWidgetManager.GetScenarioHeaderDelvesWidgetVisualizationInfo(widgetID)
+    if not info or info.shownState == Enum.WidgetShownState.Hidden then
+        return nil
+    end
+
+    local tierText = self:FormatDelveTierText(info.tierText)
+    local currencies = self:CollectDelveCurrencies(info)
+    if tierText or #currencies > 0 then
+        local delve = acquireTable()
+        delve.widgetID = widgetID
+        delve.tierText = tierText
+        delve.currencies = currencies
+        return delve
+    end
+
+    recycleCurrencies(currencies)
     return nil
 end
 
@@ -904,6 +1009,7 @@ function trackerData:CollectScenarioBlocks()
         categoryId = 'scenario',
         title = name,
         canUntrack = false,
+        widgetSetID = widgetSetID,
         stage = stage,
         delve = delve,
         challengeMode = self:GetChallengeModeInfo(),
@@ -922,8 +1028,9 @@ end
 function trackerData:CollectWorldBlocks()
     local blocks = {}
     local seen = {}
+    local candidates = collectAutomaticWorldQuestCandidates()
 
-    for _, questID in ipairs(collectAutomaticWorldQuestCandidates()) do
+    for _, questID in ipairs(candidates) do
         if not isQuestWatched(questID) then
             local block = makeWorldQuestBlock(questID, false)
             if block and not seen[questID] then
@@ -932,6 +1039,7 @@ function trackerData:CollectWorldBlocks()
             end
         end
     end
+    releaseTable(candidates)
 
     local trackedQuestIDs = {}
     if C_QuestLog.GetNumWorldQuestWatches then
@@ -1008,12 +1116,100 @@ function trackerData:ShouldShowCategory(entry, db)
     return true
 end
 
+local QUEST_COLLECTORS = { 'campaign', 'quests', 'world', 'bonus' }
+local EVENT_COLLECTORS = {
+    QUEST_LOG_UPDATE = QUEST_COLLECTORS,
+    QUEST_WATCH_LIST_CHANGED = QUEST_COLLECTORS,
+    QUEST_ACCEPTED = QUEST_COLLECTORS,
+    QUEST_AUTOCOMPLETE = QUEST_COLLECTORS,
+    QUEST_TURNED_IN = QUEST_COLLECTORS,
+    QUEST_REMOVED = QUEST_COLLECTORS,
+    QUEST_POI_UPDATE = QUEST_COLLECTORS,
+    TASK_PROGRESS_UPDATE = QUEST_COLLECTORS,
+    SUPER_TRACKING_CHANGED = QUEST_COLLECTORS,
+    SUPER_TRACKING_PATH_UPDATED = QUEST_COLLECTORS,
+    CONTENT_TRACKING_UPDATE = { 'achievement', 'adventure' },
+    TRACKED_ACHIEVEMENT_LIST_CHANGED = { 'achievement' },
+    TRACKED_ACHIEVEMENT_UPDATE = { 'achievement' },
+    TRACKED_RECIPE_UPDATE = { 'recipes' },
+    BAG_UPDATE_DELAYED = { 'recipes' },
+    CURRENCY_DISPLAY_UPDATE = { 'recipes', 'scenario' },
+    SCENARIO_UPDATE = { 'scenario' },
+    SCENARIO_CRITERIA_UPDATE = { 'scenario' },
+    UPDATE_UI_WIDGET = { 'scenario' },
+    ACTIVE_DELVE_DATA_UPDATE = { 'scenario' },
+    CHALLENGE_MODE_START = { 'scenario' },
+    CHALLENGE_MODE_COMPLETED = { 'scenario' },
+    CHALLENGE_MODE_RESET = { 'scenario' },
+    WORLD_STATE_TIMER_START = { 'scenario' },
+    WORLD_STATE_TIMER_STOP = { 'scenario' },
+    PERKS_ACTIVITIES_TRACKED_LIST_CHANGED = { 'activities' },
+    PERKS_ACTIVITIES_TRACKED_UPDATED = { 'activities' },
+}
+
 function trackerData:InvalidateCategoryCache()
+    if self.blocksByCategory then
+        for _, blocks in pairs(self.blocksByCategory) do
+            recycleCategoryBlocks(blocks)
+        end
+    end
+    if self.autoQuestPopUpBlocks then
+        for i = 1, #self.autoQuestPopUpBlocks do
+            local block = self.autoQuestPopUpBlocks[i]
+            if block then
+                recycleObjectives(block.objectives)
+                block.objectives = nil
+            end
+        end
+        releaseTable(self.autoQuestPopUpBlocks)
+    end
     self.categoryCacheValid = false
     self.blocksByCategory = nil
     self.autoQuestPopUpBlocks = nil
     self.cachedPresent = nil
     self.cachedPresentCount = 0
+    self.staleCollectors = nil
+    self.cachedCategories = nil
+    self.cachedCategoriesFilter = nil
+    self.cachedCategoriesTitles = nil
+    self.cacheGeneration = (self.cacheGeneration or 0) + 1
+end
+
+function trackerData:InvalidateCollectors(collectorIds)
+    if not collectorIds then
+        self:InvalidateCategoryCache()
+        return
+    end
+
+    self.staleCollectors = self.staleCollectors or {}
+    for _, collectorId in ipairs(collectorIds) do
+        self.staleCollectors[collectorId] = true
+    end
+
+    self.categoryCacheValid = false
+    self.cachedPresent = nil
+    self.cachedPresentCount = 0
+    self.cachedCategories = nil
+end
+
+function trackerData:InvalidateForEvent(event)
+    if not event then
+        self:InvalidateCategoryCache()
+        return
+    end
+
+    local collectors = EVENT_COLLECTORS[event]
+    if collectors then
+        self:InvalidateCollectors(collectors)
+        return
+    end
+
+    if event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then
+        self.cachedCategories = nil
+        return
+    end
+
+    self:InvalidateCategoryCache()
 end
 
 function trackerData:RefreshCategoryCache()
@@ -1021,14 +1217,34 @@ function trackerData:RefreshCategoryCache()
         return
     end
 
-    local blocksByCategory = {}
+    local blocksByCategory = self.blocksByCategory or {}
+    local stale = self.staleCollectors
+    local refreshAll = not stale or not next(stale)
+    local refreshQuests = refreshAll or (stale and (stale.campaign or stale.quests or stale.world or stale.bonus))
+
+    if refreshQuests and self.autoQuestPopUpBlocks then
+        for i = 1, #self.autoQuestPopUpBlocks do
+            local block = self.autoQuestPopUpBlocks[i]
+            if block then
+                recycleObjectives(block.objectives)
+                block.objectives = nil
+            end
+        end
+        releaseTable(self.autoQuestPopUpBlocks)
+        self.autoQuestPopUpBlocks = nil
+    end
+
     local present = {}
     local count = 0
     for _, entry in ipairs(defaults.MODULE_ENTRIES) do
-        local collector = COLLECTORS[entry.id]
-        local blocks = collector and collector(self) or {}
-        blocksByCategory[entry.id] = blocks
-        if #blocks > 0 then
+        local shouldRefresh = refreshAll or (stale and stale[entry.id])
+        if shouldRefresh or not blocksByCategory[entry.id] then
+            recycleCategoryBlocks(blocksByCategory[entry.id])
+            local collector = COLLECTORS[entry.id]
+            blocksByCategory[entry.id] = collector and collector(self) or {}
+        end
+        local blocks = blocksByCategory[entry.id]
+        if blocks and #blocks > 0 then
             present[entry.id] = true
             count = count + 1
         end
@@ -1037,7 +1253,9 @@ function trackerData:RefreshCategoryCache()
     self.blocksByCategory = blocksByCategory
     self.cachedPresent = present
     self.cachedPresentCount = count
+    self.staleCollectors = nil
     self.categoryCacheValid = true
+    self.cacheGeneration = (self.cacheGeneration or 0) + 1
 end
 
 function trackerData:GetPresentCategoryIds()
@@ -1045,9 +1263,32 @@ function trackerData:GetPresentCategoryIds()
     return self.cachedPresent, self.cachedPresentCount
 end
 
+function trackerData:GetCachedScenarioBlocks()
+    self:RefreshCategoryCache()
+    return self.blocksByCategory and self.blocksByCategory.scenario
+end
+
 function trackerData:GetCategories(db)
     self:RefreshCategoryCache()
-    local categories = {}
+    local filter = db.activeFilter
+    local titles = db.categoryTitles
+    if self.cachedCategories
+        and self.cachedCategoriesFilter == filter
+        and self.cachedCategoriesTitles == titles
+        and self.cachedCategoriesGeneration == self.cacheGeneration then
+        for _, category in ipairs(self.cachedCategories) do
+            if category.id == 'scenario' then
+                local entry = defaults:GetModuleEntry('scenario')
+                if entry then
+                    category.label = self:GetCategoryTitle(entry, db)
+                end
+            end
+        end
+        return self.cachedCategories
+    end
+
+    local categories = self.cachedCategories or {}
+    wipe(categories)
     for _, entry in ipairs(defaults.MODULE_ENTRIES) do
         if self:ShouldShowCategory(entry, db) then
             local blocks = self.blocksByCategory[entry.id] or {}
@@ -1060,6 +1301,11 @@ function trackerData:GetCategories(db)
             end
         end
     end
+
+    self.cachedCategories = categories
+    self.cachedCategoriesFilter = filter
+    self.cachedCategoriesTitles = titles
+    self.cachedCategoriesGeneration = self.cacheGeneration
     return categories
 end
 
@@ -1085,4 +1331,6 @@ function trackerData:UntrackBlock(block)
     elseif block.untrackType == 'initiative' then
         C_NeighborhoodInitiative.RemoveTrackedInitiativeTask(block.untrackId)
     end
+
+    self:InvalidateCategoryCache()
 end
