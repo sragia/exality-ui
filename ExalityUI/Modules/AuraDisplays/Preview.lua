@@ -455,10 +455,10 @@ function preview:EnsurePreviewContainer(stateKey, frame, display, positionFn)
     local state = self:EnsureState(stateKey)
     if state.container then
         state.container:ClearAllPoints()
-        state.container:SetParent(frame)
         if positionFn then
             positionFn(state.container, frame, display)
         else
+            state.container:SetParent(frame)
             self:PositionPreviewContainer(state.container, frame, display)
         end
         return state.container
@@ -894,6 +894,10 @@ function preview:BuildPreviewOnFrame(stateKey, frame, display, visual, positionF
     end
     self:LayoutButtons(container, activeButtons, display, visual)
     container:Show()
+    -- Show / layout can reset strata and level; re-apply so UF auras stay in front.
+    if positionFn then
+        positionFn(container, frame, display)
+    end
 end
 
 function preview:GetPreviewGroup(displayID, display)

@@ -7,7 +7,7 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 ---@class EXUIActionBarsDefaults
 local defaults = EXUI:GetModule('action-bars-defaults')
 
-defaults.SCHEMA_VERSION = 3
+defaults.SCHEMA_VERSION = 4
 defaults._barTemplates = {}
 
 local function textDefaults()

@@ -191,7 +191,7 @@ defaults.STARTER_DISPLAYS = {
     ["paddingTop"] = 0,
     ["frameLevel"] = 10,
     ["matchUnitFrameWidth"] = true,
-    ["frameStrata"] = "LOW",
+    ["frameStrata"] = "MEDIUM",
     ["units"] = {
         ["boss"] = true,
     },
@@ -543,7 +543,7 @@ defaults.STARTER_DISPLAYS = {
     ["paddingTop"] = 0,
     ["frameLevel"] = 10,
     ["matchUnitFrameWidth"] = true,
-    ["frameStrata"] = "LOW",
+    ["frameStrata"] = "MEDIUM",
     ["units"] = {
         ["raid"] = true,
         ["party"] = true,
@@ -905,7 +905,7 @@ defaults.STARTER_DISPLAYS = {
     ["paddingTop"] = 0,
     ["frameLevel"] = 10,
     ["matchUnitFrameWidth"] = true,
-    ["frameStrata"] = "LOW",
+    ["frameStrata"] = "MEDIUM",
     ["units"] = {
         ["boss"] = true,
     },
@@ -1106,7 +1106,7 @@ defaults.STARTER_DISPLAYS = {
     ["paddingTop"] = 0,
     ["frameLevel"] = 10,
     ["matchUnitFrameWidth"] = true,
-    ["frameStrata"] = "LOW",
+    ["frameStrata"] = "MEDIUM",
     ["units"] = {
         ["target"] = true,
     },
@@ -1708,7 +1708,7 @@ defaults.STARTER_DISPLAYS = {
     ["paddingTop"] = 0,
     ["frameLevel"] = 10,
     ["matchUnitFrameWidth"] = true,
-    ["frameStrata"] = "LOW",
+    ["frameStrata"] = "MEDIUM",
     ["units"] = {
         ["focus"] = true,
     },

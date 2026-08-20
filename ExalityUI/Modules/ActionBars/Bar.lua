@@ -101,18 +101,6 @@ barMod.Create = function(self, barId, db)
         end
     end
 
-    if def.barType == 'override' then
-        local leaveBtn = CreateFrame('Button', frame:GetName() .. '_LeaveVehicle', frame, 'SecureActionButtonTemplate')
-        leaveBtn:SetAttribute('type', 'macro')
-        leaveBtn:SetAttribute('macro', '/leavevehicle')
-        leaveBtn:SetSize(32, 32)
-        leaveBtn:SetPoint('TOP', frame, 'BOTTOM', 0, -4)
-        local leaveTex = leaveBtn:CreateTexture(nil, 'ARTWORK')
-        leaveTex:SetAllPoints()
-        leaveTex:SetTexture('Interface\\Icons\\Spell_Shadow_SoulLeech_3')
-        frame.leaveButton = leaveBtn
-    end
-
     self:Configure(frame, db)
     self:SetupVisibility(frame, config)
     self:RegisterEditor(frame, barId)

@@ -6,7 +6,7 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 
 definitions.PLAYER_BAR_IDS = { 'bar1', 'bar2', 'bar3', 'bar4', 'bar5', 'bar6', 'bar7', 'bar8' }
 
-definitions.SPECIAL_BAR_IDS = { 'stance', 'pet', 'extra', 'override' }
+definitions.SPECIAL_BAR_IDS = { 'stance', 'pet', 'extra', 'vehicleLeave', 'override' }
 
 definitions.ALL_BAR_IDS = {}
 
@@ -137,6 +137,16 @@ definitions.BARS = {
         defaultEnabled = true,
         defaultAnchor = { point = 'BOTTOM', relativePoint = 'BOTTOM', x = 0, y = 160 },
     },
+    vehicleLeave = {
+        id = 'vehicleLeave',
+        label = 'Leave Vehicle',
+        blizzardFrame = 'MainMenuBarVehicleLeaveButton',
+        barType = 'leaveVehicle',
+        numButtons = 1,
+        commandPrefix = 'VEHICLEEXIT',
+        defaultEnabled = true,
+        defaultAnchor = { point = 'BOTTOM', relativePoint = 'BOTTOM', x = -220, y = 4 },
+    },
     override = {
         id = 'override',
         label = 'Override Bar',
@@ -168,6 +178,9 @@ definitions.GetCommandName = function(self, barId, buttonIndex)
     local prefix = def.commandPrefix
     if prefix == 'SHAPESHIFT' then
         return 'SHAPESHIFTBUTTON' .. buttonIndex
+    end
+    if prefix == 'VEHICLEEXIT' then
+        return 'VEHICLEEXIT'
     end
     return prefix .. buttonIndex
 end

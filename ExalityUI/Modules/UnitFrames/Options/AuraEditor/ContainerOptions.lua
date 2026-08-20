@@ -153,7 +153,7 @@ function containerOptions:GetOptions(displayID)
                 return EXUI.const.frameStrata
             end,
             currentValue = function()
-                return ufAuras:GetDisplayValue(displayID, 'frameStrata') or 'LOW'
+                return ufAuras:GetDisplayValue(displayID, 'frameStrata') or 'MEDIUM'
             end,
             onChange = function(v)
                 ufAuras:UpdateDisplayValue(displayID, 'frameStrata', v)

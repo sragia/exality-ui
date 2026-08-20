@@ -34,6 +34,9 @@ local microMenu = EXUI:GetModule('action-bars-micro-menu')
 ---@class EXUIActionBarsExtraAbilities
 local extraAbilities = EXUI:GetModule('action-bars-extra-abilities')
 
+---@class EXUIActionBarsLeaveVehicle
+local leaveVehicle = EXUI:GetModule('action-bars-leave-vehicle')
+
 ---@class EXUIActionBarsManager
 local manager = EXUI:GetModule('action-bars-manager')
 
@@ -52,7 +55,7 @@ manager.CreateBars = function(self)
 
     local db = EXUI:GetModule('action-bars'):EnsureDB()
     for _, barId in ipairs(definitions.ALL_BAR_IDS) do
-        if barId ~= 'extra' then
+        if barId ~= 'extra' and barId ~= 'vehicleLeave' then
             if not barMod:Get(barId) then
                 barMod:Create(barId, db)
             else
@@ -67,6 +70,8 @@ manager.CreateBars = function(self)
     stateDriver:RefreshBar1()
     extraAbilities:Apply(db)
     extraAbilities:SetupHover()
+    leaveVehicle:Apply(db)
+    leaveVehicle:SetupHover()
     microMenu:Apply(db)
     microMenu:SetupHover(db)
     keybind:ReassignBindings()
@@ -75,6 +80,10 @@ end
 manager.RefreshBar = function(self, barId)
     if barId == 'extra' then
         extraAbilities:Apply(self:GetDB())
+        return
+    end
+    if barId == 'vehicleLeave' then
+        leaveVehicle:Apply(self:GetDB())
         return
     end
     local frame = barMod:Get(barId)
@@ -103,6 +112,7 @@ manager.RefreshAll = function(self)
     end
     stateController:UpdateAll()
     extraAbilities:Apply(db)
+    leaveVehicle:Apply(db)
     self:ApplyMicroMenu()
 end
 
@@ -112,6 +122,7 @@ manager.Enable = function(self)
     suppress:Enable()
     keybind:Init()
     extraAbilities:Init()
+    leaveVehicle:Init()
     microMenu:Init()
     self:CreateBars()
 end
@@ -131,6 +142,7 @@ manager.Disable = function(self)
     barStyle:ReleaseMasqueGroups()
     keybind:Clear()
     extraAbilities:Disable()
+    leaveVehicle:Disable()
     suppress:Disable()
 end
 

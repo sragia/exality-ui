@@ -118,6 +118,7 @@ end
 
 function apply:AnchorContainer(container, frame, display)
     local parent = frame.ElementFrame or frame
+    container:SetParent(parent)
     container:ClearAllPoints()
     container:SetPoint(
         display.anchorPoint or 'BOTTOMLEFT',
@@ -129,19 +130,13 @@ function apply:AnchorContainer(container, frame, display)
 end
 
 -- Keep auras above the unit-frame border (ElementFrame is frame+100 with PPBorder).
--- frameLevel is an offset above ElementFrame; frameStrata defaults to the unit frame's strata.
+-- frameLevel is an offset above ElementFrame.
 function apply:ApplyFrameLayer(container, frame, display)
     if not container or not frame then
         return
     end
 
-    local strata = display.frameStrata
-    if not strata or strata == '' then
-        strata = frame:GetFrameStrata()
-    end
-    if container.SetFrameStrata then
-        container:SetFrameStrata(strata)
-    end
+    container:SetFrameStrata(display.frameStrata or 'MEDIUM')
 
     local elementFrame = frame.ElementFrame
     local baseLevel = elementFrame and elementFrame:GetFrameLevel() or frame:GetFrameLevel()
@@ -149,9 +144,7 @@ function apply:ApplyFrameLayer(container, frame, display)
     if offset == nil then
         offset = 10
     end
-    if container.SetFrameLevel then
-        container:SetFrameLevel(baseLevel + offset)
-    end
+    container:SetFrameLevel(baseLevel + offset)
 end
 
 function apply:ApplyLayout(container, display)

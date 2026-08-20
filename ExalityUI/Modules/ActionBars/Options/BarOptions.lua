@@ -15,6 +15,10 @@ local barOptions = EXUI:GetModule('action-bars-bar-options')
 
 local appendFields = EXUI.utils.append
 
+local function isSingleWidgetBar(barId)
+    return barId == 'extra' or barId == 'vehicleLeave'
+end
+
 barOptions.GetPositionFields = function(self, mod, db, scope, onRefresh)
     local function save(refresh)
         mod.Data:SetDB(db)
@@ -91,7 +95,7 @@ barOptions.GetPageOptions = function()
 end
 
 barOptions.GetSectionTabs = function(barId)
-    if barId == 'extra' then
+    if isSingleWidgetBar(barId) then
         return {
             { ID = 'layout', label = 'Layout' },
             { ID = 'appearance', label = 'Appearance' },
@@ -218,6 +222,18 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 {
                     type = 'title',
                     label = 'Encounter extra actions and zone abilities share this anchor.',
+                    width = 100,
+                    size = 12,
+                    color = EXUI.const.theme.textMuted,
+                },
+            })
+            return fields
+        end
+        if barId == 'vehicleLeave' then
+            appendFields(fields, {
+                {
+                    type = 'title',
+                    label = 'Shown while you can exit a vehicle or request taxi landing.',
                     width = 100,
                     size = 12,
                     color = EXUI.const.theme.textMuted,
@@ -387,7 +403,7 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 currentValue = function() return bar.zoom end,
                 onChange = function(v) bar.zoom = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
                 min = 0,
-                max = 30,
+                max = 80,
             },
             {
                 type = 'toggle',
@@ -441,35 +457,41 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 currentValue = function() return bar.masqueSkin end,
                 onChange = function(v) bar.masqueSkin = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
             },
-            {
-                type = 'toggle',
-                label = 'Cooldown Swipe',
-                name = 'showCooldownSwipe',
-                width = 100,
-                depends = function() return bar.useGlobalAppearance == false end,
-                currentValue = function() return bar.showCooldownSwipe end,
-                onChange = function(v) bar.showCooldownSwipe = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
-            },
-            {
-                type = 'toggle',
-                label = 'Cooldown Text',
-                name = 'showCooldownText',
-                width = 100,
-                depends = function() return bar.useGlobalAppearance == false end,
-                currentValue = function() return bar.showCooldownText end,
-                onChange = function(v) bar.showCooldownText = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
-            },
         })
+        if barId ~= 'vehicleLeave' then
+            appendFields(fields, {
+                {
+                    type = 'toggle',
+                    label = 'Cooldown Swipe',
+                    name = 'showCooldownSwipe',
+                    width = 100,
+                    depends = function() return bar.useGlobalAppearance == false end,
+                    currentValue = function() return bar.showCooldownSwipe end,
+                    onChange = function(v) bar.showCooldownSwipe = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
+                },
+                {
+                    type = 'toggle',
+                    label = 'Cooldown Text',
+                    name = 'showCooldownText',
+                    width = 100,
+                    depends = function() return bar.useGlobalAppearance == false end,
+                    currentValue = function() return bar.showCooldownText end,
+                    onChange = function(v) bar.showCooldownText = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
+                },
+            })
+        end
     elseif section == 'text' then
         appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'hotkey', 'Hotkey Text'))
-        appendFields(fields, { { type = 'spacer', width = 100 } })
-        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'count', 'Stack Text'))
-        if barId ~= 'extra' then
+        if barId ~= 'vehicleLeave' then
             appendFields(fields, { { type = 'spacer', width = 100 } })
-            appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'macro', 'Macro Text'))
+            appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'count', 'Stack Text'))
+            if barId ~= 'extra' then
+                appendFields(fields, { { type = 'spacer', width = 100 } })
+                appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'macro', 'Macro Text'))
+            end
+            appendFields(fields, { { type = 'spacer', width = 100 } })
+            appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'cooldown', 'Cooldown Text'))
         end
-        appendFields(fields, { { type = 'spacer', width = 100 } })
-        appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'cooldown', 'Cooldown Text'))
     elseif section == 'visibility' then
         appendFields(fields, {
             {

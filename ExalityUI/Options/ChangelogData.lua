@@ -7,6 +7,7 @@ EXUI.changelog = [[
 - [Objective Tracker] Show auto completable quests in tracker.
 - [XP Bar] Add reputation watch inside of XP bar. Supports rep/hr
 - [Unit Frames] Fix group role indicator hide to work after update.
+- [Action Bars] Add Leave Vehicle button that was missed.
 
 # |cffdb49000.9.2|r
 - [Action Bars] Fix issue with button highlight going out of container

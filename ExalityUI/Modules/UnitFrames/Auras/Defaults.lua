@@ -52,7 +52,7 @@ function defaults:BuildNewDisplay(contextUnit)
     display.horizontalGrowth = 'RIGHT'
     display.verticalGrowth = 'UP'
     -- Offset above ElementFrame (border lives there at unit frame level + 100).
-    display.frameStrata = 'LOW'
+    display.frameStrata = 'MEDIUM'
     display.frameLevel = 10
     display.rowWidth = 200
     display.matchUnitFrameWidth = true
@@ -100,7 +100,7 @@ function defaults:MergeIntoDB(db)
             display.YOff = 2
         end
         if display.frameStrata == nil then
-            display.frameStrata = 'LOW'
+            display.frameStrata = 'MEDIUM'
         end
         if display.frameLevel == nil then
             display.frameLevel = 10
