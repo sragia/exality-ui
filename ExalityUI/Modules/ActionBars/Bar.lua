@@ -149,6 +149,8 @@ barMod.RegisterEditor = function(self, frame, barId)
         frame:SetAlpha(1)
         if barMod:IsStateControlledBar(barId) then
             specialButton:UpdateAll(frame)
+        elseif barId == 'bar1' then
+            stateDriver:ForceApplyCurrentPage(frame)
         end
         frame.editor:SetEditorAsMovable()
         barMod:SetEditMode(frame, true)

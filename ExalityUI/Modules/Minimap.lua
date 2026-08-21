@@ -41,8 +41,6 @@ local MASK_TEXTURE = [[Interface\BUTTONS\WHITE8X8]]
 local SQUARE_SHAPE = 'SQUARE'
 local MINIMAP_BUTTON_ICON_SIZE = 20
 local MINIMAP_MAIL_ICON_SIZE = 16
-local MINIMAP_DIFFICULTY_FONT_SIZE = 11
-local MINIMAP_DIFFICULTY_TEXT_PAD_X = 6
 local MINIMAP_ICON_BG_PAD = 4
 local MINIMAP_BUTTON_BG_SLICE = 6
 local INSTANCE_DIFFICULTY_EVENTS = {
@@ -85,7 +83,6 @@ local PLACEMENT_OPTIONS = {
 
 local BLIZZ_BUTTON_LABELS = {
     missions = 'Expansion Button',
-    difficulty = 'Instance Difficulty',
     calendar = 'Calendar',
     mail = 'Mail',
 }
@@ -95,7 +92,6 @@ local BLIZZ_OPTION_ANGLE_WIDTH = 30
 
 local DEFAULT_BLIZZ_ANGLES = {
     missions = 190,
-    difficulty = 150,
     calendar = 35,
     mail = 20,
 }
@@ -113,7 +109,7 @@ local function GetBlizzButton(key)
     if (key == 'missions') then
         return ExpansionLandingPageMinimapButton or GarrisonLandingPageMinimapButton
     end
-    if (key == 'difficulty') then return MinimapCluster.InstanceDifficulty end
+    if (key == 'difficulty') then return MinimapCluster and MinimapCluster.InstanceDifficulty end
     if (key == 'calendar') then return GameTimeFrame end
     if (key == 'mail') then return MinimapCluster.IndicatorFrame and MinimapCluster.IndicatorFrame.MailFrame end
     if (key == 'tracking') then
@@ -341,25 +337,6 @@ local function HideBlizzMailChrome(btn)
         end
     end
     scan(btn, 0)
-end
-
-local function HideBlizzDifficultyChrome(btn)
-    if (not btn) then return end
-
-    local contentModes = btn.ContentModes or { btn.Default, btn.Guild, btn.ChallengeMode }
-    for _, frame in ipairs(contentModes) do
-        if (frame) then
-            frame:Hide()
-            if (not frame._exuiDifficultyChromeHooked) then
-                frame._exuiDifficultyChromeHooked = true
-                hooksecurefunc(frame, 'Show', function(contentFrame)
-                    if (minimap.enabled) then
-                        contentFrame:Hide()
-                    end
-                end)
-            end
-        end
-    end
 end
 
 local function GetMinimapButtonBgTexture()
@@ -593,7 +570,7 @@ minimap.GetInstanceDifficultyLabel = function(self)
         if (C_ChallengeMode and C_ChallengeMode.GetActiveKeystoneInfo) then
             local level = C_ChallengeMode.GetActiveKeystoneInfo()
             if (level and level > 0) then
-                return 'M+' .. level
+                return 'M+', tostring(level)
             end
         end
         return 'M+'
@@ -621,20 +598,20 @@ minimap.GetInstanceDifficultyLabel = function(self)
     end
 
     if (instanceGroupSize and instanceGroupSize > 0 and not inDelve) then
-        return prefix .. instanceGroupSize
+        return prefix, tostring(instanceGroupSize)
     end
     return prefix
 end
 
-minimap.GetInstanceDifficultyBgColor = function(self, label)
+minimap.GetInstanceDifficultyTextColor = function(self, prefix)
     local quality
-    if (label:sub(1, 3) == 'LFR') then
+    if (prefix == 'LFR') then
         quality = 1 -- common
-    elseif (label:sub(1, 2) == 'HC') then
+    elseif (prefix == 'HC') then
         quality = 4 -- epic
-    elseif (label:sub(1, 1) == 'M') then
+    elseif (prefix == 'M' or prefix == 'M+') then
         quality = 5 -- legendary
-    elseif (label:sub(1, 1) == 'N') then
+    elseif (prefix == 'N') then
         quality = 3 -- rare
     else
         quality = 3
@@ -652,8 +629,7 @@ minimap.GetInstanceDifficultyBgColor = function(self, label)
         end
     end
 
-    local _, _, _, a = self:GetButtonAppearanceColor()
-    return r, g, b, a
+    return r, g, b, 1
 end
 
 minimap.GetInstanceDifficultyTooltipLines = function(self)
@@ -742,73 +718,15 @@ minimap.ShowInstanceDifficultyTooltip = function(self, anchor)
     GameTooltip:Show()
 end
 
-minimap.SetupInstanceDifficultyTooltip = function(self, btn)
-    if (not btn or btn._exuiDifficultyTooltipSetup) then return end
-    btn._exuiDifficultyTooltipSetup = true
-    btn:SetScript('OnEnter', function(frame)
-        minimap:ShowInstanceDifficultyTooltip(frame)
+minimap.SetupInstanceDifficultyTooltip = function(self, frame)
+    if (not frame or frame._exuiDifficultyTooltipSetup) then return end
+    frame._exuiDifficultyTooltipSetup = true
+    frame:SetScript('OnEnter', function(anchor)
+        minimap:ShowInstanceDifficultyTooltip(anchor)
     end)
-    btn:SetScript('OnLeave', function()
+    frame:SetScript('OnLeave', function()
         GameTooltip:Hide()
     end)
-end
-
-minimap.StyleBlizzDifficultyButton = function(self, btn, label)
-    if (not btn) then return end
-
-    label = label or self:GetInstanceDifficultyLabel()
-    PrepareBlizzOrbitButton(btn)
-    HideBlizzDifficultyChrome(btn)
-    self:SetupInstanceDifficultyTooltip(btn)
-
-    if (not label) then
-        btn:Hide()
-        return
-    end
-
-    local textPadX = self:GetScaledMinimapIconSize(MINIMAP_DIFFICULTY_TEXT_PAD_X)
-    local minHeight = self:GetScaledMinimapIconSize(MINIMAP_BUTTON_ICON_SIZE)
-    local bgPad = self:GetScaledMinimapIconSize(MINIMAP_ICON_BG_PAD)
-    local fontSize = self:GetScaledMinimapIconSize(MINIMAP_DIFFICULTY_FONT_SIZE)
-
-    if (not btn.exuiText) then
-        btn.exuiText = btn:CreateFontString(nil, 'OVERLAY', nil, 7)
-        btn.exuiText:SetPoint('CENTER', btn, 'CENTER', 0, 0)
-    end
-
-    local fontPath = [[Interface/Addons/ExalityUI/Assets/Fonts/DMSans.ttf]]
-    if (EXUI.EXFrames and EXUI.EXFrames.assets and EXUI.EXFrames.assets.font) then
-        fontPath = EXUI.EXFrames.assets.font.default()
-    end
-    btn.exuiText:SetFont(fontPath, fontSize, 'OUTLINE')
-    btn.exuiText:SetTextColor(1, 1, 1, 1)
-    btn.exuiText:SetText(label)
-    btn.exuiText:Show()
-
-    local textWidth = btn.exuiText:GetStringWidth() or 0
-    local bgWidth = math.max(textWidth + textPadX * 2, minHeight + bgPad * 2)
-    local bgHeight = minHeight + bgPad * 2
-
-    if (not btn.exuiBg) then
-        btn.exuiBg = btn:CreateTexture(nil, 'BACKGROUND', nil, -1)
-    end
-    btn.exuiBg:ClearAllPoints()
-    btn.exuiBg:SetPoint('CENTER', btn, 'CENTER', 0, 0)
-    if (self:IsButtonBackgroundEnabled()) then
-        local r, g, b, a = self:GetInstanceDifficultyBgColor(label)
-        self:ApplyMinimapButtonBackground(btn.exuiBg, bgWidth, r, g, b, a, bgHeight)
-        btn.exuiBg:Show()
-        btn.exuiBg:SetAlpha(1)
-    else
-        btn.exuiBg:Hide()
-    end
-
-    local frameWidth = self:IsButtonBackgroundEnabled() and bgWidth or math.max(textWidth, minHeight)
-    local frameHeight = self:IsButtonBackgroundEnabled() and bgHeight or minHeight
-    EXUI:SetSize(btn, frameWidth, frameHeight)
-    btn:Show()
-    PrepareBlizzOrbitButton(btn)
-    HideBlizzDifficultyChrome(btn)
 end
 
 minimap.Data = data:GetControlsForKey('minimap')
@@ -845,6 +763,17 @@ minimap.GetDefaults = function(self)
         clockFontFlag = 'OUTLINE',
         clockBgEnable = true,
         clockBgColor = { r = 0, g = 0, b = 0, a = 0.65 },
+        difficultyEnable = true,
+        difficultyVisibility = 'always',
+        difficultyAnchor = 'BOTTOMRIGHT',
+        difficultyRelativeAnchor = 'BOTTOMRIGHT',
+        difficultyXOff = -2,
+        difficultyYOff = 2,
+        difficultyFont = 'DMSans',
+        difficultyFontSize = 12,
+        difficultyFontFlag = 'OUTLINE',
+        difficultyBgEnable = false,
+        difficultyBgColor = { r = 0, g = 0, b = 0, a = 0.5 },
         drawerEnable = true,
         drawerAnchor = 'BOTTOM',
         drawerRelativeAnchor = 'TOP',
@@ -857,13 +786,11 @@ minimap.GetDefaults = function(self)
         addonCompartmentYOff = -4,
         blizzButtons = {
             missions = 'outside',
-            difficulty = 'outside',
             calendar = 'outside',
             mail = 'outside',
         },
         blizzButtonAngles = {
             missions = 190,
-            difficulty = 150,
             calendar = 35,
             mail = 20,
         },
@@ -907,6 +834,16 @@ minimap.Init = function(self)
         end
         self.Data:SetValue('blizzButtons', blizzButtons)
     end
+    if (blizzButtons and blizzButtons.difficulty ~= nil) then
+        if (blizzButtons.difficulty == 'hidden') then
+            self.Data:SetValue('difficultyEnable', false)
+        end
+        blizzButtons.difficulty = nil
+        if (db.blizzButtonAngles) then
+            db.blizzButtonAngles.difficulty = nil
+        end
+        self.Data:SetValue('blizzButtons', blizzButtons)
+    end
     self:SyncLdbButtons()
     optionsController:RegisterModule(self)
 
@@ -929,10 +866,11 @@ end
 
 minimap.GetTabs = function(self)
     return {
-        { ID = 'general', label = 'General' },
-        { ID = 'zone',    label = 'Zone Text' },
-        { ID = 'clock',   label = 'Clock' },
-        { ID = 'buttons', label = 'Buttons' },
+        { ID = 'general',    label = 'General' },
+        { ID = 'zone',       label = 'Zone Text' },
+        { ID = 'clock',      label = 'Clock' },
+        { ID = 'difficulty', label = 'Difficulty' },
+        { ID = 'buttons',    label = 'Buttons' },
     }
 end
 
@@ -1448,6 +1386,81 @@ minimap.GetOptions = function(self, currTabID, currItemID)
         return fields
     end
 
+    if (currTabID == 'difficulty') then
+        local difficultyDepends = function()
+            return self.Data:GetValue('enable') and self.Data:GetValue('difficultyEnable')
+        end
+        local fields = {
+            {
+                type = 'toggle',
+                label = 'Enable Difficulty Text',
+                name = 'difficultyEnable',
+                depends = function() return self.Data:GetValue('enable') end,
+                currentValue = function() return self.Data:GetValue('difficultyEnable') end,
+                onChange = function(value)
+                    self:HandleToggleChange('difficultyEnable', value)
+                end,
+                width = 100,
+            },
+            {
+                type = 'dropdown',
+                label = 'Visibility',
+                name = 'difficultyVisibility',
+                getOptions = function() return VISIBILITY_OPTIONS end,
+                depends = difficultyDepends,
+                currentValue = function() return self.Data:GetValue('difficultyVisibility') end,
+                onChange = function(value)
+                    self.Data:SetValue('difficultyVisibility', value)
+                    self:ConfigureIfEnabled()
+                end,
+                width = 33,
+            },
+            {
+                type = 'title',
+                label = 'Position',
+                width = 100,
+                depends = difficultyDepends,
+            },
+        }
+        for _, field in ipairs(self:GetPositionFields('difficulty', function() self:ConfigureIfEnabled() end, true)) do
+            field.depends = difficultyDepends
+            table.insert(fields, field)
+        end
+        for _, field in ipairs(self:GetFontFields('difficulty', function() self:ConfigureIfEnabled() end)) do
+            field.depends = difficultyDepends
+            table.insert(fields, field)
+        end
+        table.insert(fields, {
+            type = 'spacer',
+            width = 31,
+            depends = difficultyDepends,
+        })
+        table.insert(fields, {
+            type = 'toggle',
+            label = 'Text Background',
+            name = 'difficultyBgEnable',
+            depends = difficultyDepends,
+            currentValue = function() return self.Data:GetValue('difficultyBgEnable') end,
+            onChange = function(value)
+                self:HandleToggleChange('difficultyBgEnable', value)
+            end,
+            width = 100,
+        })
+        table.insert(fields, {
+            type = 'color-picker',
+            label = 'Background Color',
+            name = 'difficultyBgColor',
+            depends = difficultyDepends,
+            currentValue = function() return self.Data:GetValue('difficultyBgColor') end,
+            onChange = function(value)
+                self.Data:SetValue('difficultyBgColor', PackColor(value))
+                self:ConfigureIfEnabled()
+            end,
+            width = 20,
+        })
+        return fields
+    end
+
     if (currTabID == 'buttons') then
         if (currItemID == '__buttonGeneral__') then
             local buttonDepends = function()
@@ -1819,6 +1832,7 @@ minimap.SetupMinimapFrame = function(self)
 
     self:CreateZoneText()
     self:CreateClock()
+    self:CreateDifficultyText()
     self:CreateDrawer()
     self:CreateAddonCompartment()
     self:RegisterEditorFrames()
@@ -1940,10 +1954,11 @@ minimap.SetupBlizzButtonFixes = function(self)
         local diffBtn = GetBlizzButton('difficulty')
         if (diffBtn) then
             self.difficultyHooksSetup = true
+            self:SuppressBlizzDifficulty()
             if (diffBtn.Update) then
                 hooksecurefunc(diffBtn, 'Update', function()
                     if (minimap.enabled and not minimap.applyingBlizzButton) then
-                        minimap:ApplyBlizzButton('difficulty')
+                        minimap:UpdateDifficultyText()
                     end
                 end)
             end
@@ -1962,7 +1977,7 @@ minimap.SetupBlizzButtonFixes = function(self)
                                     C_Timer.After(0.3, function()
                                         minimap.difficultyRefreshPending = false
                                         if (minimap.enabled) then
-                                            minimap:ApplyBlizzButton('difficulty')
+                                            minimap:UpdateDifficultyText()
                                         end
                                     end)
                                 end
@@ -2088,6 +2103,11 @@ minimap.UpdateHoverVisibility = function(self, isHovering)
     if (self.clockFrame and db.clockEnable) then
         if (db.clockVisibility == 'hover') then
             self.clockFrame:SetAlpha(isHovering and 1 or 0)
+        end
+    end
+    if (self.difficultyFrame and db.difficultyEnable) then
+        if (db.difficultyVisibility == 'hover') then
+            self.difficultyFrame:SetAlpha(isHovering and 1 or 0)
         end
     end
 end
@@ -2360,6 +2380,102 @@ minimap.ConfigureClock = function(self)
             minimap:UpdateClockText()
         end
     end)
+end
+
+minimap.DIFFICULTY_TEXT_PADDING = { x = 4, y = 2 }
+
+minimap.LayoutDifficultyFrame = function(self)
+    if (not self.difficultyFrame or not self.difficultyFrame.text) then return end
+    local db = self.Data:GetDB()
+    local text = self.difficultyFrame.text
+    local padX = EXUI:ScalePixel(self.DIFFICULTY_TEXT_PADDING.x)
+    local padY = EXUI:ScalePixel(self.DIFFICULTY_TEXT_PADDING.y)
+    local fontSize = db.difficultyFontSize or 12
+
+    local textWidth = text:GetUnboundedStringWidth()
+    if (textWidth <= 0) then
+        textWidth = text:GetStringWidth()
+    end
+
+    EXUI:SetWidth(self.difficultyFrame, math.max(textWidth + padX * 2, 1))
+    EXUI:SetHeight(self.difficultyFrame, fontSize + padY * 2)
+
+    text:ClearAllPoints()
+    text:SetPoint('CENTER', self.difficultyFrame, 'CENTER', 0, 0)
+    text:SetJustifyH('CENTER')
+    text:SetJustifyV('MIDDLE')
+end
+
+minimap.CreateDifficultyText = function(self)
+    if (self.difficultyFrame) then return end
+
+    local difficultyFrame = CreateFrame('Frame', nil, UIParent)
+    PrepareMinimapOverlayFrame(difficultyFrame)
+    difficultyFrame:EnableMouse(true)
+    local difficultyText = difficultyFrame:CreateFontString(nil, 'OVERLAY')
+    difficultyFrame.text = difficultyText
+
+    self:SetupInstanceDifficultyTooltip(difficultyFrame)
+    difficultyFrame:Hide()
+    self.difficultyFrame = difficultyFrame
+end
+
+minimap.UpdateDifficultyText = function(self)
+    if (not self.difficultyFrame or not self.difficultyFrame.text) then return end
+    local db = self.Data:GetDB()
+    if (not db.difficultyEnable or db.difficultyVisibility == 'hidden') then
+        self.difficultyFrame:Hide()
+        return
+    end
+
+    local prefix, suffix = self:GetInstanceDifficultyLabel()
+    if (not prefix) then
+        self.difficultyFrame:Hide()
+        return
+    end
+
+    if (not self.difficultyFrame.text:GetFont()) then
+        self:ApplyFontString(self.difficultyFrame.text, 'difficultyFont', 'difficultyFontSize', 'difficultyFontFlag')
+    end
+
+    local r, g, b, a = self:GetInstanceDifficultyTextColor(prefix)
+    local coloredPrefix = prefix
+    if (CreateColor) then
+        coloredPrefix = CreateColor(r, g, b, a):WrapTextInColorCode(prefix)
+    end
+    self.difficultyFrame.text:SetText(coloredPrefix .. (suffix or ''))
+    self.difficultyFrame.text:SetTextColor(1, 1, 1, 1)
+    self:LayoutDifficultyFrame()
+    self:ApplyTextBackground(self.difficultyFrame, db.difficultyBgEnable, db.difficultyBgColor)
+    self.difficultyFrame:Show()
+
+    if (db.difficultyVisibility == 'always') then
+        self.difficultyFrame:SetAlpha(1)
+    elseif (db.difficultyVisibility == 'hover') then
+        self.difficultyFrame:SetAlpha(Minimap:IsMouseOver() and 1 or 0)
+    end
+end
+
+minimap.ConfigureDifficultyText = function(self)
+    if (not self.difficultyFrame) then return end
+    local db = self.Data:GetDB()
+
+    if (not db.difficultyEnable or db.difficultyVisibility == 'hidden') then
+        self.difficultyFrame:Hide()
+        return
+    end
+
+    if (self.difficultyFrame:GetParent() ~= UIParent) then
+        self.difficultyFrame:SetParent(UIParent)
+    end
+    PrepareMinimapOverlayFrame(self.difficultyFrame)
+
+    self.difficultyFrame:ClearAllPoints()
+    EXUI:SetPoint(self.difficultyFrame, db.difficultyAnchor, Minimap, db.difficultyRelativeAnchor, db.difficultyXOff,
+        db.difficultyYOff)
+
+    self:ApplyFontString(self.difficultyFrame.text, 'difficultyFont', 'difficultyFontSize', 'difficultyFontFlag')
+    self:UpdateDifficultyText()
 end
 
 minimap.CreateDrawer = function(self)
@@ -3006,14 +3122,6 @@ minimap.ApplyBlizzButton = function(self, key)
     self.applyingBlizzButton = true
     if (key == 'missions') then
         self:RepositionMissionsButton()
-    elseif (key == 'difficulty') then
-        local label = self:GetInstanceDifficultyLabel()
-        if (not label) then
-            btn:Hide()
-        else
-            self:PlaceOrbitButton(btn, angle)
-            self:StyleBlizzDifficultyButton(btn, label)
-        end
     else
         self:PlaceOrbitButton(btn, angle)
     end
@@ -3147,6 +3255,7 @@ minimap.HideDefaultMinimapChrome = function(self)
     self:SuppressMinimapZoomControls()
     self:SuppressMinimapCraftingOrder()
     self:SuppressTrackingButton()
+    self:SuppressBlizzDifficulty()
 end
 
 minimap.SuppressMinimapCraftingOrder = function(self)
@@ -3181,6 +3290,13 @@ minimap.SuppressBlizzClockFrames = function(self)
     end
     if (MinimapCluster and MinimapCluster.TimeManagerClockButton) then
         self:SuppressBlizzFrame(MinimapCluster.TimeManagerClockButton)
+    end
+end
+
+minimap.SuppressBlizzDifficulty = function(self)
+    local btn = GetBlizzButton('difficulty')
+    if (btn) then
+        self:SuppressBlizzFrame(btn)
     end
 end
 
@@ -3272,10 +3388,12 @@ minimap.RefreshRuntime = function(self)
     self:SuppressMinimapZoomControls()
     self:SuppressMinimapCraftingOrder()
     self:SuppressTrackingButton()
+    self:SuppressBlizzDifficulty()
     self:SyncLdbButtons()
     self:ApplyButtons()
     self:ConfigureAddonCompartment()
     self:SetupMinimapMouseHandler()
+    self:UpdateDifficultyText()
 end
 
 minimap.Configure = function(self)
@@ -3283,6 +3401,7 @@ minimap.Configure = function(self)
     self:ConfigureMinimap()
     self:ConfigureZoneText()
     self:ConfigureClock()
+    self:ConfigureDifficultyText()
     self:ApplyButtons()
 end
 
@@ -3322,6 +3441,7 @@ minimap.Disable = function(self)
     if (self.borderContainer) then self.borderContainer:Hide() end
     if (self.zoneFrame) then self.zoneFrame:Hide() end
     if (self.clockFrame) then self.clockFrame:Hide() end
+    if (self.difficultyFrame) then self.difficultyFrame:Hide() end
     self:ClearMinimapMouseHandler()
 
     if (editor.IsFrameRegistered) then
