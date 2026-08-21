@@ -17,6 +17,47 @@ local core = EXUI:GetModule('uf-core')
 ---@class EXUIOptionsEditor
 local editor = EXUI:GetModule('editor')
 
+-- Possess spellcast events fire on pet/vehicle; still display player cast info.
+local playerCastWatch = CreateFrame('Frame')
+playerCastWatch:RegisterEvent('UNIT_PET')
+for _, event in ipairs({
+    'UNIT_SPELLCAST_START',
+    'UNIT_SPELLCAST_CHANNEL_START',
+    'UNIT_SPELLCAST_EMPOWER_START',
+    'UNIT_SPELLCAST_STOP',
+    'UNIT_SPELLCAST_CHANNEL_STOP',
+    'UNIT_SPELLCAST_EMPOWER_STOP',
+    'UNIT_SPELLCAST_FAILED',
+    'UNIT_SPELLCAST_INTERRUPTED',
+}) do
+    playerCastWatch:RegisterEvent(event)
+end
+playerCastWatch:SetScript('OnEvent', function(_, event, unit)
+    local frame = core.frames.player
+    if not frame or frame.isFake or not frame.Castbar then
+        return
+    end
+    if event == 'UNIT_PET' then
+        if unit ~= 'player' then
+            return
+        end
+        if not UnitIsPossessed('pet') and not frame.Castbar:IsShown() then
+            return
+        end
+    else
+        if not UnitIsPossessed('pet') then
+            return
+        end
+        if unit ~= 'pet' and unit ~= 'vehicle' then
+            return
+        end
+    end
+    local handler = frame.UNIT_SPELLCAST_START
+    if handler then
+        handler(frame, 'UNIT_SPELLCAST_START', 'player')
+    end
+end)
+
 castBar.Create = function(self, frame, unit)
     local castBarContainer = CreateFrame('Frame', '$parent_CastBar', frame)
     local castBar = CreateFrame('StatusBar', nil, castBarContainer)
@@ -83,6 +124,11 @@ castBar.Create = function(self, frame, unit)
     end
     castBar:SetPoint('BOTTOMLEFT', icon, 'BOTTOMRIGHT', 0, 0)
     castBar:SetPoint('TOPRIGHT')
+    castBar:HookScript('OnShow', function(self)
+        if self.container then
+            self.container:Show()
+        end
+    end)
 
     castBar.CreatePip = function(self)
         local db = self.__owner.db
@@ -109,11 +155,19 @@ castBar.Update = function(self, frame)
     local container = Castbar.container
 
     if (not db.castbarEnable) then
+        if frame.Castbar then
+            frame.Castbar.ShouldShow = nil
+        end
         frame:DisableElement('Castbar')
         return
     end
 
     frame:EnableElement('Castbar')
+    if frame == core.frames.player then
+        Castbar.ShouldShow = function(element, unit)
+            return unit == 'player' or unit == element.__owner.__unit
+        end
+    end
 
     local iconSize = db.castbarHeight
     if (db.castbarMatchFrameWidth) then
