@@ -315,7 +315,7 @@ core.InvalidateStyle = function(self)
     self.styleGen = (self.styleGen or 1) + 1
 end
 
-core.ApplyPlateStyle = function(self, frame)
+core.ApplyPlateStyle = function(self, frame, opts)
     self:LayoutHealthHost(frame)
 
     EXUI:GetModule('np-element-health'):Update(frame)
@@ -329,8 +329,13 @@ core.ApplyPlateStyle = function(self, frame)
     EXUI:GetModule('np-element-target-highlight'):Update(frame)
 
     local apply = EXUI:GetModule('np-auras-apply')
-    if apply and apply.UpdateFrame then
-        apply:UpdateFrame(frame)
+    if apply then
+        local auras = opts and opts.auras or 'update'
+        if auras == 'bind' and apply.BindFrame then
+            apply:BindFrame(frame)
+        elseif apply.UpdateFrame then
+            apply:UpdateFrame(frame)
+        end
     end
 
     frame._exuiStyleGen = self.styleGen
@@ -345,7 +350,7 @@ core.BindPlateUnit = function(self, frame)
     frame.isFriendly = self:IsFriendlyPlate(frame)
     -- Always re-apply layout. Nameplates are reused, and sizing that ran
     -- during C++ scale-in/out can stick if we only style on generation changes.
-    self:ApplyPlateStyle(frame)
+    self:ApplyPlateStyle(frame, { auras = 'bind' })
 
     if frame.UpdateTags then
         frame:UpdateTags()
@@ -386,6 +391,10 @@ core.UpdateAllPlates = function(self)
     end
     self:UpdateHealthCurve()
     self:InvalidateStyle()
+    local apply = EXUI:GetModule('np-auras-apply')
+    if apply and apply.InvalidateSignatures then
+        apply:InvalidateSignatures()
+    end
     EXUI:GetModule('np-driver'):ApplySize()
     self:ForEachPlate(function(frame)
         EXUI:GetModule('np-driver'):ApplyFrameSize(frame)

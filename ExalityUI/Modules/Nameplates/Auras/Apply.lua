@@ -26,6 +26,7 @@ local npAuras = EXUI:GetModule('np-auras')
 local apply = EXUI:GetModule('np-auras-apply')
 
 apply.pendingFrames = {}
+apply.sigCache = {}
 
 function apply:Init()
     if self.eventHandler then
@@ -211,12 +212,22 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
     return true
 end
 
+function apply:InvalidateSignatures()
+    wipe(self.sigCache)
+end
+
 function apply:GetHardSignature(displayID, display)
-    return resolver:BuildHardSignature(displayID, display, function(id, groupID)
+    local cached = self.sigCache[displayID]
+    if cached then
+        return cached
+    end
+    local sig = resolver:BuildHardSignature(displayID, display, function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end, function(load)
         return loadConditions:ShouldLoad(load)
     end)
+    self.sigCache[displayID] = sig
+    return sig
 end
 
 function apply:GetRowWidth(frame, display)
@@ -338,9 +349,11 @@ function apply:UpdateFrame(frame)
 end
 
 function apply:RefreshDisplay(displayID)
+    self:InvalidateSignatures()
     npCore:UpdateAllPlates()
 end
 
 function apply:RefreshAll()
+    self:InvalidateSignatures()
     npCore:UpdateAllPlates()
 end

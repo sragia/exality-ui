@@ -12,7 +12,7 @@ externals:
   ExalityUI/Libs/LibDBIcon-1.0: https://repos.curseforge.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
   ExalityUI/Libs/oUF:
     url: https://github.com/oUF-wow/oUF
-    tag: 14.0.0
+    tag: 14.0.132
   ExalityUI/ExalityFrames:
     url: https://github.com/sragia/ExalityFrames
     tag: 1.1.11
