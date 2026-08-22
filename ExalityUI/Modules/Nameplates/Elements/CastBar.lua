@@ -311,13 +311,13 @@ castBar.Update = function(self, frame)
     local iconWidth = db.castbarIconWidth or barHeight
     local width = db.sizeWidth
     local chrome = bar.chrome
-    EXUI:SetSize(container, width, barHeight)
+    container:SetSize(width, barHeight)
     if db.castbarShowIcon then
         bar.Icon:Show()
         bar.Icon:ClearAllPoints()
         bar.Icon:SetPoint('TOPLEFT', container, 'TOPLEFT', 0, 0)
         bar.Icon:SetPoint('BOTTOMLEFT', container, 'BOTTOMLEFT', 0, 0)
-        EXUI:SetWidth(bar.Icon, iconWidth)
+        bar.Icon:SetWidth(iconWidth)
         bar.Icon:SetTexCoord(EXUI.utils.getTexCoords(iconWidth, barHeight, 30))
         chrome:ClearAllPoints()
         chrome:SetPoint('BOTTOMLEFT', bar.Icon, 'BOTTOMRIGHT', 0, 0)
@@ -408,8 +408,8 @@ castBar.Update = function(self, frame)
     end
 
     bar.Spark:SetVertexColor(db.castbarSparkColor.r, db.castbarSparkColor.g, db.castbarSparkColor.b, db.castbarSparkColor.a)
-    EXUI:SetWidth(bar.Spark, db.castbarSparkWidth or 1)
-    EXUI:SetHeight(bar.Spark, barHeight)
+    bar.Spark:SetWidth(db.castbarSparkWidth or 1)
+    bar.Spark:SetHeight(barHeight)
 
     bar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b, db.castbarBackgroundColor.a)
     bar:SetStatusBarColor(db.castbarForegroundColor.r, db.castbarForegroundColor.g, db.castbarForegroundColor.b, db.castbarForegroundColor.a)
@@ -427,6 +427,6 @@ castBar.Update = function(self, frame)
 
     local anchor = frame.HealthHost or frame
     container:ClearAllPoints()
-    EXUI:SetPoint(container, 'TOPLEFT', anchor, 'BOTTOMLEFT', 0, db.castbarYOff or -1)
-    EXUI:SetPoint(container, 'TOPRIGHT', anchor, 'BOTTOMRIGHT', 0, db.castbarYOff or -1)
+    container:SetPoint('TOPLEFT', anchor, 'BOTTOMLEFT', 0, db.castbarYOff or -1)
+    container:SetPoint('TOPRIGHT', anchor, 'BOTTOMRIGHT', 0, db.castbarYOff or -1)
 end

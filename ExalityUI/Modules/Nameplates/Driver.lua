@@ -28,7 +28,37 @@ driver.ApplySize = function(self)
     if not self.oUFDriver then
         return
     end
-    self.oUFDriver:SetSize(npCore:GetPlateSize())
+    -- Protected; Blizzard may also rewrite this after display/cvar changes.
+    pcall(self.oUFDriver.SetSize, self.oUFDriver, npCore:GetPlateSize())
+end
+
+driver.ApplyFrameSize = function(self, frame)
+    if not frame or frame:IsForbidden() then
+        return
+    end
+    local plate = frame:GetParent()
+    local width, height = npCore:GetPlateSize()
+    frame:ClearAllPoints()
+    frame:SetSize(width, height)
+    if plate then
+        frame:SetPoint('BOTTOM', plate, 'BOTTOM')
+    end
+end
+
+local function hookBlizzardPlateSize()
+    if driver.blizzardSizeHooked or not NamePlateDriverFrame then
+        return
+    end
+    local function reapply()
+        driver:ApplySize()
+    end
+    if NamePlateDriverFrame.UpdateNamePlateOptions then
+        hooksecurefunc(NamePlateDriverFrame, 'UpdateNamePlateOptions', reapply)
+    end
+    if NamePlateDriverFrame.UpdateNamePlateSize then
+        hooksecurefunc(NamePlateDriverFrame, 'UpdateNamePlateSize', reapply)
+    end
+    driver.blizzardSizeHooked = true
 end
 
 driver.HideBlizzardPlate = function(self, plate)
@@ -70,6 +100,7 @@ driver.OnPlateAdded = function(self, frame, event, unit)
         plate:SetClipsChildren(false)
     end
     frame:SetClipsChildren(false)
+    self:ApplyFrameSize(frame)
     frame.db = npCore:GetDB()
     npCore:BindPlateUnit(frame)
 end
@@ -95,6 +126,7 @@ driver.Enable = function(self)
     end
 
     wrapHitTestInsets()
+    hookBlizzardPlateSize()
 
     local oUF = EXUI.oUF
     oUF:RegisterStyle(npCore.STYLE_NAME, npCore.Style)
@@ -151,6 +183,8 @@ driver.RegisterSupportEvents = function(self)
         elseif event == 'UPDATE_MOUSEOVER_UNIT' then
             EXUI:GetModule('np-element-target-highlight'):OnMouseoverChanged()
         elseif event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' then
+            hookBlizzardPlateSize()
+            driver:ApplySize()
             npCore.rosterDirty = true
             if not InCombatLockdown() then
                 npCore:ScanCoTank()

@@ -125,9 +125,22 @@ core.GetBorderThickness = function(self, db)
     return (db and db.borderThickness) or 1
 end
 
-core.ApplyInset = function(self, child, parent, thickness)
+-- Convert border thickness in physical pixels using UIParent scale.
+-- Nameplate GetEffectiveScale() can be near-zero during C++ show/hide animation.
+core.GetChromeInset = function(self, thickness, maxSize)
+    if not thickness or thickness <= 0 then
+        return 0
+    end
+    local inset = EXUI:ScalePixels(thickness, UIParent)
+    if maxSize and maxSize > 0 then
+        inset = math.min(inset, maxSize * 0.25)
+    end
+    return math.max(0, inset)
+end
+
+core.ApplyInset = function(self, child, parent, thickness, maxSize)
     child:ClearAllPoints()
-    local inset = (thickness and thickness > 0) and EXUI:ScalePixels(thickness, child) or 0
+    local inset = self:GetChromeInset(thickness, maxSize)
     if inset <= 0 then
         child:SetAllPoints(parent)
         return
@@ -167,7 +180,7 @@ core.LayoutHealthHost = function(self, frame)
     host:ClearAllPoints()
     host:SetPoint('TOPLEFT')
     host:SetPoint('TOPRIGHT')
-    EXUI:SetHeight(host, db.sizeHeight or 16)
+    host:SetHeight(db.sizeHeight or 16)
 end
 
 core.EnsureBorderEdges = function(self, parent)
@@ -192,7 +205,7 @@ core.ApplyBorderEdges = function(self, parent, thickness, color)
         end
         return
     end
-    local px = EXUI:ScalePixels(thickness, parent)
+    local px = self:GetChromeInset(thickness)
     if px <= 0 then
         for _, tex in pairs(edges) do
             tex:Hide()
@@ -239,7 +252,7 @@ core.ApplyHealthChrome = function(self, frame, color)
         return
     end
     if bar then
-        self:ApplyInset(bar, host, thickness)
+        self:ApplyInset(bar, host, thickness, db.sizeHeight or 16)
     end
     self:ApplyBorderEdges(host, thickness, color or self:GetBorderColor(db))
 end
@@ -255,7 +268,7 @@ core.ApplyCastChrome = function(self, bar, db)
         self:SetFillColor(bar.chrome.BorderFill, nil)
         return
     end
-    self:ApplyInset(bar, bar.chrome, thickness)
+    self:ApplyInset(bar, bar.chrome, thickness, db and db.castbarHeight or 12)
     self:SetFillColor(bar.chrome.BorderFill, color)
 end
 
@@ -302,10 +315,6 @@ core.InvalidateStyle = function(self)
     self.styleGen = (self.styleGen or 1) + 1
 end
 
-core.NeedsPlateStyle = function(self, frame)
-    return frame._exuiStyleGen ~= self.styleGen or frame._exuiStyledFriendly ~= frame.isFriendly
-end
-
 core.ApplyPlateStyle = function(self, frame)
     self:LayoutHealthHost(frame)
 
@@ -334,20 +343,9 @@ core.BindPlateUnit = function(self, frame)
     end
     frame.db = self:GetDB()
     frame.isFriendly = self:IsFriendlyPlate(frame)
-
-    if self:NeedsPlateStyle(frame) then
-        self:ApplyPlateStyle(frame)
-    else
-        local unit = self:GetPlateUnit(frame)
-        if frame.Health and unit then
-            EXUI:GetModule('np-element-health').PostUpdateColor(frame.Health, unit)
-        end
-        EXUI:GetModule('np-element-target-highlight'):Update(frame)
-        local apply = EXUI:GetModule('np-auras-apply')
-        if apply and apply.BindFrame then
-            apply:BindFrame(frame)
-        end
-    end
+    -- Always re-apply layout. Nameplates are reused, and sizing that ran
+    -- during C++ scale-in/out can stick if we only style on generation changes.
+    self:ApplyPlateStyle(frame)
 
     if frame.UpdateTags then
         frame:UpdateTags()
@@ -390,6 +388,7 @@ core.UpdateAllPlates = function(self)
     self:InvalidateStyle()
     EXUI:GetModule('np-driver'):ApplySize()
     self:ForEachPlate(function(frame)
+        EXUI:GetModule('np-driver'):ApplyFrameSize(frame)
         self:UpdatePlate(frame)
         if frame.UpdateAllElements then
             frame:UpdateAllElements('RefreshUnit')
