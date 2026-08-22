@@ -10,26 +10,57 @@ local driver = EXUI:GetModule('np-driver')
 driver.oUFDriver = nil
 driver.eventFrame = nil
 
-local function wrapHitTestInsets()
-    if driver.hitTestWrapped then
+local function wrapProtectedNamePlateApis()
+    if driver.protectedApisWrapped then
         return
     end
-    if not C_NamePlateManager or not C_NamePlateManager.SetNamePlateHitTestInsets then
+    if C_NamePlateManager and C_NamePlateManager.SetNamePlateHitTestInsets then
+        C_NamePlateManager.SetNamePlateHitTestInsets = function() end
+    end
+    driver.protectedApisWrapped = true
+end
+
+local function callWithoutNamePlateSize(fn)
+    local namePlate = C_NamePlate
+    if not namePlate or not namePlate.SetNamePlateSize then
+        return fn()
+    end
+    local orig = namePlate.SetNamePlateSize
+    namePlate.SetNamePlateSize = function() end
+    local ok, result = pcall(fn)
+    namePlate.SetNamePlateSize = orig
+    if not ok then
+        error(result)
+    end
+    return result
+end
+
+local function disableOUFDriverSize(oUFDriver)
+    if not oUFDriver then
         return
     end
-    local orig = C_NamePlateManager.SetNamePlateHitTestInsets
-    C_NamePlateManager.SetNamePlateHitTestInsets = function(...)
-        pcall(orig, ...)
+    oUFDriver.SetSize = function(self, width, height)
+        self.plateWidth = width
+        self.plateHeight = height or width
     end
-    driver.hitTestWrapped = true
+    if oUFDriver.UnregisterEvent then
+        oUFDriver:UnregisterEvent('PLAYER_LOGIN')
+    end
 end
 
 driver.ApplySize = function(self)
-    if not self.oUFDriver then
-        return
+    local width, height = npCore:GetPlateSize()
+    if NamePlateDriverFrame then
+        NamePlateDriverFrame.baseNamePlateWidth = width
+        NamePlateDriverFrame.baseNamePlateHeight = height
     end
-    -- Protected; Blizzard may also rewrite this after display/cvar changes.
-    pcall(self.oUFDriver.SetSize, self.oUFDriver, npCore:GetPlateSize())
+    if self.oUFDriver then
+        self.oUFDriver.plateWidth = width
+        self.oUFDriver.plateHeight = height
+    end
+    npCore:ForEachPlate(function(frame)
+        self:ApplyFrameSize(frame)
+    end)
 end
 
 driver.ApplyFrameSize = function(self, frame)
@@ -125,7 +156,7 @@ driver.Enable = function(self)
         return
     end
 
-    wrapHitTestInsets()
+    wrapProtectedNamePlateApis()
     hookBlizzardPlateSize()
 
     local oUF = EXUI.oUF
@@ -133,7 +164,10 @@ driver.Enable = function(self)
 
     local previous = oUF:GetActiveStyle()
     oUF:SetActiveStyle(npCore.STYLE_NAME)
-    self.oUFDriver = oUF:SpawnNamePlates('ExalityUI')
+    self.oUFDriver = callWithoutNamePlateSize(function()
+        return oUF:SpawnNamePlates('ExalityUI')
+    end)
+    disableOUFDriverSize(self.oUFDriver)
     if previous then
         oUF:SetActiveStyle(previous)
     else
