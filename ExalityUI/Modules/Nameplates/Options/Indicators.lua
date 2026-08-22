@@ -57,6 +57,7 @@ function indicators:GetMenu()
                         return {
                             border = 'Border',
                             glow = 'Glow',
+                            borderglow = 'Border + Glow',
                         }
                     end, 33),
                     helpers.Color('Color', 'targetHighlightColor', 33),

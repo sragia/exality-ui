@@ -423,8 +423,13 @@ highlight.Update = function(self, frame, force)
     end
 
     if state == 'target' then
-        if (db.targetHighlightStyle or 'glow') == 'glow' then
-            npCore:ApplyHealthChrome(frame)
+        local style = db.targetHighlightStyle or 'glow'
+        if style == 'glow' or style == 'borderglow' then
+            if style == 'borderglow' then
+                npCore:ApplyHealthChrome(frame, db.targetHighlightColor)
+            else
+                npCore:ApplyHealthChrome(frame)
+            end
             stopPixelGlow(frame)
             showGlow(frame, db)
         else

@@ -174,7 +174,7 @@ defaults.PLATE = {
     mouseoverLightenAmount = 0.25,
 
     targetHighlightEnable = true,
-    targetHighlightStyle = 'glow', -- border | glow
+    targetHighlightStyle = 'glow', -- border | glow | borderglow
     targetHighlightColor = color(1, 0.82, 0.2, 1),
     targetHighlightDimOthers = false,
     targetHighlightDimAlpha = 0.45,
