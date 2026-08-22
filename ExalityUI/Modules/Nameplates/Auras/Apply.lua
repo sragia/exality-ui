@@ -74,16 +74,50 @@ function apply:DiscardContainer(frame, displayID)
     frame.NPAuraContainers[displayID] = nil
 end
 
-function apply:ClearFrame(frame)
+function apply:SetContainerUnit(container, unit)
+    if container and container.SetUnit and type(unit) == 'string' then
+        container:SetUnit(unit)
+    end
+end
+
+function apply:DetachFrame(frame)
     if not frame or not frame.NPAuraContainers then
         return
     end
-    local ids = {}
-    for displayID in pairs(frame.NPAuraContainers) do
-        table.insert(ids, displayID)
+    for _, container in pairs(frame.NPAuraContainers) do
+        if container.SetEnabled then
+            container:SetEnabled(false)
+        end
+        container:Hide()
     end
-    for _, displayID in ipairs(ids) do
-        self:DiscardContainer(frame, displayID)
+end
+
+function apply:ClearFrame(frame)
+    self:DetachFrame(frame)
+end
+
+function apply:BindFrame(frame)
+    if not frame or not npAuras:IsSupported() then
+        return
+    end
+    if frame.isPreview or frame.isFriendly then
+        self:DetachFrame(frame)
+        return
+    end
+    if not frame.NPAuraContainers or not next(frame.NPAuraContainers) then
+        self:UpdateFrame(frame)
+        return
+    end
+    local unit = frame.unit or frame.__unit
+    for _, container in pairs(frame.NPAuraContainers) do
+        self:SetContainerUnit(container, unit)
+        if container.SetEnabled then
+            container:SetEnabled(true)
+        end
+        container:Show()
+        if container.UpdateAllAuras then
+            container:UpdateAllAuras()
+        end
     end
 end
 
@@ -234,11 +268,7 @@ function apply:ConfigureContainer(frame, displayID, display, container)
     if container.SetFlowLayoutMaximumLineSize then
         container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
     end
-    if container.SetUnit and frame.unit then
-        container:SetUnit(frame.unit)
-    elseif container.SetUnit and frame.__unit then
-        container:SetUnit(frame.__unit)
-    end
+    self:SetContainerUnit(container, frame.unit or frame.__unit)
     if container.SetEnabled then
         container:SetEnabled(display.enable ~= false)
     end
@@ -276,9 +306,7 @@ function apply:UpdateFrame(frame)
                 if container.SetFlowLayoutMaximumLineSize then
                     container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
                 end
-                if container.SetUnit and frame.unit then
-                    container:SetUnit(frame.unit)
-                end
+                self:SetContainerUnit(container, frame.unit or frame.__unit)
                 if container.SetEnabled then
                     container:SetEnabled(display.enable ~= false)
                 end

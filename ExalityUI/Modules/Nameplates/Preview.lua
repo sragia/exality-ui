@@ -258,12 +258,10 @@ preview.Refresh = function(self)
     if db.raidTargetIndicatorEnable then
         SetRaidTargetIconTexture(frame.RaidTargetIndicator, 8)
         frame.RaidTargetIndicator:Show()
+        if frame.RaidTargetHost then
+            frame.RaidTargetHost:Show()
+        end
     end
-    if db.classificationIconEnable then
-        frame.Classification:SetAtlas('nameplates-icon-elite-gold')
-        frame.Classification:Show()
-    end
-
     EXUI:GetModule('np-element-health-prediction'):Update(frame)
     local health = frame.Health
     if db.damageAbsorbEnable and health.DamageAbsorb then

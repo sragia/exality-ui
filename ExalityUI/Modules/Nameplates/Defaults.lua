@@ -35,10 +35,14 @@ defaults.PLATE = {
     colorQuest = true,
     questColor = color(1, 0.82, 0.2),
     colorThreat = true,
-    threatHaveAggro = color(0.85, 0.18, 0.18),
-    threatNoAggro = color(0.9, 0.82, 0.2),
+    threatHaveAggro = color(0.58, 0.22, 0.82),
+    threatAggroLow = color(1, 0.92, 0.2),
+    threatNoAggro = color(0.85, 0.18, 0.18),
     colorCoTank = true,
-    threatCoTank = color(0.2, 0.55, 0.9),
+    threatCoTank = color(0.15, 0.82, 0.68),
+    threatPullingTank = color(1, 0.62, 0.15),
+    colorMiniboss = true,
+    minibossColor = color(0.88, 0.38, 0.55),
     colorClassification = false,
     classificationElite = color(1, 0.85, 0.2),
     classificationRare = color(0.4, 0.7, 1),
@@ -53,10 +57,13 @@ defaults.PLATE = {
     enemyPlayerColor = color(0.22, 0.68, 0.62),
     colorPet = false,
     petColor = color(0.68, 0.4, 0.48),
+    colorNeutral = true,
+    neutralColor = color(0.9, 0.7, 0),
+    unfriendlyColor = color(0.75, 0.27, 0),
     colorCasting = false,
     castingColor = color(0.92, 0.58, 0.22),
-    colorMana = true,
-    manaUnitColor = color(0.25, 0.48, 0.86),
+    colorCaster = true,
+    casterColor = color(0.25, 0.48, 0.86),
     friendlyNpcColor = color(0.3, 1, 0.3),
 
     -- Absorbs
@@ -151,14 +158,8 @@ defaults.PLATE = {
     raidTargetIndicatorRelativeAnchorPoint = 'LEFT',
     raidTargetIndicatorXOff = -2,
     raidTargetIndicatorYOff = 0,
-
-    -- Classification icon
-    classificationIconEnable = true,
-    classificationIconScale = 1,
-    classificationIconAnchorPoint = 'LEFT',
-    classificationIconRelativeAnchorPoint = 'RIGHT',
-    classificationIconXOff = 2,
-    classificationIconYOff = 0,
+    raidTargetIndicatorFrameStrata = 'MEDIUM',
+    raidTargetIndicatorFrameLevel = 0,
 
     mouseoverHighlightEnable = true,
     mouseoverHighlightColor = color(1, 1, 1, 1),
@@ -223,6 +224,13 @@ local function mergeMissingKeys(target, template)
 end
 
 function defaults:MergeIntoDB(db)
+    if db.colorCaster == nil and db.colorMana ~= nil then
+        db.colorCaster = db.colorMana
+    end
+    if db.casterColor == nil and db.manaUnitColor then
+        db.casterColor = EXUI.utils.deepCloneTable(db.manaUnitColor)
+    end
+
     local cvars = EXUI:GetModule('np-cvars')
     if cvars and cvars.SeedMissing then
         cvars:SeedMissing(db)

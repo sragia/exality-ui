@@ -29,8 +29,31 @@ local function isCasting(unit)
     return UnitCastingInfo(unit) or UnitChannelInfo(unit)
 end
 
+local function isMiniboss(unit)
+    if UnitIsPlayer(unit) or UnitPlayerControlled(unit) then
+        return false
+    end
+    if UnitIsBossMob and UnitIsBossMob(unit) then
+        return true
+    end
+    if UnitIsLieutenant and UnitIsLieutenant(unit) then
+        return true
+    end
+    local unitLevel = UnitEffectiveLevel(unit)
+    local playerLevel = UnitEffectiveLevel('player')
+    if issecretvalue and (issecretvalue(unitLevel) or issecretvalue(playerLevel)) then
+        return false
+    end
+    return unitLevel > 0 and unitLevel == playerLevel + 1
+end
+
 local function unitHasMana(unit)
     return UnitPowerType(unit) == Enum.PowerType.Mana
+end
+
+local function inDungeonOrRaid()
+    local inInstance, instanceType = IsInInstance()
+    return inInstance and (instanceType == 'party' or instanceType == 'raid')
 end
 
 local function classColor(unit)
@@ -90,6 +113,33 @@ local function applyColor(bar, c)
     return false
 end
 
+local function applyThreatColor(bar, db, unit)
+    if UnitPlayerControlled(unit) then
+        return false
+    end
+    local playerStatus = UnitThreatSituation('player', unit)
+    if playerStatus == nil then
+        return false
+    end
+    local tankAggro = db.colorCoTank and EXUI:GetModule('np-core'):OtherTankHasAggro(unit)
+    if playerStatus == 3 then
+        return applyColor(bar, db.threatHaveAggro)
+    end
+    if playerStatus == 2 then
+        return applyColor(bar, db.threatAggroLow or db.threatHaveAggro)
+    end
+    if playerStatus == 1 then
+        if tankAggro then
+            return applyColor(bar, db.threatPullingTank or db.threatNoAggro)
+        end
+        return applyColor(bar, db.threatNoAggro)
+    end
+    if tankAggro then
+        return applyColor(bar, db.threatCoTank)
+    end
+    return applyColor(bar, db.threatNoAggro)
+end
+
 health.PostUpdateColor = function(self, unit)
     local db = self.__owner and self.__owner.db
     unit = unit or (self.__owner and (self.__owner.unit or self.__owner.__unit))
@@ -99,6 +149,10 @@ health.PostUpdateColor = function(self, unit)
 
     if db.colorTapped and not UnitPlayerControlled(unit) and UnitIsTapDenied(unit) then
         applied = applyColor(self, db.tappedColor)
+    end
+
+    if not applied and db.colorThreat then
+        applied = applyThreatColor(self, db, unit)
     end
 
     if not applied and db.colorQuest and (
@@ -124,25 +178,25 @@ health.PostUpdateColor = function(self, unit)
         applied = applyColor(self, db.encounterBossColor)
     end
 
-    if not applied and db.colorMana and unitHasMana(unit) then
-        applied = applyColor(self, db.manaUnitColor)
+    if not applied and db.colorNeutral then
+        local reaction = UnitReaction(unit, 'player')
+        if reaction == 4 then
+            applied = applyColor(self, db.neutralColor)
+        elseif reaction == 3 then
+            applied = applyColor(self, db.unfriendlyColor or db.neutralColor)
+        end
     end
 
-    if not applied and db.colorThreat and not UnitPlayerControlled(unit) then
-        local playerStatus = UnitThreatSituation('player', unit)
-        local coTank = db.colorCoTank and EXUI:GetModule('np-core'):GetCoTankUnit()
-        local coTankStatus = coTank and UnitThreatSituation(coTank, unit)
-        if coTankStatus == 3 and playerStatus ~= 3 then
-            applied = applyColor(self, db.threatCoTank)
-        elseif playerStatus == 3 then
-            applied = applyColor(self, db.threatHaveAggro)
-        elseif playerStatus ~= nil then
-            applied = applyColor(self, db.threatNoAggro)
-        end
+    if not applied and db.colorCaster and inDungeonOrRaid() and unitHasMana(unit) then
+        applied = applyColor(self, db.casterColor or db.manaUnitColor)
     end
 
     if not applied and db.colorCasting and isCasting(unit) then
         applied = applyColor(self, db.castingColor)
+    end
+
+    if not applied and db.colorMiniboss and isMiniboss(unit) then
+        applied = applyColor(self, db.minibossColor)
     end
 
     if not applied and db.colorClassification then

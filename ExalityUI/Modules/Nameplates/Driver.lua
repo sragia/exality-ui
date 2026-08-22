@@ -71,12 +71,7 @@ driver.OnPlateAdded = function(self, frame, event, unit)
     end
     frame:SetClipsChildren(false)
     frame.db = npCore:GetDB()
-    npCore:UpdatePlate(frame)
-    EXUI:GetModule('np-element-classification'):UpdateIcon(frame, unit)
-    local castbar = frame.Castbar
-    if castbar and castbar.ForceUpdate and frame.IsElementEnabled and frame:IsElementEnabled('Castbar') then
-        castbar:ForceUpdate()
-    end
+    npCore:BindPlateUnit(frame)
 end
 
 driver.OnPlateRemoved = function(self, frame)
@@ -85,8 +80,8 @@ driver.OnPlateRemoved = function(self, frame)
     end
     EXUI:GetModule('np-element-target-highlight'):OnPlateRemoved(frame)
     local apply = EXUI:GetModule('np-auras-apply')
-    if apply and apply.ClearFrame then
-        apply:ClearFrame(frame)
+    if apply and apply.DetachFrame then
+        apply:DetachFrame(frame)
     end
 end
 
@@ -167,9 +162,9 @@ driver.RegisterSupportEvents = function(self)
             end
             npCore:UpdateAllPlates()
         elseif event == 'UNIT_CLASSIFICATION_CHANGED' or event == 'QUEST_LOG_UPDATE' then
-            npCore:UpdateClassificationIcons()
+            npCore:RefreshPlateHealthColors()
         elseif event == 'INSTANCE_ENCOUNTER_ENGAGE_UNIT' then
-            npCore:UpdateClassificationIcons()
+            npCore:RefreshPlateHealthColors()
         elseif event:find('SPELLCAST', 1, true) then
             npCore:UpdateHealthColorForUnit(unit)
         end

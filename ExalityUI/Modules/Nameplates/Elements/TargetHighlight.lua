@@ -101,7 +101,7 @@ local function resetChrome(frame)
     EXUI:GetModule('np-core'):ApplyHealthChrome(frame)
 end
 
-local STICKY_GRACE = 0.5
+local STICKY_GRACE = 0.2
 
 local function isMouseoverUnit(unit)
     return unit and UnitExists('mouseover') and UnitIsUnit(unit, 'mouseover')
@@ -119,13 +119,62 @@ local function refreshHealthColor(frame, unit)
     EXUI:GetModule('np-element-health').PostUpdateColor(bar, unit)
 end
 
+local function plateBase(frame)
+    return frame and frame:GetParent()
+end
+
+local function isCursorOverPlate(frame)
+    if not frame or not frame:IsShown() or not GetMouseFoci then
+        return false
+    end
+    local plate = plateBase(frame)
+    local foci = GetMouseFoci()
+    for i = 1, #foci do
+        local node = foci[i]
+        while node do
+            if node == frame or node == plate then
+                return true
+            end
+            node = node.GetParent and node:GetParent()
+        end
+    end
+    return false
+end
+
 local function isStickyHover(self, frame)
     return frame and self.stickyHoverFrame == frame
+end
+
+local function isIgnoredHoverFrame(self, frame)
+    return frame and self.ignoredHoverFrame == frame
+end
+
+local function isLiveMouseover(self, frame, unit)
+    return isMouseoverUnit(unit) and not isIgnoredHoverFrame(self, frame)
+end
+
+local function isHoverVisual(self, frame, unit)
+    return self.plateCursorFrame == frame or isStickyHover(self, frame) or isLiveMouseover(self, frame, unit)
 end
 
 highlight.ClearStickyHover = function(self)
     self.stickyHoverFrame = nil
     self.stickyHoverAt = nil
+end
+
+highlight.ForgetHover = function(self, frame)
+    if not frame or self.hoverFrame == frame then
+        self.hoverFrame = nil
+    end
+    if self.stickyHoverFrame == frame then
+        self:ClearStickyHover()
+    end
+    if self.plateCursorFrame == frame then
+        self.plateCursorFrame = nil
+    end
+    if self.ignoredHoverFrame == frame then
+        self.ignoredHoverFrame = nil
+    end
 end
 
 highlight.RememberHover = function(self, frame)
@@ -134,8 +183,8 @@ highlight.RememberHover = function(self, frame)
     end
 end
 
-highlight.HoldHover = function(self)
-    local frame = self.hoverFrame
+highlight.HoldHover = function(self, frame)
+    frame = frame or self.hoverFrame or self.plateCursorFrame
     if not frame or not frame:IsShown() then
         return false
     end
@@ -143,9 +192,18 @@ highlight.HoldHover = function(self)
     if isCurrentTargetUnit(unit) then
         return false
     end
+    self.hoverFrame = frame
     self.stickyHoverFrame = frame
     self.stickyHoverAt = GetTime()
     return true
+end
+
+highlight.IgnoreCurrentMouseover = function(self, frame)
+    self.ignoredHoverFrame = frame
+end
+
+highlight.RefreshHover = function(self)
+    EXUI:GetModule('np-core'):UpdateTargetHighlight()
 end
 
 highlight.StartMouseoverWatch = function(self)
@@ -153,31 +211,7 @@ highlight.StartMouseoverWatch = function(self)
         self.watch = CreateFrame('Frame')
     end
     self.watch:SetScript('OnUpdate', function()
-        if UnitExists('mouseover') then
-            return
-        end
-        local frame = highlight.stickyHoverFrame
-        if not frame then
-            highlight:StopMouseoverWatch()
-            return
-        end
-        local unit = EXUI:GetModule('np-core'):GetPlateUnit(frame)
-        if isCurrentTargetUnit(unit) then
-            highlight:ClearStickyHover()
-            EXUI:GetModule('np-core'):UpdateTargetHighlight()
-            highlight:StopMouseoverWatch()
-            return
-        end
-        if IsMouseButtonDown('LeftButton') then
-            highlight.stickyHoverAt = GetTime()
-            return
-        end
-        if highlight.stickyHoverAt and (GetTime() - highlight.stickyHoverAt) < STICKY_GRACE then
-            return
-        end
-        highlight:ClearStickyHover()
-        highlight:StopMouseoverWatch()
-        EXUI:GetModule('np-core'):UpdateTargetHighlight()
+        highlight:PollHover()
     end)
 end
 
@@ -188,47 +222,104 @@ highlight.StopMouseoverWatch = function(self)
     self.watch:SetScript('OnUpdate', nil)
 end
 
-highlight.OnPlateRemoved = function(self, frame)
-    if self.hoverFrame == frame then
-        self.hoverFrame = nil
+highlight.LeavePlateCursor = function(self, frame)
+    if IsMouseButtonDown('LeftButton') then
+        self:HoldHover(frame)
+        self:StartMouseoverWatch()
+        return
     end
-    if self.stickyHoverFrame == frame then
+    self:IgnoreCurrentMouseover(frame)
+    self:ClearStickyHover()
+    self.plateCursorFrame = nil
+    self:RememberHover(frame)
+    self:RefreshHover()
+    self:StartMouseoverWatch()
+end
+
+highlight.PollHover = function(self)
+    local frame = self.plateCursorFrame or self.stickyHoverFrame or self.hoverFrame
+    if not frame or not frame:IsShown() then
         self:ClearStickyHover()
+        self.hoverFrame = nil
+        self.plateCursorFrame = nil
+        self:StopMouseoverWatch()
+        self:RefreshHover()
+        return
+    end
+
+    if isCursorOverPlate(frame) then
+        self.plateCursorFrame = frame
+        self:RememberHover(frame)
+        self.ignoredHoverFrame = nil
+        return
+    end
+
+    if IsMouseButtonDown('LeftButton') then
+        self:HoldHover(frame)
+        return
+    end
+
+    if self.plateCursorFrame == frame then
+        self:LeavePlateCursor(frame)
+        return
+    end
+
+    local unit = EXUI:GetModule('np-core'):GetPlateUnit(frame)
+    if isLiveMouseover(self, frame, unit) then
+        return
+    end
+
+    if self.stickyHoverAt and (GetTime() - self.stickyHoverAt) < STICKY_GRACE then
+        return
+    end
+
+    if isIgnoredHoverFrame(self, frame) then
+        return
+    end
+
+    self:ClearStickyHover()
+    self.hoverFrame = nil
+    self:StopMouseoverWatch()
+    self:RefreshHover()
+end
+
+highlight.OnPlateRemoved = function(self, frame)
+    self:ForgetHover(frame)
+    if not self.hoverFrame and not self.stickyHoverFrame and not self.plateCursorFrame then
         self:StopMouseoverWatch()
     end
 end
 
 highlight.OnTargetChanged = function(self)
     self:ClearStickyHover()
-    EXUI:GetModule('np-core'):UpdateTargetHighlight()
+    self:RefreshHover()
 end
 
 highlight.OnMouseoverChanged = function(self)
     if UnitExists('mouseover') then
-        self:ClearStickyHover()
+        local ignoredUnit = self.ignoredHoverFrame and EXUI:GetModule('np-core'):GetPlateUnit(self.ignoredHoverFrame)
+        if not ignoredUnit or not UnitIsUnit('mouseover', ignoredUnit) then
+            self.ignoredHoverFrame = nil
+            self:ClearStickyHover()
+        end
         if self.pendingMouseover then
             return
         end
         self.pendingMouseover = true
         C_Timer.After(0, function()
             self.pendingMouseover = false
-            EXUI:GetModule('np-core'):UpdateTargetHighlight()
-            if UnitExists('mouseover') then
-                self:StartMouseoverWatch()
-            else
-                if self:HoldHover() then
-                    EXUI:GetModule('np-core'):UpdateTargetHighlight()
-                    self:StartMouseoverWatch()
-                else
-                    self:StopMouseoverWatch()
-                end
-            end
+            self:RefreshHover()
+            self:StartMouseoverWatch()
         end)
         return
     end
 
-    self:HoldHover()
-    EXUI:GetModule('np-core'):UpdateTargetHighlight()
+    if IsMouseButtonDown('LeftButton') then
+        self:HoldHover()
+    else
+        self:ClearStickyHover()
+    end
+    self:RefreshHover()
     self:StartMouseoverWatch()
 end
 
@@ -244,7 +335,7 @@ highlight.ShouldLightenHealth = function(self, frame)
     if isCurrentTargetUnit(unit) then
         return false
     end
-    return isMouseoverUnit(unit) or isStickyHover(self, frame)
+    return isHoverVisual(self, frame, unit)
 end
 
 highlight.ApplyHealthLighten = function(self, frame, bar)
@@ -275,15 +366,13 @@ highlight.Update = function(self, frame)
     end
 
     local unit = npCore:GetPlateUnit(frame)
-    if isMouseoverUnit(unit) then
+    if isHoverVisual(self, frame, unit) then
         self:RememberHover(frame)
     end
 
     local isCurrentTarget = frame.isPreview or isCurrentTargetUnit(unit)
     local isTarget = db.targetHighlightEnable and isCurrentTarget
-    local isMouseover = db.mouseoverHighlightEnable and not isCurrentTarget and (
-        isMouseoverUnit(unit) or isStickyHover(self, frame)
-    )
+    local isMouseover = db.mouseoverHighlightEnable and not isCurrentTarget and isHoverVisual(self, frame, unit)
 
     if db.targetHighlightEnable and db.targetHighlightDimOthers and UnitExists('target') and not isTarget then
         frame._exuiDimmed = true

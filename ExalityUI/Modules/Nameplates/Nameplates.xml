@@ -9,7 +9,6 @@
     <Script file="Elements/HealthPerc.lua"/>
     <Script file="Elements/CastBar.lua"/>
     <Script file="Elements/RaidTarget.lua"/>
-    <Script file="Elements/Classification.lua"/>
     <Script file="Elements/TargetHighlight.lua"/>
     <Script file="Elements/CustomTexts.lua"/>
     <Script file="Core.lua"/>

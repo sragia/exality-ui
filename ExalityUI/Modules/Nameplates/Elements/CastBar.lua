@@ -43,6 +43,12 @@ local function setTimeBindingEnabled(element, enabled)
     end
 end
 
+local function setUninterruptibleShown(element, shown)
+    if element.Uninterruptible then
+        element.Uninterruptible:SetAlphaFromBoolean(shown, 1, 0)
+    end
+end
+
 local function restoreCastVisuals(element)
     local db = plateDB(element)
     element.interruptHold = nil
@@ -54,6 +60,7 @@ local function restoreCastVisuals(element)
     if element.Icon then
         element.Icon:SetAlpha(1)
     end
+    setUninterruptibleShown(element, false)
     if element.InterruptText then
         element.InterruptText:Hide()
     end
@@ -135,6 +142,7 @@ local function applyInterruptHold(element, interruptedBy)
     if element.TargetText then
         element.TargetText:Hide()
     end
+    setUninterruptibleShown(element, true)
 
     local interruptText = element.InterruptText
     if not interruptText then
@@ -394,6 +402,7 @@ castBar.Update = function(self, frame)
         bar.InterruptText:Show()
         bar:SetMinMaxValues(0, 1)
         bar:SetValue(1)
+        setUninterruptibleShown(bar, true)
     else
         bar.InterruptText:Hide()
     end

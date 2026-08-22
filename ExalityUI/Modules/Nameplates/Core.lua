@@ -13,7 +13,9 @@ local core = EXUI:GetModule('np-core')
 core.STYLE_NAME = 'ExalityUINameplates'
 core.enabled = false
 core.cachedCoTank = nil
+core.cachedTanks = {}
 core.rosterDirty = true
+core.styleGen = 1
 
 core.GetDB = function(self)
     return data:GetDataByKey('nameplates')
@@ -43,12 +45,13 @@ end
 
 core.ScanCoTank = function(self)
     self.cachedCoTank = nil
+    self.cachedTanks = {}
     if IsInRaid() then
         for i = 1, GetNumGroupMembers() do
             local unit = 'raid' .. i
             if UnitExists(unit) and not UnitIsUnit(unit, 'player') and UnitGroupRolesAssigned(unit) == 'TANK' then
-                self.cachedCoTank = unit
-                return
+                self.cachedTanks[#self.cachedTanks + 1] = unit
+                self.cachedCoTank = self.cachedCoTank or unit
             end
         end
         return
@@ -57,8 +60,8 @@ core.ScanCoTank = function(self)
         for i = 1, GetNumSubgroupMembers() do
             local unit = 'party' .. i
             if UnitExists(unit) and UnitGroupRolesAssigned(unit) == 'TANK' then
-                self.cachedCoTank = unit
-                return
+                self.cachedTanks[#self.cachedTanks + 1] = unit
+                self.cachedCoTank = self.cachedCoTank or unit
             end
         end
     end
@@ -69,6 +72,29 @@ core.GetCoTankUnit = function(self)
         self:ScanCoTank()
     end
     return self.cachedCoTank
+end
+
+core.OtherTankHasAggro = function(self, mob)
+    if not mob then
+        return false
+    end
+    local tanks = self.cachedTanks
+    if not tanks or #tanks == 0 then
+        if not InCombatLockdown() then
+            self:ScanCoTank()
+            tanks = self.cachedTanks
+        end
+    end
+    if not tanks then
+        return false
+    end
+    for i = 1, #tanks do
+        local tank = tanks[i]
+        if UnitExists(tank) and UnitThreatSituation(tank, mob) == 3 then
+            return true
+        end
+    end
+    return false
 end
 
 core.GetPlateUnit = function(self, frame)
@@ -263,14 +289,18 @@ core.BuildPlate = function(self, frame)
     frame.HealthPerc = EXUI:GetModule('np-element-health-perc'):Create(frame)
     frame.Castbar = EXUI:GetModule('np-element-cast-bar'):Create(frame)
     frame.RaidTargetIndicator = EXUI:GetModule('np-element-raid-target'):Create(frame)
-    frame.Classification = EXUI:GetModule('np-element-classification'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('np-element-custom-texts'):Create(frame)
 end
 
-core.UpdatePlate = function(self, frame)
-    if not frame or frame:IsForbidden() then return end
-    frame.db = self:GetDB()
-    frame.isFriendly = self:IsFriendlyPlate(frame)
+core.InvalidateStyle = function(self)
+    self.styleGen = (self.styleGen or 1) + 1
+end
+
+core.NeedsPlateStyle = function(self, frame)
+    return frame._exuiStyleGen ~= self.styleGen or frame._exuiStyledFriendly ~= frame.isFriendly
+end
+
+core.ApplyPlateStyle = function(self, frame)
     self:LayoutHealthHost(frame)
 
     EXUI:GetModule('np-element-health'):Update(frame)
@@ -280,7 +310,6 @@ core.UpdatePlate = function(self, frame)
     EXUI:GetModule('np-element-health-perc'):Update(frame)
     EXUI:GetModule('np-element-cast-bar'):Update(frame)
     EXUI:GetModule('np-element-raid-target'):Update(frame)
-    EXUI:GetModule('np-element-classification'):Update(frame)
     EXUI:GetModule('np-element-custom-texts'):Update(frame)
     EXUI:GetModule('np-element-target-highlight'):Update(frame)
 
@@ -289,6 +318,41 @@ core.UpdatePlate = function(self, frame)
         apply:UpdateFrame(frame)
     end
 
+    frame._exuiStyleGen = self.styleGen
+    frame._exuiStyledFriendly = frame.isFriendly
+end
+
+core.BindPlateUnit = function(self, frame)
+    if not frame or frame:IsForbidden() then
+        return
+    end
+    frame.db = self:GetDB()
+    frame.isFriendly = self:IsFriendlyPlate(frame)
+
+    if self:NeedsPlateStyle(frame) then
+        self:ApplyPlateStyle(frame)
+    else
+        local unit = self:GetPlateUnit(frame)
+        if frame.Health and unit then
+            EXUI:GetModule('np-element-health').PostUpdateColor(frame.Health, unit)
+        end
+        EXUI:GetModule('np-element-target-highlight'):Update(frame)
+        local apply = EXUI:GetModule('np-auras-apply')
+        if apply and apply.BindFrame then
+            apply:BindFrame(frame)
+        end
+    end
+
+    if frame.UpdateTags then
+        frame:UpdateTags()
+    end
+end
+
+core.UpdatePlate = function(self, frame)
+    if not frame or frame:IsForbidden() then return end
+    frame.db = self:GetDB()
+    frame.isFriendly = self:IsFriendlyPlate(frame)
+    self:ApplyPlateStyle(frame)
     if frame.UpdateTags then
         frame:UpdateTags()
     end
@@ -317,6 +381,7 @@ core.UpdateAllPlates = function(self)
         return
     end
     self:UpdateHealthCurve()
+    self:InvalidateStyle()
     EXUI:GetModule('np-driver'):ApplySize()
     self:ForEachPlate(function(frame)
         self:UpdatePlate(frame)
@@ -348,10 +413,9 @@ core.UpdateHealthColorForUnit = function(self, unit)
     end)
 end
 
-core.UpdateClassificationIcons = function(self)
+core.RefreshPlateHealthColors = function(self)
     self:ForEachPlate(function(frame)
         local unit = frame.unit or frame.__unit
-        EXUI:GetModule('np-element-classification'):UpdateIcon(frame, unit)
         if frame.Health and unit then
             EXUI:GetModule('np-element-health').PostUpdateColor(frame.Health, unit)
         end

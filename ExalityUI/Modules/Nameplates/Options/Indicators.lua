@@ -20,20 +20,10 @@ function indicators:GetMenu()
                     helpers.Anchor('Relative Point', 'raidTargetIndicatorRelativeAnchorPoint', 25),
                     helpers.Range('X Offset', 'raidTargetIndicatorXOff', -200, 200, 1, 25),
                     helpers.Range('Y Offset', 'raidTargetIndicatorYOff', -200, 200, 1, 25),
-                }
-            end,
-        },
-        {
-            id = 'classification',
-            name = 'Classification',
-            options = function()
-                return {
-                    helpers.Toggle('Enable', 'classificationIconEnable'),
-                    helpers.Range('Scale', 'classificationIconScale', 0.5, 3, 0.1, 25),
-                    helpers.Anchor('Anchor Point', 'classificationIconAnchorPoint', 25),
-                    helpers.Anchor('Relative Point', 'classificationIconRelativeAnchorPoint', 25),
-                    helpers.Range('X Offset', 'classificationIconXOff', -200, 200, 1, 25),
-                    helpers.Range('Y Offset', 'classificationIconYOff', -200, 200, 1, 25),
+                    helpers.Dropdown('Frame Strata', 'raidTargetIndicatorFrameStrata', function()
+                        return EXUI.const.frameStrata
+                    end, 50),
+                    helpers.Range('Frame Level', 'raidTargetIndicatorFrameLevel', 0, 200, 1, 50),
                 }
             end,
         },
