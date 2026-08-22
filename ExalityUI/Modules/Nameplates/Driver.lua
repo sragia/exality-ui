@@ -83,6 +83,7 @@ driver.OnPlateRemoved = function(self, frame)
     if not frame then
         return
     end
+    EXUI:GetModule('np-element-target-highlight'):OnPlateRemoved(frame)
     local apply = EXUI:GetModule('np-auras-apply')
     if apply and apply.ClearFrame then
         apply:ClearFrame(frame)
@@ -90,7 +91,7 @@ driver.OnPlateRemoved = function(self, frame)
 end
 
 driver.OnTargetChanged = function(self)
-    npCore:UpdateTargetHighlight()
+    EXUI:GetModule('np-element-target-highlight'):OnTargetChanged()
 end
 
 driver.Enable = function(self)
@@ -149,7 +150,7 @@ driver.RegisterSupportEvents = function(self)
     frame:RegisterEvent('UNIT_SPELLCAST_FAILED')
     frame:SetScript('OnEvent', function(_, event, unit)
         if event == 'PLAYER_TARGET_CHANGED' then
-            npCore:UpdateTargetHighlight()
+            EXUI:GetModule('np-element-target-highlight'):OnTargetChanged()
         elseif event == 'UPDATE_MOUSEOVER_UNIT' then
             EXUI:GetModule('np-element-target-highlight'):OnMouseoverChanged()
         elseif event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' then

@@ -41,9 +41,19 @@ function indicators:GetMenu()
             id = 'mouseover',
             name = 'Mouseover',
             options = function()
+                local lightenToggle = helpers.Toggle('Lighten Health', 'mouseoverLightenHealth')
+                lightenToggle.depends = function()
+                    return helpers.Get('mouseoverHighlightEnable')
+                end
+                local lightenAmount = helpers.Range('Lighten Amount', 'mouseoverLightenAmount', 0.05, 0.75, 0.05, 50)
+                lightenAmount.depends = function()
+                    return helpers.Get('mouseoverHighlightEnable') and helpers.Get('mouseoverLightenHealth')
+                end
                 return {
                     helpers.Toggle('Enable', 'mouseoverHighlightEnable'),
                     helpers.Color('Border Color', 'mouseoverHighlightColor', 50),
+                    lightenToggle,
+                    lightenAmount,
                 }
             end,
         },

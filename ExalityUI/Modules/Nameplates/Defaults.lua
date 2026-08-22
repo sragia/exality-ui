@@ -162,6 +162,8 @@ defaults.PLATE = {
 
     mouseoverHighlightEnable = true,
     mouseoverHighlightColor = color(1, 1, 1, 1),
+    mouseoverLightenHealth = false,
+    mouseoverLightenAmount = 0.25,
 
     targetHighlightEnable = true,
     targetHighlightStyle = 'glow', -- border | glow | arrows
