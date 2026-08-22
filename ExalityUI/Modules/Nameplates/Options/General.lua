@@ -13,8 +13,8 @@ local general = EXUI:GetModule('np-options-general')
 function general:GetMenu()
     return {
         {
-            id = 'enable',
-            name = 'Enable',
+            id = 'appearance',
+            name = 'Appearance',
             options = function()
                 return {
                     {
@@ -33,33 +33,12 @@ function general:GetMenu()
                             text = 'Requires a UI reload. While disabled, nameplates do nothing at runtime.',
                         },
                     },
-                }
-            end,
-        },
-        {
-            id = 'size',
-            name = 'Size',
-            options = function()
-                return {
+                    { type = 'title', label = 'Size', width = 100, size = 18 },
                     helpers.Range('Width', 'sizeWidth', 40, 400, 1, 50),
                     helpers.Range('Height', 'sizeHeight', 4, 80, 1, 50),
-                }
-            end,
-        },
-        {
-            id = 'texture',
-            name = 'Texture',
-            options = function()
-                return {
+                    { type = 'title', label = 'Texture', width = 100, size = 18 },
                     helpers.TextureDropdown('Status Bar Texture', 'statusBarTexture', 50),
-                }
-            end,
-        },
-        {
-            id = 'border',
-            name = 'Border',
-            options = function()
-                return {
+                    { type = 'title', label = 'Border', width = 100, size = 18 },
                     helpers.Range('Thickness', 'borderThickness', 0, 4, 1, 50),
                     helpers.Color('Color', 'borderColor', 50),
                 }

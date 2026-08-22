@@ -110,7 +110,7 @@ end
 
 cvars.ApplyKey = function(self, key, value)
     local spec = self.SPEC[key]
-    if not spec or not cvarExists(spec.cvar) then
+    if not spec then
         return
     end
     if spec.kind == 'bool' then

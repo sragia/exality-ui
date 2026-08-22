@@ -18,6 +18,13 @@ local nameplates = EXUI:GetModule('nameplates')
 
 nameplates.enabled = false
 
+nameplates.ApplyCVars = function(self)
+    if not self.enabled then
+        return
+    end
+    EXUI:GetModule('np-cvars'):ApplyAll(npCore:GetDB())
+end
+
 nameplates.Init = function(self)
     npCore:EnsureDB()
     EXUI:GetModule('np-element-custom-texts'):Init()
@@ -28,6 +35,10 @@ nameplates.Init = function(self)
     if npCore:GetValue('enable') then
         self:Enable()
     end
+
+    C_Timer.After(1, function()
+        nameplates:ApplyCVars()
+    end)
 end
 
 nameplates.GetName = function()
@@ -64,7 +75,7 @@ nameplates.Enable = function(self)
     end
     self.enabled = true
     npCore:UpdateHealthCurve()
-    EXUI:GetModule('np-cvars'):ApplyAll(npCore:GetDB())
+    self:ApplyCVars()
     EXUI:GetModule('np-auras-apply'):Init()
     driver:Enable()
 end
