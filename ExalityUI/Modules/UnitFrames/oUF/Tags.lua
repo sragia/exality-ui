@@ -36,6 +36,9 @@ tags.DESCRIPTIONS = {
     ['perpp'] = 'Unit Power in %',
     ['maxhp'] = 'Max Health',
     ['perhp'] = 'Health in %',
+    ['perhp:decimal'] = 'Health in %, up to 2 decimals',
+    ['perhp:1'] = 'Health in %, 1 decimal',
+    ['perhp:2'] = 'Health in %, 2 decimals',
     ['offline'] = 'Shows "Offline" if the unit is not connected to the server',
     ['missinghp'] = 'Missing Health',
     ['chi'] = 'Chi Count',
@@ -54,7 +57,37 @@ tags.DESCRIPTIONS = {
     ['nsrt-name'] = 'Nickname provided by Northern Sky Raid Tools addon'
 }
 
+local function formatPerhp(unit, decimals)
+    local pct = UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
+    local text = string.format('%.' .. decimals .. 'f', pct)
+    if decimals > 0 then
+        text = text:gsub('0+$', ''):gsub('%.$', '')
+    end
+    return text
+end
+
 tags.TAGS = {
+    {
+        name = 'perhp:decimal',
+        method = function(unit)
+            return formatPerhp(unit, 2)
+        end,
+        events = 'UNIT_HEALTH UNIT_MAXHEALTH',
+    },
+    {
+        name = 'perhp:1',
+        method = function(unit)
+            return string.format('%.1f', UnitHealthPercent(unit, true, CurveConstants.ScaleTo100))
+        end,
+        events = 'UNIT_HEALTH UNIT_MAXHEALTH',
+    },
+    {
+        name = 'perhp:2',
+        method = function(unit)
+            return string.format('%.2f', UnitHealthPercent(unit, true, CurveConstants.ScaleTo100))
+        end,
+        events = 'UNIT_HEALTH UNIT_MAXHEALTH',
+    },
     {
         name = 'curhp:formatted',
         method = function(unit)
