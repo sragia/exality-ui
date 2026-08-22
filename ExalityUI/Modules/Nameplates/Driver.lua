@@ -137,6 +137,8 @@ driver.RegisterSupportEvents = function(self)
     frame:RegisterEvent('UNIT_CLASSIFICATION_CHANGED')
     frame:RegisterEvent('QUEST_LOG_UPDATE')
     frame:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
+    frame:RegisterEvent('UNIT_FACTION')
+    frame:RegisterEvent('DUEL_FINISHED')
     frame:RegisterEvent('UNIT_SPELLCAST_START')
     frame:RegisterEvent('UNIT_SPELLCAST_STOP')
     frame:RegisterEvent('UNIT_SPELLCAST_CHANNEL_START')
@@ -165,6 +167,14 @@ driver.RegisterSupportEvents = function(self)
             npCore:RefreshPlateHealthColors()
         elseif event == 'INSTANCE_ENCOUNTER_ENGAGE_UNIT' then
             npCore:RefreshPlateHealthColors()
+        elseif event == 'UNIT_FACTION' then
+            if not unit or UnitIsUnit(unit, 'player') then
+                npCore:RefreshPlateFriendship()
+            else
+                npCore:RefreshPlateFriendship(unit)
+            end
+        elseif event == 'DUEL_FINISHED' then
+            npCore:RefreshPlateFriendship()
         elseif event:find('SPELLCAST', 1, true) then
             npCore:UpdateHealthColorForUnit(unit)
         end

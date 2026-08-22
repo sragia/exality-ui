@@ -19,6 +19,8 @@ cvars.SPEC = {
     stackFriendlies = { cvar = 'nameplateStackingTypes', kind = 'bit', index = function()
         return stackIndex('friendly')
     end },
+    overlapH = { cvar = 'nameplateOverlapH', kind = 'number' },
+    overlapV = { cvar = 'nameplateOverlapV', kind = 'number' },
     showAll = { cvar = 'nameplateShowAll', kind = 'bool' },
     showEnemies = { cvar = 'nameplateShowEnemies', kind = 'bool' },
     showEnemyMinions = { cvar = 'nameplateShowEnemyMinions', kind = 'bool' },

@@ -103,7 +103,13 @@ end
 
 core.IsFriendlyPlate = function(self, frame, unit)
     unit = unit or self:GetPlateUnit(frame)
-    return unit and UnitIsFriend('player', unit) or false
+    if not unit then
+        return false
+    end
+    if UnitCanAttack('player', unit) then
+        return false
+    end
+    return UnitIsFriend('player', unit)
 end
 
 core.UpdateHealthCurve = function(self)
@@ -410,6 +416,18 @@ core.UpdateHealthColorForUnit = function(self, unit)
         if plateUnit and UnitIsUnit(plateUnit, unit) and frame.Health then
             EXUI:GetModule('np-element-health').PostUpdateColor(frame.Health, plateUnit)
         end
+    end)
+end
+
+core.RefreshPlateFriendship = function(self, unit)
+    self:ForEachPlate(function(frame)
+        if unit then
+            local plateUnit = self:GetPlateUnit(frame)
+            if not plateUnit or not UnitIsUnit(plateUnit, unit) then
+                return
+            end
+        end
+        self:BindPlateUnit(frame)
     end)
 end
 

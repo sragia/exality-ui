@@ -56,6 +56,22 @@ local function inDungeonOrRaid()
     return inInstance and (instanceType == 'party' or instanceType == 'raid')
 end
 
+local function inDungeon()
+    local inInstance, instanceType = IsInInstance()
+    return inInstance and instanceType == 'party'
+end
+
+local function playerIsTank()
+    if IsInGroup() then
+        local role = UnitGroupRolesAssigned('player')
+        if role ~= 'NONE' then
+            return role == 'TANK'
+        end
+    end
+    local spec = GetSpecialization and GetSpecialization()
+    return spec and GetSpecializationRole and GetSpecializationRole(spec) == 'TANK'
+end
+
 local function classColor(unit)
     local _, class = UnitClass(unit)
     if class and C_ClassColor and C_ClassColor.GetClassColor then
@@ -140,6 +156,20 @@ local function applyThreatColor(bar, db, unit)
     return applyColor(bar, db.threatNoAggro)
 end
 
+local function applyCasterColor(bar, db, unit)
+    if not db.colorCaster or not inDungeonOrRaid() or not unitHasMana(unit) then
+        return false
+    end
+    return applyColor(bar, db.casterColor or db.manaUnitColor)
+end
+
+local function applyMinibossColor(bar, db, unit)
+    if not db.colorMiniboss or not isMiniboss(unit) then
+        return false
+    end
+    return applyColor(bar, db.minibossColor)
+end
+
 health.PostUpdateColor = function(self, unit)
     local db = self.__owner and self.__owner.db
     unit = unit or (self.__owner and (self.__owner.unit or self.__owner.__unit))
@@ -149,6 +179,14 @@ health.PostUpdateColor = function(self, unit)
 
     if db.colorTapped and not UnitPlayerControlled(unit) and UnitIsTapDenied(unit) then
         applied = applyColor(self, db.tappedColor)
+    end
+
+    local rankOverThreat = db.rankOverThreatInDungeon and playerIsTank() and inDungeon()
+    if not applied and rankOverThreat then
+        applied = applyCasterColor(self, db, unit)
+        if not applied then
+            applied = applyMinibossColor(self, db, unit)
+        end
     end
 
     if not applied and db.colorThreat then
@@ -187,16 +225,16 @@ health.PostUpdateColor = function(self, unit)
         end
     end
 
-    if not applied and db.colorCaster and inDungeonOrRaid() and unitHasMana(unit) then
-        applied = applyColor(self, db.casterColor or db.manaUnitColor)
+    if not applied then
+        applied = applyCasterColor(self, db, unit)
     end
 
     if not applied and db.colorCasting and isCasting(unit) then
         applied = applyColor(self, db.castingColor)
     end
 
-    if not applied and db.colorMiniboss and isMiniboss(unit) then
-        applied = applyColor(self, db.minibossColor)
+    if not applied then
+        applied = applyMinibossColor(self, db, unit)
     end
 
     if not applied and db.colorClassification then

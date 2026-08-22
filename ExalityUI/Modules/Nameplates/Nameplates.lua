@@ -39,7 +39,7 @@ nameplates.GetOrder = function()
 end
 
 nameplates.GetIcon = function()
-    return [[Interface/Addons/ExalityUI/Assets/Images/Menu/unit-frames.png]]
+    return [[Interface/Addons/ExalityUI/Assets/Images/Menu/nameplates.png]]
 end
 
 nameplates.GetProfileExportSpec = function()

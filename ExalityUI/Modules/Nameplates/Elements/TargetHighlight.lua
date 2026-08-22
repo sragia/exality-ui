@@ -5,7 +5,6 @@ local EXUI = select(2, ...)
 local highlight = EXUI:GetModule('np-element-target-highlight')
 
 local LCG = LibStub('LibCustomGlow-1.0', true)
-local ARROW_SIZE = 14
 local GLOW_SLICE = 16
 local GLOW_OUTSET = 6
 
@@ -57,46 +56,8 @@ local function clearDim(frame)
     frame:SetAlpha(1)
 end
 
-local function ensureArrows(frame)
-    if frame.TargetArrows then
-        return frame.TargetArrows
-    end
-    local parent = frame.ElementFrame or frame
-    local tex = EXUI.const.textures.frame.icons.chevronRight
-    local left = parent:CreateTexture(nil, 'OVERLAY')
-    left:SetTexture(tex)
-    left:SetSize(ARROW_SIZE, ARROW_SIZE)
-    left:SetPoint('RIGHT', frame, 'LEFT', -2, 0)
-    local right = parent:CreateTexture(nil, 'OVERLAY')
-    right:SetTexture(tex)
-    right:SetTexCoord(1, 0, 0, 1)
-    right:SetSize(ARROW_SIZE, ARROW_SIZE)
-    right:SetPoint('LEFT', frame, 'RIGHT', 2, 0)
-    frame.TargetArrows = { left = left, right = right }
-    return frame.TargetArrows
-end
-
-local function hideArrows(frame)
-    local arrows = frame.TargetArrows
-    if not arrows then
-        return
-    end
-    arrows.left:Hide()
-    arrows.right:Hide()
-end
-
-local function showArrows(frame, db)
-    local arrows = ensureArrows(frame)
-    local c = db.targetHighlightColor or { r = 1, g = 0.82, b = 0.2, a = 1 }
-    arrows.left:SetVertexColor(c.r, c.g, c.b, c.a or 1)
-    arrows.right:SetVertexColor(c.r, c.g, c.b, c.a or 1)
-    arrows.left:Show()
-    arrows.right:Show()
-end
-
 local function resetChrome(frame)
     stopGlow(frame)
-    hideArrows(frame)
     clearDim(frame)
     EXUI:GetModule('np-core'):ApplyHealthChrome(frame)
 end
@@ -382,19 +343,12 @@ highlight.Update = function(self, frame)
     end
 
     if isTarget then
-        local style = db.targetHighlightStyle or 'glow'
-        if style == 'glow' then
+        if (db.targetHighlightStyle or 'glow') == 'glow' then
             npCore:ApplyHealthChrome(frame)
-            hideArrows(frame)
             stopPixelGlow(frame)
             showGlow(frame, db)
-        elseif style == 'arrows' then
-            npCore:ApplyHealthChrome(frame)
-            stopGlow(frame)
-            showArrows(frame, db)
         else
             stopGlow(frame)
-            hideArrows(frame)
             npCore:ApplyHealthChrome(frame, db.targetHighlightColor)
         end
         refreshHealthColor(frame, unit)
@@ -402,7 +356,6 @@ highlight.Update = function(self, frame)
     end
 
     stopGlow(frame)
-    hideArrows(frame)
     if isMouseover then
         npCore:ApplyHealthChrome(frame, db.mouseoverHighlightColor)
     else

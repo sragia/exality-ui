@@ -16,6 +16,8 @@ function behavior:GetMenu()
                 return {
                     helpers.CVarToggle('Stack Enemies', 'stackEnemies'),
                     helpers.CVarToggle('Stack Friendlies', 'stackFriendlies'),
+                    helpers.CVarRange('Overlap Horizontal', 'overlapH', 0.1, 3, 0.05, 50),
+                    helpers.CVarRange('Overlap Vertical', 'overlapV', 0.1, 3, 0.05, 50),
                 }
             end,
         },

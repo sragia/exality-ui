@@ -23,7 +23,7 @@ local icons = {
     ['Tweaks/Bugfixes'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/tweaks-bugfixes.png]],
     ['Custom Windows'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/custom-windows.png]],
     ['Aura Displays'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/aura-displays.png]],
-    ['Nameplates'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/unit-frames.png]],
+    ['Nameplates'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/nameplates.png]],
 }
 
 navIcons.Get = function(self, name, module)

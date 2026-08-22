@@ -106,6 +106,7 @@ function health:GetMenu()
                     helpers.Toggle('Color Co-Tank Aggro', 'colorCoTank'),
                     colorWhen('Co-Tank Aggro', 'threatCoTank', 50, 'colorCoTank'),
                     colorWhen('Overaggroing', 'threatPullingTank', 50, 'colorCoTank'),
+                    helpers.Toggle('Rank Over Aggro in Dungeons', 'rankOverThreatInDungeon'),
                     { type = 'title', label = 'Units', width = 100 },
                     helpers.Toggle('Color Encounter Boss', 'colorEncounterBoss'),
                     colorWhen('Encounter Boss Color', 'encounterBossColor', 50, 'colorEncounterBoss'),

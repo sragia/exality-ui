@@ -41,6 +41,7 @@ defaults.PLATE = {
     colorCoTank = true,
     threatCoTank = color(0.15, 0.82, 0.68),
     threatPullingTank = color(1, 0.62, 0.15),
+    rankOverThreatInDungeon = true,
     colorMiniboss = true,
     minibossColor = color(0.88, 0.38, 0.55),
     colorClassification = false,
@@ -167,13 +168,15 @@ defaults.PLATE = {
     mouseoverLightenAmount = 0.25,
 
     targetHighlightEnable = true,
-    targetHighlightStyle = 'glow', -- border | glow | arrows
+    targetHighlightStyle = 'glow', -- border | glow
     targetHighlightColor = color(1, 0.82, 0.2, 1),
     targetHighlightDimOthers = false,
     targetHighlightDimAlpha = 0.45,
 
     stackEnemies = true,
     stackFriendlies = false,
+    overlapH = 0.8,
+    overlapV = 1.1,
     showAll = true,
     showEnemies = true,
     showEnemyMinions = true,
@@ -229,6 +232,9 @@ function defaults:MergeIntoDB(db)
     end
     if db.casterColor == nil and db.manaUnitColor then
         db.casterColor = EXUI.utils.deepCloneTable(db.manaUnitColor)
+    end
+    if db.targetHighlightStyle == 'arrows' then
+        db.targetHighlightStyle = 'glow'
     end
 
     local cvars = EXUI:GetModule('np-cvars')
