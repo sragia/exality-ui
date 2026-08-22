@@ -82,8 +82,17 @@ function castBar:GetMenu()
                 return {
                     helpers.Toggle('Show Interrupted', 'castbarShowInterrupt'),
                     helpers.Range('Hold Duration', 'castbarInterruptHold', 0.2, 3, 0.1, 50),
-                    helpers.Range('Size', 'castbarInterruptFontSize', 1, 40, 1, 50),
+                    helpers.FontDropdown('Font', 'castbarInterruptFont', 33),
+                    helpers.Dropdown('Font Flag', 'castbarInterruptFontFlag', function()
+                        return EXUI.const.fontFlags
+                    end, 33),
+                    helpers.Range('Size', 'castbarInterruptFontSize', 1, 40, 1, 33),
                     helpers.Color('Fallback Color', 'castbarInterruptColor', 50),
+                    { type = 'title', label = 'Position', width = 100, size = 18 },
+                    helpers.Anchor('Anchor Point', 'castbarInterruptAnchorPoint', 25),
+                    helpers.Anchor('Relative Point', 'castbarInterruptRelativeAnchorPoint', 25),
+                    helpers.Range('X Offset', 'castbarInterruptXOffset', -200, 200, 1, 25),
+                    helpers.Range('Y Offset', 'castbarInterruptYOffset', -200, 200, 1, 25),
                 }
             end,
         },

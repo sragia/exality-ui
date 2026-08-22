@@ -23,6 +23,14 @@ preview.host = nil
 preview.parent = nil
 preview.castTicker = nil
 
+local function shouldPreviewInterrupt(db)
+    if not db or not db.castbarEnable or not db.castbarShowInterrupt then
+        return false
+    end
+    local npOptions = EXUI:GetModule('np-options')
+    return npOptions.currTabId == 'castbar' and npOptions.currItemId == 'interrupted'
+end
+
 local HOST_PAD_X = 48
 local HOST_PAD_Y = 72
 
@@ -70,6 +78,12 @@ local function startCastLoop(frame, db)
     bar.container:Show()
     bar.chrome:Show()
     bar:Show()
+    if bar.Spark then
+        bar.Spark:Show()
+    end
+    if bar.InterruptText then
+        bar.InterruptText:Hide()
+    end
     local duration = 3
     local start = GetTime()
     bar:SetMinMaxValues(0, duration)
@@ -226,6 +240,19 @@ preview.Refresh = function(self)
     local hostHeight = (db.sizeHeight or 16) + (db.castbarEnable and (db.castbarHeight or 12) or 0) + HOST_PAD_Y
     self.host:SetSize(math.max(220, hostWidth), math.max(120, hostHeight))
 
+    local bar = frame.Castbar
+    local previewInterrupt = shouldPreviewInterrupt(db) and bar
+    if bar then
+        if previewInterrupt then
+            bar.interruptHold = true
+            bar.InterruptText:SetText('Exality')
+            bar.interruptClassColor = C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor('MAGE')
+        else
+            bar.interruptHold = nil
+            bar.interruptClassColor = nil
+        end
+    end
+
     npCore:UpdatePlate(frame)
 
     local texture = LSM:Fetch('statusbar', db.statusBarTexture or 'ExalityUI Status Bar')
@@ -279,7 +306,28 @@ preview.Refresh = function(self)
         health.HealAbsorb:Show()
     end
 
-    startCastLoop(frame, db)
+    if previewInterrupt then
+        if preview.castTicker then
+            preview.castTicker:Cancel()
+            preview.castTicker = nil
+        end
+        bar.container:Show()
+        bar.chrome:Show()
+        bar:Show()
+        bar.Icon:SetTexture(136096)
+        bar.Text:SetText(_G.INTERRUPTED or 'Interrupted')
+        bar.Text:SetShown(db.castbarShowName)
+        bar.InterruptText:SetText('Exality')
+        bar.InterruptText:Show()
+        if bar.Time then
+            bar.Time:SetText('')
+        end
+        if bar.Spark then
+            bar.Spark:Hide()
+        end
+    else
+        startCastLoop(frame, db)
+    end
     frame:Show()
 
     local aurasPreview = EXUI:GetModule('np-auras-preview')

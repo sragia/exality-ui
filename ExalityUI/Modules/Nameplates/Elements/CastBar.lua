@@ -393,10 +393,18 @@ castBar.Update = function(self, frame)
         bar.TargetText:Hide()
     end
 
-    bar.InterruptText:SetFont(font, interruptSize, db.castbarFontFlag)
+    local interruptFont = LSM:Fetch('font', db.castbarInterruptFont or db.castbarFont)
+    bar.InterruptText:SetFont(interruptFont, interruptSize, db.castbarInterruptFontFlag or db.castbarFontFlag)
     bar.InterruptText:ClearAllPoints()
-    bar.InterruptText:SetPoint('RIGHT', bar, 'RIGHT', -2, 0)
-    bar.InterruptText:SetJustifyH('RIGHT')
+    bar.InterruptText:SetPoint(
+        db.castbarInterruptAnchorPoint or 'RIGHT',
+        bar,
+        db.castbarInterruptRelativeAnchorPoint or 'RIGHT',
+        db.castbarInterruptXOffset or -2,
+        db.castbarInterruptYOffset or 0
+    )
+    bar.InterruptText:SetJustifyH(EXUI.utils.getJustifyHFromAnchor(db.castbarInterruptAnchorPoint or 'RIGHT'))
+    bar.InterruptText:SetHeight(interruptSize + interruptSize / 2)
     if holding then
         applyInterruptTextColor(bar, db)
         bar.InterruptText:Show()
