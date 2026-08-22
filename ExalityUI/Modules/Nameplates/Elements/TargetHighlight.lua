@@ -80,6 +80,18 @@ local function refreshHealthColor(frame, unit)
     EXUI:GetModule('np-element-health').PostUpdateColor(bar, unit)
 end
 
+local function plateFrameForUnit(unit)
+    if not unit or not UnitExists(unit) or not C_NamePlate or not C_NamePlate.GetNamePlateForUnit then
+        return nil
+    end
+    local plate = C_NamePlate.GetNamePlateForUnit(unit)
+    local unitFrame = plate and plate.unitFrame
+    if unitFrame and unitFrame.isNamePlate and not unitFrame:IsForbidden() then
+        return unitFrame
+    end
+    return nil
+end
+
 local function plateBase(frame)
     return frame and frame:GetParent()
 end
@@ -118,6 +130,23 @@ local function isHoverVisual(self, frame, unit)
     return self.plateCursorFrame == frame or isStickyHover(self, frame) or isLiveMouseover(self, frame, unit)
 end
 
+local function highlightState(self, frame, db, unit)
+    if frame.isFriendly or not db then
+        return 'none'
+    end
+    local isCurrentTarget = frame.isPreview or isCurrentTargetUnit(unit)
+    if db.targetHighlightEnable and isCurrentTarget then
+        return 'target'
+    end
+    if db.mouseoverHighlightEnable and not isCurrentTarget and isHoverVisual(self, frame, unit) then
+        return 'hover'
+    end
+    if db.targetHighlightEnable and db.targetHighlightDimOthers and UnitExists('target') and not isCurrentTarget then
+        return 'dim'
+    end
+    return 'none'
+end
+
 highlight.ClearStickyHover = function(self)
     self.stickyHoverFrame = nil
     self.stickyHoverAt = nil
@@ -135,6 +164,16 @@ highlight.ForgetHover = function(self, frame)
     end
     if self.ignoredHoverFrame == frame then
         self.ignoredHoverFrame = nil
+    end
+    if self.prevHoverFrame == frame then
+        self.prevHoverFrame = nil
+    end
+    if self.prevTargetFrame == frame then
+        self.prevTargetFrame = nil
+    end
+    if frame then
+        frame._exuiHL = nil
+        frame._exuiLighten = nil
     end
 end
 
@@ -164,7 +203,38 @@ highlight.IgnoreCurrentMouseover = function(self, frame)
 end
 
 highlight.RefreshHover = function(self)
-    EXUI:GetModule('np-core'):UpdateTargetHighlight()
+    local npCore = EXUI:GetModule('np-core')
+    local db = npCore:GetDB()
+    local targetGuid = UnitExists('target') and UnitGUID('target') or nil
+    local dimOthers = db and db.targetHighlightEnable and db.targetHighlightDimOthers
+    if dimOthers and self.prevTargetGuid ~= targetGuid then
+        self.prevTargetGuid = targetGuid
+        npCore:UpdateTargetHighlight()
+        self.prevTargetFrame = plateFrameForUnit('target')
+        self.prevHoverFrame = self.plateCursorFrame or self.stickyHoverFrame or self.hoverFrame
+        return
+    end
+    self.prevTargetGuid = targetGuid
+
+    local targetFrame = plateFrameForUnit('target')
+    local hoverFrame = self.plateCursorFrame or self.stickyHoverFrame or self.hoverFrame
+    if not hoverFrame and UnitExists('mouseover') then
+        hoverFrame = plateFrameForUnit('mouseover')
+    end
+
+    local seen = {}
+    local function touch(frame)
+        if frame and not seen[frame] and frame.IsShown and frame:IsShown() and not frame:IsForbidden() then
+            seen[frame] = true
+            self:Update(frame)
+        end
+    end
+    touch(self.prevTargetFrame)
+    touch(self.prevHoverFrame)
+    touch(targetFrame)
+    touch(hoverFrame)
+    self.prevTargetFrame = targetFrame
+    self.prevHoverFrame = hoverFrame
 end
 
 highlight.StartMouseoverWatch = function(self)
@@ -312,7 +382,7 @@ highlight.ApplyHealthLighten = function(self, frame, bar)
     bar:SetStatusBarColor(r + (1 - r) * amount, g + (1 - g) * amount, b + (1 - b) * amount, a)
 end
 
-highlight.Update = function(self, frame)
+highlight.Update = function(self, frame, force)
     local db = frame.db
     local npCore = EXUI:GetModule('np-core')
     if frame.isFriendly or not db then
@@ -322,27 +392,37 @@ highlight.Update = function(self, frame)
         if self.stickyHoverFrame == frame then
             self:ClearStickyHover()
         end
-        resetChrome(frame)
+        if force or frame._exuiHL then
+            resetChrome(frame)
+        end
+        frame._exuiHL = nil
+        frame._exuiLighten = nil
         return
     end
 
     local unit = npCore:GetPlateUnit(frame)
+    local state = highlightState(self, frame, db, unit)
+    local lighten = self:ShouldLightenHealth(frame)
+    local prevLighten = frame._exuiLighten == true
+    if not force and frame._exuiHL == state and prevLighten == lighten then
+        return
+    end
+    local lightenChanged = prevLighten ~= lighten
+    frame._exuiHL = state
+    frame._exuiLighten = lighten
+
     if isHoverVisual(self, frame, unit) then
         self:RememberHover(frame)
     end
 
-    local isCurrentTarget = frame.isPreview or isCurrentTargetUnit(unit)
-    local isTarget = db.targetHighlightEnable and isCurrentTarget
-    local isMouseover = db.mouseoverHighlightEnable and not isCurrentTarget and isHoverVisual(self, frame, unit)
-
-    if db.targetHighlightEnable and db.targetHighlightDimOthers and UnitExists('target') and not isTarget then
+    if state == 'dim' then
         frame._exuiDimmed = true
         frame:SetAlpha(db.targetHighlightDimAlpha or 0.45)
     else
         clearDim(frame)
     end
 
-    if isTarget then
+    if state == 'target' then
         if (db.targetHighlightStyle or 'glow') == 'glow' then
             npCore:ApplyHealthChrome(frame)
             stopPixelGlow(frame)
@@ -351,15 +431,16 @@ highlight.Update = function(self, frame)
             stopGlow(frame)
             npCore:ApplyHealthChrome(frame, db.targetHighlightColor)
         end
-        refreshHealthColor(frame, unit)
-        return
+    else
+        stopGlow(frame)
+        if state == 'hover' then
+            npCore:ApplyHealthChrome(frame, db.mouseoverHighlightColor)
+        else
+            npCore:ApplyHealthChrome(frame)
+        end
     end
 
-    stopGlow(frame)
-    if isMouseover then
-        npCore:ApplyHealthChrome(frame, db.mouseoverHighlightColor)
-    else
-        npCore:ApplyHealthChrome(frame)
+    if lightenChanged then
+        refreshHealthColor(frame, unit)
     end
-    refreshHealthColor(frame, unit)
 end

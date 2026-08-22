@@ -29,22 +29,57 @@ local function isCasting(unit)
     return UnitCastingInfo(unit) or UnitChannelInfo(unit)
 end
 
-local function isMiniboss(unit)
-    if UnitIsPlayer(unit) or UnitPlayerControlled(unit) then
-        return false
+local envAt
+local envDungeon
+local envDungeonOrRaid
+local envTank
+local curveGen
+local curveValues
+
+local function refreshEnv()
+    local now = GetTime()
+    if envAt == now then
+        return
     end
-    if UnitIsBossMob and UnitIsBossMob(unit) then
-        return true
+    envAt = now
+    local inInstance, instanceType = IsInInstance()
+    envDungeon = inInstance and instanceType == 'party' or false
+    envDungeonOrRaid = envDungeon or (inInstance and instanceType == 'raid') or false
+    envTank = false
+    if IsInGroup() then
+        local role = UnitGroupRolesAssigned('player')
+        if role ~= 'NONE' then
+            envTank = role == 'TANK'
+            return
+        end
     end
-    if UnitIsLieutenant and UnitIsLieutenant(unit) then
-        return true
+    local spec = GetSpecialization and GetSpecialization()
+    envTank = spec and GetSpecializationRole and GetSpecializationRole(spec) == 'TANK' or false
+end
+
+local function isMiniboss(unit, frame)
+    if frame and frame._exuiMinibossUnit == unit and frame._exuiIsMiniboss ~= nil then
+        return frame._exuiIsMiniboss
     end
-    local unitLevel = UnitEffectiveLevel(unit)
-    local playerLevel = UnitEffectiveLevel('player')
-    if issecretvalue and (issecretvalue(unitLevel) or issecretvalue(playerLevel)) then
-        return false
+    local result = false
+    if not UnitIsPlayer(unit) and not UnitPlayerControlled(unit) then
+        if UnitIsBossMob and UnitIsBossMob(unit) then
+            result = true
+        elseif UnitIsLieutenant and UnitIsLieutenant(unit) then
+            result = true
+        else
+            local unitLevel = UnitEffectiveLevel(unit)
+            local playerLevel = UnitEffectiveLevel('player')
+            if not (issecretvalue and (issecretvalue(unitLevel) or issecretvalue(playerLevel))) then
+                result = unitLevel > 0 and unitLevel == playerLevel + 1
+            end
+        end
     end
-    return unitLevel > 0 and unitLevel == playerLevel + 1
+    if frame then
+        frame._exuiMinibossUnit = unit
+        frame._exuiIsMiniboss = result
+    end
+    return result
 end
 
 local function unitHasMana(unit)
@@ -52,24 +87,31 @@ local function unitHasMana(unit)
 end
 
 local function inDungeonOrRaid()
-    local inInstance, instanceType = IsInInstance()
-    return inInstance and (instanceType == 'party' or instanceType == 'raid')
+    refreshEnv()
+    return envDungeonOrRaid
 end
 
 local function inDungeon()
-    local inInstance, instanceType = IsInInstance()
-    return inInstance and instanceType == 'party'
+    refreshEnv()
+    return envDungeon
 end
 
 local function playerIsTank()
-    if IsInGroup() then
-        local role = UnitGroupRolesAssigned('player')
-        if role ~= 'NONE' then
-            return role == 'TANK'
-        end
+    refreshEnv()
+    return envTank
+end
+
+local function getCurveValues(db)
+    local gen = EXUI:GetModule('np-core').styleGen
+    if curveValues and curveGen == gen then
+        return curveValues
     end
-    local spec = GetSpecialization and GetSpecialization()
-    return spec and GetSpecializationRole and GetSpecializationRole(spec) == 'TANK'
+    curveGen = gen
+    curveValues = {}
+    for breakpoint, point in pairs(db.healthCurve or {}) do
+        curveValues[breakpoint] = CreateColor(point.r, point.g, point.b, point.a)
+    end
+    return curveValues
 end
 
 local function classColor(unit)
@@ -164,7 +206,7 @@ local function applyCasterColor(bar, db, unit)
 end
 
 local function applyMinibossColor(bar, db, unit)
-    if not db.colorMiniboss or not isMiniboss(unit) then
+    if not db.colorMiniboss or not isMiniboss(unit, bar.__owner) then
         return false
     end
     return applyColor(bar, db.minibossColor)
@@ -254,11 +296,7 @@ health.PostUpdateColor = function(self, unit)
             end
         elseif db.healthColorMode == 'curve' then
             if self.values and self.values.EvaluateCurrentHealthPercent then
-                local curveValues = {}
-                for breakpoint, point in pairs(db.healthCurve or {}) do
-                    curveValues[breakpoint] = CreateColor(point.r, point.g, point.b, point.a)
-                end
-                local c = self.values:EvaluateCurrentHealthPercent(curveValues)
+                local c = self.values:EvaluateCurrentHealthPercent(getCurveValues(db))
                 applied = applyColor(self, c)
             end
         end

@@ -237,14 +237,27 @@ end
 
 core.ApplyHealthChrome = function(self, frame, color)
     local db = frame.db or self:GetDB()
+    local thickness = self:GetBorderThickness(db)
+    local key
+    if frame.isFriendly or not thickness or thickness <= 0 then
+        key = 'off'
+    else
+        local c = color or self:GetBorderColor(db)
+        key = (thickness or 0) .. ':' .. (db.sizeHeight or 16) .. ':' ..
+            (c.r or 0) .. ':' .. (c.g or 0) .. ':' .. (c.b or 0) .. ':' .. (c.a or 1)
+    end
+    if frame._exuiChromeKey == key then
+        return
+    end
+    frame._exuiChromeKey = key
+
     local fill = frame.BorderFill
     local bar = frame.Health
     local host = frame.HealthHost or frame
     if fill then
         fill:Hide()
     end
-    local thickness = self:GetBorderThickness(db)
-    if frame.isFriendly or thickness <= 0 then
+    if key == 'off' then
         if bar then
             self:ApplyInset(bar, host, 0)
         end
@@ -316,6 +329,11 @@ core.InvalidateStyle = function(self)
 end
 
 core.ApplyPlateStyle = function(self, frame, opts)
+    if frame._exuiStyleGen ~= self.styleGen then
+        frame._exuiChromeKey = nil
+        frame._exuiHL = nil
+        frame._exuiLighten = nil
+    end
     self:LayoutHealthHost(frame)
 
     EXUI:GetModule('np-element-health'):Update(frame)
@@ -326,7 +344,7 @@ core.ApplyPlateStyle = function(self, frame, opts)
     EXUI:GetModule('np-element-cast-bar'):Update(frame)
     EXUI:GetModule('np-element-raid-target'):Update(frame)
     EXUI:GetModule('np-element-custom-texts'):Update(frame)
-    EXUI:GetModule('np-element-target-highlight'):Update(frame)
+    EXUI:GetModule('np-element-target-highlight'):Update(frame, true)
 
     local apply = EXUI:GetModule('np-auras-apply')
     if apply then
@@ -348,6 +366,8 @@ core.BindPlateUnit = function(self, frame)
     end
     frame.db = self:GetDB()
     frame.isFriendly = self:IsFriendlyPlate(frame)
+    frame._exuiIsMiniboss = nil
+    frame._exuiMinibossUnit = nil
     -- Always re-apply layout. Nameplates are reused, and sizing that ran
     -- during C++ scale-in/out can stick if we only style on generation changes.
     self:ApplyPlateStyle(frame, { auras = 'bind' })
@@ -441,6 +461,8 @@ end
 
 core.RefreshPlateHealthColors = function(self)
     self:ForEachPlate(function(frame)
+        frame._exuiIsMiniboss = nil
+        frame._exuiMinibossUnit = nil
         local unit = frame.unit or frame.__unit
         if frame.Health and unit then
             EXUI:GetModule('np-element-health').PostUpdateColor(frame.Health, unit)
