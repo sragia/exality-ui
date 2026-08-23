@@ -96,6 +96,17 @@ local function plateBase(frame)
     return frame and frame:GetParent()
 end
 
+local function safeParent(node)
+    if not node or not node.GetParent or (node.IsForbidden and node:IsForbidden()) then
+        return nil
+    end
+    local ok, parent = pcall(node.GetParent, node)
+    if not ok then
+        return nil
+    end
+    return parent
+end
+
 local function isCursorOverPlate(frame)
     if not frame or not frame:IsShown() or not GetMouseFoci then
         return false
@@ -108,7 +119,7 @@ local function isCursorOverPlate(frame)
             if node == frame or node == plate then
                 return true
             end
-            node = node.GetParent and node:GetParent()
+            node = safeParent(node)
         end
     end
     return false
@@ -371,7 +382,16 @@ end
 
 highlight.ApplyHealthLighten = function(self, frame, bar)
     bar = bar or (frame and frame.Health)
-    if not bar or not self:ShouldLightenHealth(frame) then
+    if not bar then
+        return
+    end
+    if frame._exuiLighten ~= true
+        and self.hoverFrame ~= frame
+        and self.plateCursorFrame ~= frame
+        and self.stickyHoverFrame ~= frame then
+        return
+    end
+    if not self:ShouldLightenHealth(frame) then
         return
     end
     local amount = frame.db.mouseoverLightenAmount or 0.25

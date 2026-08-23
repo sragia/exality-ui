@@ -57,7 +57,48 @@ local function UpdateFrameList(frames)
     end
 end
 
+local prevTargetFrame
+local prevHoverFrame
+
+local function FindFrameForUnit(frames, unit)
+    if not unit or not UnitExists(unit) then
+        return nil
+    end
+    for _, frame in ipairs(frames) do
+        if frame and frame.SelectionHighlight then
+            local token = GetUnitToken(frame)
+            if token and UnitIsUnit(token, unit) then
+                return frame
+            end
+        end
+    end
+    return nil
+end
+
+local function Touch(seen, frame)
+    if frame and not seen[frame] then
+        seen[frame] = true
+        selectionHighlight:Update(frame)
+    end
+end
+
 local function UpdateAll()
+    local targetFrame = FindFrameForUnit(core.partyFrames, 'target')
+        or FindFrameForUnit(core.raidFrames, 'target')
+    local hoverFrame = FindFrameForUnit(core.partyFrames, 'mouseover')
+        or FindFrameForUnit(core.raidFrames, 'mouseover')
+
+    if (prevTargetFrame or prevHoverFrame or targetFrame or hoverFrame) then
+        local seen = {}
+        Touch(seen, prevTargetFrame)
+        Touch(seen, prevHoverFrame)
+        Touch(seen, targetFrame)
+        Touch(seen, hoverFrame)
+        prevTargetFrame = targetFrame
+        prevHoverFrame = hoverFrame
+        return
+    end
+
     UpdateFrameList(core.partyFrames)
     UpdateFrameList(core.raidFrames)
 end

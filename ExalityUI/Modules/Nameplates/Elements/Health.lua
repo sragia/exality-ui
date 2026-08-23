@@ -149,6 +149,11 @@ local function applyBackdrop(bar, db)
     if backdrop then
         r, g, b, a = backdrop.r or 0, backdrop.g or 0, backdrop.b or 0, backdrop.a or 1
     end
+    local key = r .. ':' .. g .. ':' .. b .. ':' .. a
+    if bar._exuiBackdropKey == key then
+        return
+    end
+    bar._exuiBackdropKey = key
     if bar.occlude then
         bar.occlude:SetColorTexture(r, g, b, 1)
         bar.occlude:Show()
@@ -315,6 +320,7 @@ health.Update = function(self, frame)
     if frame.isFriendly then
         frame:DisableElement('Health')
         bar:Hide()
+        bar._exuiBackdropKey = nil
         if bar.bg then
             bar.bg:Hide()
         end

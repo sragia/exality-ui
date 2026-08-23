@@ -67,7 +67,6 @@ function cooldownDisplay:GetSpellCooldownData(spellID, ignoreGCD)
 end
 
 function cooldownDisplay:GetItemCooldownData(frame, itemID, opts)
-    opts = opts or {}
     local start, duration = C_Item.GetItemCooldown(itemID)
 
     if start == nil or duration == nil then
@@ -75,25 +74,33 @@ function cooldownDisplay:GetItemCooldownData(frame, itemID, opts)
     end
 
     local count
-    if opts.includeCount then
+    if opts and opts.includeCount then
         count = C_Item.GetItemCount(itemID, false, true)
     end
 
-    return {
-        durationObject = setDurationFromStart(frame, start, duration, 1),
-        count = count,
-        start = start,
-        duration = duration,
-    }
+    local result = frame._itemCooldownData
+    if not result then
+        result = {}
+        frame._itemCooldownData = result
+    end
+    result.durationObject = setDurationFromStart(frame, start, duration, 1)
+    result.count = count
+    result.start = start
+    result.duration = duration
+    return result
 end
 
 function cooldownDisplay:GetEquipmentCooldownData(frame, slotID)
     local start, duration = GetInventoryItemCooldown('player', slotID)
-    return {
-        durationObject = setDurationFromStart(frame, start, duration, 1),
-        start = start,
-        duration = duration,
-    }
+    local result = frame._equipmentCooldownData
+    if not result then
+        result = {}
+        frame._equipmentCooldownData = result
+    end
+    result.durationObject = setDurationFromStart(frame, start, duration, 1)
+    result.start = start
+    result.duration = duration
+    return result
 end
 
 function cooldownDisplay:GetTexture(db, cachedSourceID)
@@ -247,7 +254,6 @@ function cooldownDisplay:ShouldHandleEvent(frame, event, ...)
 end
 
 function cooldownDisplay:RenderCooldown(frame, db, opts)
-    opts = opts or {}
     local source = frame._cooldownSource or getCooldownSource(db)
     local sourceID = frame._sourceID
     if sourceID == nil then
@@ -267,7 +273,7 @@ function cooldownDisplay:RenderCooldown(frame, db, opts)
     local chargesText = nil
     local setCharges = false
     local timingKey = nil
-    local includeItemCount = db.showStacks and (opts.refreshCount ~= false)
+    local includeItemCount = db.showStacks and (not opts or opts.refreshCount ~= false)
 
     if source == 'spell' then
         if sourceID then

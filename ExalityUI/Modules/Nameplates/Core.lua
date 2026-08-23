@@ -358,6 +358,22 @@ core.ApplyPlateStyle = function(self, frame, opts)
 
     frame._exuiStyleGen = self.styleGen
     frame._exuiStyledFriendly = frame.isFriendly
+    local width, height = self:GetPlateSize(frame.db)
+    frame._exuiPlateW = width
+    frame._exuiPlateH = height
+end
+
+core.NeedsPlateRestyle = function(self, frame)
+    if frame._exuiStyleGen ~= self.styleGen or frame._exuiStyledFriendly ~= frame.isFriendly then
+        return true
+    end
+    local width, height = self:GetPlateSize(frame.db)
+    if frame._exuiPlateW ~= width or frame._exuiPlateH ~= height then
+        return true
+    end
+    -- C++ scale-in/out can leave a reused plate at the wrong size.
+    return math.abs((frame:GetWidth() or 0) - width) >= 0.5
+        or math.abs((frame:GetHeight() or 0) - height) >= 0.5
 end
 
 core.BindPlateUnit = function(self, frame)
@@ -368,9 +384,16 @@ core.BindPlateUnit = function(self, frame)
     frame.isFriendly = self:IsFriendlyPlate(frame)
     frame._exuiIsMiniboss = nil
     frame._exuiMinibossUnit = nil
-    -- Always re-apply layout. Nameplates are reused, and sizing that ran
-    -- during C++ scale-in/out can stick if we only style on generation changes.
-    self:ApplyPlateStyle(frame, { auras = 'bind' })
+
+    if self:NeedsPlateRestyle(frame) then
+        self:ApplyPlateStyle(frame, { auras = 'bind' })
+    else
+        local apply = EXUI:GetModule('np-auras-apply')
+        if apply and apply.BindFrame then
+            apply:BindFrame(frame)
+        end
+        EXUI:GetModule('np-element-target-highlight'):Update(frame)
+    end
 
     if frame.UpdateTags then
         frame:UpdateTags()
