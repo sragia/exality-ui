@@ -236,15 +236,13 @@ driver.RegisterSupportEvents = function(self)
         elseif event == 'INSTANCE_ENCOUNTER_ENGAGE_UNIT' then
             npCore:RefreshPlateHealthColors()
         elseif event == 'UNIT_FACTION' then
-            if not unit or UnitIsUnit(unit, 'player') then
-                npCore:RefreshPlateFriendship()
-            else
-                npCore:RefreshPlateFriendship(unit)
-            end
+            npCore:RefreshPlateFriendship()
         elseif event == 'DUEL_FINISHED' then
             npCore:RefreshPlateFriendship()
         elseif event:find('SPELLCAST', 1, true) then
-            npCore:UpdateHealthColorForUnit(unit)
+            if unit and unit:find('^nameplate') then
+                npCore:UpdateHealthColorForUnit(unit)
+            end
         end
     end)
     self.eventFrame = frame

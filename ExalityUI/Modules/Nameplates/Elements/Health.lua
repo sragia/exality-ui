@@ -318,7 +318,6 @@ health.Update = function(self, frame)
     local db = frame.db
     local bar = frame.Health
     if frame.isFriendly then
-        frame:DisableElement('Health')
         bar:Hide()
         bar._exuiBackdropKey = nil
         if bar.bg then

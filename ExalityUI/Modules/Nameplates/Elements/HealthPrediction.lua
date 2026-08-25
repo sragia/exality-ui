@@ -60,14 +60,11 @@ healthPrediction.Create = function(self, frame)
 end
 
 local function setWidget(health, key, original, enabled)
+    health[key] = original
     if enabled then
-        if not health[key] then
-            health[key] = original
-        end
-        health[key]:Show()
-    elseif health[key] then
-        health[key]:Hide()
-        health[key] = nil
+        original:Show()
+    else
+        original:Hide()
     end
 end
 

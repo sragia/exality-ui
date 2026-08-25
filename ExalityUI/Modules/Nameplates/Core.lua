@@ -101,6 +101,35 @@ core.GetPlateUnit = function(self, frame)
     return frame and (frame.unit or frame.__unit)
 end
 
+local function unitsMatch(a, b)
+    if not a or not b then
+        return false
+    end
+    if a == b then
+        return true
+    end
+    if C_Secrets and C_Secrets.CanCompareUnitTokens and not C_Secrets.CanCompareUnitTokens(a, b) then
+        return false
+    end
+    return UnitIsUnit(a, b)
+end
+
+core.GetPlateFrameForUnit = function(self, unit)
+    if not unit then
+        return nil
+    end
+    local found
+    self:ForEachPlate(function(frame)
+        if found then
+            return
+        end
+        if unitsMatch(self:GetPlateUnit(frame), unit) then
+            found = frame
+        end
+    end)
+    return found
+end
+
 core.IsFriendlyPlate = function(self, frame, unit)
     unit = unit or self:GetPlateUnit(frame)
     if not unit then
@@ -459,25 +488,22 @@ core.UpdateTargetHighlight = function(self)
 end
 
 core.UpdateHealthColorForUnit = function(self, unit)
-    if not unit then
+    local frame = self:GetPlateFrameForUnit(unit)
+    if not frame or not frame.Health then
         return
     end
-    self:ForEachPlate(function(frame)
-        local plateUnit = self:GetPlateUnit(frame)
-        if plateUnit and UnitIsUnit(plateUnit, unit) and frame.Health then
-            EXUI:GetModule('np-element-health').PostUpdateColor(frame.Health, plateUnit)
-        end
-    end)
+    EXUI:GetModule('np-element-health').PostUpdateColor(frame.Health, self:GetPlateUnit(frame))
 end
 
 core.RefreshPlateFriendship = function(self, unit)
-    self:ForEachPlate(function(frame)
-        if unit then
-            local plateUnit = self:GetPlateUnit(frame)
-            if not plateUnit or not UnitIsUnit(plateUnit, unit) then
-                return
-            end
+    if unit then
+        local frame = self:GetPlateFrameForUnit(unit)
+        if frame then
+            self:BindPlateUnit(frame)
         end
+        return
+    end
+    self:ForEachPlate(function(frame)
         self:BindPlateUnit(frame)
     end)
 end
