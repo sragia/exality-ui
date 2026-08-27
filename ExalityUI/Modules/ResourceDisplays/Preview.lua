@@ -49,6 +49,7 @@ preview.MOCK_VALUES = {
     ['Devourer Fury'] = { empty = 0, mid = 50, full = 100 },
     ['Balance Eclipse'] = { empty = 0, mid = 50, full = 100 },
     ['Tip of the Spear'] = { empty = 0, mid = 2, full = 5 },
+    ['Totem'] = { empty = 0, mid = 6, full = 12 },
 }
 
 function preview:IsOptionsOpen()

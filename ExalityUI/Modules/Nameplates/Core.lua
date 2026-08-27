@@ -101,29 +101,23 @@ core.GetPlateUnit = function(self, frame)
     return frame and (frame.unit or frame.__unit)
 end
 
-local function unitsMatch(a, b)
-    if not a or not b then
-        return false
-    end
-    if a == b then
-        return true
-    end
-    if C_Secrets and C_Secrets.CanCompareUnitTokens and not C_Secrets.CanCompareUnitTokens(a, b) then
-        return false
-    end
-    return UnitIsUnit(a, b)
-end
-
 core.GetPlateFrameForUnit = function(self, unit)
-    if not unit then
+    if type(unit) ~= 'string' or not unit:find('^nameplate') then
         return nil
+    end
+    if C_NamePlate and C_NamePlate.GetNamePlateForUnit then
+        local plate = C_NamePlate.GetNamePlateForUnit(unit)
+        local unitFrame = plate and plate.unitFrame
+        if unitFrame and unitFrame.isNamePlate and not unitFrame:IsForbidden() then
+            return unitFrame
+        end
     end
     local found
     self:ForEachPlate(function(frame)
         if found then
             return
         end
-        if unitsMatch(self:GetPlateUnit(frame), unit) then
+        if self:GetPlateUnit(frame) == unit then
             found = frame
         end
     end)

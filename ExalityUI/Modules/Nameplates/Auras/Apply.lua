@@ -27,6 +27,7 @@ local apply = EXUI:GetModule('np-auras-apply')
 
 apply.pendingFrames = {}
 apply.sigCache = {}
+apply.containerGraveyard = {}
 
 function apply:Init()
     if self.eventHandler then
@@ -58,6 +59,15 @@ function apply:QueueFrame(frame)
     self.pendingFrames[frame] = true
 end
 
+function apply:GetPoolHolder()
+    if not self.poolHolder then
+        local holder = CreateFrame('Frame')
+        holder:Hide()
+        self.poolHolder = holder
+    end
+    return self.poolHolder
+end
+
 function apply:DiscardContainer(frame, displayID)
     if not frame.NPAuraContainers then
         return
@@ -66,13 +76,16 @@ function apply:DiscardContainer(frame, displayID)
     if not container then
         return
     end
+    container._exuiHardSig = nil
     if container.SetEnabled then
         container:SetEnabled(false)
     end
     container:Hide()
     container:ClearAllPoints()
-    container:SetParent(nil)
+    container:SetParent(self:GetPoolHolder())
     frame.NPAuraContainers[displayID] = nil
+    local yard = self.containerGraveyard
+    yard[#yard + 1] = container
 end
 
 function apply:SetContainerUnit(container, unit)
@@ -178,7 +191,18 @@ function apply:RebuildGroups(container, displayID, display, frame)
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
         )
-        if container.AddAuraGroup then
+        if container.HasAuraGroup and container:HasAuraGroup(options.groupKey) then
+            resolver:ApplyGroupOptions(container, options)
+            if options.initializeFrame and container.GetAuraGroupFrameCount and container.GetAuraGroupFrame then
+                local count = container:GetAuraGroupFrameCount(options.groupKey) or 0
+                for i = 1, count do
+                    local auraButton = container:GetAuraGroupFrame(options.groupKey, i)
+                    if auraButton then
+                        options.initializeFrame(auraButton)
+                    end
+                end
+            end
+        elseif container.AddAuraGroup then
             container:AddAuraGroup(options.groupKey, options.filterString, {
                 maxFrameCount = options.maxFrameCount,
                 sortMethod = options.sortMethod,
@@ -324,16 +348,17 @@ function apply:UpdateFrame(frame)
                 self:ApplyProcessingPolicy(container, display)
                 container:Show()
             else
-                self:DiscardContainer(frame, displayID)
-                container = self:CreateContainer(frame, display)
                 if not container then
-                    if InCombatLockdown() then
-                        self:QueueFrame(frame)
+                    container = self:CreateContainer(frame, display)
+                    if not container then
+                        if InCombatLockdown() then
+                            self:QueueFrame(frame)
+                        end
+                        return
                     end
-                    return
+                    frame.NPAuraContainers[displayID] = container
                 end
                 container._exuiHardSig = hardSig
-                frame.NPAuraContainers[displayID] = container
                 self:ConfigureContainer(frame, displayID, display, container)
             end
         elseif frame.NPAuraContainers[displayID] then

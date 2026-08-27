@@ -15,6 +15,41 @@ local function applyDrawLayers(bar)
     end
 end
 
+local function updatePips(element, stages)
+    local elementSize = element.layoutSize
+    if not stages or not elementSize then
+        return
+    end
+
+    local reverseFill = element:GetReverseFill()
+    local lastOffset = 0
+    element.Pips = element.Pips or {}
+    for stage, stageSection in next, stages do
+        local offset = lastOffset + (elementSize * stageSection)
+        lastOffset = offset
+
+        local pip = element.Pips[stage]
+        if not pip then
+            pip = element:CreatePip(stage)
+            element.Pips[stage] = pip
+        end
+
+        pip:ClearAllPoints()
+        pip:Show()
+        if reverseFill then
+            pip:SetPoint('TOP', element, 'TOPRIGHT', -offset, 0)
+            pip:SetPoint('BOTTOM', element, 'BOTTOMRIGHT', -offset, 0)
+        else
+            pip:SetPoint('TOP', element, 'TOPLEFT', offset, 0)
+            pip:SetPoint('BOTTOM', element, 'BOTTOMLEFT', offset, 0)
+        end
+    end
+
+    if element.PostUpdatePips then
+        element:PostUpdatePips(stages)
+    end
+end
+
 local function showContainer(element)
     if element.container then
         element.container:Show()
@@ -264,6 +299,22 @@ castBar.Create = function(self, frame)
         end
     end)
 
+    bar.CreatePip = function(self)
+        local db = plateDB(self)
+        local pip = CreateFrame('Frame', nil, self)
+        pip:SetWidth(db and db.castbarSparkWidth or 1)
+        local line = pip:CreateTexture(nil, 'OVERLAY')
+        line:SetAllPoints()
+        line:SetBlendMode('ADD')
+        line:SetTexture(EXUI.const.textures.frame.solidBg)
+        local color = db and db.castbarSparkColor or { r = 1, g = 1, b = 1, a = 1 }
+        line:SetVertexColor(color.r or 1, color.g or 1, color.b or 1, color.a or 1)
+        pip.line = line
+        return pip
+    end
+    bar.UpdatePips = updatePips
+    bar.layoutSize = 140
+
     bar.ShouldShow = function(element, unit)
         local owner = element.__owner
         local ownerUnit = owner and (owner.__unit or owner.unit)
@@ -308,7 +359,7 @@ castBar.Update = function(self, frame)
     bar.timeToHold = db.castbarShowInterrupt and (db.castbarInterruptHold or 1) or 0
 
     local barHeight = db.castbarHeight or 12
-    local iconWidth = db.castbarIconWidth or barHeight
+    local iconWidth = db.castbarShowIcon and (db.castbarIconWidth or barHeight) or 0
     local width = db.sizeWidth
     local chrome = bar.chrome
     container:SetSize(width, barHeight)
@@ -327,7 +378,10 @@ castBar.Update = function(self, frame)
         chrome:ClearAllPoints()
         chrome:SetAllPoints(container)
     end
-    EXUI:GetModule('np-core'):ApplyCastChrome(bar, db)
+    local npCore = EXUI:GetModule('np-core')
+    npCore:ApplyCastChrome(bar, db)
+    local inset = npCore:GetChromeInset(npCore:GetBorderThickness(db), barHeight)
+    bar.layoutSize = math.max(1, width - iconWidth - inset * 2)
 
     local font = LSM:Fetch('font', db.castbarFont)
     local fontColor = db.castbarFontColor
@@ -418,6 +472,13 @@ castBar.Update = function(self, frame)
     bar.Spark:SetVertexColor(db.castbarSparkColor.r, db.castbarSparkColor.g, db.castbarSparkColor.b, db.castbarSparkColor.a)
     bar.Spark:SetWidth(db.castbarSparkWidth or 1)
     bar.Spark:SetHeight(barHeight)
+
+    for _, pip in pairs(bar.Pips or {}) do
+        pip:SetWidth(db.castbarSparkWidth or 1)
+        if pip.line then
+            pip.line:SetVertexColor(db.castbarSparkColor.r, db.castbarSparkColor.g, db.castbarSparkColor.b, db.castbarSparkColor.a)
+        end
+    end
 
     bar.bg:SetColorTexture(db.castbarBackgroundColor.r, db.castbarBackgroundColor.g, db.castbarBackgroundColor.b, db.castbarBackgroundColor.a)
     bar:SetStatusBarColor(db.castbarForegroundColor.r, db.castbarForegroundColor.g, db.castbarForegroundColor.b, db.castbarForegroundColor.a)

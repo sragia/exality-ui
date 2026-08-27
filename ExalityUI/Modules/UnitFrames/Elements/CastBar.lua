@@ -12,6 +12,41 @@ local function applyCastBarDrawLayers(castBarFrame)
     end
 end
 
+local function updatePips(element, stages)
+    local elementSize = element.layoutSize
+    if not stages or not elementSize then
+        return
+    end
+
+    local reverseFill = element:GetReverseFill()
+    local lastOffset = 0
+    element.Pips = element.Pips or {}
+    for stage, stageSection in next, stages do
+        local offset = lastOffset + (elementSize * stageSection)
+        lastOffset = offset
+
+        local pip = element.Pips[stage]
+        if not pip then
+            pip = element:CreatePip(stage)
+            element.Pips[stage] = pip
+        end
+
+        pip:ClearAllPoints()
+        pip:Show()
+        if reverseFill then
+            pip:SetPoint('TOP', element, 'TOPRIGHT', -offset, 0)
+            pip:SetPoint('BOTTOM', element, 'BOTTOMRIGHT', -offset, 0)
+        else
+            pip:SetPoint('TOP', element, 'TOPLEFT', offset, 0)
+            pip:SetPoint('BOTTOM', element, 'BOTTOMLEFT', offset, 0)
+        end
+    end
+
+    if element.PostUpdatePips then
+        element:PostUpdatePips(stages)
+    end
+end
+
 ---@class EXUIUnitFramesCore
 local core = EXUI:GetModule('uf-core')
 ---@class EXUIOptionsEditor
@@ -144,6 +179,8 @@ castBar.Create = function(self, frame, unit)
 
         return pip
     end
+    castBar.UpdatePips = updatePips
+    castBar.layoutSize = 180
 
     return castBar
 end
@@ -170,13 +207,10 @@ castBar.Update = function(self, frame)
     end
 
     local iconSize = db.castbarHeight
-    if (db.castbarMatchFrameWidth) then
-        local frameWidth = db.sizeWidth
-        EXUI:SetSize(container, frameWidth, db.castbarHeight)
-    else
-        EXUI:SetSize(container, db.castbarWidth, db.castbarHeight)
-    end
+    local containerWidth = db.castbarMatchFrameWidth and db.sizeWidth or db.castbarWidth
+    EXUI:SetSize(container, containerWidth, db.castbarHeight)
     EXUI:SetSize(Castbar.Icon, iconSize, iconSize)
+    Castbar.layoutSize = math.max(1, EXUI:ScalePixel(containerWidth, container) - EXUI:ScalePixel(iconSize, Castbar.Icon))
     Castbar.Time:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
     Castbar.Time:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
         db.castbarFontColor.a)
