@@ -1,0 +1,7 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="Slots.lua"/>
+    <Script file="Views.lua"/>
+    <Script file="Pins.lua"/>
+    <Script file="Window.lua"/>
+    <Script file="Core.lua"/>
+</Ui>

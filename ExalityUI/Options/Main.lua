@@ -31,8 +31,8 @@ local profiles = EXUI:GetModule('profiles')
 local optionsMain = EXUI:GetModule('options-main')
 
 local LAYOUT = {
-    expanded = { window = { 980, 725 }, nav = 160, info = 80 },
-    compact = { window = { 856, 725 }, nav = 36, info = 0 },
+    expanded = { window = { 980, 755 }, nav = 160, info = 80 },
+    compact = { window = { 856, 755 }, nav = 36, info = 0 },
 }
 
 local NAV_ANIM_DURATION = 0.2

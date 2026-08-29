@@ -87,6 +87,9 @@ Modules/Nameplates/Nameplates.xml
 # Data Brokers
 Modules/DataBrokers/DataBrokers.xml
 
+# Bags
+Modules/Bags/Bags.xml
+
 # Custom Windows
 CustomWindows/CustomWindows.xml
 

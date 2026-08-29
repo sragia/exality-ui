@@ -164,6 +164,15 @@ EXUI.const = {
             btnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Skins/btn-highlight.png]],
             lfgLeftBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-bg.jpg]],
             lfgLeftBtnBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-btn-bg.png]],
+        },
+        bags = {
+            bg = [[Interface/Addons/ExalityUI/Assets/Images/Bags/bg.png]],
+            border = [[Interface/Addons/ExalityUI/Assets/Images/Bags/bg-border.png]],
+            glow = [[Interface/Addons/ExalityUI/Assets/Images/Bags/glow.png]],
+            slotBorder = [[Interface/Addons/ExalityUI/Assets/Images/Bags/slot-border.png]],
+            slotEmpty = [[Interface/Addons/ExalityUI/Assets/Images/Bags/slot-empty.png]],
+            slotMask = [[Interface/Addons/ExalityUI/Assets/Images/Bags/slot-mask.png]],
+            sort = [[Interface/Addons/ExalityUI/Assets/Images/Icons/clean.png]],
         }
     },
     masque = {
@@ -250,6 +259,14 @@ EXUI.const.ilvlColors = {
     { ilvl = 318, color = 'ffffc526', border = ilvlBorders.legendary },
     { ilvl = 334, color = 'ffff2634', border = ilvlBorders.max },
     { ilvl = 344, color = 'FFF6FF00', border = ilvlBorders.supermax },
+}
+
+EXUI.const.crestCurrencyIDs = {
+    3442, -- Adventurer
+    3443, -- Veteran
+    3444, -- Champion
+    3445, -- Hero
+    3446, -- Myth
 }
 
 EXFrames:SetTheme(EXUI.const.theme)

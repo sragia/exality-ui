@@ -204,14 +204,8 @@ stats.CreateCrest = function(self, currencyId, parent)
     return crest
 end
 
-local crestIds = {
-    3442, -- Adventurer
-    3443, -- Veteran
-    3444, -- Champion
-    3445, -- Hero
-    3446, -- Myth
-}
 stats.CreateCrestDisplay = function(self, parent)
+    local crestIds = EXUI.const.crestCurrencyIDs
     local container = CreateFrame('Frame', nil, parent)
     local centerContainer = CreateFrame('Frame', nil, container)
     centerContainer:SetSize(26 * #crestIds + 10 * (#crestIds - 1), 16)
