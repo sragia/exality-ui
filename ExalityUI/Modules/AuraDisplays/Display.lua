@@ -7,6 +7,9 @@ local editor = EXUI:GetModule('editor')
 ---@class EXUIAuraDisplaysContainer
 local containerModule = EXUI:GetModule('aura-displays-container')
 
+---@class EXUIAuraDisplaysButtonStyle
+local buttonStyle = EXUI:GetModule('aura-displays-button-style')
+
 ---@class EXUIAuraDisplaysUnitResolver
 local unitResolver = EXUI:GetModule('aura-displays-unit-resolver')
 
@@ -122,6 +125,7 @@ function displayModule:SyncCoTankUnits()
 end
 
 function displayModule:Refresh(displayID, display)
+    buttonStyle:InvalidateStyleSignatures()
     if not display or not display.enable then
         self:DestroyFrame(displayID)
         return
@@ -134,6 +138,7 @@ function displayModule:Refresh(displayID, display)
 end
 
 function displayModule:RefreshAll()
+    buttonStyle:InvalidateStyleSignatures()
     local db = auraDisplays:GetDB()
     for displayID, display in pairs(db.displays or {}) do
         self:Refresh(displayID, display)

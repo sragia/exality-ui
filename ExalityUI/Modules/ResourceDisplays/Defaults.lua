@@ -206,7 +206,7 @@ defaults.TYPE_SPECIFIC_KEYS = {
 
     'staggerLightThreshold', 'staggerHeavyThreshold', 'capHighlightColor', 'stackThreshold', 'stackThresholdColor',
 
-    'druidFormAdaptive',
+    'druidFormAdaptive', 'totemSpellID', 'totemSlot',
 
 }
 

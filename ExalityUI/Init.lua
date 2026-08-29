@@ -157,6 +157,9 @@ EXUI.const = {
         unitFrames = {
             dispelOverlay = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/dispel-overlay.png]],
         },
+        nameplates = {
+            glow = [[Interface/Addons/ExalityUI/Assets/Images/Nameplates/glow.png]],
+        },
         skins = {
             btnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Skins/btn-highlight.png]],
             lfgLeftBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-bg.jpg]],

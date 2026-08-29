@@ -304,6 +304,41 @@ function helpers:ApplyBarThresholdColor(bar, db, current, max, powerType)
     return self:ApplyResourceBarColor(bar, db, current, max, self:GetResourceBarNormalColor(db), powerType)
 end
 
+function helpers:ApplyDurationBarColor(bar, db, duration)
+    if not bar or not db or not duration or not db.resourceColorCurveEnabled then
+        return false
+    end
+    if not C_CurveUtil or not C_CurveUtil.CreateColorCurve or not CreateColor then
+        return false
+    end
+    if not duration.EvaluateRemainingPercent then
+        return false
+    end
+
+    local normalColor = self:GetResourceBarNormalColor(db)
+    local signature = self:GetResourceColorCurveSignature(db, normalColor)
+    local curve = bar._lowResourceColorCurve
+    if not curve or bar._lowResourceColorCurveSig ~= signature then
+        if #self:GetResourceColorCurvePoints(db) == 0 then
+            return false
+        end
+        curve = self:BuildResourcePercentColorCurve(db, normalColor)
+        bar._lowResourceColorCurve = curve
+        bar._lowResourceColorCurveSig = signature
+    end
+    if not curve then
+        return false
+    end
+
+    local color = duration:EvaluateRemainingPercent(curve)
+    if color ~= nil and color.GetRGB then
+        bar:SetStatusBarColor(color:GetRGB())
+        return true
+    end
+
+    return false
+end
+
 function helpers:ApplyReverseFill(bar, reverseFill)
     if not bar then
         return

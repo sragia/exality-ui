@@ -32,16 +32,35 @@ local ITEM_ENCHANT_SLOT = {
 }
 
 apply.pendingFrames = {}
+apply.sigCache = {}
+apply.containerGraveyard = {}
+apply.PREWARM_MIN = 40
+
+function apply:InvalidateHardSignatures()
+    wipe(self.sigCache)
+end
+
+function apply:InvalidateSignatures()
+    self:InvalidateHardSignatures()
+    buttonStyle:InvalidateStyleSignatures()
+end
 
 function apply:Init()
+    if self.eventHandler then
+        return
+    end
     if not ufAuras:IsSupported() then
         return
     end
     self.eventHandler = CreateFrame('Frame')
     self.eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
+    self.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
     self.eventHandler:SetScript('OnEvent', function(_, event)
         if event == 'PLAYER_REGEN_ENABLED' then
             self:FlushPending()
+        end
+        if event == 'PLAYER_REGEN_ENABLED' or event == 'PLAYER_ENTERING_WORLD' then
+            self:PrewarmPool()
         end
     end)
 end
@@ -58,6 +77,50 @@ end
 
 function apply:QueueFrame(frame)
     self.pendingFrames[frame] = true
+end
+
+function apply:GetPoolHolder()
+    if not self.poolHolder then
+        local holder = CreateFrame('Frame')
+        holder:Hide()
+        self.poolHolder = holder
+    end
+    return self.poolHolder
+end
+
+function apply:ReturnContainerToPool(container)
+    if not container then
+        return
+    end
+    if container.SetEnabled then
+        container:SetEnabled(false)
+    end
+    container:Hide()
+    container:ClearAllPoints()
+    container:SetParent(self:GetPoolHolder())
+    self.containerGraveyard[#self.containerGraveyard + 1] = container
+end
+
+function apply:PopPooledContainer(hardSig)
+    local yard = self.containerGraveyard
+    for i = #yard, 1, -1 do
+        if yard[i]._exuiHardSig == hardSig then
+            return table.remove(yard, i)
+        end
+    end
+    if #yard > 0 then
+        return table.remove(yard)
+    end
+end
+
+function apply:CountPooledContainers(hardSig)
+    local count = 0
+    for _, container in ipairs(self.containerGraveyard) do
+        if container._exuiHardSig == hardSig then
+            count = count + 1
+        end
+    end
+    return count
 end
 
 function apply:GetRequiredAuraContainerCount(unitType)
@@ -107,13 +170,8 @@ function apply:DiscardContainer(frame, displayID)
     if not container then
         return
     end
-    if container.SetEnabled then
-        container:SetEnabled(false)
-    end
-    container:Hide()
-    container:ClearAllPoints()
-    container:SetParent(nil)
     frame.UFAuraContainers[displayID] = nil
+    self:ReturnContainerToPool(container)
 end
 
 function apply:AnchorContainer(container, frame, display)
@@ -240,11 +298,17 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
 end
 
 function apply:GetHardSignature(displayID, display)
-    return resolver:BuildHardSignature(displayID, display, function(id, groupID)
+    local cached = self.sigCache[displayID]
+    if cached then
+        return cached
+    end
+    local sig = resolver:BuildHardSignature(displayID, display, function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end, function(load)
         return loadConditions:ShouldLoad(load)
     end)
+    self.sigCache[displayID] = sig
+    return sig
 end
 
 function apply:CreateContainer(frame, display)
@@ -268,6 +332,72 @@ function apply:CreateContainer(frame, display)
         paddingBottom = display.paddingBottom or 0,
     })
     return container
+end
+
+function apply:PrepareContainer(container, displayID, display, hardSig, frame)
+    container._exuiHardSig = hardSig
+    if container.SetFlowLayoutMaximumLineSize then
+        container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
+    end
+    if container.SetEnabled then
+        container:SetEnabled(display.enable ~= false)
+    end
+    self:ApplyProcessingPolicy(container, display)
+    self:RebuildGroups(container, displayID, display, frame)
+    self:ApplyItemEnchantments(container, display.container, display)
+    container:SetParent(self:GetPoolHolder())
+    container:Hide()
+end
+
+function apply:BindPreparedContainer(frame, displayID, display, container)
+    self:AnchorContainer(container, frame, display)
+    self:ApplyFrameLayer(container, frame, display)
+    self:ApplyLayout(container, display)
+    if container.SetFlowLayoutMaximumLineSize then
+        container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
+    end
+    if container.SetUnit and frame.__unit then
+        container:SetUnit(frame.__unit)
+    end
+    if container.SetEnabled then
+        container:SetEnabled(display.enable ~= false)
+    end
+    self:ApplyProcessingPolicy(container, display)
+    layout:ApplyItemEnchantmentLayout(container, display.container, display)
+    container:Show()
+    if container.UpdateAllAuras then
+        container:UpdateAllAuras()
+    end
+end
+
+function apply:PrewarmPool()
+    if InCombatLockdown() or not ufAuras:IsSupported() then
+        return
+    end
+
+    local perDisplay = self.PREWARM_MIN
+    local poolHolder = self:GetPoolHolder()
+    if not self.prewarmFrame then
+        self.prewarmFrame = CreateFrame('Frame', nil, poolHolder)
+        self.prewarmFrame:SetSize(200, 40)
+    end
+
+    for _, unitType in ipairs(defaults.UNIT_ORDER) do
+        local displays = ufAuras:GetDisplaysForUnitType(unitType)
+        for displayID, display in pairs(displays) do
+            if display.enable ~= false and ufAuras:DisplayHasLoadableGroup(display) then
+                local hardSig = self:GetHardSignature(displayID, display)
+                while self:CountPooledContainers(hardSig) < perDisplay do
+                    local container = self:CreateContainer(self.prewarmFrame, display)
+                    if not container then
+                        break
+                    end
+                    self:PrepareContainer(container, displayID, display, hardSig, self.prewarmFrame)
+                    self.containerGraveyard[#self.containerGraveyard + 1] = container
+                end
+            end
+        end
+    end
 end
 
 function apply:GetRowWidth(frame, display)
@@ -366,19 +496,30 @@ function apply:UpdateFrame(frame)
                 layout:ApplyItemEnchantmentLayout(container, display.container, display)
                 container:Show()
             else
-                -- CreateAuras / CustomAuraContainer may still fail under lockdown for
-                -- non-aura parenting; queue and retry if create fails in combat.
-                self:DiscardContainer(frame, displayID)
-                container = self:CreateContainer(frame, display)
+                if container then
+                    frame.UFAuraContainers[displayID] = nil
+                    self:ReturnContainerToPool(container)
+                    container = nil
+                end
+                if not container then
+                    container = self:PopPooledContainer(hardSig)
+                end
+                if not container then
+                    container = self:CreateContainer(frame, display)
+                end
                 if not container then
                     if InCombatLockdown() then
                         self:QueueFrame(frame)
                     end
                     return
                 end
-                container._exuiHardSig = hardSig
                 frame.UFAuraContainers[displayID] = container
-                self:ConfigureContainer(frame, displayID, display, container)
+                if container._exuiHardSig == hardSig then
+                    self:BindPreparedContainer(frame, displayID, display, container)
+                else
+                    container._exuiHardSig = hardSig
+                    self:ConfigureContainer(frame, displayID, display, container)
+                end
             end
         elseif frame.UFAuraContainers[displayID] then
             self:DiscardContainer(frame, displayID)
@@ -396,6 +537,7 @@ function apply:RefreshDisplay(displayID)
     if not ufAuras:IsSupported() then
         return
     end
+    self:InvalidateSignatures()
     local display = ufAuras:GetDisplay(displayID)
     if not display then
         self:RefreshAll()
@@ -412,6 +554,7 @@ function apply:RefreshAll()
     if not ufAuras:IsSupported() then
         return
     end
+    self:InvalidateSignatures()
     for _, unitType in ipairs(defaults.UNIT_ORDER) do
         self:EnsureHeaderContainers(unitType)
     end

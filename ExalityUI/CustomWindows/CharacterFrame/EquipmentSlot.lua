@@ -61,14 +61,9 @@ CD_Font:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
 
 local EVENTS = {
     "PLAYER_EQUIPMENT_CHANGED",
-    "MERCHANT_UPDATE",
-    "PLAYERBANKSLOTS_CHANGED",
-    "ITEM_LOCK_CHANGED",
     "CURSOR_CHANGED",
     "UPDATE_INVENTORY_ALERTS",
-    "AZERITE_ITEM_POWER_LEVEL_CHANGED",
-    "AZERITE_EMPOWERED_ITEM_SELECTION_UPDATED",
-    "BAG_UPDATE_COOLDOWN"
+    "BAG_UPDATE_COOLDOWN",
 }
 
 equipmentSlot.GetItemColorAndBorder = function(self, ilvl)
@@ -151,8 +146,6 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot.Side = side
     slot.Index = index
     slot.slotId = slotId
-
-    FrameUtil.RegisterFrameForEvents(slot, EVENTS)
 
     local _, textureName = GetInventorySlotInfo(SLOTNAME_BY_ID[slotId])
     slot.emptyTexture = textureName
@@ -364,13 +357,38 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot:SetScript('OnReceiveDrag', function(self)
         self:OnClick('LeftButton')
     end)
+    slot.UpdateCooldown = function(self)
+        local textureName = GetInventoryItemTexture('player', self:GetID())
+        if not textureName then
+            self.Cooldown:Clear()
+            return
+        end
+        local start, duration = GetInventoryItemCooldown('player', self:GetID())
+        self.Cooldown:SetCooldown(start, duration)
+        self:AnchorCooldownText()
+    end
+
+    slot.UpdateDurability = function(self)
+        if not GetInventoryItemTexture('player', self:GetID()) then
+            return
+        end
+        local currDurability = GetInventoryItemDurability(self:GetID())
+        if currDurability == 0 then
+            self.Icon:SetVertexColor(1, 0, 0, 1)
+        else
+            self.Icon:SetVertexColor(1, 1, 1, 1)
+        end
+    end
+
     slot:SetScript('OnShow', function(self)
+        FrameUtil.RegisterFrameForEvents(self, EVENTS)
         self:Update()
         self:UpdateItemContextMatching()
         ItemButtonUtil.RegisterCallback(ItemButtonUtil.Event.ItemContextChanged, self.OnItemContextChanged, self)
     end)
 
     slot:SetScript('OnHide', function(self)
+        self:UnregisterAllEvents()
         ItemButtonUtil.UnregisterCallback(ItemButtonUtil.Event.ItemContextChanged, self)
     end)
 
@@ -475,9 +493,9 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
                 self:Update()
             end
         elseif (event == 'BAG_UPDATE_COOLDOWN') then
-            self:Update()
+            self:UpdateCooldown()
         elseif (event == 'UPDATE_INVENTORY_ALERTS') then
-            self:Update()
+            self:UpdateDurability()
         elseif (event == 'CURSOR_CHANGED') then
             if C_PaperDollInfo.CanCursorCanGoInSlot(self:GetID()) then
                 self.Highlight:SetAlpha(1)

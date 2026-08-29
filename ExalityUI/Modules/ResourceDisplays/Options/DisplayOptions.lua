@@ -32,7 +32,7 @@ function displayOptions:GetOptions(displayID)
                 label = 'Width',
                 name = 'width',
                 min = 1,
-                max = 1000,
+                max = 4000,
                 step = 1,
                 width = 20,
                 currentValue = function()

@@ -81,6 +81,9 @@ Modules/UnitFrames/Elements/Elements.xml
 # UF Units
 Modules/UnitFrames/Units/Units.xml
 
+# Nameplates
+Modules/Nameplates/Nameplates.xml
+
 # Data Brokers
 Modules/DataBrokers/DataBrokers.xml
 

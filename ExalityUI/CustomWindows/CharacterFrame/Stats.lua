@@ -230,13 +230,19 @@ end
 stats.Create = function(self, container)
     self.container = container
 
-    FrameUtil.RegisterFrameForEvents(self.container, {
+    local generalEvents = {
         "COMBAT_RATING_UPDATE",
         "MASTERY_UPDATE",
         "SPEED_UPDATE",
         "LIFESTEAL_UPDATE",
         "AVOIDANCE_UPDATE",
         "PLAYER_TARGET_CHANGED",
+        "PLAYER_TALENT_UPDATE",
+        "ACTIVE_TALENT_GROUP_CHANGED",
+        "SPELL_POWER_CHANGED",
+    }
+
+    local unitEvents = {
         "UNIT_DAMAGE",
         "UNIT_ATTACK_SPEED",
         "UNIT_RANGEDDAMAGE",
@@ -245,16 +251,46 @@ stats.Create = function(self, container)
         "UNIT_RANGED_ATTACK_POWER",
         "UNIT_SPELL_HASTE",
         "UNIT_MAXHEALTH",
-        "PLAYER_TALENT_UPDATE",
-        "ACTIVE_TALENT_GROUP_CHANGED",
-        "SPELL_POWER_CHANGED",
+    }
 
-    })
+    container.RegisterStatsEvents = function(self)
+        for _, event in ipairs(generalEvents) do
+            self:RegisterEvent(event)
+        end
+        for _, event in ipairs(unitEvents) do
+            self:RegisterUnitEvent(event, 'player')
+        end
+    end
+
+    container.UnregisterStatsEvents = function(self)
+        self:UnregisterAllEvents()
+    end
+
+    container.RequestUpdate = function(self)
+        if self._exuiUpdatePending then
+            return
+        end
+        self._exuiUpdatePending = true
+        C_Timer.After(0, function()
+            self._exuiUpdatePending = nil
+            if self:IsShown() then
+                self:Update()
+            end
+        end)
+    end
 
     self.container:SetScript('OnEvent', function(self, event, ...)
-        C_Timer.After(0, function()
-            self:Update()
-        end)
+        self:RequestUpdate()
+    end)
+
+    container:SetScript('OnShow', function(self)
+        self:RegisterStatsEvents()
+        self:Update()
+    end)
+
+    container:SetScript('OnHide', function(self)
+        self:UnregisterStatsEvents()
+        self._exuiUpdatePending = nil
     end)
 
     self.container.updateFuncs = {}

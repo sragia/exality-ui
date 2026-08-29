@@ -84,10 +84,11 @@ barMod.Create = function(self, barId, db)
     frame.header = header
 
     local numButtons = def.barType == 'stance' and 0 or math.min(config.numButtons, def.numButtons or config.numButtons)
+    local assignActions = def.barType ~= 'action' or config.enable
     for i = 1, numButtons do
         local button
         if def.barType == 'action' then
-            button = buttonMod:CreateActionButton(barId, i, header, config)
+            button = buttonMod:CreateActionButton(barId, i, header, config, assignActions)
         elseif def.barType == 'stance' then
             button = specialButton:CreateStanceButton(barId, i, header, config)
         elseif def.barType == 'pet' then
@@ -186,12 +187,25 @@ end
 barMod.Configure = function(self, frame, db)
     if not frame then return end
     local barId = frame.barId
+    local def = definitions:Get(barId)
+    local previousConfig = frame.exuiBarConfig
     local config = configResolver:GetBarConfig(db, barId)
     frame.exuiBarConfig = config
 
     if not config.enable then
+        if previousConfig and previousConfig.enable and def and def.barType == 'action' then
+            for _, button in ipairs(frame.buttons or {}) do
+                buttonMod:ClearActionStates(button)
+            end
+        end
         frame:Hide()
         return
+    end
+
+    if def and def.barType == 'action' and (not previousConfig or not previousConfig.enable) then
+        for i, button in ipairs(frame.buttons or {}) do
+            buttonMod:EnsureActionStates(button, barId, button.id or i)
+        end
     end
 
     EXUI:SetPoint(frame, config.anchorPoint, UIParent, config.relativeAnchor, config.xOffset or 0, config.yOffset or 0)
