@@ -13,6 +13,8 @@ local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 local configResolver = EXUI:GetModule('aura-displays-config-resolver')
 
 local styledButtons = {}
+local visualStyleSigCache = setmetatable({}, { __mode = 'k' })
+local styleSigGeneration = 0
 
 local DISPEL_STYLE = Enum and Enum.CustomAuraButtonDispelTypeTextureStyle
 local DISPEL_STYLE_BORDER = (DISPEL_STYLE and DISPEL_STYLE.Border) or 0
@@ -851,7 +853,40 @@ function buttonStyle:ApplyBarIconLayout(button, visual)
     end
 end
 
+function buttonStyle:GetStyleSignature(visual)
+    if not visual then
+        return
+    end
+    local entry = visualStyleSigCache[visual]
+    if entry and entry.gen == styleSigGeneration then
+        return entry.sig
+    end
+    local sig = configResolver:SerializeValue(visual)
+    visualStyleSigCache[visual] = { gen = styleSigGeneration, sig = sig }
+    return sig
+end
+
+function buttonStyle:InvalidateStyleSignatures()
+    styleSigGeneration = styleSigGeneration + 1
+end
+
+function buttonStyle:ShouldRestyleButton(button, visual)
+    local styleSig = self:GetStyleSignature(visual)
+    if not styleSig then
+        return true
+    end
+    if button._exuiStyleSig == styleSig then
+        return false
+    end
+    button._exuiStyleSig = styleSig
+    return true
+end
+
 function buttonStyle:ApplyBarStyle(button, visual)
+    if not self:ShouldRestyleButton(button, visual) then
+        return
+    end
+
     styledButtons[button] = visual
     local useSafeChrome = self:UsesSafeBarChrome(button)
 
@@ -926,11 +961,9 @@ function buttonStyle:Apply(button, visual)
         return
     end
 
-    local styleSig = configResolver:SerializeValue(visual)
-    if button._exuiStyleSig and button._exuiStyleSig == styleSig then
+    if not self:ShouldRestyleButton(button, visual) then
         return
     end
-    button._exuiStyleSig = styleSig
 
     if button.BarBorderFrame then
         button.BarBorderFrame:Hide()
@@ -1004,3 +1037,30 @@ function buttonStyle:Clear(button)
     styledButtons[button] = nil
     button._exuiStyleSig = nil
 end
+
+local function invalidateHardSignatures()
+    local npApply = EXUI:GetModule('np-auras-apply')
+    if npApply and npApply.InvalidateHardSignatures then
+        npApply:InvalidateHardSignatures()
+    end
+    local ufApply = EXUI:GetModule('uf-auras-apply')
+    if ufApply and ufApply.InvalidateHardSignatures then
+        ufApply:InvalidateHardSignatures()
+    end
+end
+
+EXUI:RegisterEventHandler({ 'PLAYER_SPECIALIZATION_CHANGED', 'PLAYER_TALENT_UPDATE' }, 'aura-displays-button-style', function()
+    if InCombatLockdown() then
+        buttonStyle:InvalidateStyleSignatures()
+        invalidateHardSignatures()
+        return
+    end
+    local npApply = EXUI:GetModule('np-auras-apply')
+    if npApply and npApply.RefreshAll then
+        npApply:RefreshAll()
+    end
+    local ufApply = EXUI:GetModule('uf-auras-apply')
+    if ufApply and ufApply.RefreshAll then
+        ufApply:RefreshAll()
+    end
+end)

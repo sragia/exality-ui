@@ -32,8 +32,18 @@ local ITEM_ENCHANT_SLOT = {
 }
 
 apply.pendingFrames = {}
+apply.sigCache = {}
 apply.containerGraveyard = {}
 apply.PREWARM_MIN = 40
+
+function apply:InvalidateHardSignatures()
+    wipe(self.sigCache)
+end
+
+function apply:InvalidateSignatures()
+    self:InvalidateHardSignatures()
+    buttonStyle:InvalidateStyleSignatures()
+end
 
 function apply:Init()
     if self.eventHandler then
@@ -288,11 +298,17 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
 end
 
 function apply:GetHardSignature(displayID, display)
-    return resolver:BuildHardSignature(displayID, display, function(id, groupID)
+    local cached = self.sigCache[displayID]
+    if cached then
+        return cached
+    end
+    local sig = resolver:BuildHardSignature(displayID, display, function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end, function(load)
         return loadConditions:ShouldLoad(load)
     end)
+    self.sigCache[displayID] = sig
+    return sig
 end
 
 function apply:CreateContainer(frame, display)
@@ -521,6 +537,7 @@ function apply:RefreshDisplay(displayID)
     if not ufAuras:IsSupported() then
         return
     end
+    self:InvalidateSignatures()
     local display = ufAuras:GetDisplay(displayID)
     if not display then
         self:RefreshAll()
@@ -537,6 +554,7 @@ function apply:RefreshAll()
     if not ufAuras:IsSupported() then
         return
     end
+    self:InvalidateSignatures()
     for _, unitType in ipairs(defaults.UNIT_ORDER) do
         self:EnsureHeaderContainers(unitType)
     end

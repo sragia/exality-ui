@@ -268,8 +268,13 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
     return true
 end
 
-function apply:InvalidateSignatures()
+function apply:InvalidateHardSignatures()
     wipe(self.sigCache)
+end
+
+function apply:InvalidateSignatures()
+    self:InvalidateHardSignatures()
+    buttonStyle:InvalidateStyleSignatures()
 end
 
 function apply:GetHardSignature(displayID, display)
