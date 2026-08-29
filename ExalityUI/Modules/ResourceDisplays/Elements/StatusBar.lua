@@ -69,6 +69,28 @@ statusBar.UpdateTickMarks = function(self, frame)
     end
 end
 
+statusBar.ApplyBaseColor = function(self, frame)
+    local db = frame.db
+    local bar = frame.StatusBar
+    if not bar or self.NOCOLOR then
+        return
+    end
+
+    if db.resourceColorCurveEnabled and #helpers:GetResourceColorCurvePoints(db) > 0 then
+        return
+    end
+
+    if db.useClassColor then
+        local _, class = UnitClass('player')
+        local color = RAID_CLASS_COLORS[class]
+        if color then
+            bar:SetStatusBarColor(color.r, color.g, color.b, 1)
+        end
+    elseif db.barColor then
+        bar:SetStatusBarColor(db.barColor.r, db.barColor.g, db.barColor.b, db.barColor.a)
+    end
+end
+
 statusBar.Update = function(self, frame)
     local db = frame.db
     local bar = frame.StatusBar
@@ -86,17 +108,7 @@ statusBar.Update = function(self, frame)
 
     helpers:ClearResourceBarColorCurve(bar)
 
-    if not db.resourceColorCurveEnabled or #helpers:GetResourceColorCurvePoints(db) == 0 then
-        if db.useClassColor and not self.NOCOLOR then
-            local _, class = UnitClass('player')
-            local color = RAID_CLASS_COLORS[class]
-            if color then
-                bar:SetStatusBarColor(color.r, color.g, color.b, 1)
-            end
-        elseif db.barColor and not self.NOCOLOR then
-            bar:SetStatusBarColor(db.barColor.r, db.barColor.g, db.barColor.b, db.barColor.a)
-        end
-    end
+    self:ApplyBaseColor(frame)
 
     self:UpdateTickMarks(frame)
 end
@@ -115,7 +127,7 @@ statusBar.ApplyPowerValue = function(self, frame, current, max)
 
     if not self.NOCOLOR then
         if not helpers:ApplyBarThresholdColor(bar, db, current, max, frame.powerType) then
-            self:Update(frame)
+            self:ApplyBaseColor(frame)
         end
     end
 end

@@ -102,47 +102,78 @@ function MyScanningTooltip.ClearTooltip(self)
     end
 end
 
+local enchantNameCache = {}
+local gemResultCache = {}
+local gemResultScratch = {}
+
+local function resolveEnchantName(itemLink, enchantId)
+    MyScanningTooltip:ClearTooltip()
+    MyScanningTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    MyScanningTooltip:SetHyperlink(itemLink)
+    local enchantKey = ENCHANTED_TOOLTIP_LINE:gsub("%%s", "(.+)")
+    for i = 1, MyScanningTooltip:NumLines() do
+        local line = _G["ExalityUIScanningTooltipTextLeft" .. i]:GetText()
+        if line and line:match(enchantKey) then
+            return line:match("^%w+: (.*)")
+        end
+    end
+end
+
+local function buildItemGems(itemLink)
+    wipe(gemResultScratch)
+    for i = 1, MAX_NUM_SOCKETS do
+        local name, iLink = C_Item.GetItemGem(itemLink, i)
+        if iLink then
+            local icon = select(10, C_Item.GetItemInfo(iLink))
+            gemResultScratch[#gemResultScratch + 1] = { name = name, icon = icon, iLink = iLink }
+        end
+    end
+    local socketCount = C_Item.GetItemNumSockets(itemLink) or 0
+    for i = #gemResultScratch + 1, socketCount do
+        gemResultScratch[#gemResultScratch + 1] = {
+            name = "Empty Slot",
+            icon = EXUI.const.textures.characterFrame.gem.empty,
+        }
+    end
+    local cached = {}
+    for i = 1, #gemResultScratch do
+        cached[i] = gemResultScratch[i]
+    end
+    gemResultCache[itemLink] = cached
+    return cached
+end
+
 EXUI.utils = {
     GetItemEnchant = function(itemLink)
-        MyScanningTooltip:ClearTooltip()
-        MyScanningTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-        MyScanningTooltip:SetHyperlink(itemLink)
-        local enchantKey = ENCHANTED_TOOLTIP_LINE:gsub("%%s", "(.+)")
-        for i = 1, MyScanningTooltip:NumLines() do
-            if _G["ExalityUIScanningTooltipTextLeft" .. i]:GetText() and
-                _G["ExalityUIScanningTooltipTextLeft" .. i]:GetText()
-                :match(enchantKey) then
-                -- name,id
-                local name =
-                    _G["ExalityUIScanningTooltipTextLeft" .. i]:GetText()
-                name = name:match("^%w+: (.*)")
-                local _, _, enchantId = strsplit(":", itemLink)
-                return name, enchantId
-            end
+        if not itemLink then
+            return
         end
+        local _, _, enchantId = strsplit(":", itemLink)
+        enchantId = tonumber(enchantId)
+        if not enchantId or enchantId == 0 then
+            return
+        end
+        if enchantNameCache[enchantId] ~= nil then
+            local cached = enchantNameCache[enchantId]
+            return cached ~= false and cached or nil, enchantId
+        end
+        local name = resolveEnchantName(itemLink, enchantId)
+        enchantNameCache[enchantId] = name or false
+        return name, enchantId
     end,
     GetItemGems = function(itemLink)
-        local t = {}
-        for i = 1, MAX_NUM_SOCKETS do
-            local name, iLink = C_Item.GetItemGem(itemLink, i)
-            if iLink then
-                local icon = select(10, C_Item.GetItemInfo(iLink))
-                table.insert(t, { name = name, icon = icon, iLink = iLink })
-            end
+        if not itemLink then
+            return gemResultScratch
         end
-        MyScanningTooltip:ClearTooltip()
-        MyScanningTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-        MyScanningTooltip:SetHyperlink(itemLink)
-        for i = 1, MAX_NUM_SOCKETS do
-            local tex = _G["ExalityUIScanningTooltipTexture" .. i]:GetTexture()
-            if tex then
-                tex = tostring(tex)
-                if tex == '458977' then
-                    table.insert(t, { name = "Empty Slot", icon = tex })
-                end
-            end
+        local cached = gemResultCache[itemLink]
+        if not cached then
+            cached = buildItemGems(itemLink)
         end
-        return t
+        wipe(gemResultScratch)
+        for i = 1, #cached do
+            gemResultScratch[i] = cached[i]
+        end
+        return gemResultScratch
     end,
     createSimpleText = function(textValue, size, textAlign, parent, maxwidth)
         local frame = CreateFrame('Frame')

@@ -9,6 +9,9 @@ local buttonStyle = EXUI:GetModule('aura-displays-button-style')
 ---@class EXUIAuraDisplaysDurationFormat
 local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 
+---@class EXUIAuraDisplaysConfigResolver
+local configResolver = EXUI:GetModule('aura-displays-config-resolver')
+
 local styledButtons = {}
 
 local DISPEL_STYLE = Enum and Enum.CustomAuraButtonDispelTypeTextureStyle
@@ -923,6 +926,12 @@ function buttonStyle:Apply(button, visual)
         return
     end
 
+    local styleSig = configResolver:SerializeValue(visual)
+    if button._exuiStyleSig and button._exuiStyleSig == styleSig then
+        return
+    end
+    button._exuiStyleSig = styleSig
+
     if button.BarBorderFrame then
         button.BarBorderFrame:Hide()
     end
@@ -993,4 +1002,5 @@ end
 
 function buttonStyle:Clear(button)
     styledButtons[button] = nil
+    button._exuiStyleSig = nil
 end

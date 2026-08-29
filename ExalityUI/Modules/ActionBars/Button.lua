@@ -37,7 +37,8 @@ buttonMod.SetupActionStates = function(self, button, barId, buttonIndex, buttonO
     end
 end
 
-buttonMod.CreateActionButton = function(self, barId, index, header, barConfig)
+buttonMod.CreateActionButton = function(self, barId, index, header, barConfig, assignActions)
+    assignActions = assignActions ~= false
     local name = 'EXUIActionBar_' .. barId .. '_' .. index
     local commandName = definitions:GetCommandName(barId, index)
     local button = LAB:CreateButton(index, name, header, barStyle:BuildLABConfig(barConfig, commandName))
@@ -45,20 +46,48 @@ buttonMod.CreateActionButton = function(self, barId, index, header, barConfig)
     button.commandName = commandName
     button.exuiBarId = barId
 
-    if not InCombatLockdown() then
-        self:SetupActionStates(button, barId, index, 0)
+    if assignActions then
+        if not InCombatLockdown() then
+            self:SetupActionStates(button, barId, index, 0)
+        else
+            button.exuiPendingStateSetup = { barId, index, 0 }
+        end
+        if not InCombatLockdown() and button.UpdateAction then
+            button:UpdateAction()
+        end
     else
-        button.exuiPendingStateSetup = { barId, index, 0 }
+        button.exuiActionStatesDeferred = true
     end
 
     barStyle:ApplyToButton(button, barId, barConfig, commandName)
     spellPicker:RegisterButton(button)
 
-    if not InCombatLockdown() and button.UpdateAction then
+    return button
+end
+
+buttonMod.ClearActionStates = function(self, button)
+    if not button or not button.SetState or InCombatLockdown() then
+        return false
+    end
+    button:SetState(0, 'empty', nil)
+    button.exuiActionStatesDeferred = true
+    button.exuiPendingStateSetup = nil
+    return true
+end
+
+buttonMod.EnsureActionStates = function(self, button, barId, index)
+    if not button or not button.exuiActionStatesDeferred then
+        return
+    end
+    if InCombatLockdown() then
+        button.exuiPendingStateSetup = { barId, index, 0 }
+        return
+    end
+    button.exuiActionStatesDeferred = nil
+    self:SetupActionStates(button, barId, index, 0)
+    if button.UpdateAction then
         button:UpdateAction()
     end
-
-    return button
 end
 
 -- Dynamic slot assignment for override/extra bars only.

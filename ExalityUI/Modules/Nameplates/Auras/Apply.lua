@@ -28,6 +28,7 @@ local apply = EXUI:GetModule('np-auras-apply')
 apply.pendingFrames = {}
 apply.sigCache = {}
 apply.containerGraveyard = {}
+apply.PREWARM_MIN = 40
 
 function apply:Init()
     if self.eventHandler then
@@ -38,9 +39,13 @@ function apply:Init()
     end
     self.eventHandler = CreateFrame('Frame')
     self.eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
+    self.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
     self.eventHandler:SetScript('OnEvent', function(_, event)
         if event == 'PLAYER_REGEN_ENABLED' then
             self:FlushPending()
+        end
+        if event == 'PLAYER_REGEN_ENABLED' or event == 'PLAYER_ENTERING_WORLD' then
+            self:PrewarmPool()
         end
     end)
 end
@@ -68,6 +73,41 @@ function apply:GetPoolHolder()
     return self.poolHolder
 end
 
+function apply:ReturnContainerToPool(container)
+    if not container then
+        return
+    end
+    if container.SetEnabled then
+        container:SetEnabled(false)
+    end
+    container:Hide()
+    container:ClearAllPoints()
+    container:SetParent(self:GetPoolHolder())
+    self.containerGraveyard[#self.containerGraveyard + 1] = container
+end
+
+function apply:PopPooledContainer(hardSig)
+    local yard = self.containerGraveyard
+    for i = #yard, 1, -1 do
+        if yard[i]._exuiHardSig == hardSig then
+            return table.remove(yard, i)
+        end
+    end
+    if #yard > 0 then
+        return table.remove(yard)
+    end
+end
+
+function apply:CountPooledContainers(hardSig)
+    local count = 0
+    for _, container in ipairs(self.containerGraveyard) do
+        if container._exuiHardSig == hardSig then
+            count = count + 1
+        end
+    end
+    return count
+end
+
 function apply:DiscardContainer(frame, displayID)
     if not frame.NPAuraContainers then
         return
@@ -76,16 +116,8 @@ function apply:DiscardContainer(frame, displayID)
     if not container then
         return
     end
-    container._exuiHardSig = nil
-    if container.SetEnabled then
-        container:SetEnabled(false)
-    end
-    container:Hide()
-    container:ClearAllPoints()
-    container:SetParent(self:GetPoolHolder())
     frame.NPAuraContainers[displayID] = nil
-    local yard = self.containerGraveyard
-    yard[#yard + 1] = container
+    self:ReturnContainerToPool(container)
 end
 
 function apply:SetContainerUnit(container, unit)
@@ -264,7 +296,7 @@ function apply:GetRowWidth(frame, display)
     return math.max(1, (frame.db and frame.db.sizeWidth) or frame:GetWidth() or 1)
 end
 
-function apply:CreateContainer(frame, display)
+function apply:CreateContainer(frame, display, parent)
     if not npAuras:IsSupported() then
         return nil
     end
@@ -273,9 +305,9 @@ function apply:CreateContainer(frame, display)
         return nil
     end
 
-    local parent = frame.ElementFrame or frame
+    parent = parent or frame.ElementFrame or frame
     local container
-    if frame.CreateAuras then
+    if frame and frame.CreateAuras then
         container = frame:CreateAuras({
             maxWidth = self:GetRowWidth(frame, display),
             initialAnchor = display.containerAnchorPoint or 'TOPLEFT',
@@ -294,6 +326,83 @@ function apply:CreateContainer(frame, display)
         end
     end
     return container
+end
+
+function apply:PrepareContainer(container, displayID, display, hardSig, frame)
+    container._exuiHardSig = hardSig
+    if container.SetFlowLayoutMaximumLineSize then
+        container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
+    end
+    if container.SetEnabled then
+        container:SetEnabled(display.enable ~= false)
+    end
+    self:ApplyProcessingPolicy(container, display)
+    self:RebuildGroups(container, displayID, display, frame)
+    container:SetParent(self:GetPoolHolder())
+    container:Hide()
+end
+
+function apply:BindPreparedContainer(frame, displayID, display, container)
+    self:AnchorContainer(container, frame, display)
+    self:ApplyFrameLayer(container, frame, display)
+    self:ApplyLayout(container, display)
+    if container.SetFlowLayoutMaximumLineSize then
+        container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
+    end
+    self:SetContainerUnit(container, frame.unit or frame.__unit)
+    if container.SetEnabled then
+        container:SetEnabled(display.enable ~= false)
+    end
+    self:ApplyProcessingPolicy(container, display)
+    container:Show()
+    if container.UpdateAllAuras then
+        container:UpdateAllAuras()
+    end
+end
+
+function apply:PrewarmPool()
+    if InCombatLockdown() or not npAuras:IsSupported() then
+        return
+    end
+
+    local targetCount = self.PREWARM_MIN
+    if C_NamePlate and C_NamePlate.GetNamePlates then
+        targetCount = math.max(targetCount, #C_NamePlate.GetNamePlates() + 10)
+    end
+
+    local displays = npAuras:GetDisplays()
+    local displayCount = 0
+    for _, display in pairs(displays) do
+        if display.enable ~= false and npAuras:DisplayHasLoadableGroup(display) then
+            displayCount = displayCount + 1
+        end
+    end
+    if displayCount == 0 then
+        return
+    end
+
+    local perDisplay = math.max(1, math.ceil(targetCount / displayCount))
+    local poolHolder = self:GetPoolHolder()
+    local templateFrame = self.prewarmFrame
+    if not templateFrame then
+        templateFrame = CreateFrame('Frame', nil, poolHolder)
+        templateFrame:SetSize(200, 40)
+        self.prewarmFrame = templateFrame
+    end
+
+    for displayID, display in pairs(displays) do
+        if display.enable ~= false and npAuras:DisplayHasLoadableGroup(display) then
+            local hardSig = self:GetHardSignature(displayID, display)
+            while self:CountPooledContainers(hardSig) < perDisplay do
+                local container = self:CreateContainer(templateFrame, display, poolHolder)
+                if not container then
+                    break
+                end
+                self:PrepareContainer(container, displayID, display, hardSig, templateFrame)
+                self.containerGraveyard[#self.containerGraveyard + 1] = container
+            end
+        end
+    end
 end
 
 function apply:ConfigureContainer(frame, displayID, display, container)
@@ -348,18 +457,30 @@ function apply:UpdateFrame(frame)
                 self:ApplyProcessingPolicy(container, display)
                 container:Show()
             else
+                if container then
+                    frame.NPAuraContainers[displayID] = nil
+                    self:ReturnContainerToPool(container)
+                    container = nil
+                end
+                if not container then
+                    container = self:PopPooledContainer(hardSig)
+                end
                 if not container then
                     container = self:CreateContainer(frame, display)
-                    if not container then
-                        if InCombatLockdown() then
-                            self:QueueFrame(frame)
-                        end
-                        return
-                    end
-                    frame.NPAuraContainers[displayID] = container
                 end
-                container._exuiHardSig = hardSig
-                self:ConfigureContainer(frame, displayID, display, container)
+                if not container then
+                    if InCombatLockdown() then
+                        self:QueueFrame(frame)
+                    end
+                    return
+                end
+                frame.NPAuraContainers[displayID] = container
+                if container._exuiHardSig == hardSig then
+                    self:BindPreparedContainer(frame, displayID, display, container)
+                else
+                    container._exuiHardSig = hardSig
+                    self:ConfigureContainer(frame, displayID, display, container)
+                end
             end
         elseif frame.NPAuraContainers[displayID] then
             self:DiscardContainer(frame, displayID)

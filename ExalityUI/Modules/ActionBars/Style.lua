@@ -212,6 +212,7 @@ style.BuildLABConfig = function(self, barConfig, commandName)
         cooldownCount = barConfig.showCooldownText ~= false and barConfig.cooldown.enabled ~= false,
         actionButtonUI = true,
         assistedHighlight = false,
+        lossOfControlCooldown = false,
         hideElements = {
             macro = not barConfig.macro.enabled,
             hotkey = not barConfig.hotkey.enabled,

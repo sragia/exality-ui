@@ -149,11 +149,13 @@ local function applyBackdrop(bar, db)
     if backdrop then
         r, g, b, a = backdrop.r or 0, backdrop.g or 0, backdrop.b or 0, backdrop.a or 1
     end
-    local key = r .. ':' .. g .. ':' .. b .. ':' .. a
-    if bar._exuiBackdropKey == key then
+    if bar._exuiBackdropR == r and bar._exuiBackdropG == g and bar._exuiBackdropB == b and bar._exuiBackdropA == a then
         return
     end
-    bar._exuiBackdropKey = key
+    bar._exuiBackdropR = r
+    bar._exuiBackdropG = g
+    bar._exuiBackdropB = b
+    bar._exuiBackdropA = a
     if bar.occlude then
         bar.occlude:SetColorTexture(r, g, b, 1)
         bar.occlude:Show()
@@ -176,15 +178,7 @@ local function applyColor(bar, c)
     return false
 end
 
-local function applyThreatColor(bar, db, unit)
-    if UnitPlayerControlled(unit) then
-        return false
-    end
-    local playerStatus = UnitThreatSituation('player', unit)
-    if playerStatus == nil then
-        return false
-    end
-    local tankAggro = db.colorCoTank and EXUI:GetModule('np-core'):OtherTankHasAggro(unit)
+local function applyThreatColor(bar, db, playerStatus, tankAggro)
     if playerStatus == 3 then
         return applyColor(bar, db.threatHaveAggro)
     end
@@ -236,8 +230,15 @@ health.PostUpdateColor = function(self, unit)
         end
     end
 
-    if not applied and db.colorThreat then
-        applied = applyThreatColor(self, db, unit)
+    if not applied and db.colorThreat and not UnitPlayerControlled(unit) then
+        local playerStatus = UnitThreatSituation('player', unit)
+        if playerStatus ~= nil then
+            local tankAggro
+            if db.colorCoTank then
+                tankAggro = EXUI:GetModule('np-core'):OtherTankHasAggro(unit)
+            end
+            applied = applyThreatColor(self, db, playerStatus, tankAggro)
+        end
     end
 
     if not applied and db.colorQuest and (
@@ -320,7 +321,10 @@ health.Update = function(self, frame)
     if frame.isFriendly then
         frame:DisableElement('Health')
         bar:Hide()
-        bar._exuiBackdropKey = nil
+        bar._exuiBackdropR = nil
+        bar._exuiBackdropG = nil
+        bar._exuiBackdropB = nil
+        bar._exuiBackdropA = nil
         if bar.bg then
             bar.bg:Hide()
         end
@@ -339,7 +343,7 @@ health.Update = function(self, frame)
     applyBackdrop(bar, db)
     EXUI:GetModule('np-core'):ApplyHealthChrome(frame)
     bar.colorTapping = db.colorTapped
-    bar.colorThreat = db.colorThreat
+    bar.colorThreat = false
     bar.colorClass = false
     bar.colorReaction = false
     bar.colorSmooth = db.healthColorMode == 'curve'

@@ -7,6 +7,8 @@ local highlight = EXUI:GetModule('np-element-target-highlight')
 local LCG = LibStub('LibCustomGlow-1.0', true)
 local GLOW_SLICE = 16
 local GLOW_OUTSET = 6
+local hoverSeen = {}
+local pollAccum = 0
 
 local function stopPixelGlow(frame)
     if LCG and LCG.PixelGlow_Stop then
@@ -233,7 +235,8 @@ highlight.RefreshHover = function(self)
         hoverFrame = plateFrameForUnit('mouseover')
     end
 
-    local seen = {}
+    local seen = hoverSeen
+    wipe(seen)
     local function touch(frame)
         if frame and not seen[frame] and frame.IsShown and frame:IsShown() and not frame:IsForbidden() then
             seen[frame] = true
@@ -252,7 +255,12 @@ highlight.StartMouseoverWatch = function(self)
     if not self.watch then
         self.watch = CreateFrame('Frame')
     end
-    self.watch:SetScript('OnUpdate', function()
+    self.watch:SetScript('OnUpdate', function(_, elapsed)
+        pollAccum = pollAccum + elapsed
+        if pollAccum < 0.05 then
+            return
+        end
+        pollAccum = 0
         highlight:PollHover()
     end)
 end

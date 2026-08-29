@@ -91,9 +91,7 @@ tags.TAGS = {
     {
         name = 'curhp:formatted',
         method = function(unit)
-            local currHP = UnitHealth(unit)
-
-            return AbbreviateNumbers(currHP)
+            return AbbreviateNumbers(UnitHealth(unit))
         end,
         events = 'UNIT_HEALTH UNIT_MAXHEALTH'
     },

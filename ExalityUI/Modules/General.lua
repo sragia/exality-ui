@@ -609,8 +609,15 @@ generalModule.paperDoll = {
         local gems = EXUI.utils.GetItemGems(itemLink)
         local s = ''
         if (gems) then
+            local emptyIcon = EXUI.const.textures.characterFrame.gem.empty
             for _, gem in ipairs(gems) do
-                s = s .. string.format('|T%s:0|t ', gem.icon)
+                local icon = gem.icon
+                if not icon and gem.name == 'Empty Slot' then
+                    icon = emptyIcon
+                end
+                if icon then
+                    s = s .. string.format('|T%s:0|t ', icon)
+                end
             end
         end
         return s
