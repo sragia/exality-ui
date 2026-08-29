@@ -74,7 +74,7 @@ optionsMain.UpdateNavToggleIcon = function(self)
 end
 
 optionsMain.UpdateNavToggleLayout = function(self)
-    if (not self.navToggle or not self.menuContainer or not self.modulesPanel) then
+    if (not self.navToggle or not self.menuScroll or not self.modulesPanel) then
         return
     end
 
@@ -100,10 +100,10 @@ optionsMain.UpdateNavToggleLayout = function(self)
         self.navToggle:SetPoint('BOTTOMRIGHT', self.modulesPanel, 'BOTTOMRIGHT', -NAV_PANEL_INSET, NAV_PANEL_INSET)
     end
 
-    self.menuContainer:ClearAllPoints()
-    self.menuContainer:SetPoint('TOPLEFT', NAV_PANEL_INSET, -NAV_PANEL_INSET)
-    self.menuContainer:SetPoint('TOPRIGHT', -NAV_PANEL_INSET, -NAV_PANEL_INSET)
-    self.menuContainer:SetPoint('BOTTOM', self.modulesPanel, 'BOTTOM', 0, toggleHeight + NAV_PANEL_INSET)
+    self.menuScroll:ClearAllPoints()
+    self.menuScroll:SetPoint('TOPLEFT', NAV_PANEL_INSET, -NAV_PANEL_INSET)
+    self.menuScroll:SetPoint('TOPRIGHT', -NAV_PANEL_INSET, -NAV_PANEL_INSET)
+    self.menuScroll:SetPoint('BOTTOM', self.modulesPanel, 'BOTTOM', 0, toggleHeight + NAV_PANEL_INSET)
 
     self:UpdateNavToggleIcon()
 end
@@ -139,6 +139,7 @@ optionsMain.SetNavCompact = function(self, compact, animate)
         if (compact) then
             optionsModuleSelector:Relayout()
         end
+        optionsModuleSelector:UpdateScroll()
         optionsFields:RefreshFields()
     end
 
@@ -195,7 +196,9 @@ optionsMain.CreateWindow = function(self)
     modulesPanel:SetParent(window.container)
     modulesPanel:Show()
 
-    local menuContainer = CreateFrame('Frame', nil, modulesPanel)
+    local menuScroll = EXFrames:GetFrame('smooth-scroll-frame'):Create()
+    menuScroll:SetParent(modulesPanel)
+    local menuContainer = menuScroll.child
 
     local infoPanel = panel:Create()
     infoPanel:SetParent(window.container)
@@ -227,6 +230,7 @@ optionsMain.CreateWindow = function(self)
 
     self.window = window
     self.modulesPanel = modulesPanel
+    self.menuScroll = menuScroll
     self.menuContainer = menuContainer
     self.infoPanel = infoPanel
     self.discordInput = discordInput
@@ -237,7 +241,7 @@ optionsMain.CreateWindow = function(self)
     self:SetInfoPanelCompact(isCompact)
     self:UpdateNavToggleLayout()
 
-    optionsModuleSelector:Create(menuContainer, window.container)
+    optionsModuleSelector:Create(menuScroll, window.container)
 
     local configPanel = panel:Create()
     configPanel:SetParent(window.container)
@@ -288,6 +292,7 @@ optionsMain.Show = function(self)
             if (self.isNavCompact) then
                 optionsModuleSelector:Relayout()
             end
+            optionsModuleSelector:UpdateScroll()
             optionsFields:RefreshFields()
         end
     end)

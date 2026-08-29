@@ -9,8 +9,18 @@ local REAGENT_BAG = Enum.BagIndex.ReagentBag
 local FIRST_BAG = Enum.BagIndex.Bag_1
 local LAST_BAG = Enum.BagIndex.Bag_4
 
-slots.buttons = {}
+slots.pools = {
+    bags = {},
+    bank = {},
+}
+slots.search = {
+    bags = '',
+    bank = '',
+}
+slots.buttons = slots.pools.bags
 slots.bagButtons = {}
+
+local SEARCH_DIM = 0.3
 
 local DEFAULT_BORDER = { 69 / 255, 60 / 255, 54 / 255 } -- #453c36
 
@@ -61,6 +71,25 @@ local function HideDefaultItemButtonArt(button)
     if button.ItemContextOverlay then
         button.ItemContextOverlay:Hide()
     end
+
+    local extras = {
+        button.NewItemTexture,
+        button.BattlepayItemTexture,
+        button.IconQuestTexture,
+        button.JunkIcon,
+        button.UpgradeIcon,
+        button.flash,
+        button.searchOverlay,
+        button.SearchOverlay,
+        button.BagIndicator,
+    }
+    for i = 1, #extras do
+        local region = extras[i]
+        if region then
+            region:SetAlpha(0)
+            region:Hide()
+        end
+    end
 end
 
 local function ApplyBorderColor(button, r, g, b)
@@ -79,12 +108,20 @@ local function SetHovered(button, hovered)
     end
 end
 
+local qualityInfoCache = {}
+
 local function GetCraftingQualityInfo(itemIDOrLink)
     if not itemIDOrLink or not C_TradeSkillUI then
         return nil
     end
-    return C_TradeSkillUI.GetItemReagentQualityInfo(itemIDOrLink)
+    local cached = qualityInfoCache[itemIDOrLink]
+    if cached ~= nil then
+        return cached or nil
+    end
+    local info = C_TradeSkillUI.GetItemReagentQualityInfo(itemIDOrLink)
         or C_TradeSkillUI.GetItemCraftedQualityInfo(itemIDOrLink)
+    qualityInfoCache[itemIDOrLink] = info or false
+    return info
 end
 
 local function UpdateQualityIcon(button, itemIDOrLink)
@@ -102,91 +139,12 @@ local function UpdateQualityIcon(button, itemIDOrLink)
     end
 end
 
-local function SplitStack(button, amount)
-    if button.bagID and button:GetID() then
-        C_Container.SplitContainerItem(button.bagID, button:GetID(), amount)
-    end
-end
-
-local function OnModifiedClick(button, mouseButton)
-    local bagID, slotID = button.bagID, button:GetID()
-    if not bagID or not slotID then
-        return
-    end
-
-    local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotID)
-    if IsModifiedClick('EXPANDITEM') and C_Item.DoesItemExist(itemLocation) then
-        if C_Container.SocketContainerItem(bagID, slotID) then
-            return
-        end
-    end
-
-    if HandleModifiedItemClick(C_Container.GetContainerItemLink(bagID, slotID), itemLocation) then
-        return
-    end
-
-    if not CursorHasItem() and IsModifiedClick('SPLITSTACK') then
-        local info = C_Container.GetContainerItemInfo(bagID, slotID)
-        if info and not info.isLocked and info.stackCount and info.stackCount > 1 then
-            button.SplitStack = SplitStack
-            StackSplitFrame:OpenStackSplitFrame(info.stackCount, button, 'BOTTOMRIGHT', 'TOPRIGHT')
-        end
-    end
-end
-
-local function OnItemClick(button, mouseButton)
-    local bagID, slotID = button.bagID, button:GetID()
-    if not bagID or not slotID then
-        return
-    end
-
-    if IsModifiedClick() then
-        OnModifiedClick(button, mouseButton)
-        return
-    end
-
-    if mouseButton == 'LeftButton' then
-        if SpellCanTargetItem and (SpellCanTargetItem() or (SpellCanTargetItemID and SpellCanTargetItemID())) then
-            C_Container.UseContainerItem(bagID, slotID)
-        else
-            C_Container.PickupContainerItem(bagID, slotID)
-        end
-        if StackSplitFrame then
-            StackSplitFrame:Hide()
-        end
-    else
-        C_Container.UseContainerItem(bagID, slotID)
-    end
-end
-
 local function OnItemEnter(button)
     SetHovered(button, true)
-    local bagID, slotID = button.bagID, button:GetID()
-    if not bagID or not slotID then
-        return
-    end
-    GameTooltip:SetOwner(button, 'ANCHOR_TOPLEFT')
-    GameTooltip:SetBagItem(bagID, slotID)
-    GameTooltip:Show()
-
-    if SpellIsTargeting and SpellIsTargeting() then
-        return
-    end
-    if IsModifiedClick('DRESSUP') then
-        ShowInspectCursor()
-    elseif MerchantFrame and MerchantFrame:IsShown() and MerchantFrame.selectedTab == 1 then
-        C_Container.ShowContainerSellCursor(bagID, slotID)
-    else
-        ResetCursor()
-    end
 end
 
 local function OnItemLeave(button)
     SetHovered(button, false)
-    GameTooltip:Hide()
-    if not SpellIsTargeting or not SpellIsTargeting() then
-        ResetCursor()
-    end
 end
 
 slots.StyleItemButton = function(self, button)
@@ -248,58 +206,164 @@ slots.StyleItemButton = function(self, button)
         button.Count:SetAlpha(0)
     end
 
-    local cooldown = button.Cooldown or CreateFrame('Cooldown', nil, button, 'CooldownFrameTemplate')
-    button.Cooldown = cooldown
-    cooldown:SetAllPoints()
-    cooldown:SetFrameLevel(button:GetFrameLevel() + 2)
-    cooldown:SetDrawEdge(false)
-    cooldown:SetSwipeColor(0, 0, 0, 0.55)
+    button:HookScript('OnEnter', OnItemEnter)
+    button:HookScript('OnLeave', OnItemLeave)
+end
 
-    button.GetBagID = function(self)
-        return self.bagID
+slots.MatchesSearch = function(self, info, query)
+    if not query or query == '' then
+        return true
     end
+    if not info then
+        return false
+    end
+    local name = info.itemName and info.itemName:lower()
+    if name and name:find(query, 1, true) then
+        return true
+    end
+    if info.itemID and tostring(info.itemID):find(query, 1, true) then
+        return true
+    end
+    return false
+end
 
-    button:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
-    button:RegisterForDrag('LeftButton')
-    button:SetScript('OnClick', OnItemClick)
-    button:SetScript('OnDragStart', function(self)
-        OnItemClick(self, 'LeftButton')
+slots.ApplySearchDim = function(self, button, matches)
+    local alpha = matches and 1 or SEARCH_DIM
+    if button.Icon then
+        button.Icon:SetAlpha(alpha)
+    end
+    if button.EmptyTexture then
+        button.EmptyTexture:SetAlpha(alpha)
+    end
+    if button.Overlay then
+        button.Overlay:SetAlpha(alpha)
+    end
+end
+
+slots.GetSearch = function(self, poolName)
+    return self.search[poolName or 'bags'] or ''
+end
+
+slots.SetSearch = function(self, poolName, text)
+    poolName = poolName or 'bags'
+    local query = (text or ''):lower():gsub('^%s+', ''):gsub('%s+$', '')
+    if self.search[poolName] == query then
+        return
+    end
+    self.search[poolName] = query
+    self:UpdateVisible(poolName)
+    if poolName == 'bags' then
+        local pins = EXUI:GetModule('bags-pins')
+        pins:ForEachVisible(function(button)
+            self:UpdateItemButton(button)
+        end)
+    end
+end
+
+slots.CreateSearchBox = function(self, parent, poolName)
+    local theme = EXUI.const.theme
+    local box = CreateFrame('EditBox', nil, parent, 'BackdropTemplate')
+    box:SetAutoFocus(false)
+    box:SetFont(EXUI.const.fonts.DEFAULT, 11, '')
+    box:SetTextColor(unpack(theme.text))
+    box:SetTextInsets(8, 8, 0, 0)
+    box:SetMaxLetters(80)
+    box:SetBackdrop(EXUI.const.backdrop.DEFAULT)
+    box:SetBackdropColor(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 1)
+    box:SetBackdropBorderColor(theme.border[1], theme.border[2], theme.border[3], 1)
+
+    local hint = box:CreateFontString(nil, 'OVERLAY')
+    box.Hint = hint
+    hint:SetFont(EXUI.const.fonts.DEFAULT, 11, '')
+    hint:SetTextColor(unpack(theme.textMuted))
+    hint:SetPoint('LEFT', 8, 0)
+    hint:SetText('Search')
+
+    box:SetScript('OnTextChanged', function(editBox)
+        local text = editBox:GetText() or ''
+        hint:SetShown(text == '')
+        self:SetSearch(poolName, text)
     end)
-    button:SetScript('OnReceiveDrag', function(self)
-        OnItemClick(self, 'LeftButton')
+    box:SetScript('OnEscapePressed', function(editBox)
+        if (editBox:GetText() or '') ~= '' then
+            editBox:SetText('')
+        end
+        editBox:ClearFocus()
     end)
-    button:SetScript('OnEnter', OnItemEnter)
-    button:SetScript('OnLeave', OnItemLeave)
+    box:SetScript('OnEnterPressed', function(editBox)
+        editBox:ClearFocus()
+    end)
+    box:SetScript('OnEditFocusGained', function()
+        box:SetBackdropBorderColor(theme.borderActive[1], theme.borderActive[2], theme.borderActive[3], 1)
+    end)
+    box:SetScript('OnEditFocusLost', function()
+        box:SetBackdropBorderColor(theme.border[1], theme.border[2], theme.border[3], 1)
+    end)
+    return box
 end
 
 slots.Assign = function(self, button, bagID, slotID)
-    button.bagID = bagID
+    if not button then
+        return
+    end
+    if button.bagID == bagID and button:GetID() == slotID then
+        return
+    end
+    button.itemSnap = nil
+    if button.SetBagID then
+        button:SetBagID(bagID)
+    else
+        button.bagID = bagID
+    end
     button:SetID(slotID)
 end
+
+local gearCache = {}
 
 slots.IsGearItem = function(self, itemID)
     if not itemID then
         return false
     end
-    local invType = C_Item.GetItemInventoryTypeByID(itemID)
-    if not invType then
-        return false
+    local cached = gearCache[itemID]
+    if cached ~= nil then
+        return cached
     end
-    return invType ~= Enum.InventoryType.IndexNonEquipType
+    local invType = C_Item.GetItemInventoryTypeByID(itemID)
+    local isGear = invType
+        and invType ~= Enum.InventoryType.IndexNonEquipType
         and invType ~= Enum.InventoryType.IndexBagType
         and invType ~= Enum.InventoryType.IndexQuiverType
         and invType ~= Enum.InventoryType.IndexAmmoType
+    gearCache[itemID] = isGear and true or false
+    return gearCache[itemID]
+end
+
+slots.SetButtonShown = function(self, button, shown)
+    if not button then
+        return
+    end
+    button:SetShown(shown and true or false)
+end
+
+slots.IsButtonShown = function(self, button)
+    return button and button:IsShown()
 end
 
 slots.UpdateItemButton = function(self, button)
     local bagID, slotID = button.bagID, button:GetID()
     if not bagID or not slotID then
-        button:Hide()
+        self:SetButtonShown(button, false)
         return
     end
 
     local info = C_Container.GetContainerItemInfo(bagID, slotID)
+    local query = self:GetSearch(button.poolName)
+    local snap = button.itemSnap
+
     if not info then
+        if snap and snap.empty and snap.query == query then
+            return
+        end
         button.Icon:SetTexture(nil)
         button.Icon:Hide()
         button.EmptyTexture:Show()
@@ -312,15 +376,31 @@ slots.UpdateItemButton = function(self, button)
         if button.Cooldown then
             button.Cooldown:Hide()
         end
+        self:ApplySearchDim(button, query == '')
+        button.itemSnap = { empty = true, query = query }
+        return
+    end
+
+    local count = info.stackCount or 1
+    if snap
+        and not snap.empty
+        and snap.id == info.itemID
+        and snap.count == count
+        and snap.locked == info.isLocked
+        and snap.icon == info.iconFileID
+        and snap.quality == info.quality
+        and snap.query == query
+    then
+        self:UpdateCooldown(button)
         return
     end
 
     button.EmptyTexture:Hide()
     button.Icon:Show()
     button.Icon:SetTexture(info.iconFileID)
-    button.Icon:SetDesaturated(info.isLocked)
+    local matches = self:MatchesSearch(info, query)
+    button.Icon:SetDesaturated(info.isLocked or not matches)
 
-    local count = info.stackCount or 1
     button.StackCount:SetText(count > 1 and count or '')
 
     local itemID = info.itemID
@@ -351,26 +431,67 @@ slots.UpdateItemButton = function(self, button)
     end
 
     self:UpdateCooldown(button)
+    self:ApplySearchDim(button, matches)
+    button.itemSnap = {
+        empty = false,
+        id = itemID,
+        count = count,
+        locked = info.isLocked,
+        icon = info.iconFileID,
+        quality = info.quality,
+        query = query,
+    }
+end
+
+slots.EnsureCooldown = function(self, button)
+    if button.Cooldown then
+        return button.Cooldown
+    end
+    local cooldown = CreateFrame('Cooldown', nil, button, 'CooldownFrameTemplate')
+    button.Cooldown = cooldown
+    cooldown:SetAllPoints()
+    cooldown:SetFrameLevel(button:GetFrameLevel() + 2)
+    cooldown:SetDrawEdge(false)
+    cooldown:SetSwipeColor(0, 0, 0, 0.55)
+    if button.Overlay then
+        button.Overlay:SetFrameLevel(button:GetFrameLevel() + 4)
+    end
+    return cooldown
 end
 
 slots.UpdateCooldown = function(self, button)
-    if not button.Cooldown or not button.bagID then
+    if not button.bagID then
         return
     end
     local start, duration, enable = C_Container.GetContainerItemCooldown(button.bagID, button:GetID())
     if start and duration and duration > 0 then
-        CooldownFrame_Set(button.Cooldown, start, duration, enable)
-    else
+        CooldownFrame_Set(self:EnsureCooldown(button), start, duration, enable)
+    elseif button.Cooldown then
         button.Cooldown:Clear()
         button.Cooldown:Hide()
     end
 end
 
 slots.CreateItemButton = function(self, parent)
-    local button = CreateFrame('ItemButton', nil, parent)
+    local button = CreateFrame('ItemButton', nil, parent, 'ContainerFrameItemButtonTemplate')
     self:StyleItemButton(button)
+    button:RegisterForClicks('LeftButtonUp', 'RightButtonUp', 'MiddleButtonUp')
+    button.poolName = 'bags'
     button:Hide()
     return button
+end
+
+slots.GetPool = function(self, poolName)
+    poolName = poolName or 'bags'
+    local pool = self.pools[poolName]
+    if not pool then
+        pool = {}
+        self.pools[poolName] = pool
+    end
+    if poolName == 'bags' then
+        self.buttons = pool
+    end
+    return pool
 end
 
 slots.RequiredCount = function(self)
@@ -381,66 +502,99 @@ slots.RequiredCount = function(self)
     return count
 end
 
-slots.EnsurePool = function(self, parent, needed)
-    needed = needed or self:RequiredCount()
-    while #self.buttons < needed do
-        self.buttons[#self.buttons + 1] = self:CreateItemButton(parent)
+slots.RequiredCountForBags = function(self, bagIDs)
+    local count = 0
+    for i = 1, #(bagIDs or {}) do
+        count = count + (C_Container.GetContainerNumSlots(bagIDs[i]) or 0)
+    end
+    return count
+end
+
+slots.EnsurePool = function(self, parent, needed, poolName)
+    local pool = self:GetPool(poolName)
+    needed = needed or (poolName == 'bank' and #pool or self:RequiredCount())
+    while #pool < needed do
+        local button = self:CreateItemButton(parent)
+        if not button then
+            break
+        end
+        pool[#pool + 1] = button
     end
 end
 
-slots.Acquire = function(self, index, parent)
-    self:EnsurePool(parent, index)
-    local button = self.buttons[index]
+slots.Acquire = function(self, index, parent, poolName)
+    self:EnsurePool(parent, index, poolName)
+    local button = self:GetPool(poolName)[index]
+    if not button then
+        return nil
+    end
+    button.poolName = poolName or 'bags'
     if parent and button:GetParent() ~= parent then
         button:SetParent(parent)
     end
     return button
 end
 
-slots.ReleaseFrom = function(self, index)
-    for i = index, #self.buttons do
-        local button = self.buttons[i]
-        button:Hide()
+slots.ReleaseFrom = function(self, index, poolName)
+    local pool = self:GetPool(poolName)
+    for i = index, #pool do
+        local button = pool[i]
+        self:SetButtonShown(button, false)
         button.bagID = nil
+        button.itemSnap = nil
+        button.placedX, button.placedY, button.placedSize = nil, nil, nil
     end
 end
 
-slots.GetVisibleButtons = function(self)
+slots.GetVisibleButtons = function(self, poolName)
     local visible = {}
-    for i = 1, #self.buttons do
-        local button = self.buttons[i]
-        if button:IsShown() then
+    local pool = self:GetPool(poolName)
+    for i = 1, #pool do
+        local button = pool[i]
+        if self:IsButtonShown(button) then
             visible[#visible + 1] = button
         end
     end
     return visible
 end
 
-slots.UpdateVisible = function(self)
-    for i = 1, #self.buttons do
-        local button = self.buttons[i]
-        if button:IsShown() then
-            self:UpdateItemButton(button)
+slots.ForEachButton = function(self, callback, poolName)
+    if poolName then
+        local pool = self:GetPool(poolName)
+        for i = 1, #pool do
+            callback(pool[i])
+        end
+        return
+    end
+    for _, pool in pairs(self.pools) do
+        for i = 1, #pool do
+            callback(pool[i])
         end
     end
 end
 
-slots.UpdateVisibleCooldowns = function(self)
-    for i = 1, #self.buttons do
-        local button = self.buttons[i]
-        if button:IsShown() then
+slots.UpdateVisible = function(self, poolName)
+    self:ForEachButton(function(button)
+        if self:IsButtonShown(button) then
+            self:UpdateItemButton(button)
+        end
+    end, poolName)
+end
+
+slots.UpdateVisibleCooldowns = function(self, poolName)
+    self:ForEachButton(function(button)
+        if self:IsButtonShown(button) then
             self:UpdateCooldown(button)
         end
-    end
+    end, poolName)
 end
 
-slots.UpdateLock = function(self, bagID, slotID)
-    for i = 1, #self.buttons do
-        local button = self.buttons[i]
-        if button:IsShown() and button.bagID == bagID and button:GetID() == slotID then
+slots.UpdateLock = function(self, bagID, slotID, poolName)
+    self:ForEachButton(function(button)
+        if self:IsButtonShown(button) and button.bagID == bagID and button:GetID() == slotID then
             self:UpdateItemButton(button)
         end
-    end
+    end, poolName)
 end
 
 local function OnBagButtonClick(button)
@@ -523,7 +677,8 @@ slots.ShowEmpty = function(self, button)
         button.Cooldown:Hide()
     end
     ApplyBorderColor(button, unpack(DEFAULT_BORDER))
-    button:Show()
+    self:ApplySearchDim(button, self:GetSearch(button.poolName) == '')
+    self:SetButtonShown(button, true)
 end
 
 slots.CreateBagButton = function(self, parent, bagID)

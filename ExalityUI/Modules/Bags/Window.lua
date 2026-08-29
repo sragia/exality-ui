@@ -41,6 +41,7 @@ local TABS = {
 
 window.frame = nil
 window.activeTab = 'bags'
+window.layoutSignature = nil
 window.tabButtons = {}
 window.currencyButtons = {}
 window.crestButtons = {}
@@ -186,6 +187,9 @@ window.CreateBagBar = function(self, parent)
         icon:SetVertexColor(unpack(muted))
         label:SetTextColor(unpack(muted))
     end)
+
+    self.searchBox = slots:CreateSearchBox(bar, 'bags')
+    self.searchBox:SetPoint('RIGHT', sortBtn, 'LEFT', -10, 0)
 end
 
 window.LayoutBagBar = function(self, bagSize, spacing)
@@ -207,6 +211,9 @@ window.LayoutBagBar = function(self, bagSize, spacing)
     self.sortButton.Icon:SetSize(iconSize, iconSize)
     local textWidth = self.sortButton.Label:GetStringWidth()
     self.sortButton:SetSize(iconSize + 4 + textWidth, bagSize)
+
+    local searchHeight = math.max(20, bagSize)
+    self.searchBox:SetSize(150, searchHeight)
 end
 
 local function FormatMoney(copper)
@@ -547,6 +554,38 @@ window.RestorePosition = function(self)
     end
 end
 
+window.GetLayoutSignature = function(self)
+    local layout = GetBags():GetLayoutSettings()
+    local parts = { self.activeTab, layout.slotSize, layout.columns, layout.spacing }
+    for bag = Enum.BagIndex.Backpack, Enum.BagIndex.ReagentBag do
+        parts[#parts + 1] = C_Container.GetContainerNumSlots(bag) or 0
+    end
+    return table.concat(parts, ':')
+end
+
+window.NeedsLayout = function(self)
+    if not self.layoutSignature or self.activeTab ~= 'bags' then
+        return true
+    end
+    return self.layoutSignature ~= self:GetLayoutSignature()
+end
+
+window.RefreshContents = function(self)
+    slots:UpdateVisible()
+    slots:UpdateBagBar()
+    local layout = GetBags():GetLayoutSettings()
+    pins:Layout(self.pinRail, layout.slotSize, layout.spacing)
+    self:UpdateFooter()
+end
+
+window.LayoutIfNeeded = function(self)
+    if self:NeedsLayout() then
+        self:Layout()
+    else
+        self:RefreshContents()
+    end
+end
+
 window.Layout = function(self)
     if not self.frame then
         return
@@ -565,6 +604,7 @@ window.Layout = function(self)
         self.scroll:UpdateScrollChild(self:GetChildWidth(layout), math.max(contentHeight, 1))
     end
     self:UpdateFooter()
+    self.layoutSignature = self:GetLayoutSignature()
 end
 
 window.Show = function(self)
@@ -572,13 +612,13 @@ window.Show = function(self)
     if self.frame:IsShown() then
         self.frame.fadeOut:Stop()
         self.frame:SetAlpha(1)
-        self:Layout()
+        self:LayoutIfNeeded()
         return
     end
     self.frame.fadeOut:Stop()
     self.frame:SetAlpha(0)
     self.frame:Show()
-    self:Layout()
+    self:LayoutIfNeeded()
     self.frame.fadeIn:Play()
 end
 
@@ -587,6 +627,10 @@ window.Hide = function(self, immediate)
         return
     end
     self.frame.fadeIn:Stop()
+    if self.searchBox then
+        self.searchBox:ClearFocus()
+        self.searchBox:SetText('')
+    end
     if immediate then
         self.frame:Hide()
         self.frame:SetAlpha(0)

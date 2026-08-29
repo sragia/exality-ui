@@ -31,87 +31,54 @@ local function GetPinnedIDs()
     return list
 end
 
-local function FindItem(itemID)
-    for bag = BACKPACK, REAGENT_BAG do
-        local numSlots = C_Container.GetContainerNumSlots(bag) or 0
-        for slot = 1, numSlots do
-            if C_Container.GetContainerItemID(bag, slot) == itemID then
-                return bag, slot
-            end
-        end
-    end
-end
-
-local function FindKeystone()
+local function BuildItemIndex()
+    local byID = {}
+    local keyBag, keySlot, keyID
     for bag = BACKPACK, REAGENT_BAG do
         local numSlots = C_Container.GetContainerNumSlots(bag) or 0
         for slot = 1, numSlots do
             local itemID = C_Container.GetContainerItemID(bag, slot)
-            if itemID and C_Item.IsItemKeystoneByID(itemID) then
-                return bag, slot, itemID
+            if itemID then
+                if not byID[itemID] then
+                    byID[itemID] = { bag, slot }
+                end
+                if not keyBag and C_Item.IsItemKeystoneByID(itemID) then
+                    keyBag, keySlot, keyID = bag, slot, itemID
+                end
             end
         end
     end
+    return byID, keyBag, keySlot, keyID
 end
 
-local function OnPinClick(button, mouseButton)
-    if mouseButton == 'RightButton' and not button.isKeystone then
-        if button.itemID then
-            pins:RemovePin(button.itemID)
-        end
-        return
-    end
-
-    if not button.bagID then
-        return
-    end
-
-    if IsModifiedClick() then
-        local itemLocation = ItemLocation:CreateFromBagAndSlot(button.bagID, button:GetID())
-        if HandleModifiedItemClick(C_Container.GetContainerItemLink(button.bagID, button:GetID()), itemLocation) then
+local function HookPinButton(button)
+    button:HookScript('OnClick', function(btn, mouseButton)
+        if mouseButton == 'MiddleButton' then
+            if not btn.isKeystone and btn.itemID then
+                pins:RemovePin(btn.itemID)
+            end
             return
         end
-    end
-
-    if mouseButton == 'LeftButton' then
-        C_Container.PickupContainerItem(button.bagID, button:GetID())
-    else
-        C_Container.UseContainerItem(button.bagID, button:GetID())
-    end
+        if btn.isDropSlot then
+            pins:TryPinCursorItem()
+        end
+    end)
+    button:HookScript('OnReceiveDrag', function(btn)
+        if btn.isDropSlot or CursorHasItem() then
+            pins:TryPinCursorItem()
+        end
+    end)
 end
 
 pins.Create = function(self, parent)
     self.parent = parent
     self.keystoneButton = slots:CreateItemButton(parent)
     self.keystoneButton.isKeystone = true
-    self.keystoneButton:SetScript('OnClick', OnPinClick)
-    self.keystoneButton:SetScript('OnDragStart', function(button)
-        OnPinClick(button, 'LeftButton')
-    end)
-    self.keystoneButton:SetScript('OnReceiveDrag', function(button)
-        OnPinClick(button, 'LeftButton')
-    end)
+    HookPinButton(self.keystoneButton)
 
     for i = 1, MAX_PINS do
         local button = slots:CreateItemButton(parent)
-        button:SetScript('OnDragStart', function(btn)
-            OnPinClick(btn, 'LeftButton')
-        end)
-        button:SetScript('OnReceiveDrag', function(btn)
-            if btn.isDropSlot or CursorHasItem() then
-                if self:TryPinCursorItem() then
-                    return
-                end
-            end
-            OnPinClick(btn, 'LeftButton')
-        end)
-        button:SetScript('OnClick', function(btn, mouseButton)
-            if btn.isDropSlot then
-                self:TryPinCursorItem()
-                return
-            end
-            OnPinClick(btn, mouseButton)
-        end)
+        HookPinButton(button)
         self.buttons[i] = button
     end
 
@@ -170,6 +137,7 @@ pins.AddPin = function(self, itemID)
     list[#list + 1] = itemID
     GetData():SetValue('pinnedItems', list)
     bags = bags or EXUI:GetModule('bags')
+    EXUI:GetModule('bags-window').layoutSignature = nil
     bags:Refresh()
 end
 
@@ -182,6 +150,7 @@ pins.RemovePin = function(self, itemID)
     end
     GetData():SetValue('pinnedItems', list)
     bags = bags or EXUI:GetModule('bags')
+    EXUI:GetModule('bags-window').layoutSignature = nil
     bags:Refresh()
 end
 
@@ -200,32 +169,37 @@ pins.Layout = function(self, parent, slotSize, spacing)
     local shown = 0
     local y = 0
 
-    local keyBag, keySlot, keyID = FindKeystone()
+    local byID, keyBag, keySlot, keyID = BuildItemIndex()
     if keyBag then
-        self.keystoneButton:SetParent(parent)
+        if self.keystoneButton:GetParent() ~= parent then
+            self.keystoneButton:SetParent(parent)
+        end
         self.keystoneButton:SetSize(slotSize, slotSize)
         self.keystoneButton:ClearAllPoints()
         self.keystoneButton:SetPoint('TOPLEFT', parent, 'TOPLEFT', 0, -y)
         slots:Assign(self.keystoneButton, keyBag, keySlot)
         self.keystoneButton.itemID = keyID
         self.keystoneButton.isKeystone = true
-        self.keystoneButton:Show()
+        slots:SetButtonShown(self.keystoneButton, true)
         slots:UpdateItemButton(self.keystoneButton)
         shown = shown + 1
         y = y + slotSize + spacing
     else
-        self.keystoneButton:Hide()
+        slots:SetButtonShown(self.keystoneButton, false)
         self.keystoneButton.bagID = nil
     end
 
     local list = GetPinnedIDs()
     local used = 0
     for i = 1, #list do
-        local bag, slot = FindItem(list[i])
+        local found = byID[list[i]]
+        local bag, slot = found and found[1], found and found[2]
         used = used + 1
         local button = self.buttons[used]
         if button then
-            button:SetParent(parent)
+            if button:GetParent() ~= parent then
+                button:SetParent(parent)
+            end
             button:SetSize(slotSize, slotSize)
             button:ClearAllPoints()
             button:SetPoint('TOPLEFT', parent, 'TOPLEFT', 0, -y)
@@ -234,12 +208,12 @@ pins.Layout = function(self, parent, slotSize, spacing)
             button.isDropSlot = false
             if bag then
                 slots:Assign(button, bag, slot)
-                button:Show()
+                slots:SetButtonShown(button, true)
                 slots:UpdateItemButton(button)
                 shown = shown + 1
                 y = y + slotSize + spacing
             else
-                button:Hide()
+                slots:SetButtonShown(button, false)
                 button.bagID = nil
             end
         end
@@ -248,7 +222,9 @@ pins.Layout = function(self, parent, slotSize, spacing)
     local dropIndex = used + 1
     local drop = self.buttons[dropIndex]
     if drop then
-        drop:SetParent(parent)
+        if drop:GetParent() ~= parent then
+            drop:SetParent(parent)
+        end
         drop:SetSize(slotSize, slotSize)
         drop:ClearAllPoints()
         drop:SetPoint('TOPLEFT', parent, 'TOPLEFT', 0, -y)
@@ -261,7 +237,7 @@ pins.Layout = function(self, parent, slotSize, spacing)
     end
 
     for i = used + 1, #self.buttons do
-        self.buttons[i]:Hide()
+        slots:SetButtonShown(self.buttons[i], false)
         self.buttons[i].bagID = nil
         self.buttons[i].isDropSlot = false
     end
@@ -270,12 +246,12 @@ pins.Layout = function(self, parent, slotSize, spacing)
 end
 
 pins.ForEachVisible = function(self, callback)
-    if self.keystoneButton and self.keystoneButton:IsShown() then
+    if self.keystoneButton and slots:IsButtonShown(self.keystoneButton) then
         callback(self.keystoneButton)
     end
     for i = 1, #self.buttons do
         local button = self.buttons[i]
-        if button:IsShown() then
+        if slots:IsButtonShown(button) then
             callback(button)
         end
     end

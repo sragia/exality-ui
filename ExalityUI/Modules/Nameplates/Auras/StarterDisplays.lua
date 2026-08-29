@@ -7,70 +7,191 @@ local adDefaults = EXUI:GetModule('aura-displays-defaults')
 ---@class EXUINameplatesAurasDefaults
 local defaults = EXUI:GetModule('np-auras-defaults')
 
-local function makeDebuffs()
-    local displayID, display = defaults:BuildNewDisplay()
-    display.name = 'My Debuffs'
-    display.anchorPoint = 'BOTTOMLEFT'
-    display.relativePoint = 'TOPLEFT'
-    display.XOff = 0
-    display.YOff = 2
-    display.horizontalGrowth = 'RIGHT'
-    display.verticalGrowth = 'UP'
-    display.matchUnitFrameWidth = true
-    local groupID = display.groupOrder[1]
-    local group = display.groups[groupID]
-    group.conditions.filterTokens = {
-        { token = 'HARMFUL', negated = false },
-        { token = 'PLAYER', negated = false },
-    }
-    group.conditions.maxFrameCount = 6
-    group.visual.iconWidth = 20
-    group.visual.iconHeight = 20
-    group.visual.elementSpacingX = 1
-    group.visual.elementSpacingY = 1
-    return displayID, display
-end
-
-local function makeCrowdControl()
-    local displayID, display = defaults:BuildNewDisplay()
-    display.name = 'Crowd Control'
-    display.anchorPoint = 'LEFT'
-    display.relativePoint = 'RIGHT'
-    display.XOff = 4
-    display.YOff = 0
-    display.containerAnchorPoint = 'LEFT'
-    display.horizontalGrowth = 'RIGHT'
-    display.verticalGrowth = 'DOWN'
-    display.matchUnitFrameWidth = false
-    display.rowWidth = 80
-    local groupID = display.groupOrder[1]
-    local group = display.groups[groupID]
-    group.conditions.filterTokens = {
-        { token = 'HARMFUL', negated = false },
-        { token = 'CROWD_CONTROL', negated = false },
-    }
-    group.conditions.maxFrameCount = 4
-    group.visual.iconWidth = 24
-    group.visual.iconHeight = 24
-    group.visual.elementSpacingX = 1
-    return displayID, display
-end
+-- One-time starter aura displays. Seeded into a profile once; never re-applied after delete.
+defaults.STARTER_DISPLAYS = {
+    Ym5ZfJvbzbCi = {
+        enable = true,
+        name = 'Buffs',
+        anchorPoint = 'TOPRIGHT',
+        relativePoint = 'LEFT',
+        containerAnchorPoint = 'TOPRIGHT',
+        XOff = -1,
+        YOff = 15,
+        frameStrata = 'MEDIUM',
+        frameLevel = 10,
+        flowLayoutAxis = 'Rows',
+        horizontalGrowth = 'LEFT',
+        verticalGrowth = 'UP',
+        matchUnitFrameWidth = true,
+        rowWidth = 140,
+        paddingLeft = 0,
+        paddingRight = 0,
+        paddingTop = 0,
+        paddingBottom = 0,
+        groupOrder = { 'iPU96Mvprkhg' },
+        groups = {
+            iPU96Mvprkhg = {
+                enable = true,
+                conditions = {
+                    enable = true,
+                    filterTokens = {
+                        { token = 'HELPFUL', negated = false },
+                    },
+                    maxFrameCount = 3,
+                    isFromPlayerOrPlayerPet = false,
+                },
+                visual = {
+                    iconWidth = 30,
+                    iconHeight = 30,
+                    iconZoom = 15,
+                    stackFontSize = 14,
+                    stackAnchorPoint = 'LEFT',
+                    stackRelativePoint = 'TOPLEFT',
+                    stackXOff = 0,
+                    stackYOff = 0,
+                    durationFontSize = 13,
+                    durationAnchorPoint = 'BOTTOMLEFT',
+                    durationRelativePoint = 'BOTTOMLEFT',
+                    showDurationCooldown = false,
+                    showDispelIcon = true,
+                    dispelBorderStyle = 'Minimal',
+                    dispelIconSize = 11,
+                    dispelIconAnchorPoint = 'CENTER',
+                    dispelIconRelativePoint = 'TOPRIGHT',
+                    dispelIconXOff = -4,
+                },
+            },
+        },
+    },
+    qSSi3lVrcllg = {
+        enable = true,
+        name = 'My Debuffs',
+        anchorPoint = 'BOTTOMRIGHT',
+        relativePoint = 'TOPRIGHT',
+        containerAnchorPoint = 'BOTTOMRIGHT',
+        XOff = 0,
+        YOff = 0,
+        frameStrata = 'LOW',
+        frameLevel = 10,
+        flowLayoutAxis = 'Rows',
+        horizontalGrowth = 'LEFT',
+        verticalGrowth = 'UP',
+        matchUnitFrameWidth = true,
+        rowWidth = 140,
+        paddingLeft = 0,
+        paddingRight = 0,
+        paddingTop = 0,
+        paddingBottom = 0,
+        groupOrder = { 'k92reIkYHH9r' },
+        groups = {
+            k92reIkYHH9r = {
+                enable = true,
+                conditions = {
+                    enable = true,
+                    filterTokens = {
+                        { token = 'HARMFUL', negated = false },
+                        { token = 'PLAYER', negated = false },
+                        { token = 'CROWD_CONTROL', negated = true },
+                    },
+                    maxFrameCount = 8,
+                    excludeSpellIDs = '1302139, 469882, 197277',
+                },
+                visual = {
+                    iconWidth = 30,
+                    iconHeight = 25,
+                    iconZoom = 15,
+                    elementSpacingX = 1,
+                    elementSpacingY = 1,
+                    stackFontSize = 14,
+                    stackAnchorPoint = 'LEFT',
+                    stackRelativePoint = 'TOPLEFT',
+                    stackXOff = 2,
+                    stackYOff = 0,
+                    durationFontSize = 12,
+                    durationAnchorPoint = 'BOTTOMLEFT',
+                    durationRelativePoint = 'BOTTOMLEFT',
+                    durationXOff = 1,
+                    durationYOff = 0,
+                    showDurationCooldown = false,
+                    showDispelBorder = false,
+                    dispelBorderStyle = 'Minimal',
+                    dispelIconSize = 13,
+                    dispelIconAnchorPoint = 'CENTER',
+                    dispelIconXOff = -5,
+                },
+            },
+        },
+    },
+    ic8jkFvMrjHh = {
+        enable = true,
+        name = 'Crowd Control',
+        anchorPoint = 'LEFT',
+        relativePoint = 'RIGHT',
+        containerAnchorPoint = 'LEFT',
+        XOff = 5,
+        YOff = 0,
+        frameStrata = 'MEDIUM',
+        frameLevel = 10,
+        flowLayoutAxis = 'Rows',
+        horizontalGrowth = 'RIGHT',
+        verticalGrowth = 'DOWN',
+        matchUnitFrameWidth = false,
+        rowWidth = 174,
+        paddingLeft = 0,
+        paddingRight = 0,
+        paddingTop = 0,
+        paddingBottom = 0,
+        groupOrder = { 'lrNnAdJpODck' },
+        groups = {
+            lrNnAdJpODck = {
+                enable = true,
+                conditions = {
+                    enable = true,
+                    filterTokens = {
+                        { token = 'HARMFUL', negated = false },
+                        { token = 'CROWD_CONTROL', negated = false },
+                    },
+                    maxFrameCount = 4,
+                },
+                visual = {
+                    iconWidth = 40,
+                    iconHeight = 40,
+                    iconZoom = 15,
+                    elementSpacingX = 1,
+                    stackFontSize = 17,
+                    stackAnchorPoint = 'TOPLEFT',
+                    stackRelativePoint = 'TOPLEFT',
+                    stackXOff = 1,
+                    stackYOff = -1,
+                    durationFontSize = 14,
+                    durationAnchorPoint = 'BOTTOMLEFT',
+                    durationRelativePoint = 'BOTTOMLEFT',
+                    durationXOff = 1,
+                    durationYOff = 1,
+                    showDurationCooldown = true,
+                    showDispelBorder = false,
+                },
+            },
+        },
+    },
+}
 
 function defaults:SeedStarterDisplays(db)
     if not db or db.__exuiStarterDisplaysSeeded then
         return false
     end
     db.displays = db.displays or {}
-
-    local debuffID, debuffs = makeDebuffs()
-    local ccID, cc = makeCrowdControl()
-    if not db.displays[debuffID] then
-        db.displays[debuffID] = debuffs
+    for displayID, display in pairs(self.STARTER_DISPLAYS) do
+        if not db.displays[displayID] then
+            local copy = self:CopyTable(display)
+            if copy.groups then
+                for _, group in pairs(copy.groups) do
+                    adDefaults:MergeGroupDefaults(group)
+                end
+            end
+            db.displays[displayID] = copy
+        end
     end
-    if not db.displays[ccID] then
-        db.displays[ccID] = cc
-    end
-
     db.__exuiStarterDisplaysSeeded = true
     return true
 end

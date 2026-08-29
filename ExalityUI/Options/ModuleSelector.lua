@@ -18,6 +18,7 @@ local panel = EXFrames:GetFrame('panel-frame')
 ---@class EXUIOptionsModuleSelector
 local optionsModuleSelector = EXUI:GetModule('options-module-selector')
 
+optionsModuleSelector.scrollFrame = nil
 optionsModuleSelector.container = nil
 optionsModuleSelector.containerParent = nil
 optionsModuleSelector.buttons = {}
@@ -56,13 +57,41 @@ optionsModuleSelector.Init = function(self)
             end
         end
     end)
+    EXFrames:RegisterCallback({
+        events = { 'menuItemClick' },
+        func = function()
+            optionsModuleSelector:UpdateScroll()
+        end
+    })
 end
 
-optionsModuleSelector.Create = function(self, container, containerParent)
-    self.container = container
-    self.containerParent = containerParent or container:GetParent()
+optionsModuleSelector.Create = function(self, scrollFrame, containerParent)
+    self.scrollFrame = scrollFrame
+    self.container = scrollFrame.child
+    self.containerParent = containerParent or scrollFrame:GetParent()
 
     self:Populate()
+end
+
+optionsModuleSelector.UpdateScroll = function(self)
+    local scrollFrame = self.scrollFrame
+    if (not scrollFrame) then
+        return
+    end
+
+    local width = math.max(1, scrollFrame:GetWidth())
+    local contentHeight = 1
+    if (self.isCompact) then
+        contentHeight = COMPACT_GAP + #self.buttons * (COMPACT_SIZE + COMPACT_GAP)
+    else
+        local gap = 5
+        contentHeight = gap
+        for _, button in ipairs(self.buttons) do
+            contentHeight = contentHeight + button:GetHeight() + gap
+        end
+    end
+
+    scrollFrame:UpdateScrollChild(width, math.max(1, contentHeight))
 end
 
 optionsModuleSelector.Relayout = function(self)
@@ -72,12 +101,14 @@ optionsModuleSelector.Relayout = function(self)
             AnchorCompactItem(child, self.container, y)
             y = y + COMPACT_SIZE + COMPACT_GAP
         end
+        self:UpdateScroll()
         return
     end
 
     local gap = 5
     local gapX = 3
     EXUI.utils.organizeFramesInList(self.buttons, gap, self.container, gapX)
+    self:UpdateScroll()
 end
 
 optionsModuleSelector.HideFlyout = function(self)

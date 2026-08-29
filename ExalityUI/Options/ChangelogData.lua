@@ -11,6 +11,9 @@ EXUI.changelog = [[
 Basic nameplates. Using same aura system as Unit Frames / Aura Displays.
 Have basic functionality that I wanted out of them Not a lot of options, still quite not a lot of customization that dedicated nameplate addons offer, but good enough for me to start.
 
+## Bags |cffeb7a34New|r
+Bags and Bank module. Offers basic one bag mode and also other tabs like Gear, Reagents, Consumables and Quest Items. Also sticky item section where you can pin items. Drag them into empty slot and middle click to remove them.
+
 # |cffdb49000.9.3|r
 - [Objective Tracker] Update delve display to show remaining lives
 - [Objective Tracker] Show auto completable quests in tracker.

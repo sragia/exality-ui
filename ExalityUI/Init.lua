@@ -173,6 +173,8 @@ EXUI.const = {
             slotEmpty = [[Interface/Addons/ExalityUI/Assets/Images/Bags/slot-empty.png]],
             slotMask = [[Interface/Addons/ExalityUI/Assets/Images/Bags/slot-mask.png]],
             sort = [[Interface/Addons/ExalityUI/Assets/Images/Icons/clean.png]],
+            deposit = [[Interface/Addons/ExalityUI/Assets/Images/Icons/package-plus.png]],
+            buyTab = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/coins.png]],
         }
     },
     masque = {

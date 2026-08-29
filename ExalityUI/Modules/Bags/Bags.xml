@@ -3,5 +3,6 @@
     <Script file="Views.lua"/>
     <Script file="Pins.lua"/>
     <Script file="Window.lua"/>
+    <Script file="BankWindow.lua"/>
     <Script file="Core.lua"/>
 </Ui>
