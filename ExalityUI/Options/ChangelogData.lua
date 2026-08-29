@@ -7,6 +7,10 @@ EXUI.changelog = [[
 - [Action Bars] Fix issue where sometimes possess bar buttons are not shown.
 - [Unit Frames] Override player castbar with pet/vehicle if player is possessed.
 
+## Nameplates |cffeb7a34New|r
+Basic nameplates. Using same aura system as Unit Frames / Aura Displays.
+Have basic functionality that I wanted out of them Not a lot of options, still quite not a lot of customization that dedicated nameplate addons offer, but good enough for me to start.
+
 # |cffdb49000.9.3|r
 - [Objective Tracker] Update delve display to show remaining lives
 - [Objective Tracker] Show auto completable quests in tracker.
