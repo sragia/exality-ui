@@ -492,7 +492,6 @@ bankWindow.Create = function(self)
     frame:EnableMouse(true)
     frame:RegisterForDrag('LeftButton')
     frame:Hide()
-    frame:SetAlpha(0)
 
     local main = CreateFrame('Frame', nil, frame)
     self.main = main
@@ -503,10 +502,6 @@ bankWindow.Create = function(self)
 
     local function startDrag()
         self.dragging = true
-        if frame.fadeIn then
-            frame.fadeIn:Stop()
-            frame:SetAlpha(1)
-        end
         frame:StartMoving()
     end
     local function stopDrag()
@@ -580,13 +575,6 @@ bankWindow.Create = function(self)
     self:CreateFooter(footer)
     views:CreateHeaders(self.content, POOL)
     slots:EnsurePool(self.content, 1, POOL)
-
-    frame.fadeIn = EXFrames.utils.animation.fade(frame, 0.15, 0, 1)
-    frame.fadeOut = EXFrames.utils.animation.fade(frame, 0.12, 1, 0)
-    frame.fadeOut:SetScript('OnFinished', function()
-        frame:Hide()
-        frame:SetAlpha(0)
-    end)
 
     frame:SetScript('OnShow', function()
         GetBags():OnBankShown()
@@ -764,33 +752,22 @@ bankWindow.Show = function(self)
     end
     self:UpdateModeTabs()
     if self.frame:IsShown() then
-        self.frame.fadeOut:Stop()
-        self.frame:SetAlpha(1)
         self:LayoutIfNeeded()
         return
     end
-    self.frame.fadeOut:Stop()
-    self.frame:SetAlpha(0)
     self.frame:Show()
     self:LayoutIfNeeded()
-    self.frame.fadeIn:Play()
 end
 
-bankWindow.Hide = function(self, immediate)
+bankWindow.Hide = function(self)
     if not self.frame or not self.frame:IsShown() then
         return
     end
-    self.frame.fadeIn:Stop()
     if self.searchBox then
         self.searchBox:ClearFocus()
         self.searchBox:SetText('')
     end
-    if immediate then
-        self.frame:Hide()
-        self.frame:SetAlpha(0)
-        return
-    end
-    self.frame.fadeOut:Play()
+    self.frame:Hide()
 end
 
 bankWindow.IsShown = function(self)

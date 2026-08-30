@@ -367,7 +367,6 @@ window.Create = function(self)
     frame:EnableMouse(true)
     frame:RegisterForDrag('LeftButton')
     frame:Hide()
-    frame:SetAlpha(0)
 
     local main = CreateFrame('Frame', nil, frame)
     self.main = main
@@ -449,14 +448,6 @@ window.Create = function(self)
     views:CreateHeaders(self.content)
     pins:Create(self.pinRail)
     slots:EnsurePool(self.content)
-
-    frame.fadeIn = EXFrames.utils.animation.fade(frame, 0.15, 0, 1)
-    frame.fadeOut = EXFrames.utils.animation.fade(frame, 0.12, 1, 0)
-    EXFrames.utils.animation.diveIn(frame, 0.15, 0, 12, 'IN', frame.fadeIn)
-    frame.fadeOut:SetScript('OnFinished', function()
-        frame:Hide()
-        frame:SetAlpha(0)
-    end)
 
     frame:SetScript('OnShow', function()
         GetBags():OnShown()
@@ -610,33 +601,22 @@ end
 window.Show = function(self)
     self:Create()
     if self.frame:IsShown() then
-        self.frame.fadeOut:Stop()
-        self.frame:SetAlpha(1)
         self:LayoutIfNeeded()
         return
     end
-    self.frame.fadeOut:Stop()
-    self.frame:SetAlpha(0)
     self.frame:Show()
     self:LayoutIfNeeded()
-    self.frame.fadeIn:Play()
 end
 
-window.Hide = function(self, immediate)
+window.Hide = function(self)
     if not self.frame or not self.frame:IsShown() then
         return
     end
-    self.frame.fadeIn:Stop()
     if self.searchBox then
         self.searchBox:ClearFocus()
         self.searchBox:SetText('')
     end
-    if immediate then
-        self.frame:Hide()
-        self.frame:SetAlpha(0)
-        return
-    end
-    self.frame.fadeOut:Play()
+    self.frame:Hide()
 end
 
 window.IsShown = function(self)
