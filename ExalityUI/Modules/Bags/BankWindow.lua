@@ -353,12 +353,47 @@ bankWindow.CreateHeaderBar = function(self, parent)
     end)
 
     self.searchBox = slots:CreateSearchBox(bar, 'bank')
+
+    local closeBtn = CreateFrame('Button', nil, bar)
+    self.closeButton = closeBtn
+
+    local theme = EXFrames.Theme
+    local closeBg = closeBtn:CreateTexture(nil, 'BACKGROUND')
+    closeBtn.Background = closeBg
+    closeBg:SetAllPoints()
+    closeBg:SetTexture(EXFrames.assets.textures.ui.buttonBg)
+    closeBg:SetTextureSliceMargins(6, 6, 6, 6)
+    closeBg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    closeBg:SetVertexColor(unpack(theme.faded))
+
+    local closeIcon = closeBtn:CreateTexture(nil, 'OVERLAY')
+    closeBtn.Icon = closeIcon
+    closeIcon:SetTexture(EXFrames.assets.textures.icon.close)
+    closeIcon:SetVertexColor(unpack(EXUI.const.theme.textMuted))
+    closeIcon:SetPoint('CENTER')
+
+    closeBtn:SetScript('OnClick', function()
+        GetBags():CloseBank()
+    end)
+    closeBtn:SetScript('OnEnter', function()
+        closeBg:SetVertexColor(unpack(theme.dangerHover))
+        closeIcon:SetVertexColor(1, 1, 1, 1)
+    end)
+    closeBtn:SetScript('OnLeave', function()
+        closeBg:SetVertexColor(unpack(theme.faded))
+        closeIcon:SetVertexColor(unpack(EXUI.const.theme.textMuted))
+    end)
 end
 
 bankWindow.LayoutHeaderButtons = function(self, bagSize)
     SizeHeaderButton(self.sortButton, bagSize)
     SizeHeaderButton(self.depositButton, bagSize)
     SizeHeaderButton(self.buyTabButton, bagSize)
+
+    local iconSize = math.max(12, bagSize - 8)
+    self.closeButton:SetSize(math.max(22, math.floor(bagSize * 1.35)), bagSize)
+    local closeIconSize = math.max(14, bagSize - 4)
+    self.closeButton.Icon:SetSize(closeIconSize, closeIconSize)
 
     local bankType = GetBankType()
     local canDeposit = C_Bank.DoesBankTypeSupportAutoDeposit and C_Bank.DoesBankTypeSupportAutoDeposit(bankType)
@@ -385,17 +420,16 @@ bankWindow.LayoutHeaderButtons = function(self, bagSize)
         end
     end
 
-    local prev
+    self.closeButton:ClearAllPoints()
+    self.closeButton:SetPoint('RIGHT', 0, 0)
+
+    local prev = self.closeButton
     local order = { self.buyTabButton, self.depositButton, self.sortButton }
     for i = 1, #order do
         local button = order[i]
         if button:IsShown() then
             button:ClearAllPoints()
-            if not prev then
-                button:SetPoint('RIGHT', 0, 0)
-            else
-                button:SetPoint('RIGHT', prev, 'LEFT', -HEADER_BTN_GAP, 0)
-            end
+            button:SetPoint('RIGHT', prev, 'LEFT', -HEADER_BTN_GAP, 0)
             prev = button
         end
     end

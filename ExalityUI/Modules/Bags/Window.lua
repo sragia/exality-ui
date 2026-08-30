@@ -156,9 +156,40 @@ window.CreateBagBar = function(self, parent)
 
     slots:CreateBagBar(bar)
 
+    local closeBtn = CreateFrame('Button', nil, bar)
+    self.closeButton = closeBtn
+    closeBtn:SetPoint('RIGHT', 0, 0)
+
+    local theme = EXFrames.Theme
+    local closeBg = closeBtn:CreateTexture(nil, 'BACKGROUND')
+    closeBtn.Background = closeBg
+    closeBg:SetAllPoints()
+    closeBg:SetTexture(EXFrames.assets.textures.ui.buttonBg)
+    closeBg:SetTextureSliceMargins(6, 6, 6, 6)
+    closeBg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    closeBg:SetVertexColor(unpack(theme.faded))
+
+    local closeIcon = closeBtn:CreateTexture(nil, 'OVERLAY')
+    closeBtn.Icon = closeIcon
+    closeIcon:SetTexture(EXFrames.assets.textures.icon.close)
+    closeIcon:SetVertexColor(unpack(EXUI.const.theme.textMuted))
+    closeIcon:SetPoint('CENTER')
+
+    closeBtn:SetScript('OnClick', function()
+        GetBags():Close()
+    end)
+    closeBtn:SetScript('OnEnter', function()
+        closeBg:SetVertexColor(unpack(theme.dangerHover))
+        closeIcon:SetVertexColor(1, 1, 1, 1)
+    end)
+    closeBtn:SetScript('OnLeave', function()
+        closeBg:SetVertexColor(unpack(theme.faded))
+        closeIcon:SetVertexColor(unpack(EXUI.const.theme.textMuted))
+    end)
+
     local sortBtn = CreateFrame('Button', nil, bar)
     self.sortButton = sortBtn
-    sortBtn:SetPoint('RIGHT', 0, 0)
+    sortBtn:SetPoint('RIGHT', closeBtn, 'LEFT', -10, 0)
 
     local muted = EXUI.const.theme.textMuted
 
@@ -208,6 +239,10 @@ window.LayoutBagBar = function(self, bagSize, spacing)
     slots:UpdateBagBar()
 
     local iconSize = math.max(12, bagSize - 8)
+    self.closeButton:SetSize(math.max(22, math.floor(bagSize * 1.35)), bagSize)
+    local closeIconSize = math.max(14, bagSize - 4)
+    self.closeButton.Icon:SetSize(closeIconSize, closeIconSize)
+
     self.sortButton.Icon:SetSize(iconSize, iconSize)
     local textWidth = self.sortButton.Label:GetStringWidth()
     self.sortButton:SetSize(iconSize + 4 + textWidth, bagSize)
