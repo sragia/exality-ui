@@ -144,6 +144,7 @@ defaults.PLATE = {
     castbarTargetYOffset = 0,
     castbarShowInterrupt = true,
     castbarInterruptHold = 1,
+    castbarInterruptBarColor = color(12 / 255, 205 / 255, 0),
     castbarInterruptColor = color(1, 1, 1),
     castbarInterruptFont = 'DMSans',
     castbarInterruptFontFlag = 'OUTLINE',

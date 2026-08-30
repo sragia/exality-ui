@@ -6,6 +6,7 @@ EXUI.changelog = [[
 - [Minimap] Instance difficulty is now overlay text instead of a minimap button.
 - [Action Bars] Fix issue where sometimes possess bar buttons are not shown.
 - [Unit Frames] Override player castbar with pet/vehicle if player is possessed.
+- [General] A lot of small optimizations to improve FPS.
 
 ## Nameplates |cffeb7a34New|r
 Basic nameplates. Using same aura system as Unit Frames / Aura Displays.

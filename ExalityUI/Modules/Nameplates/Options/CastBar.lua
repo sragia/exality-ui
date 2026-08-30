@@ -82,6 +82,7 @@ function castBar:GetMenu()
                 return {
                     helpers.Toggle('Show Interrupted', 'castbarShowInterrupt'),
                     helpers.Range('Hold Duration', 'castbarInterruptHold', 0.2, 3, 0.1, 50),
+                    helpers.Color('Bar Color', 'castbarInterruptBarColor', 50),
                     helpers.FontDropdown('Font', 'castbarInterruptFont', 33),
                     helpers.Dropdown('Font Flag', 'castbarInterruptFontFlag', function()
                         return EXUI.const.fontFlags
@@ -116,6 +117,7 @@ function castBar:GetMenu()
                 return {
                     helpers.Color('Interruptible', 'castbarForegroundColor', 25),
                     helpers.Color('Uninterruptible', 'castbarUninterruptibleColor', 25),
+                    helpers.Color('Interrupted', 'castbarInterruptBarColor', 25),
                     helpers.Color('Background', 'castbarBackgroundColor', 25),
                     helpers.Color('Spark', 'castbarSparkColor', 25),
                     helpers.Range('Spark Width', 'castbarSparkWidth', 1, 8, 1, 25),

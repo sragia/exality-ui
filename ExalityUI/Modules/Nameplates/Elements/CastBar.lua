@@ -78,6 +78,25 @@ local function setTimeBindingEnabled(element, enabled)
     end
 end
 
+local function applyBarOverlayColor(element, db)
+    local overlay = element.Uninterruptible
+    if not overlay then
+        return
+    end
+    db = db or plateDB(element)
+    local color
+    if element.interruptHold then
+        color = db and db.castbarInterruptBarColor
+    end
+    if not color then
+        color = db and db.castbarUninterruptibleColor
+    end
+    if not color then
+        return
+    end
+    overlay:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+end
+
 local function setUninterruptibleShown(element, shown)
     if element.Uninterruptible then
         element.Uninterruptible:SetAlphaFromBoolean(shown, 1, 0)
@@ -96,6 +115,7 @@ local function restoreCastVisuals(element)
         element.Icon:SetAlpha(1)
     end
     setUninterruptibleShown(element, false)
+    applyBarOverlayColor(element, db)
     if element.InterruptText then
         element.InterruptText:Hide()
     end
@@ -178,6 +198,7 @@ local function applyInterruptHold(element, interruptedBy)
         element.TargetText:Hide()
     end
     setUninterruptibleShown(element, true)
+    applyBarOverlayColor(element, db)
 
     local interruptText = element.InterruptText
     if not interruptText then
@@ -487,12 +508,7 @@ castBar.Update = function(self, frame)
     bar:SetStatusBarTexture(texture)
     applyDrawLayers(bar)
     bar.Uninterruptible:SetTexture(texture)
-    bar.Uninterruptible:SetVertexColor(
-        db.castbarUninterruptibleColor.r,
-        db.castbarUninterruptibleColor.g,
-        db.castbarUninterruptibleColor.b,
-        db.castbarUninterruptibleColor.a or 1
-    )
+    applyBarOverlayColor(bar, db)
 
     local anchor = frame.HealthHost or frame
     container:ClearAllPoints()
