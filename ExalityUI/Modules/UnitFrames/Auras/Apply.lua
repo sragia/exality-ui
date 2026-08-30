@@ -32,6 +32,7 @@ local ITEM_ENCHANT_SLOT = {
 }
 
 apply.pendingFrames = {}
+apply.pendingLiveRefresh = {}
 apply.sigCache = {}
 apply.containerGraveyard = {}
 apply.PREWARM_MIN = 40
@@ -55,7 +56,39 @@ function apply:Init()
     self.eventHandler = CreateFrame('Frame')
     self.eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
     self.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
+    self.eventHandler:RegisterEvent('PLAYER_TARGET_CHANGED')
+    self.eventHandler:RegisterEvent('PLAYER_FOCUS_CHANGED')
+    self.eventHandler:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
+    self.eventHandler:RegisterEvent('ARENA_OPPONENT_UPDATE')
+    self.eventHandler:RegisterUnitEvent('UNIT_TARGETABLE_CHANGED', 'boss1', 'boss2', 'boss3', 'boss4', 'boss5')
+    self.eventHandler:RegisterUnitEvent('UNIT_TARGET', 'target')
+    self.eventHandler:RegisterUnitEvent('UNIT_PET', 'player')
     self.eventHandler:SetScript('OnEvent', function(_, event)
+        if event == 'PLAYER_TARGET_CHANGED' then
+            self:QueueLiveAuraRefresh('target')
+            self:QueueLiveAuraRefresh('targettarget')
+            return
+        end
+        if event == 'PLAYER_FOCUS_CHANGED' then
+            self:QueueLiveAuraRefresh('focus')
+            return
+        end
+        if event == 'INSTANCE_ENCOUNTER_ENGAGE_UNIT' or event == 'UNIT_TARGETABLE_CHANGED' then
+            self:QueueLiveAuraRefresh('boss')
+            return
+        end
+        if event == 'ARENA_OPPONENT_UPDATE' then
+            self:QueueLiveAuraRefresh('arena')
+            return
+        end
+        if event == 'UNIT_TARGET' then
+            self:QueueLiveAuraRefresh('targettarget')
+            return
+        end
+        if event == 'UNIT_PET' then
+            self:QueueLiveAuraRefresh('pet')
+            return
+        end
         if event == 'PLAYER_REGEN_ENABLED' then
             self:FlushPending()
         end
@@ -63,6 +96,62 @@ function apply:Init()
             self:PrewarmPool()
         end
     end)
+end
+
+function apply:QueueLiveAuraRefresh(unitType)
+    if not unitType then
+        return
+    end
+    self.pendingLiveRefresh[unitType] = true
+    if self.liveRefreshQueued then
+        return
+    end
+    self.liveRefreshQueued = true
+    C_Timer.After(0, function()
+        self.liveRefreshQueued = false
+        local pending = self.pendingLiveRefresh
+        self.pendingLiveRefresh = {}
+        for pendingUnitType in pairs(pending) do
+            self:RefreshLiveAurasForUnit(pendingUnitType)
+        end
+    end)
+end
+
+function apply:RefreshLiveAurasOnFrame(frame)
+    if not frame or frame.isFake or not frame.UFAuraContainers then
+        return
+    end
+    local unit = frame.__unit
+    if not unit or not UnitExists(unit) then
+        return
+    end
+    for _, container in pairs(frame.UFAuraContainers) do
+        if container.SetUnit then
+            container:SetUnit(unit)
+        end
+        if container.UpdateAllAuras then
+            container:UpdateAllAuras()
+        end
+    end
+end
+
+function apply:RefreshLiveAurasForUnit(unitType)
+    if not ufCore.frames then
+        return
+    end
+    if ufCore.groupUnits and ufCore.groupUnits[unitType] then
+        for i = 1, ufCore.groupUnits[unitType] do
+            local frame = ufCore.frames[unitType .. i]
+            if frame then
+                self:RefreshLiveAurasOnFrame(frame)
+            end
+        end
+        return
+    end
+    local frame = ufCore.frames[unitType]
+    if frame then
+        self:RefreshLiveAurasOnFrame(frame)
+    end
 end
 
 function apply:FlushPending()
