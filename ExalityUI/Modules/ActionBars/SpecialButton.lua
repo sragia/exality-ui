@@ -62,6 +62,13 @@ special.COOLDOWN_ONLY_EVENTS = {
     PET_BAR_UPDATE_COOLDOWN = true,
 }
 
+special.PET_VISIBILITY_EVENTS = {
+    PET_BAR_UPDATE = true,
+    PET_UI_UPDATE = true,
+    UNIT_PET = true,
+    UPDATE_VEHICLE_ACTIONBAR = true,
+}
+
 special.CreateStanceButton = function(self, barId, index, parent, barConfig)
     local name = 'EXUIActionBar_' .. barId .. '_' .. index
     local button = CreateFrame('CheckButton', name, parent, 'StanceButtonTemplate')
@@ -349,7 +356,21 @@ special.UpdateAll = function(self, barFrame)
     end
 end
 
-special.OnBarEvent = function(self, frame, event)
+special.SchedulePetActionRetry = function(self, frame)
+    if not frame or frame.exuiPetActionRetryPending then
+        return
+    end
+    frame.exuiPetActionRetryPending = true
+    C_Timer.After(0, function()
+        frame.exuiPetActionRetryPending = nil
+        if not (PetHasActionBar and PetHasActionBar()) then
+            return
+        end
+        self:UpdateAll(frame)
+    end)
+end
+
+special.OnBarEvent = function(self, frame, event, ...)
     if frame.barType == 'stance' then
         if event == 'PLAYER_REGEN_ENABLED' then
             frame.exuiUpdateStateOnCombatLeave = nil
@@ -372,6 +393,10 @@ special.OnBarEvent = function(self, frame, event)
         return
     end
 
+    if event == 'UNIT_PET' and ... ~= 'player' then
+        return
+    end
+
     if event == 'PLAYER_REGEN_ENABLED' then
         frame.exuiUpdateStateOnCombatLeave = nil
         self:UpdateAll(frame)
@@ -388,6 +413,12 @@ special.OnBarEvent = function(self, frame, event)
         self:UpdateAll(frame)
     else
         self:UpdateAll(frame)
+    end
+
+    if self.PET_VISIBILITY_EVENTS[event]
+        and PetHasActionBar and PetHasActionBar()
+        and not GetPetActionInfo(1) then
+        self:SchedulePetActionRetry(frame)
     end
 end
 
@@ -407,7 +438,16 @@ special.InitBarEvents = function(self, frame, barType)
         frame:RegisterEvent(event)
     end
 
-    frame:SetScript('OnEvent', function(f, event)
-        special:OnBarEvent(f, event)
+    frame:SetScript('OnEvent', function(f, event, ...)
+        special:OnBarEvent(f, event, ...)
     end)
+
+    if barType == 'pet' then
+        frame:HookScript('OnShow', function(f)
+            special:UpdateAll(f)
+            if PetHasActionBar and PetHasActionBar() and not GetPetActionInfo(1) then
+                special:SchedulePetActionRetry(f)
+            end
+        end)
+    end
 end

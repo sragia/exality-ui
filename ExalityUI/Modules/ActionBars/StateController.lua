@@ -45,9 +45,20 @@ state.COOLDOWN_ONLY_EVENTS = {
     PET_BAR_UPDATE_COOLDOWN = 'pet',
 }
 
+state.PET_VISIBILITY_EVENTS = {
+    PET_BAR_UPDATE = true,
+    PET_UI_UPDATE = true,
+    UNIT_PET = true,
+    UPDATE_VEHICLE_ACTIONBAR = true,
+}
+
+-- Secure visibility: Show/Hide on a parent of protected pet buttons is blocked in combat.
+state.PET_VISIBILITY_DRIVER = '[overridebar]hide;[vehicleui]hide;[possessbar]hide;[petbattle]hide;[pet]show;hide'
+
 state.pendingUpdate = false
 state.pendingVisibility = false
 state.pendingSlots = false
+state.pendingPetDriver = false
 
 -- Blizzard shows OverrideActionBar only for skinned vehicle/override UIs.
 state.IsSkinnedOverrideBarActive = function(self)
@@ -162,22 +173,52 @@ state.UpdateStanceBar = function(self, db)
     end)
 end
 
+state.ApplyPetVisibilityDriver = function(self, frame, config)
+    if not frame then
+        return
+    end
+
+    local shouldDrive = config and config.enable and config.visibility ~= 'hidden' and not barMod:IsBarEditorActive(frame)
+    if InCombatLockdown() then
+        self.pendingPetDriver = true
+        return
+    end
+
+    self.pendingPetDriver = false
+    if shouldDrive then
+        RegisterStateDriver(frame, 'visibility', self.PET_VISIBILITY_DRIVER)
+        frame.exuiHasVisibilityDriver = true
+        return
+    end
+
+    UnregisterStateDriver(frame, 'visibility')
+    frame.exuiHasVisibilityDriver = nil
+    if barMod:IsBarEditorActive(frame) and config and config.enable and config.visibility ~= 'hidden' then
+        frame:Show()
+    else
+        frame:Hide()
+    end
+end
+
 state.UpdatePetBar = function(self, db)
     local frame = barMod:Get('pet')
     if not frame then
         return
     end
 
-    local shouldShow = PetHasActionBar and PetHasActionBar()
-    if shouldShow then
-        specialButton:UpdateAll(frame)
-        db = db or actionBars:GetDB()
-        local config = configResolver:GetBarConfig(db, 'pet')
-        if config.enable then
-            self:TrySetFrameShown(frame, true)
-        end
+    db = db or actionBars:GetDB()
+    local config = configResolver:GetBarConfig(db, 'pet')
+    self:ApplyPetVisibilityDriver(frame, config)
+    specialButton:UpdateAll(frame)
+
+    if not config.enable or config.visibility == 'hidden' then
+        return
+    end
+
+    if barMod:IsBarEditorActive(frame) then
+        frame:SetAlpha(1)
     else
-        self:TrySetFrameShown(frame, false)
+        barMod:UpdateVisibilityAlpha(frame, config, frame.isHovering)
     end
 end
 
@@ -192,7 +233,7 @@ state.TrySetFrameShown = function(self, frame, shouldShow)
     if not frame then
         return
     end
-    if InCombatLockdown() then
+    if InCombatLockdown() and frame:IsProtected() then
         frame.exuiPendingShown = shouldShow
         self.pendingVisibility = true
         return
@@ -247,12 +288,19 @@ state.ApplyAll = function(self, db)
     self:UpdatePetBar(db)
 end
 
-state.UpdateAll = function(self, event)
+state.UpdateAll = function(self, event, ...)
+    if event == 'UNIT_PET' and ... ~= 'player' then
+        return
+    end
+
     if InCombatLockdown() then
         local barId = event and self.COOLDOWN_ONLY_EVENTS[event]
         if barId then
             self:RefreshBarCooldowns(barId)
             return
+        end
+        if event and self.PET_VISIBILITY_EVENTS[event] then
+            self:UpdatePetBar()
         end
         self.pendingUpdate = true
         return
@@ -265,6 +313,12 @@ state.OnRegenEnabled = function(self)
     self:ApplyPendingVisibility()
     buttonMod:ApplyPendingStateSetup()
     self:ApplyPendingSlots()
+    if self.pendingPetDriver then
+        local petFrame = barMod:Get('pet')
+        if petFrame then
+            self:ApplyPetVisibilityDriver(petFrame, configResolver:GetBarConfig(actionBars:GetDB(), 'pet'))
+        end
+    end
     if self.pendingUpdate or self.pendingSlots then
         self.pendingUpdate = false
         self:ApplyAll()
@@ -281,12 +335,12 @@ state.Init = function(self)
     for _, event in ipairs(self.EVENTS) do
         self.eventFrame:RegisterEvent(event)
     end
-    self.eventFrame:SetScript('OnEvent', function(_, event)
+    self.eventFrame:SetScript('OnEvent', function(_, event, ...)
         if event == 'PLAYER_REGEN_ENABLED' then
             state:OnRegenEnabled()
             return
         end
-        state:UpdateAll(event)
+        state:UpdateAll(event, ...)
     end)
 end
 

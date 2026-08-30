@@ -7,6 +7,7 @@ EXUI.changelog = [[
 - [Action Bars] Fix issue where sometimes possess bar buttons are not shown.
 - [Unit Frames] Override player castbar with pet/vehicle if player is possessed.
 - [General] A lot of small optimizations to improve FPS.
+- [Action Bars] Fix pet bar not showing up
 
 ## Nameplates |cffeb7a34New|r
 Basic nameplates. Using same aura system as Unit Frames / Aura Displays.

@@ -50,6 +50,9 @@ barMod.ApplyStateControlledVisibility = function(self, frame, config, db)
     end
 
     if self:IsBarEditorActive(frame) then
+        if barId == 'pet' then
+            stateController:ApplyPetVisibilityDriver(frame, config)
+        end
         if not config.enable or config.visibility == 'hidden' then
             frame:Hide()
         else
@@ -198,7 +201,11 @@ barMod.Configure = function(self, frame, db)
                 buttonMod:ClearActionStates(button)
             end
         end
-        frame:Hide()
+        if barId == 'pet' then
+            stateController:ApplyPetVisibilityDriver(frame, config)
+        else
+            frame:Hide()
+        end
         return
     end
 
@@ -230,7 +237,11 @@ barMod.Configure = function(self, frame, db)
     end
 
     if config.visibility == 'hidden' then
-        frame:Hide()
+        if barId == 'pet' then
+            stateController:ApplyPetVisibilityDriver(frame, config)
+        else
+            frame:Hide()
+        end
     elseif barId == 'stance' then
         specialButton:ApplyStanceBarVisibility(frame, config)
     elseif self:ApplyStateControlledVisibility(frame, config, db) then
@@ -263,7 +274,7 @@ barMod.UpdateVisibilityAlpha = function(self, frame, config, isHovering)
         alpha = 1
     end
 
-    if InCombatLockdown() then
+    if InCombatLockdown() or frame.exuiHasVisibilityDriver then
         frame:SetAlpha(alpha)
         return
     end
@@ -325,6 +336,10 @@ end
 barMod.Destroy = function(self, barId)
     local frame = self.instances[barId]
     if frame then
+        if barId == 'pet' and not InCombatLockdown() then
+            UnregisterStateDriver(frame, 'visibility')
+            frame.exuiHasVisibilityDriver = nil
+        end
         frame:Hide()
         frame:SetParent(nil)
         self.instances[barId] = nil
