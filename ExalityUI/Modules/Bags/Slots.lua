@@ -317,20 +317,73 @@ slots.CreateSearchBox = function(self, parent, poolName)
     return box
 end
 
+local function ButtonBagID(button)
+    if button.GetBagID then
+        return button:GetBagID()
+    end
+    return button.bagID
+end
+
+-- Parent frames hold bag IDs (Baganator-style). SetBagID uses SetAttribute
+-- and taints UseContainerItem if rewritten in combat.
+slots.GetBagIndexFrame = function(self, bagID, anchor)
+    if not anchor then
+        return nil
+    end
+    self.indexFrames = self.indexFrames or {}
+    local byAnchor = self.indexFrames[anchor]
+    if not byAnchor then
+        byAnchor = {}
+        self.indexFrames[anchor] = byAnchor
+    end
+    local frame = byAnchor[bagID]
+    if not frame then
+        frame = CreateFrame('Frame', nil, anchor)
+        frame:SetID(bagID)
+        frame:SetAllPoints(anchor)
+        frame.exuiBagIndex = true
+        byAnchor[bagID] = frame
+    end
+    return frame
+end
+
 slots.Assign = function(self, button, bagID, slotID)
     if not button then
         return
     end
-    if button.bagID == bagID and button:GetID() == slotID then
+    if ButtonBagID(button) == bagID and button:GetID() == slotID then
         return
     end
     button.itemSnap = nil
-    if button.SetBagID then
-        button:SetBagID(bagID)
-    else
-        button.bagID = bagID
+    if InCombatLockdown() then
+        return
+    end
+    local parent = button:GetParent()
+    local anchor = parent and parent.exuiBagIndex and parent:GetParent() or parent
+    local indexFrame = self:GetBagIndexFrame(bagID, anchor)
+    if indexFrame and button:GetParent() ~= indexFrame then
+        button:SetParent(indexFrame)
     end
     button:SetID(slotID)
+end
+
+slots.BindPlayerSlots = function(self, parent)
+    if InCombatLockdown() then
+        return
+    end
+    parent = parent or (self.buttons[1] and self.buttons[1]:GetParent())
+    self:EnsurePool(parent)
+    local index = 1
+    for bag = BACKPACK, REAGENT_BAG do
+        local numSlots = C_Container.GetContainerNumSlots(bag) or 0
+        for slot = 1, numSlots do
+            local button = self:Acquire(index, parent, 'bags')
+            if button then
+                self:Assign(button, bag, slot)
+            end
+            index = index + 1
+        end
+    end
 end
 
 local gearCache = {}
@@ -365,8 +418,11 @@ slots.IsButtonShown = function(self, button)
 end
 
 slots.UpdateItemButton = function(self, button)
-    local bagID, slotID = button.bagID, button:GetID()
-    if not bagID or not slotID then
+    if button.isDropSlot then
+        return
+    end
+    local bagID, slotID = ButtonBagID(button), button:GetID()
+    if not bagID or not slotID or slotID == 0 then
         self:SetButtonShown(button, false)
         return
     end
@@ -479,10 +535,11 @@ slots.EnsureCooldown = function(self, button)
 end
 
 slots.UpdateCooldown = function(self, button)
-    if not button.bagID then
+    local bagID = ButtonBagID(button)
+    if not bagID then
         return
     end
-    local start, duration, enable = C_Container.GetContainerItemCooldown(button.bagID, button:GetID())
+    local start, duration, enable = C_Container.GetContainerItemCooldown(bagID, button:GetID())
     if start and duration and duration > 0 then
         CooldownFrame_Set(self:EnsureCooldown(button), start, duration, enable)
     elseif button.Cooldown then
@@ -548,8 +605,11 @@ slots.Acquire = function(self, index, parent, poolName)
         return nil
     end
     button.poolName = poolName or 'bags'
-    if parent and button:GetParent() ~= parent then
-        button:SetParent(parent)
+    if parent and button:GetParent() ~= parent and not InCombatLockdown() then
+        local current = button:GetParent()
+        if not (current and current.exuiBagIndex) then
+            button:SetParent(parent)
+        end
     end
     return button
 end
@@ -559,7 +619,6 @@ slots.ReleaseFrom = function(self, index, poolName)
     for i = index, #pool do
         local button = pool[i]
         self:SetButtonShown(button, false)
-        button.bagID = nil
         button.itemSnap = nil
         button.placedX, button.placedY, button.placedSize = nil, nil, nil
     end
@@ -610,7 +669,7 @@ end
 
 slots.UpdateLock = function(self, bagID, slotID, poolName)
     self:ForEachButton(function(button)
-        if self:IsButtonShown(button) and button.bagID == bagID and button:GetID() == slotID then
+        if self:IsButtonShown(button) and ButtonBagID(button) == bagID and button:GetID() == slotID then
             self:UpdateItemButton(button)
         end
     end, poolName)
@@ -684,9 +743,10 @@ slots.UpdateBagButton = function(self, button)
 end
 
 slots.ShowEmpty = function(self, button)
-    button.bagID = nil
+    if not InCombatLockdown() then
+        button:SetID(0)
+    end
     button.itemID = nil
-    button:SetID(0)
     button.Icon:SetTexture(nil)
     button.Icon:Hide()
     button.EmptyTexture:Show()

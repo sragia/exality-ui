@@ -577,6 +577,7 @@ bags.RegisterShownEvents = function(self)
             return
         elseif event == 'BAG_CONTAINER_UPDATE' then
             slots:EnsurePool(window.content)
+            slots:BindPlayerSlots(window.content)
         end
         self:Refresh()
     end)
@@ -765,13 +766,24 @@ bags.Enable = function(self)
     self:ReplaceBlizzard()
     self:RegisterBankEvents()
     slots:EnsurePool(window.content)
+    slots:BindPlayerSlots(window.content)
     EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'bags-ready', function()
         if not self.enabled then
             return
         end
         self:HookBankFrame()
         slots:EnsurePool(window.content)
+        slots:BindPlayerSlots(window.content)
         slots:UpdateBagBar()
+        if self:IsOpen() then
+            self:Refresh()
+        end
+    end)
+    EXUI:RegisterEventHandler('PLAYER_REGEN_ENABLED', 'bags-untaint', function()
+        if not self.enabled then
+            return
+        end
+        slots:BindPlayerSlots(window.content)
         if self:IsOpen() then
             self:Refresh()
         end
@@ -798,6 +810,7 @@ bags.Disable = function(self)
     self:RestoreBankInteraction()
     self:RestoreBlizzard()
     EXUI:UnregisterEventHandler('PLAYER_ENTERING_WORLD', 'bags-ready')
+    EXUI:UnregisterEventHandler('PLAYER_REGEN_ENABLED', 'bags-untaint')
     EXUI:UnregisterEventHandler('ADDON_LOADED', 'bags-bank-hook')
     self.enabled = false
 end

@@ -171,7 +171,7 @@ pins.Layout = function(self, parent, slotSize, spacing)
 
     local byID, keyBag, keySlot, keyID = BuildItemIndex()
     if keyBag then
-        if self.keystoneButton:GetParent() ~= parent then
+        if not InCombatLockdown() and self.keystoneButton:GetParent() ~= parent then
             self.keystoneButton:SetParent(parent)
         end
         self.keystoneButton:SetSize(slotSize, slotSize)
@@ -186,7 +186,6 @@ pins.Layout = function(self, parent, slotSize, spacing)
         y = y + slotSize + spacing
     else
         slots:SetButtonShown(self.keystoneButton, false)
-        self.keystoneButton.bagID = nil
     end
 
     local list = GetPinnedIDs()
@@ -197,7 +196,7 @@ pins.Layout = function(self, parent, slotSize, spacing)
         used = used + 1
         local button = self.buttons[used]
         if button then
-            if button:GetParent() ~= parent then
+            if not InCombatLockdown() and button:GetParent() ~= parent then
                 button:SetParent(parent)
             end
             button:SetSize(slotSize, slotSize)
@@ -214,7 +213,6 @@ pins.Layout = function(self, parent, slotSize, spacing)
                 y = y + slotSize + spacing
             else
                 slots:SetButtonShown(button, false)
-                button.bagID = nil
             end
         end
     end
@@ -222,7 +220,7 @@ pins.Layout = function(self, parent, slotSize, spacing)
     local dropIndex = used + 1
     local drop = self.buttons[dropIndex]
     if drop then
-        if drop:GetParent() ~= parent then
+        if not InCombatLockdown() and drop:GetParent() ~= parent then
             drop:SetParent(parent)
         end
         drop:SetSize(slotSize, slotSize)
@@ -238,7 +236,6 @@ pins.Layout = function(self, parent, slotSize, spacing)
 
     for i = used + 1, #self.buttons do
         slots:SetButtonShown(self.buttons[i], false)
-        self.buttons[i].bagID = nil
         self.buttons[i].isDropSlot = false
     end
 
@@ -259,7 +256,7 @@ end
 
 pins.UpdateLock = function(self, bagID, slotID)
     self:ForEachVisible(function(button)
-        if button.bagID == bagID and button:GetID() == slotID then
+        if (button.GetBagID and button:GetBagID() or button.bagID) == bagID and button:GetID() == slotID then
             slots:UpdateItemButton(button)
         end
     end)
