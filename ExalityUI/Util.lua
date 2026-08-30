@@ -105,6 +105,7 @@ end
 local enchantNameCache = {}
 local gemResultCache = {}
 local gemResultScratch = {}
+local gemPendingCallbacks = {}
 
 local function resolveEnchantName(itemLink, enchantId)
     MyScanningTooltip:ClearTooltip()
@@ -119,28 +120,125 @@ local function resolveEnchantName(itemLink, enchantId)
     end
 end
 
+local function snapshotGemScratch()
+    local copy = {}
+    for i = 1, #gemResultScratch do
+        copy[i] = gemResultScratch[i]
+    end
+    return copy
+end
+
+local function copyGemsToScratch(source)
+    wipe(gemResultScratch)
+    for i = 1, #source do
+        gemResultScratch[i] = source[i]
+    end
+    return gemResultScratch
+end
+
+local function canContinueOnItemLoad(item)
+    return item and not item:IsItemEmpty() and item:GetItemID()
+end
+
+local function fireGemReady(itemLink)
+    local pending = gemPendingCallbacks[itemLink]
+    gemPendingCallbacks[itemLink] = nil
+    if not pending then
+        return
+    end
+    for i = 1, #pending do
+        pending[i]()
+    end
+end
+
 local function buildItemGems(itemLink)
     wipe(gemResultScratch)
-    for i = 1, MAX_NUM_SOCKETS do
-        local name, iLink = C_Item.GetItemGem(itemLink, i)
-        if iLink then
-            local icon = select(10, C_Item.GetItemInfo(iLink))
-            gemResultScratch[#gemResultScratch + 1] = { name = name, icon = icon, iLink = iLink }
+    local emptyIcon = EXUI.const.textures.characterFrame.gem.empty
+    local complete = true
+
+    local parentItem = Item:CreateFromItemLink(itemLink)
+    if not parentItem:IsItemDataCached() then
+        complete = false
+    end
+
+    local socketCount = C_Item.GetItemNumSockets(itemLink) or 0
+    local maxIndex = math.max(socketCount, MAX_NUM_SOCKETS)
+    for i = 1, maxIndex do
+        local gemID = C_Item.GetItemGemID(itemLink, i)
+        if gemID then
+            local icon = C_Item.GetItemIconByID(gemID)
+            local name, iLink = C_Item.GetItemGem(itemLink, i)
+            if not icon or not iLink then
+                complete = false
+            end
+            gemResultScratch[#gemResultScratch + 1] = {
+                name = name,
+                icon = icon,
+                iLink = iLink,
+                gemID = gemID,
+            }
+        elseif i <= socketCount then
+            gemResultScratch[#gemResultScratch + 1] = {
+                name = "Empty Slot",
+                icon = emptyIcon,
+            }
         end
     end
-    local socketCount = C_Item.GetItemNumSockets(itemLink) or 0
-    for i = #gemResultScratch + 1, socketCount do
-        gemResultScratch[#gemResultScratch + 1] = {
-            name = "Empty Slot",
-            icon = EXUI.const.textures.characterFrame.gem.empty,
-        }
+
+    local snapshot = snapshotGemScratch()
+    if complete then
+        gemResultCache[itemLink] = snapshot
     end
-    local cached = {}
-    for i = 1, #gemResultScratch do
-        cached[i] = gemResultScratch[i]
+    return snapshot, complete
+end
+
+local function requestGemData(itemLink)
+    local parentItem = Item:CreateFromItemLink(itemLink)
+    if not canContinueOnItemLoad(parentItem) then
+        gemPendingCallbacks[itemLink] = nil
+        return
     end
-    gemResultCache[itemLink] = cached
-    return cached
+
+    local function tryRebuild()
+        if not gemPendingCallbacks[itemLink] then
+            return
+        end
+
+        local _, complete = buildItemGems(itemLink)
+        if complete then
+            fireGemReady(itemLink)
+            return
+        end
+
+        if not parentItem:IsItemDataCached() then
+            parentItem:ContinueOnItemLoad(tryRebuild)
+            return
+        end
+
+        local requested = false
+        local socketCount = C_Item.GetItemNumSockets(itemLink) or 0
+        local maxIndex = math.max(socketCount, MAX_NUM_SOCKETS)
+        for i = 1, maxIndex do
+            local gemID = C_Item.GetItemGemID(itemLink, i)
+            if gemID then
+                local gemItem = Item:CreateFromItemID(gemID)
+                if canContinueOnItemLoad(gemItem) and not gemItem:IsItemDataCached() then
+                    requested = true
+                    gemItem:ContinueOnItemLoad(tryRebuild)
+                end
+            end
+        end
+
+        if not requested then
+            gemPendingCallbacks[itemLink] = nil
+        end
+    end
+
+    if not parentItem:IsItemDataCached() then
+        parentItem:ContinueOnItemLoad(tryRebuild)
+    else
+        tryRebuild()
+    end
 end
 
 EXUI.utils = {
@@ -161,18 +259,31 @@ EXUI.utils = {
         enchantNameCache[enchantId] = name or false
         return name, enchantId
     end,
-    GetItemGems = function(itemLink)
+    GetItemGems = function(itemLink, onReady)
         if not itemLink then
             return gemResultScratch
         end
         local cached = gemResultCache[itemLink]
+        local complete = cached ~= nil
         if not cached then
-            cached = buildItemGems(itemLink)
+            cached, complete = buildItemGems(itemLink)
         end
-        wipe(gemResultScratch)
-        for i = 1, #cached do
-            gemResultScratch[i] = cached[i]
+        copyGemsToScratch(cached)
+
+        if onReady and not complete then
+            local pending = gemPendingCallbacks[itemLink]
+            if pending then
+                pending[#pending + 1] = onReady
+            else
+                gemPendingCallbacks[itemLink] = { onReady }
+                requestGemData(itemLink)
+            end
+            local nowCached = gemResultCache[itemLink]
+            if nowCached then
+                copyGemsToScratch(nowCached)
+            end
         end
+
         return gemResultScratch
     end,
     createSimpleText = function(textValue, size, textAlign, parent, maxwidth)

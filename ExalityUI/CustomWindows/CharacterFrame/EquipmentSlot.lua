@@ -238,22 +238,33 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
 
     slot.GemFrames = {}
     slot.AddGems = function(self, itemLink)
+        self.pendingGemLink = itemLink
+
         for _, gem in ipairs_reverse(self.GemFrames) do
             gem:ClearAllPoints()
         end
 
         if (not itemLink) then
+            for _, gem in ipairs(self.GemFrames) do
+                gem:Hide()
+                gem.ItemLink = nil
+            end
             return
         end
 
         local prev = nil
-        local gems = EXUI.utils.GetItemGems(itemLink)
+        local gems = EXUI.utils.GetItemGems(itemLink, function()
+            if self.pendingGemLink == itemLink then
+                self:AddGems(itemLink)
+            end
+        end)
         local isOnlyOne = #gems == 1
         for index, gem in ipairs(gems) do
             if (not self.GemFrames[index]) then
                 self.GemFrames[index] = equipmentSlot:CreateGem(self)
             end
             local f = self.GemFrames[index]
+            f:Show()
             if (gem.name == 'Empty Slot') then
                 f:SetIcon(EXUI.const.textures.characterFrame.gem.empty)
             else
@@ -268,6 +279,13 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
                 f:SetPoint('CENTER', self.OverlayFrame, 'LEFT', 0, 7)
             end
             prev = f
+        end
+
+        for i = #gems + 1, #self.GemFrames do
+            local f = self.GemFrames[i]
+            f:Hide()
+            f:ClearAllPoints()
+            f.ItemLink = nil
         end
     end
 
