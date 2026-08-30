@@ -124,6 +124,15 @@ local function GetCraftingQualityInfo(itemIDOrLink)
     return info
 end
 
+local function UpdateJunkIcon(button, info)
+    local icon = button.JunkCoin
+    if not icon then
+        return
+    end
+    local isJunk = info and info.quality == Enum.ItemQuality.Poor and not info.hasNoValue
+    icon:SetShown(isJunk)
+end
+
 local function UpdateQualityIcon(button, itemIDOrLink)
     local icon = button.QualityIcon
     if not icon then
@@ -186,6 +195,12 @@ slots.StyleItemButton = function(self, button)
     button.QualityIcon = qualityIcon
     qualityIcon:SetPoint('TOPLEFT', 1, -1)
     qualityIcon:Hide()
+
+    local junk = overlay:CreateTexture(nil, 'OVERLAY')
+    button.JunkCoin = junk
+    junk:SetAtlas('bags-junkcoin', true)
+    junk:SetPoint('BOTTOMLEFT', 1, 1)
+    junk:Hide()
 
     local itemLevel = overlay:CreateFontString(nil, 'OVERLAY')
     button.ItemLevel = itemLevel
@@ -372,6 +387,7 @@ slots.UpdateItemButton = function(self, button)
         if button.QualityIcon then
             button.QualityIcon:Hide()
         end
+        UpdateJunkIcon(button)
         ApplyBorderColor(button, unpack(DEFAULT_BORDER))
         if button.Cooldown then
             button.Cooldown:Hide()
@@ -389,6 +405,7 @@ slots.UpdateItemButton = function(self, button)
         and snap.locked == info.isLocked
         and snap.icon == info.iconFileID
         and snap.quality == info.quality
+        and snap.noValue == info.hasNoValue
         and snap.query == query
     then
         self:UpdateCooldown(button)
@@ -430,6 +447,7 @@ slots.UpdateItemButton = function(self, button)
         end
     end
 
+    UpdateJunkIcon(button, info)
     self:UpdateCooldown(button)
     self:ApplySearchDim(button, matches)
     button.itemSnap = {
@@ -439,6 +457,7 @@ slots.UpdateItemButton = function(self, button)
         locked = info.isLocked,
         icon = info.iconFileID,
         quality = info.quality,
+        noValue = info.hasNoValue,
         query = query,
     }
 end
@@ -673,6 +692,7 @@ slots.ShowEmpty = function(self, button)
     button.EmptyTexture:Show()
     button.ItemLevel:SetText('')
     button.StackCount:SetText('')
+    UpdateJunkIcon(button)
     if button.Cooldown then
         button.Cooldown:Hide()
     end
