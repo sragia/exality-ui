@@ -388,6 +388,24 @@ end
 
 local gearCache = {}
 
+local function GetKeystoneLevel(info)
+    local itemID = info and info.itemID
+    if not itemID or not C_Item.IsItemKeystoneByID(itemID) then
+        return nil
+    end
+    local link = info.hyperlink
+    if link then
+        local level = tonumber(link:match('keystone:%d+:%d+:(%d+)'))
+        if level then
+            return level
+        end
+    end
+    if C_MythicPlus and C_MythicPlus.GetOwnedKeystoneLevel then
+        return C_MythicPlus.GetOwnedKeystoneLevel()
+    end
+    return nil
+end
+
 slots.IsGearItem = function(self, itemID)
     if not itemID then
         return false
@@ -454,10 +472,12 @@ slots.UpdateItemButton = function(self, button)
     end
 
     local count = info.stackCount or 1
+    local keystoneLevel = GetKeystoneLevel(info)
     if snap
         and not snap.empty
         and snap.id == info.itemID
         and snap.count == count
+        and snap.keystoneLevel == keystoneLevel
         and snap.locked == info.isLocked
         and snap.icon == info.iconFileID
         and snap.quality == info.quality
@@ -474,7 +494,11 @@ slots.UpdateItemButton = function(self, button)
     local matches = self:MatchesSearch(info, query)
     button.Icon:SetDesaturated(info.isLocked or not matches)
 
-    button.StackCount:SetText(count > 1 and count or '')
+    if keystoneLevel then
+        button.StackCount:SetText(keystoneLevel)
+    else
+        button.StackCount:SetText(count > 1 and count or '')
+    end
 
     local itemID = info.itemID
     local isGear = self:IsGearItem(itemID)
@@ -510,6 +534,7 @@ slots.UpdateItemButton = function(self, button)
         empty = false,
         id = itemID,
         count = count,
+        keystoneLevel = keystoneLevel,
         locked = info.isLocked,
         icon = info.iconFileID,
         quality = info.quality,

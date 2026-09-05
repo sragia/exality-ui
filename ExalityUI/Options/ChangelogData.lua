@@ -2,6 +2,9 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.9.6|r
+- [Bags] Add keystone level text to the item
+
 # |cffdb49000.9.5|r
 - [Action Bars] Allow to ping action bars.
 
