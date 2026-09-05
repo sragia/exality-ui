@@ -4,6 +4,12 @@ local EXUI = select(2, ...)
 ---@class EXUIMythicPlusTimerDefaults
 local defaults = EXUI:GetModule('mythic-plus-timer-defaults')
 
+---@class EXUIMythicPlusTimerHistory
+local history = EXUI:GetModule('mythic-plus-timer-history')
+
+---@class EXUIMythicPlusTimerModule
+local mythicPlusTimer = EXUI:GetModule('mythic-plus-timer')
+
 ---@class EXUIMythicPlusTimerData
 local timerData = EXUI:GetModule('mythic-plus-timer-data')
 
@@ -19,6 +25,7 @@ timerData.cachedLevelText = nil
 timerData.fullSnapshot = nil
 timerData.tickerSnapshot = nil
 timerData.structuralDirty = true
+timerData.isCompletedLinger = false
 
 timerData.EVENTS = {
     'PLAYER_ENTERING_WORLD',
@@ -36,6 +43,10 @@ timerData.EVENTS = {
 
 function timerData:IsActive()
     return C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive()
+end
+
+function timerData:ShouldDisplay()
+    return self:IsActive() or self.isCompletedLinger
 end
 
 function timerData:GetChallengeModeTimerID()
@@ -70,7 +81,108 @@ function timerData:ResetRunState()
     self.bossListRetryAttempt = 0
     self.fullSnapshot = nil
     self.tickerSnapshot = nil
+    self.isCompletedLinger = false
+    history:ClearSession()
     self:InvalidateStructuralCache()
+end
+
+local function copyForces(forces)
+    if not forces then
+        return nil
+    end
+    return {
+        percent = forces.percent,
+        current = forces.current,
+        total = forces.total,
+    }
+end
+
+local function copyBosses(bosses)
+    if not bosses then
+        return {}
+    end
+    local copy = {}
+    for index, boss in ipairs(bosses) do
+        copy[index] = {
+            criteriaIndex = boss.criteriaIndex,
+            name = boss.name,
+            killTime = boss.killTime,
+            order = boss.order,
+        }
+    end
+    return copy
+end
+
+local function copyComparison(comparison)
+    if not comparison then
+        return nil
+    end
+    local bosses = {}
+    if comparison.bosses then
+        for order, elapsed in pairs(comparison.bosses) do
+            bosses[order] = elapsed
+        end
+    end
+    return {
+        bosses = bosses,
+        forcesHistoric = comparison.forcesHistoric,
+        sourceLevel = comparison.sourceLevel,
+    }
+end
+
+function timerData:FreezeCompletedRun()
+    self:FlushHistory()
+
+    local snapshot = self.fullSnapshot
+    if snapshot then
+        local elapsed = self:GetCompletionElapsed(snapshot.elapsed)
+        snapshot.elapsed = elapsed
+        if snapshot.timeLimit and snapshot.timeLimit > 0 then
+            snapshot.elapsedPercent = math.min(1, elapsed / snapshot.timeLimit)
+        end
+        snapshot.milestoneIndex = nil
+        snapshot.milestoneRemaining = nil
+        snapshot.forces = copyForces(snapshot.forces or self.cachedForces)
+        snapshot.bosses = copyBosses(snapshot.bosses or self.bossList)
+        snapshot.comparison = copyComparison(snapshot.comparison)
+        self.fullSnapshot = snapshot
+        self.tickerSnapshot = nil
+    end
+
+    self.isCompletedLinger = true
+    history:ClearSession()
+end
+
+function timerData:GetCompletionElapsed(fallbackElapsed)
+    if C_ChallengeMode and C_ChallengeMode.GetChallengeCompletionInfo then
+        local info = C_ChallengeMode.GetChallengeCompletionInfo()
+        if info and info.time and info.time > 0 then
+            return info.time / 1000
+        end
+    end
+    return fallbackElapsed or 0
+end
+
+function timerData:RecordCurrentProgress(elapsed)
+    if not self.cachedMapID or self.cachedKeyLevel == nil then
+        return
+    end
+    history:RecordRunProgress(self.cachedMapID, self.cachedKeyLevel, self.bossList, self.cachedForces, elapsed)
+end
+
+function timerData:FlushHistory()
+    if history:IsPracticeRun() then
+        return
+    end
+    if not self.cachedMapID or self.cachedKeyLevel == nil then
+        self:EnsureRunMeta()
+    end
+    if not self.cachedMapID or self.cachedKeyLevel == nil then
+        return
+    end
+
+    local elapsed = self:GetCompletionElapsed(self:GetElapsedSeconds())
+    history:RecordRunProgress(self.cachedMapID, self.cachedKeyLevel, self.bossList, self.cachedForces, elapsed)
 end
 
 function timerData:GetScenarioCriteriaCount()
@@ -323,6 +435,16 @@ function timerData:GetElapsedSeconds()
     return elapsed, timerID
 end
 
+function timerData:GetDisplaySnapshot(isTicker)
+    if self.isCompletedLinger then
+        return self.fullSnapshot
+    end
+    if isTicker then
+        return self:GetTickerSnapshot()
+    end
+    return self:GetTimerSnapshot()
+end
+
 function timerData:GetTimerSnapshot()
     if not self:IsActive() then
         return nil
@@ -359,6 +481,7 @@ function timerData:GetTimerSnapshot()
     snapshot.timerID = timerID
     snapshot.timeLimit = timeLimit
     snapshot.elapsed = elapsed
+    snapshot.mapID = self.cachedMapID
     snapshot.keyLevel = self.cachedKeyLevel
     snapshot.levelText = self.cachedLevelText
     snapshot.deathCount = deathCount
@@ -369,6 +492,9 @@ function timerData:GetTimerSnapshot()
     snapshot.milestoneRemaining = milestoneRemaining
     snapshot.forces = self.cachedForces or self:GetForcesInfo()
     snapshot.bosses = self.bossList
+
+    history:AttachComparison(snapshot, mythicPlusTimer.Data and mythicPlusTimer.Data:GetDB())
+    self:RecordCurrentProgress(elapsed)
 
     return snapshot
 end
@@ -401,6 +527,7 @@ function timerData:GetTickerSnapshot()
     snapshot.timerID = timerID
     snapshot.timeLimit = timeLimit
     snapshot.elapsed = elapsed
+    snapshot.mapID = base.mapID
     snapshot.keyLevel = base.keyLevel
     snapshot.levelText = base.levelText
     snapshot.deathCount = base.deathCount
@@ -411,6 +538,7 @@ function timerData:GetTickerSnapshot()
     snapshot.milestoneRemaining = milestoneRemaining
     snapshot.forces = base.forces
     snapshot.bosses = base.bosses
+    snapshot.comparison = base.comparison
 
     -- Keep full snapshot elapsed fields current for consumers that read it.
     base.elapsed = elapsed
@@ -440,6 +568,26 @@ function timerData:OnEvent(event, ...)
         return
     end
 
+    if event == 'CHALLENGE_MODE_START' then
+        self:ResetRunState()
+        self:OnChallengeActivated()
+        return
+    end
+
+    if event == 'CHALLENGE_MODE_COMPLETED' then
+        self:FreezeCompletedRun()
+        return
+    end
+
+    if event == 'CHALLENGE_MODE_RESET' then
+        self:ResetRunState()
+        return
+    end
+
+    if self.isCompletedLinger then
+        return
+    end
+
     if event == 'WORLD_STATE_TIMER_START' then
         local timerID = ...
         if timerID and GetWorldElapsedTime then
@@ -458,17 +606,6 @@ function timerData:OnEvent(event, ...)
         if self.timerID == timerID then
             self.timerID = nil
         end
-        return
-    end
-
-    if event == 'CHALLENGE_MODE_START' then
-        self:ResetRunState()
-        self:OnChallengeActivated()
-        return
-    end
-
-    if event == 'CHALLENGE_MODE_RESET' or event == 'CHALLENGE_MODE_COMPLETED' then
-        self:ResetRunState()
         return
     end
 

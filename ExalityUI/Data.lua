@@ -11,7 +11,8 @@ data.data = {
         Base = {
             showMinimap = true
         }
-    }
+    },
+    mythicPlusHistory = {},
 }
 
 data.Init = function(self)
@@ -28,6 +29,9 @@ data.Init = function(self)
     end
     if (ExalityUICharData.optionsNavCompact == nil) then
         ExalityUICharData.optionsNavCompact = false
+    end
+    if self.data.mythicPlusHistory == nil then
+        self.data.mythicPlusHistory = {}
     end
 end
 
@@ -77,6 +81,11 @@ end
 
 data.GetData = function(self)
     return self.data.profiles[self.currentProfile]
+end
+
+data.GetMythicPlusHistory = function(self)
+    self.data.mythicPlusHistory = self.data.mythicPlusHistory or {}
+    return self.data.mythicPlusHistory
 end
 
 local function CopyProfileValue(value)

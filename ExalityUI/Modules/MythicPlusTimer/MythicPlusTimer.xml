@@ -1,5 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 	<Script file="Defaults.lua"/>
+	<Script file="History.lua"/>
 	<Script file="Data.lua"/>
 	<Script file="Preview.lua"/>
 	<Script file="Display.lua"/>

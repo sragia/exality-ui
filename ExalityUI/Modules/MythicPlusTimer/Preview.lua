@@ -50,6 +50,16 @@ preview.MOCK = {
         { encounterID = 3, name = 'Boss 3', killTime = nil, order = 3 },
         { encounterID = 4, name = 'Boss With Long Name 4', killTime = nil, order = 4 },
     },
+    comparison = {
+        bosses = {
+            [1] = 10 * 60 + 49,
+            [2] = 14 * 60 + 20,
+            [3] = 22 * 60,
+            [4] = 28 * 60,
+        },
+        forcesHistoric = 21 * 60,
+        sourceLevel = 8,
+    },
 }
 
 function preview:IsOptionsOpen()

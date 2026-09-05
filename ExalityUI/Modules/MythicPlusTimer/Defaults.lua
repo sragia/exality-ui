@@ -53,6 +53,8 @@ function defaults:GetDefaults()
         showMaxTimer = true,
         showBossNames = true,
         bossAlign = 'RIGHT',
+        showSplitComparison = true,
+        comparePreviousKeyLevel = false,
 
         deathFont = 'DMSans',
         deathFontSize = 14,
@@ -139,6 +141,18 @@ function defaults:GetDefaults()
             g = theme.white[2],
             b = theme.white[3],
             a = 1,
+        },
+        splitAheadColor = {
+            r = 123 / 255,
+            g = 1,
+            b = 0,
+            a = 1,
+        },
+        splitBehindColor = {
+            r = theme.danger[1],
+            g = theme.danger[2],
+            b = theme.danger[3],
+            a = theme.danger[4] or 1,
         },
     }
 end

@@ -140,7 +140,7 @@ mythicPlusTimer.ShouldSuppressObjectiveTracker = function(self)
         return false
     end
 
-    return preview:IsActive() or timerData:IsActive()
+    return preview:IsActive() or timerData:ShouldDisplay()
 end
 
 mythicPlusTimer.Enable = function(self)

@@ -253,5 +253,46 @@ function generalOptions:GetOptions()
             end,
             width = 50,
         },
+        {
+            type = 'title',
+            label = 'Splits',
+            size = 14,
+            width = 100,
+            depends = function()
+                return selfModule.Data:GetValue('enable')
+            end,
+        },
+        {
+            type = 'toggle',
+            label = 'Show Split Comparison',
+            name = 'showSplitComparison',
+            depends = function()
+                return selfModule.Data:GetValue('enable')
+            end,
+            onChange = function(value)
+                selfModule.Data:SetValue('showSplitComparison', value)
+                selfModule:Configure()
+            end,
+            currentValue = function()
+                return selfModule.Data:GetValue('showSplitComparison')
+            end,
+            width = 100,
+        },
+        {
+            type = 'toggle',
+            label = 'Also use previous key level (−1) when this level has no times',
+            name = 'comparePreviousKeyLevel',
+            depends = function()
+                return selfModule.Data:GetValue('enable') and selfModule.Data:GetValue('showSplitComparison')
+            end,
+            onChange = function(value)
+                selfModule.Data:SetValue('comparePreviousKeyLevel', value)
+                selfModule:Configure()
+            end,
+            currentValue = function()
+                return selfModule.Data:GetValue('comparePreviousKeyLevel')
+            end,
+            width = 100,
+        },
     }
 end

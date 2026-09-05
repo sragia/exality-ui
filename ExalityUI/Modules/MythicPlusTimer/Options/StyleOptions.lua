@@ -228,6 +228,36 @@ function styleOptions:GetOptions()
     }
 
     options[#options + 1] = {
+        type = 'color-picker',
+        label = 'Split Ahead Color',
+        name = 'splitAheadColor',
+        depends = enabled,
+        currentValue = function()
+            return mythicPlusTimer.Data:GetValue('splitAheadColor')
+        end,
+        onChange = function(value)
+            mythicPlusTimer.Data:SetValue('splitAheadColor', value)
+            mythicPlusTimer:Configure()
+        end,
+        width = 50,
+    }
+
+    options[#options + 1] = {
+        type = 'color-picker',
+        label = 'Split Behind Color',
+        name = 'splitBehindColor',
+        depends = enabled,
+        currentValue = function()
+            return mythicPlusTimer.Data:GetValue('splitBehindColor')
+        end,
+        onChange = function(value)
+            mythicPlusTimer.Data:SetValue('splitBehindColor', value)
+            mythicPlusTimer:Configure()
+        end,
+        width = 50,
+    }
+
+    options[#options + 1] = {
         type = 'title',
         label = 'Bars',
         size = 14,

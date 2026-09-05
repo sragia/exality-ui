@@ -65,6 +65,45 @@ function display:FormatPercent(value)
     return string.format('%.2f%%', value or 0)
 end
 
+function display:FormatDelta(seconds)
+    local rounded = math.floor((seconds or 0) + 0.5)
+    local sign = rounded < 0 and '-' or '+'
+    return sign .. self:FormatClock(math.abs(rounded))
+end
+
+function display:FormatForcesCount(current, total)
+    current = current or 0
+    total = total or 0
+    return string.format('%d/%d (+%d)', current, total, math.max(0, total - current))
+end
+
+local function colorToHex(color)
+    if not color then
+        return 'ffffff'
+    end
+    return string.format(
+        '%02x%02x%02x',
+        math.floor((color.r or 1) * 255 + 0.5),
+        math.floor((color.g or 1) * 255 + 0.5),
+        math.floor((color.b or 1) * 255 + 0.5)
+    )
+end
+
+function display:GetSplitColor(db, delta)
+    if delta < 0 then
+        return db.splitAheadColor or db.bossKilledColor
+    end
+    if delta > 0 then
+        return db.splitBehindColor or db.elapsedColor
+    end
+    return db.elapsedColor
+end
+
+function display:ColorizeDelta(db, delta)
+    local color = self:GetSplitColor(db, delta)
+    return string.format('|cff%s%s|r', colorToHex(color), self:FormatDelta(delta))
+end
+
 function display:ApplyFontString(text, fontKey, sizeKey, flagKey, db, color, verticalAlign)
     local fontPath, fontSize, fontFlag = self:GetFont(fontKey, sizeKey, flagKey, db)
     text:SetFont(fontPath, fontSize, fontFlag)
@@ -245,6 +284,7 @@ function display:CreateMainFrame()
     frame.forcesBar = self:CreateBar(frame.forcesSection, 'forces')
     local forcesTextLayer = self:EnsureTextLayer(frame.forcesSection)
     frame.forcesPercent = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    frame.forcesDelta = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
     frame.forcesRaw = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
 
     frame.bossSection = CreateFrame('Frame', nil, frame)
@@ -349,6 +389,7 @@ function display:ApplyLayout(db)
     })
     self:ApplyTextLayer(frame.forcesSection, frame.forcesBar, {
         frame.forcesPercent,
+        frame.forcesDelta,
         frame.forcesRaw,
     })
 
@@ -390,6 +431,10 @@ function display:ApplyLayout(db)
     frame.forcesPercent:SetPoint('LEFT', frame.forcesBar, 'BOTTOMLEFT', 2, 0)
     frame.forcesPercent:SetJustifyH('LEFT')
 
+    frame.forcesDelta:ClearAllPoints()
+    frame.forcesDelta:SetPoint('LEFT', frame.forcesPercent, 'RIGHT', 4, 0)
+    frame.forcesDelta:SetJustifyH('LEFT')
+
     frame.forcesRaw:ClearAllPoints()
     frame.forcesRaw:SetPoint('RIGHT', frame.forcesBar, 'BOTTOMRIGHT', -2, 0)
     frame.forcesRaw:SetJustifyH('RIGHT')
@@ -429,6 +474,8 @@ function display:ApplyStyles(db)
         db.elapsedColor)
     self:ApplyFontString(frame.forcesPercent, 'forcesPercentFont', 'forcesPercentFontSize', 'forcesPercentFontFlag', db,
         db.elapsedColor)
+    self:ApplyFontString(frame.forcesDelta, 'forcesPercentFont', 'forcesPercentFontSize', 'forcesPercentFontFlag', db,
+        db.elapsedColor)
     self:ApplyFontString(frame.forcesRaw, 'forcesRawFont', 'forcesRawFontSize', 'forcesRawFontFlag', db, db.elapsedColor)
 
     self:ApplyBarStyle(frame.timerBar, db.timerBar, db, self:GetTimerBarHeight(db))
@@ -464,15 +511,26 @@ function display:UpdateBossList(snapshot, db)
                 line._exuiBossStyled = true
             end
 
+            local historic = db.showSplitComparison ~= false
+                and snapshot.comparison
+                and snapshot.comparison.bosses
+                and snapshot.comparison.bosses[boss.order or index]
             local text
             if boss.killTime then
                 line:SetTextColor(db.bossKilledColor.r, db.bossKilledColor.g, db.bossKilledColor.b,
                     db.bossKilledColor.a or 1)
                 text = string.format('%s %s', boss.name, self:FormatClock(boss.killTime))
+                if historic then
+                    text = text .. ' ' .. self:ColorizeDelta(db, boss.killTime - historic)
+                end
             else
                 line:SetTextColor(db.bossPendingColor.r, db.bossPendingColor.g, db.bossPendingColor.b,
                     db.bossPendingColor.a or 1)
-                text = boss.name
+                if historic then
+                    text = string.format('%s %s', boss.name, self:FormatClock(historic))
+                else
+                    text = boss.name
+                end
             end
             if line._exuiBossText ~= text then
                 line._exuiBossText = text
@@ -528,6 +586,31 @@ local function setTextIfChanged(fontString, text)
     end
     fontString._exuiText = text
     fontString:SetText(text)
+end
+
+function display:UpdateForcesDelta(snapshot, db)
+    local frame = self.frame
+    if not frame or not frame.forcesDelta then
+        return
+    end
+
+    local deltaText = ''
+    local color = db.elapsedColor
+    local forcesPercent = snapshot.forces and snapshot.forces.percent or 0
+    if db.showSplitComparison ~= false
+        and snapshot.comparison
+        and snapshot.comparison.forcesHistoric
+        and forcesPercent > 0 then
+        local delta = (snapshot.elapsed or 0) - snapshot.comparison.forcesHistoric
+        deltaText = self:FormatDelta(delta)
+        color = self:GetSplitColor(db, delta)
+    end
+
+    setTextIfChanged(frame.forcesDelta, deltaText)
+    if color and frame.forcesDelta._exuiDeltaColor ~= color then
+        frame.forcesDelta._exuiDeltaColor = color
+        frame.forcesDelta:SetTextColor(color.r, color.g, color.b, color.a or 1)
+    end
 end
 
 function display:RenderTickerSnapshot(snapshot, db)
@@ -612,12 +695,13 @@ function display:RenderSnapshot(snapshot, db)
     if forces then
         frame.forcesBar.bar:SetValue(forces.percent or 0)
         setTextIfChanged(frame.forcesPercent, self:FormatPercent(forces.percent))
-        setTextIfChanged(frame.forcesRaw, string.format('%d/%d', forces.current or 0, forces.total or 0))
+        setTextIfChanged(frame.forcesRaw, self:FormatForcesCount(forces.current, forces.total))
     else
         frame.forcesBar.bar:SetValue(0)
         setTextIfChanged(frame.forcesPercent, '0.00%')
-        setTextIfChanged(frame.forcesRaw, '0/0')
+        setTextIfChanged(frame.forcesRaw, self:FormatForcesCount(0, 0))
     end
+    self:UpdateForcesDelta(snapshot, db)
 
     local bosses = snapshot.bosses or {}
     if frame.bossSection and frame.bossSection.lines then
@@ -663,7 +747,7 @@ function display:ShouldShow()
     if preview:IsActive() then
         return true
     end
-    return timerData:IsActive()
+    return timerData:ShouldDisplay()
 end
 
 function display:ForceRestoreObjectiveTracker()
@@ -763,6 +847,10 @@ function display:InvalidateStyleCache()
             self.frame.milestoneTimer._exuiMilestoneIndex = nil
             self.frame.milestoneTimer._exuiText = nil
         end
+        if self.frame.forcesDelta then
+            self.frame.forcesDelta._exuiText = nil
+            self.frame.forcesDelta._exuiDeltaColor = nil
+        end
     end
 end
 
@@ -792,11 +880,7 @@ function display:Update(opts)
 
     local snapshot = preview:GetSnapshot()
     if not snapshot then
-        if isTicker then
-            snapshot = timerData:GetTickerSnapshot()
-        else
-            snapshot = timerData:GetTimerSnapshot()
-        end
+        snapshot = timerData:GetDisplaySnapshot(isTicker)
     end
 
     if not snapshot then
