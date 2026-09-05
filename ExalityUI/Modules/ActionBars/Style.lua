@@ -14,6 +14,9 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 ---@class EXUIActionBarsButton
 local buttonMod = EXUI:GetModule('action-bars-button')
 
+---@class EXUIActionBarsPing
+local ping = EXUI:GetModule('action-bars-ping')
+
 style.masqueGroups = {}
 style.initialized = false
 style.pendingSlotRefresh = false
@@ -24,6 +27,7 @@ style.Init = function(self)
     self.initialized = true
 
     LAB.RegisterCallback(self, 'OnButtonUpdate', function(_, button)
+        ping:RefreshAttributes(button)
         if button.exuiBarId and button.exuiBarConfig then
             self:OnLABButtonUpdate(button, button.exuiBarConfig)
         end

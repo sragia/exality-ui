@@ -16,6 +16,9 @@ local buttonMod = EXUI:GetModule('action-bars-button')
 ---@class EXUIActionBarsBar
 local barMod = EXUI:GetModule('action-bars-bar')
 
+---@class EXUIActionBarsPing
+local ping = EXUI:GetModule('action-bars-ping')
+
 ---@class EXUIActionBarsSpecialButton
 local special = EXUI:GetModule('action-bars-special-button')
 
@@ -101,6 +104,7 @@ special.CreateStanceButton = function(self, barId, index, parent, barConfig)
             if not inCombat then
                 self:Hide()
             end
+            ping:RefreshAttributes(self)
             return
         end
 
@@ -131,6 +135,8 @@ special.CreateStanceButton = function(self, barId, index, parent, barConfig)
                 self.icon:SetVertexColor(0.4, 0.4, 0.4)
             end
         end
+
+        ping:RefreshAttributes(self)
     end
     button.UpdateAction = button.Update
 
@@ -194,6 +200,7 @@ special.CreatePetButton = function(self, barId, index, header, barConfig)
         end
 
         self:UpdateCooldownOnly()
+        ping:RefreshAttributes(self)
     end
     button.UpdateAction = button.Update
 

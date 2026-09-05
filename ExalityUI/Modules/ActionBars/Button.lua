@@ -12,6 +12,9 @@ local barStyle = EXUI:GetModule('action-bars-style')
 ---@class EXUIActionBarsSpellPicker
 local spellPicker = EXUI:GetModule('action-bars-spell-picker')
 
+---@class EXUIActionBarsPing
+local ping = EXUI:GetModule('action-bars-ping')
+
 ---@class EXUIActionBarsButton
 local buttonMod = EXUI:GetModule('action-bars-button')
 
@@ -45,6 +48,7 @@ buttonMod.CreateActionButton = function(self, barId, index, header, barConfig, a
 
     button.commandName = commandName
     button.exuiBarId = barId
+    ping:InstallLABButton(button)
 
     if assignActions then
         if not InCombatLockdown() then

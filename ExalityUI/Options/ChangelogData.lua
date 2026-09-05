@@ -2,6 +2,9 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.9.5|r
+- [Action Bars] Allow to ping action bars.
+
 # |cffdb49000.9.4|r
 - [Minimap] Instance difficulty is now overlay text instead of a minimap button.
 - [Action Bars] Fix issue where sometimes possess bar buttons are not shown.
