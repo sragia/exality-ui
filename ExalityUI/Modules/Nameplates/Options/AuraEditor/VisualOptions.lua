@@ -676,6 +676,146 @@ function visualOptions:GetOptions(displayID, groupID)
     end
 
     append(fields, {
+        { type = 'title', label = 'Caster Name', width = 100 },
+        {
+            type = 'toggle',
+            label = 'Show Caster Name',
+            name = 'showCasterName',
+            width = 100,
+            currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showCasterName') end,
+            onChange = function(v) updateVisual(displayID, groupID, 'showCasterName', v, true) end,
+        },
+    })
+
+    if auraDisplays:GetGroupVisual(displayID, groupID, 'showCasterName') then
+        append(fields, {
+            {
+                type = 'toggle',
+                label = 'Show Realm',
+                name = 'casterShowRealm',
+                width = 100,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'casterShowRealm') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'casterShowRealm', v) end,
+            },
+            {
+                type = 'toggle',
+                label = 'Class Colors',
+                name = 'casterUseClassColors',
+                width = 100,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'casterUseClassColors') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'casterUseClassColors', v) end,
+            },
+        })
+        append(fields, self:MakeTextFields(displayID, groupID, 'caster', 'Caster Name', { skipTitle = true }))
+    end
+
+    append(fields, {
+        { type = 'title', label = 'Pandemic', width = 100 },
+        {
+            type = 'toggle',
+            label = 'Show Pandemic',
+            name = 'showPandemic',
+            width = 100,
+            tooltip = { text = 'Highlight auras in the refresh (pandemic) window.' },
+            currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showPandemic') end,
+            onChange = function(v) updateVisual(displayID, groupID, 'showPandemic', v, true) end,
+        },
+    })
+
+    if auraDisplays:GetGroupVisual(displayID, groupID, 'showPandemic') then
+        append(fields, {
+            {
+                type = 'dropdown',
+                label = 'Style',
+                name = 'pandemicStyle',
+                width = 50,
+                getOptions = function()
+                    return { Glow = 'Glow', Tint = 'Tint', Both = 'Both' }
+                end,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'pandemicStyle') or 'Glow' end,
+                onChange = function(v) updateVisual(displayID, groupID, 'pandemicStyle', v, true) end,
+            },
+            {
+                type = 'color-picker',
+                label = 'Color',
+                name = 'pandemicColor',
+                width = 25,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'pandemicColor') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'pandemicColor', v) end,
+            },
+            {
+                type = 'toggle',
+                label = 'Enter Flash',
+                name = 'pandemicEnterFlash',
+                width = 100,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'pandemicEnterFlash') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'pandemicEnterFlash', v) end,
+            },
+        })
+    end
+
+    if not isBarStyle(displayID, groupID) then
+        append(fields, {
+            { type = 'title', label = 'Application Bar', width = 100 },
+            {
+                type = 'toggle',
+                label = 'Show Application Bar',
+                name = 'showApplicationBar',
+                width = 100,
+                tooltip = { text = 'Thin stack bar on the icon. Hidden until stacks reach the minimum.' },
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showApplicationBar') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'showApplicationBar', v, true) end,
+            },
+        })
+
+        if auraDisplays:GetGroupVisual(displayID, groupID, 'showApplicationBar') then
+            append(fields, {
+                {
+                    type = 'range',
+                    label = 'Min Stacks',
+                    name = 'minApplications',
+                    min = 0,
+                    max = 40,
+                    step = 1,
+                    width = 25,
+                    currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'minApplications') or 2 end,
+                    onChange = function(v) updateVisual(displayID, groupID, 'minApplications', v) end,
+                },
+                {
+                    type = 'range',
+                    label = 'Max Stacks',
+                    name = 'maxApplications',
+                    min = 1,
+                    max = 40,
+                    step = 1,
+                    width = 25,
+                    currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'maxApplications') or 10 end,
+                    onChange = function(v) updateVisual(displayID, groupID, 'maxApplications', v) end,
+                },
+                {
+                    type = 'range',
+                    label = 'Height',
+                    name = 'applicationBarHeight',
+                    min = 1,
+                    max = 12,
+                    step = 1,
+                    width = 25,
+                    currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'applicationBarHeight') or 3 end,
+                    onChange = function(v) updateVisual(displayID, groupID, 'applicationBarHeight', v) end,
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Color',
+                    name = 'applicationBarColor',
+                    width = 25,
+                    currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'applicationBarColor') end,
+                    onChange = function(v) updateVisual(displayID, groupID, 'applicationBarColor', v) end,
+                },
+            })
+        end
+    end
+
+    append(fields, {
         { type = 'title', label = 'Interaction', width = 100 },
         {
             type = 'toggle',

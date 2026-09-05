@@ -94,12 +94,6 @@ local function AddDispelTexture(button, texture, style)
             showWhenHelpful = false,
             style = style,
         })
-    elseif button.SetAuraBorder then
-        button:SetAuraBorder(texture, {
-            showWhenHarmful = true,
-            showWhenHelpful = false,
-            style = style,
-        })
     end
 end
 

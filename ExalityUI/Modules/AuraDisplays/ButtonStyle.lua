@@ -334,6 +334,162 @@ function buttonStyle:CreateCooldown(button)
     return cooldown
 end
 
+function buttonStyle:ClearPandemic(button)
+    if button.ClearPandemicActiveAnimations then
+        button:ClearPandemicActiveAnimations()
+    end
+    if button.ClearPandemicEnterAnimations then
+        button:ClearPandemicEnterAnimations()
+    end
+    if button.ClearPandemicLeaveAnimations then
+        button:ClearPandemicLeaveAnimations()
+    end
+    if button.ClearPandemicRegions then
+        button:ClearPandemicRegions()
+    end
+    if button.PandemicTint then
+        button.PandemicTint:Hide()
+    end
+    if button.PandemicGlow then
+        button.PandemicGlow:SetAlpha(0)
+        button.PandemicGlow:Hide()
+    end
+end
+
+function buttonStyle:EnsurePandemicTexture(button, key, alpha)
+    local parent = self:GetAuraButtonFrame(button)
+    local texture = button[key]
+    if not texture then
+        texture = parent:CreateTexture(nil, 'OVERLAY')
+        button[key] = texture
+    end
+    texture:SetAllPoints(parent)
+    texture:SetAlpha(alpha or 1)
+    texture:Hide()
+    return texture
+end
+
+function buttonStyle:CreatePandemicAlphaGroup(texture, fromAlpha, toAlpha, duration, looping)
+    local animGroup = texture:CreateAnimationGroup()
+    if looping then
+        animGroup:SetLooping(looping)
+    end
+    local anim = animGroup:CreateAnimation('Alpha')
+    anim:SetFromAlpha(fromAlpha)
+    anim:SetToAlpha(toAlpha)
+    anim:SetDuration(duration)
+    return animGroup
+end
+
+function buttonStyle:ApplyPandemic(button, visual)
+    self:ClearPandemic(button)
+    if not visual or not visual.showPandemic then
+        return
+    end
+
+    local color = visual.pandemicColor or { r = 1, g = 0.25, b = 0.15, a = 0.7 }
+    local style = visual.pandemicStyle or 'Glow'
+    local useTint = style == 'Tint' or style == 'Both'
+    local useGlow = style == 'Glow' or style == 'Both'
+    local bind = not self:UsesSafeBarChrome(button)
+
+    if useTint then
+        local tint = self:EnsurePandemicTexture(button, 'PandemicTint', color.a or 0.35)
+        tint:SetColorTexture(color.r, color.g, color.b, color.a or 0.35)
+        if bind and button.AddPandemicRegion then
+            button:AddPandemicRegion(tint)
+        else
+            tint:Show()
+        end
+    end
+
+    if useGlow then
+        local glow = self:EnsurePandemicTexture(button, 'PandemicGlow', 0)
+        glow:SetColorTexture(color.r, color.g, color.b, 1)
+        if bind and button.AddPandemicActiveAnimation then
+            glow:Show()
+            local active = self:CreatePandemicAlphaGroup(glow, 0, color.a or 0.7, 0.5, 'BOUNCE')
+            button:AddPandemicActiveAnimation(active)
+            if visual.pandemicEnterFlash and button.AddPandemicEnterAnimation then
+                local enter = self:CreatePandemicAlphaGroup(glow, 0, 1, 0.15)
+                button:AddPandemicEnterAnimation(enter)
+            end
+        else
+            glow:SetAlpha(color.a or 0.7)
+            glow:Show()
+        end
+    end
+end
+
+function buttonStyle:ApplyCasterName(button, visual, useSafeChrome)
+    if visual.showCasterName then
+        local casterName = self:CreateFontString(button, 'CasterName', 'caster', visual, {
+            font = 'DMSans',
+            size = 10,
+            color = { r = 1, g = 1, b = 1, a = 1 },
+            anchor = 'TOP',
+            relative = 'BOTTOM',
+        })
+        if not useSafeChrome and button.SetCasterName then
+            button:SetCasterName(casterName, {
+                showRealmName = visual.casterShowRealm and true or false,
+                useClassColors = visual.casterUseClassColors ~= false,
+            })
+        end
+    elseif not useSafeChrome and button.ClearCasterName then
+        button:ClearCasterName()
+        if button.CasterName then
+            button.CasterName:Hide()
+        end
+    elseif button.CasterName then
+        button.CasterName:Hide()
+    end
+end
+
+function buttonStyle:CreateApplicationBar(button, visual)
+    local parent = self:GetAuraButtonFrame(button)
+    local bar = button.ApplicationBar
+    if not bar then
+        bar = CreateFrame('StatusBar', nil, parent)
+        button.ApplicationBar = bar
+    end
+    local height = visual.applicationBarHeight or 3
+    bar:ClearAllPoints()
+    bar:SetPoint('BOTTOMLEFT', parent, 'BOTTOMLEFT', 1, 1)
+    bar:SetPoint('BOTTOMRIGHT', parent, 'BOTTOMRIGHT', -1, 1)
+    bar:SetHeight(height)
+    bar:SetStatusBarTexture(self:GetBarTexture(visual))
+    local color = visual.applicationBarColor or { r = 1, g = 0.85, b = 0.2, a = 1 }
+    bar:SetStatusBarColor(color.r, color.g, color.b, color.a or 1)
+    bar:SetMinMaxValues(0, 1)
+    bar:SetValue(0)
+    return bar
+end
+
+function buttonStyle:ApplyApplicationBar(button, visual, useSafeChrome)
+    if visual.displayStyle == 'bar' or not visual.showApplicationBar then
+        if not useSafeChrome and button.ClearApplicationBar then
+            button:ClearApplicationBar()
+        end
+        if button.ApplicationBar then
+            button.ApplicationBar:Hide()
+        end
+        return
+    end
+
+    local bar = self:CreateApplicationBar(button, visual)
+    if not useSafeChrome and button.SetApplicationBar then
+        local minApplications = visual.minApplications or 2
+        local maxApplications = math.max(visual.maxApplications or 10, minApplications)
+        button:SetApplicationBar(bar, {
+            minApplications = minApplications,
+            maxApplications = maxApplications,
+        })
+    else
+        bar:Show()
+    end
+end
+
 local ICON_BORDER_DRAW_LEVEL = 1
 local AURA_TYPE_BORDER_DRAW_LEVEL = 2
 local DISPEL_BORDER_DRAW_LEVEL = 3
@@ -546,8 +702,6 @@ end
 function buttonStyle:ClearDispelTextures(button)
     if button.ClearDispelTypeTextures then
         button:ClearDispelTypeTextures()
-    elseif button.ClearAuraBorder then
-        button:ClearAuraBorder()
     end
     if button.AuraBorderTexture then
         button.AuraBorderTexture:Hide()
@@ -566,8 +720,6 @@ end
 function buttonStyle:AddDispelTexture(button, texture, options)
     if button.AddDispelTypeTexture then
         button:AddDispelTypeTexture(texture, options)
-    elseif button.SetAuraBorder then
-        button:SetAuraBorder(texture, options)
     end
 end
 
@@ -887,6 +1039,7 @@ function buttonStyle:ApplyBarStyle(button, visual)
         return
     end
 
+    EXUI:EnableRoundLayout(button)
     styledButtons[button] = visual
     local useSafeChrome = self:UsesSafeBarChrome(button)
 
@@ -900,8 +1053,6 @@ function buttonStyle:ApplyBarStyle(button, visual)
         end
         if button.ClearDispelTypeText then
             button:ClearDispelTypeText()
-        elseif button.ClearAuraSymbol then
-            button:ClearAuraSymbol()
         end
     end
 
@@ -943,6 +1094,10 @@ function buttonStyle:ApplyBarStyle(button, visual)
         button:ClearSpellName()
     end
 
+    self:ApplyCasterName(button, visual, useSafeChrome)
+    self:ApplyApplicationBar(button, visual, useSafeChrome)
+    self:ApplyPandemic(button, visual)
+
     if not useSafeChrome then
         self:ApplyAuraBorderBinding(button, visual)
     end
@@ -972,7 +1127,9 @@ function buttonStyle:Apply(button, visual)
         button.BarContainer:Hide()
     end
 
+    EXUI:EnableRoundLayout(button)
     styledButtons[button] = visual
+    local useSafeChrome = self:UsesSafeBarChrome(button)
 
     local iconWidth = visual.iconWidth or 32
     local iconHeight = visual.iconHeight or 32
@@ -1021,12 +1178,13 @@ function buttonStyle:Apply(button, visual)
         button:ClearSpellName()
     end
 
+    self:ApplyCasterName(button, visual, useSafeChrome)
+    self:ApplyApplicationBar(button, visual, useSafeChrome)
+    self:ApplyPandemic(button, visual)
     self:ApplyAuraBorderBinding(button, visual)
 
     if button.ClearDispelTypeText then
         button:ClearDispelTypeText()
-    elseif button.ClearAuraSymbol then
-        button:ClearAuraSymbol()
     end
 
     self:ApplyMouseInteraction(button, visual)

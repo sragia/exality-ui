@@ -69,6 +69,7 @@ local PREVIEW_SCENARIOS = {
     {
         spellID = 17,
         spellName = 'Power Word: Shield',
+        casterName = 'Anduin',
         isHelpful = true,
         stacks = 0,
         remaining = 332,
@@ -77,6 +78,7 @@ local PREVIEW_SCENARIOS = {
     {
         spellID = 589,
         spellName = 'Shadow Word: Pain',
+        casterName = 'Player',
         isHarmful = true,
         stacks = 8,
         remaining = 12,
@@ -86,15 +88,18 @@ local PREVIEW_SCENARIOS = {
     {
         spellID = 1943,
         spellName = 'Rupture',
+        casterName = 'Player',
         isHarmful = true,
         stacks = 3,
         remaining = 4.5,
         total = 16,
         dispelName = 'Curse',
+        pandemic = true,
     },
     {
         spellID = 1126,
         spellName = 'Mark of the Wild',
+        casterName = 'Malfurion',
         isHelpful = true,
         stacks = 1,
         remaining = 3720,
@@ -103,15 +108,18 @@ local PREVIEW_SCENARIOS = {
     {
         spellID = 2818,
         spellName = 'Deadly Poison',
+        casterName = 'Player',
         isHarmful = true,
         stacks = 1,
         remaining = 2.1,
         total = 12,
         dispelName = 'Poison',
+        pandemic = true,
     },
     {
         spellID = 774,
         spellName = 'Rejuvenation',
+        casterName = 'Player',
         isHelpful = true,
         stacks = 0,
         remaining = 0,
@@ -121,6 +129,7 @@ local PREVIEW_SCENARIOS = {
     {
         spellID = 465,
         spellName = 'Devotion Aura',
+        casterName = 'Turalyon',
         isHelpful = true,
         stacks = 0,
         remaining = 0,
@@ -766,6 +775,62 @@ function preview:ApplySpellName(btn, scenario, visual)
     end
 end
 
+function preview:ApplyCasterName(btn, scenario, visual)
+    local casterName = btn.GetCasterName and btn:GetCasterName() or btn.CasterName
+    if not casterName then
+        return
+    end
+
+    if visual.showCasterName then
+        casterName:SetText(scenario.casterName or '')
+        casterName:Show()
+    else
+        casterName:Hide()
+    end
+end
+
+function preview:ApplyPandemic(btn, scenario, visual)
+    if not visual.showPandemic or not scenario.pandemic then
+        if btn.PandemicTint then
+            btn.PandemicTint:Hide()
+        end
+        if btn.PandemicGlow then
+            btn.PandemicGlow:Hide()
+        end
+        return
+    end
+
+    if btn.PandemicTint then
+        btn.PandemicTint:Show()
+    end
+    if btn.PandemicGlow then
+        btn.PandemicGlow:Show()
+    end
+end
+
+function preview:ApplyApplicationBar(btn, scenario, visual)
+    local bar = btn.GetApplicationBar and btn:GetApplicationBar() or btn.ApplicationBar
+    if not bar then
+        return
+    end
+
+    if visual.displayStyle == 'bar' or not visual.showApplicationBar then
+        bar:Hide()
+        return
+    end
+
+    local stacks = scenario.stacks or 0
+    local minApplications = visual.minApplications or 2
+    local maxApplications = visual.maxApplications or 10
+    if stacks >= minApplications then
+        bar:SetMinMaxValues(minApplications, math.max(maxApplications, 1))
+        bar:SetValue(stacks)
+        bar:Show()
+    else
+        bar:Hide()
+    end
+end
+
 function preview:ApplyScenario(button, scenario, visual, state, index)
     local btn = resolveButton(button)
 
@@ -783,6 +848,9 @@ function preview:ApplyScenario(button, scenario, visual, state, index)
         preview:ApplyDurationBar(btn, scenario, visual)
         preview:ApplyDispelBorder(btn, scenario, visual)
         preview:ApplySpellName(btn, scenario, visual)
+        preview:ApplyCasterName(btn, scenario, visual)
+        preview:ApplyPandemic(btn, scenario, visual)
+        preview:ApplyApplicationBar(btn, scenario, visual)
     end
 
     if securecallfunction then

@@ -467,7 +467,7 @@ end
 
 local function getReagentName(reagent)
     if reagent.itemID then
-        return C_Item.GetItemNameByID(reagent.itemID) or select(1, GetItemInfo(reagent.itemID))
+        return C_Item.GetItemNameByID(reagent.itemID) or C_Item.GetItemInfo(reagent.itemID)
     end
     if reagent.currencyID then
         local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(reagent.currencyID)

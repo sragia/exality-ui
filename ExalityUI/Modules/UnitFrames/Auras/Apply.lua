@@ -313,31 +313,51 @@ function apply:ApplyProcessingPolicy(container, display)
     container:SetAuraProcessingPolicy(1, processAuraOptions)
 end
 
-function apply:ApplyItemEnchantments(container, containerConfig, display)
-    if not container or not container.AddItemEnchantment or not containerConfig then
+local function EnchantInitializeFrame(auraButton)
+    if auraButton.EnableMouse then auraButton:EnableMouse(false) end
+    if auraButton.SetMouseMotionEnabled then auraButton:SetMouseMotionEnabled(false) end
+end
+
+function apply:GetItemEnchantSlots()
+    return {
+        { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
+        { key = 'itemEnchantOffHand',  slot = ITEM_ENCHANT_SLOT.OffHand },
+        { key = 'itemEnchantRanged',   slot = ITEM_ENCHANT_SLOT.Ranged },
+    }
+end
+
+function apply:SyncItemEnchantmentEnables(container, containerConfig)
+    if not container or not container.SetItemEnchantmentEnabled or not containerConfig then
         return
     end
-    if not containerConfig.itemEnchantEnable then
+    for _, entry in ipairs(self:GetItemEnchantSlots()) do
+        pcall(container.SetItemEnchantmentEnabled, container, entry.slot,
+            containerConfig.itemEnchantEnable and containerConfig[entry.key] and true or false)
+    end
+end
+
+function apply:ApplyItemEnchantments(container, containerConfig, display)
+    if not container or not container.AddItemEnchantment or not containerConfig then
         return
     end
 
     layout:ApplyItemEnchantmentLayout(container, containerConfig, display)
 
-    local slots = {
-        { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
-        { key = 'itemEnchantOffHand',  slot = ITEM_ENCHANT_SLOT.OffHand },
-        { key = 'itemEnchantRanged',   slot = ITEM_ENCHANT_SLOT.Ranged },
-    }
+    local useToggles = resolver:SupportsEnchantToggles()
+    if not useToggles and not containerConfig.itemEnchantEnable then
+        return
+    end
 
-    for _, entry in ipairs(slots) do
-        if containerConfig[entry.key] then
+    for _, entry in ipairs(self:GetItemEnchantSlots()) do
+        local enabled = containerConfig.itemEnchantEnable and containerConfig[entry.key]
+        if useToggles or enabled then
             container:AddItemEnchantment(entry.slot, {
                 hidePermanent = containerConfig.itemEnchantHidePermanent,
-                initializeFrame = function(auraButton)
-                    if auraButton.EnableMouse then auraButton:EnableMouse(false) end
-                    if auraButton.SetMouseMotionEnabled then auraButton:SetMouseMotionEnabled(false) end
-                end,
+                initializeFrame = EnchantInitializeFrame,
             })
+            if useToggles then
+                container:SetItemEnchantmentEnabled(entry.slot, enabled and true or false)
+            end
         end
     end
 end
@@ -346,9 +366,11 @@ function apply:RebuildGroups(container, displayID, display, frame)
     local getGroupKey = function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+    local shouldLoad = function(load)
         return loadConditions:ShouldLoad(load)
-    end)) do
+    end
+    local useToggles = resolver:SupportsGroupToggles()
+    for _, entry in ipairs(resolver:IterRebuildGroups(display, shouldLoad)) do
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
         )
@@ -362,6 +384,9 @@ function apply:RebuildGroups(container, displayID, display, frame)
                 initializeFrame = options.initializeFrame,
             })
         end
+        if useToggles then
+            resolver:SetGroupEnabled(container, options.groupKey, resolver:IsGroupActive(entry.group, shouldLoad))
+        end
     end
 end
 
@@ -372,14 +397,20 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
     local getGroupKey = function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+    local shouldLoad = function(load)
         return loadConditions:ShouldLoad(load)
-    end)) do
+    end
+    local useToggles = resolver:SupportsGroupToggles()
+    for _, entry in ipairs(resolver:IterRebuildGroups(display, shouldLoad)) do
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
         )
         resolver:ApplyGroupOptions(container, options)
+        if useToggles then
+            resolver:SetGroupEnabled(container, options.groupKey, resolver:IsGroupActive(entry.group, shouldLoad))
+        end
     end
+    self:SyncItemEnchantmentEnables(container, display.container)
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
     end

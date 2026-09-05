@@ -116,10 +116,43 @@ local function getRelativeAnchorCoord(relativeTo, relativePoint)
     return getAnchorCoord(left, bottom, width, height, relativePoint)
 end
 
+---Enable native layout rounding when available (12.1.5+). No-op on older clients.
+---@param region Region
+---@return boolean
+function EXUI:EnableRoundLayout(region)
+    if not region or region._exuiRoundLayout then
+        return region and region._exuiRoundLayout == true
+    end
+    if pixelPerfect.roundLayoutUnsupported then
+        return false
+    end
+
+    local ok = false
+    if PixelUtil and PixelUtil.SetRoundLayoutToNearestPixelRecursively then
+        ok = pcall(PixelUtil.SetRoundLayoutToNearestPixelRecursively, region, true)
+    elseif region.SetRoundLayoutToNearestPixel then
+        ok = pcall(region.SetRoundLayoutToNearestPixel, region, true)
+    else
+        pixelPerfect.roundLayoutUnsupported = true
+        return false
+    end
+
+    if ok then
+        region._exuiRoundLayout = true
+        return true
+    end
+    return false
+end
+
+local function usesNativeRoundLayout(region)
+    return EXUI:EnableRoundLayout(region)
+end
+
 ---Register a root frame for pixel snapping on UI scale refresh.
 ---@param frame Frame
 function EXUI:RegisterSnapFrame(frame)
     table.insert(pixelPerfect.snapFrames, frame)
+    self:EnableRoundLayout(frame)
 end
 
 ---Align a frame's screen rect to the physical pixel grid.
@@ -176,14 +209,26 @@ function EXUI:SnapFrameToPixels(frame)
 end
 
 function EXUI:SetSize(frame, width, height)
+    if usesNativeRoundLayout(frame) then
+        frame:SetSize(width, height)
+        return
+    end
     frame:SetSize(self:ScalePixel(width, frame), self:ScalePixel(height, frame))
 end
 
 function EXUI:SetHeight(frame, height)
+    if usesNativeRoundLayout(frame) then
+        frame:SetHeight(height)
+        return
+    end
     frame:SetHeight(self:ScalePixel(height, frame))
 end
 
 function EXUI:SetWidth(frame, width)
+    if usesNativeRoundLayout(frame) then
+        frame:SetWidth(width)
+        return
+    end
     frame:SetWidth(self:ScalePixel(width, frame))
 end
 
@@ -192,7 +237,15 @@ function EXUI:SetPoint(frame, point, arg2, arg3, arg4, arg5)
 end
 
 function EXUI:SetPointWithScale(frame, scale, point, arg2, arg3, arg4, arg5)
-    if (type(arg2) == 'number') then
+    if usesNativeRoundLayout(frame) then
+        if type(arg2) == 'number' then
+            frame:SetPoint(point, arg2 or 0, arg3 or 0)
+        else
+            frame:SetPoint(point, arg2, arg3, arg4 or 0, arg5 or 0)
+        end
+        return
+    end
+    if type(arg2) == 'number' then
         frame:SetPoint(point, self:ScalePixelWithScale(arg2 or 0, scale), self:ScalePixelWithScale(arg3 or 0, scale))
     else
         frame:SetPoint(point, arg2, arg3, self:ScalePixelWithScale(arg4 or 0, scale), self:ScalePixelWithScale(arg5 or 0, scale))
@@ -279,18 +332,22 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     border.Top = frame:CreateTexture(nil, layer, nil, 1)
     border.Top:SetTexture(EXUI.const.textures.frame.solidBg)
     configureBorderTexture(border.Top)
+    self:EnableRoundLayout(border.Top)
 
     border.Bottom = frame:CreateTexture(nil, layer, nil, 2)
     border.Bottom:SetTexture(EXUI.const.textures.frame.solidBg)
     configureBorderTexture(border.Bottom)
+    self:EnableRoundLayout(border.Bottom)
 
     border.Left = frame:CreateTexture(nil, layer, nil, 3)
     border.Left:SetTexture(EXUI.const.textures.frame.solidBg)
     configureBorderTexture(border.Left)
+    self:EnableRoundLayout(border.Left)
 
     border.Right = frame:CreateTexture(nil, layer, nil, 4)
     border.Right:SetTexture(EXUI.const.textures.frame.solidBg)
     configureBorderTexture(border.Right)
+    self:EnableRoundLayout(border.Right)
 
     applyBorderThickness(border, thickness, frame)
 

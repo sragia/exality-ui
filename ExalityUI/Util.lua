@@ -316,12 +316,6 @@ EXUI.utils = {
     getIlvlColor = function(ilvl)
         return EXUI.utils.getIlvlInfo(ilvl).color
     end,
-    isEmpty = function(t)
-        for _ in pairs(t) do
-            return false
-        end
-        return true
-    end,
     spairs = function(t, order)
         -- collect the keys
         local keys = {}
@@ -350,13 +344,6 @@ EXUI.utils = {
                 return keys[i], t[keys[i]]
             end
         end
-    end,
-    getKeys = function(t)
-        local keys = {}
-        for k in pairs(t) do
-            keys[#keys + 1] = k
-        end
-        return keys
     end,
     append = function(target, source)
         if not target or not source then
@@ -623,14 +610,6 @@ EXUI.utils = {
         end
 
         return data
-    end,
-    arrayIndexForvalue = function(arr, value)
-        for index, val in ipairs(arr) do
-            if val == value then
-                return index + 1
-            end
-        end
-        return nil
     end,
     findGroupForPlayer = function(playerName)
         for i = 1, GetNumGroupMembers() do

@@ -4,7 +4,7 @@ local EXUI = select(2, ...)
 ---@class EXUIAuraDisplaysDefaults
 local defaults = EXUI:GetModule('aura-displays-defaults')
 
-defaults.SCHEMA_VERSION = 4
+defaults.SCHEMA_VERSION = 5
 
 defaults.BOOL_CONDITION_FIELDS = {
     'isFromPlayerOrPlayerPet',
@@ -190,6 +190,26 @@ defaults.GROUP_VISUAL = {
     spellNameRelativePoint = 'TOP',
     spellNameXOff = 0,
     spellNameYOff = -2,
+    showCasterName = false,
+    casterShowRealm = false,
+    casterUseClassColors = true,
+    casterFont = 'DMSans',
+    casterFontSize = 10,
+    casterFontFlag = 'OUTLINE',
+    casterColor = { r = 1, g = 1, b = 1, a = 1 },
+    casterAnchorPoint = 'TOP',
+    casterRelativePoint = 'BOTTOM',
+    casterXOff = 0,
+    casterYOff = -2,
+    showPandemic = false,
+    pandemicStyle = 'Glow',
+    pandemicColor = { r = 1, g = 0.25, b = 0.15, a = 0.7 },
+    pandemicEnterFlash = false,
+    showApplicationBar = false,
+    minApplications = 2,
+    maxApplications = 10,
+    applicationBarHeight = 3,
+    applicationBarColor = { r = 1, g = 0.85, b = 0.2, a = 1 },
     showDispelBorder = true,
     showDispelIcon = false,
     dispelBorderStyle = 'Default',

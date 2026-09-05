@@ -238,8 +238,11 @@ function resolver:CanApplySpellIDFilters(unit, filterString)
         return true
     end
     filterString = filterString or ''
-    local isHarmful = filterString:find('HARMFUL') and not filterString:find('!HARMFUL')
-    local isHelpful = filterString:find('HELPFUL') and not filterString:find('!HELPFUL')
+    local contains = string.contains or function(haystack, needle)
+        return haystack:find(needle, 1, true) ~= nil
+    end
+    local isHarmful = contains(filterString, 'HARMFUL') and not contains(filterString, '!HARMFUL')
+    local isHelpful = contains(filterString, 'HELPFUL') and not contains(filterString, '!HELPFUL')
     if UnitCanAssist('player', unit) and isHarmful and not isHelpful then
         return false
     end
@@ -275,6 +278,37 @@ function resolver:CanUpdateGroupsInPlace(container)
         and container.SetAuraGroupLayout
 end
 
+function resolver:SupportsGroupToggles()
+    if self._supportsGroupToggles ~= nil then
+        return self._supportsGroupToggles
+    end
+    if C_AddOns and C_AddOns.LoadAddOn then
+        C_AddOns.LoadAddOn('Blizzard_AuraContainer')
+    end
+    self._supportsGroupToggles = CustomAuraContainerSharedMixin
+        and type(CustomAuraContainerSharedMixin.SetAuraGroupEnabled) == 'function'
+    return self._supportsGroupToggles
+end
+
+function resolver:SupportsEnchantToggles()
+    if self._supportsEnchantToggles ~= nil then
+        return self._supportsEnchantToggles
+    end
+    if C_AddOns and C_AddOns.LoadAddOn then
+        C_AddOns.LoadAddOn('Blizzard_AuraContainer')
+    end
+    self._supportsEnchantToggles = CustomAuraContainerSharedMixin
+        and type(CustomAuraContainerSharedMixin.SetItemEnchantmentEnabled) == 'function'
+    return self._supportsEnchantToggles
+end
+
+function resolver:IsGroupActive(group, shouldLoadGroup)
+    if not group or not group.conditions or not group.conditions.enable then
+        return false
+    end
+    return not shouldLoadGroup or shouldLoadGroup(group.load)
+end
+
 function resolver:ApplyGroupOptions(container, options)
     if not container or not options or not options.groupKey then
         return
@@ -297,21 +331,42 @@ function resolver:ApplyGroupOptions(container, options)
     end
 end
 
-function resolver:IterActiveGroups(display, shouldLoadGroup)
-    local active = {}
+function resolver:SetGroupEnabled(container, groupKey, enabled)
+    if container and container.SetAuraGroupEnabled then
+        container:SetAuraGroupEnabled(groupKey, enabled and true or false)
+    end
+end
+
+function resolver:IterConfiguredGroups(display)
+    local configured = {}
     for layoutIndex, groupID in ipairs(display.groupOrder or {}) do
         local group = display.groups and display.groups[groupID]
-        if group and group.conditions and group.conditions.enable then
-            if not shouldLoadGroup or shouldLoadGroup(group.load) then
-                active[#active + 1] = {
-                    layoutIndex = layoutIndex,
-                    groupID = groupID,
-                    group = group,
-                }
-            end
+        if group then
+            configured[#configured + 1] = {
+                layoutIndex = layoutIndex,
+                groupID = groupID,
+                group = group,
+            }
+        end
+    end
+    return configured
+end
+
+function resolver:IterActiveGroups(display, shouldLoadGroup)
+    local active = {}
+    for _, entry in ipairs(self:IterConfiguredGroups(display)) do
+        if self:IsGroupActive(entry.group, shouldLoadGroup) then
+            active[#active + 1] = entry
         end
     end
     return active
+end
+
+function resolver:IterRebuildGroups(display, shouldLoadGroup)
+    if self:SupportsGroupToggles() then
+        return self:IterConfiguredGroups(display)
+    end
+    return self:IterActiveGroups(display, shouldLoadGroup)
 end
 
 -- Signature of config that requires discarding/recreating the container
@@ -319,12 +374,9 @@ end
 function resolver:BuildHardSignature(displayID, display, groupKeyBuilder, shouldLoadGroup)
     local parts = { displayID or '' }
     local container = display.container or {}
-    AppendSerialized(parts, {
-        itemEnchantEnable = container.itemEnchantEnable,
+    local enchantToggles = self:SupportsEnchantToggles()
+    local enchantParts = {
         itemEnchantPlacement = container.itemEnchantPlacement,
-        itemEnchantMainHand = container.itemEnchantMainHand,
-        itemEnchantOffHand = container.itemEnchantOffHand,
-        itemEnchantRanged = container.itemEnchantRanged,
         itemEnchantHidePermanent = container.itemEnchantHidePermanent,
         itemEnchantSpacingX = container.itemEnchantSpacingX,
         itemEnchantSpacingY = container.itemEnchantSpacingY,
@@ -333,9 +385,16 @@ function resolver:BuildHardSignature(displayID, display, groupKeyBuilder, should
         itemEnchantWidth = container.itemEnchantWidth,
         itemEnchantHeight = container.itemEnchantHeight,
         processAuraOptions = container.processAuraOptions,
-    })
+    }
+    if not enchantToggles then
+        enchantParts.itemEnchantEnable = container.itemEnchantEnable
+        enchantParts.itemEnchantMainHand = container.itemEnchantMainHand
+        enchantParts.itemEnchantOffHand = container.itemEnchantOffHand
+        enchantParts.itemEnchantRanged = container.itemEnchantRanged
+    end
+    AppendSerialized(parts, enchantParts)
 
-    for _, entry in ipairs(self:IterActiveGroups(display, shouldLoadGroup)) do
+    for _, entry in ipairs(self:IterRebuildGroups(display, shouldLoadGroup)) do
         parts[#parts + 1] = '|'
         parts[#parts + 1] = groupKeyBuilder(displayID, entry.groupID)
         parts[#parts + 1] = ':'

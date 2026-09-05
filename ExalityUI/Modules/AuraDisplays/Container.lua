@@ -129,9 +129,25 @@ function containerModule:SetEditMode(frame, display, enabled)
     frame:SetSize(width, height)
     self:SyncEditorOverlay(frame)
 
+    local container = frame.AuraContainer
+    local canPreview = container
+        and container.SetEditModePreviewEnabled
+        and container.SetUseEditModeSource
+
     if enabled then
-        if frame.AuraContainer then
-            frame.AuraContainer:Hide()
+        if canPreview then
+            if frame.EditPlaceholder then
+                frame.EditPlaceholder:Hide()
+            end
+            container:Show()
+            pcall(container.SetUseEditModeSource, container, true)
+            container:SetEditModePreviewEnabled(true)
+            self:SyncEditorOverlay(frame)
+            return
+        end
+
+        if container then
+            container:Hide()
         end
         local placeholder = self:EnsureEditPlaceholder(frame, display)
         placeholder:SetSize(width, height)
@@ -148,8 +164,14 @@ function containerModule:SetEditMode(frame, display, enabled)
     if frame.EditPlaceholder then
         frame.EditPlaceholder:Hide()
     end
-    if frame.AuraContainer then
-        frame.AuraContainer:Show()
+    if container then
+        if container.SetEditModePreviewEnabled then
+            container:SetEditModePreviewEnabled(false)
+        end
+        if container.SetUseEditModeSource then
+            pcall(container.SetUseEditModeSource, container, false)
+        end
+        container:Show()
     end
 end
 
@@ -220,9 +242,11 @@ function containerModule:RebuildGroups(frame, displayID, display)
         return
     end
 
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+    local shouldLoad = function(load)
         return loadConditions:ShouldLoad(load)
-    end)) do
+    end
+    local useToggles = resolver:SupportsGroupToggles()
+    for _, entry in ipairs(resolver:IterRebuildGroups(display, shouldLoad)) do
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex
         )
@@ -236,6 +260,9 @@ function containerModule:RebuildGroups(frame, displayID, display)
                 initializeFrame = options.initializeFrame,
             })
         end
+        if useToggles then
+            resolver:SetGroupEnabled(container, options.groupKey, resolver:IsGroupActive(entry.group, shouldLoad))
+        end
     end
 end
 
@@ -245,14 +272,21 @@ function containerModule:UpdateGroupsInPlace(frame, displayID, display)
         return false
     end
 
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+    local shouldLoad = function(load)
         return loadConditions:ShouldLoad(load)
-    end)) do
+    end
+    local useToggles = resolver:SupportsGroupToggles()
+    for _, entry in ipairs(resolver:IterRebuildGroups(display, shouldLoad)) do
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex
         )
         resolver:ApplyGroupOptions(container, options)
+        if useToggles then
+            resolver:SetGroupEnabled(container, options.groupKey, resolver:IsGroupActive(entry.group, shouldLoad))
+        end
     end
+
+    self:SyncItemEnchantmentEnables(container, display.container)
 
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
@@ -268,33 +302,52 @@ function containerModule:GetHardSignature(displayID, display)
     end)
 end
 
-function containerModule:ApplyItemEnchantments(frame, containerConfig, display)
-    local container = frame.AuraContainer
-    if not container or not container.AddItemEnchantment then
+local function EnchantInitializeFrame(auraButton)
+    if auraButton.EnableMouse then auraButton:EnableMouse(false) end
+    if auraButton.SetMouseMotionEnabled then auraButton:SetMouseMotionEnabled(false) end
+end
+
+function containerModule:GetItemEnchantSlots()
+    return {
+        { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
+        { key = 'itemEnchantOffHand', slot = ITEM_ENCHANT_SLOT.OffHand },
+        { key = 'itemEnchantRanged', slot = ITEM_ENCHANT_SLOT.Ranged },
+    }
+end
+
+function containerModule:SyncItemEnchantmentEnables(container, containerConfig)
+    if not container or not container.SetItemEnchantmentEnabled or not containerConfig then
         return
     end
+    for _, entry in ipairs(self:GetItemEnchantSlots()) do
+        pcall(container.SetItemEnchantmentEnabled, container, entry.slot,
+            containerConfig.itemEnchantEnable and containerConfig[entry.key] and true or false)
+    end
+end
 
-    if not containerConfig.itemEnchantEnable then
+function containerModule:ApplyItemEnchantments(frame, containerConfig, display)
+    local container = frame.AuraContainer
+    if not container or not container.AddItemEnchantment or not containerConfig then
         return
     end
 
     layout:ApplyItemEnchantmentLayout(container, containerConfig, display)
 
-    local slots = {
-        { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
-        { key = 'itemEnchantOffHand', slot = ITEM_ENCHANT_SLOT.OffHand },
-        { key = 'itemEnchantRanged', slot = ITEM_ENCHANT_SLOT.Ranged },
-    }
+    local useToggles = resolver:SupportsEnchantToggles()
+    if not useToggles and not containerConfig.itemEnchantEnable then
+        return
+    end
 
-    for _, entry in ipairs(slots) do
-        if containerConfig[entry.key] then
+    for _, entry in ipairs(self:GetItemEnchantSlots()) do
+        local enabled = containerConfig.itemEnchantEnable and containerConfig[entry.key]
+        if useToggles or enabled then
             container:AddItemEnchantment(entry.slot, {
                 hidePermanent = containerConfig.itemEnchantHidePermanent,
-                initializeFrame = function(auraButton)
-                    if auraButton.EnableMouse then auraButton:EnableMouse(false) end
-                    if auraButton.SetMouseMotionEnabled then auraButton:SetMouseMotionEnabled(false) end
-                end,
+                initializeFrame = EnchantInitializeFrame,
             })
+            if useToggles then
+                container:SetItemEnchantmentEnabled(entry.slot, enabled and true or false)
+            end
         end
     end
 end

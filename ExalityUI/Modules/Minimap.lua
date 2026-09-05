@@ -3251,11 +3251,20 @@ minimap.HideDefaultMinimapChrome = function(self)
     if (MinimapZoneText) then
         self:SuppressBlizzFrame(MinimapZoneText)
     end
+    self:SuppressBlizzPlayerCoords()
     self:SuppressBlizzClockFrames()
     self:SuppressMinimapZoomControls()
     self:SuppressMinimapCraftingOrder()
     self:SuppressTrackingButton()
     self:SuppressBlizzDifficulty()
+end
+
+minimap.SuppressBlizzPlayerCoords = function(self)
+    local container = MinimapCluster and MinimapCluster.MinimapContainer
+    local coords = (container and container.PlayerCoords) or (MinimapCluster and MinimapCluster.PlayerCoords)
+    if (coords) then
+        self:SuppressBlizzFrame(coords)
+    end
 end
 
 minimap.SuppressMinimapCraftingOrder = function(self)

@@ -217,9 +217,11 @@ function apply:RebuildGroups(container, displayID, display, frame)
     local getGroupKey = function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+    local shouldLoad = function(load)
         return loadConditions:ShouldLoad(load)
-    end)) do
+    end
+    local useToggles = resolver:SupportsGroupToggles()
+    for _, entry in ipairs(resolver:IterRebuildGroups(display, shouldLoad)) do
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
         )
@@ -244,6 +246,9 @@ function apply:RebuildGroups(container, displayID, display, frame)
                 initializeFrame = options.initializeFrame,
             })
         end
+        if useToggles then
+            resolver:SetGroupEnabled(container, options.groupKey, resolver:IsGroupActive(entry.group, shouldLoad))
+        end
     end
 end
 
@@ -254,13 +259,18 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
     local getGroupKey = function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
+    local shouldLoad = function(load)
         return loadConditions:ShouldLoad(load)
-    end)) do
+    end
+    local useToggles = resolver:SupportsGroupToggles()
+    for _, entry in ipairs(resolver:IterRebuildGroups(display, shouldLoad)) do
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
         )
         resolver:ApplyGroupOptions(container, options)
+        if useToggles then
+            resolver:SetGroupEnabled(container, options.groupKey, resolver:IsGroupActive(entry.group, shouldLoad))
+        end
     end
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
