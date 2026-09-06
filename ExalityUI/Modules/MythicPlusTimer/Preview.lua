@@ -57,7 +57,8 @@ preview.MOCK = {
             [3] = 22 * 60,
             [4] = 28 * 60,
         },
-        forcesHistoric = 21 * 60,
+        forcesHistoric = 8 * 60 + 20,
+        forcesSplit = 21 * 60,
         sourceLevel = 8,
     },
 }

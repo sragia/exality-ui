@@ -13,6 +13,7 @@ defaults.UPGRADE_THRESHOLDS = {
 defaults.SPACING = {
     section = 4,
     bar = 2,
+    timerToForces = 5,
     bossLine = 2,
     sparkLabel = 2,
 }

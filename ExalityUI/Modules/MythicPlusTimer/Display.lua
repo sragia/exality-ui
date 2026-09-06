@@ -258,8 +258,30 @@ function display:ApplyTextLayer(section, bar, texts)
     return textLayer
 end
 
+function display:EnsureForcesTexts()
+    local frame = self.frame
+    if not frame or not frame.forcesSection then
+        return
+    end
+
+    local layer = self:EnsureTextLayer(frame.forcesSection)
+    if not frame.forcesSplit then
+        frame.forcesSplit = layer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    end
+    if not frame.forcesPercent then
+        frame.forcesPercent = layer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    end
+    if not frame.forcesDelta then
+        frame.forcesDelta = layer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    end
+    if not frame.forcesRaw then
+        frame.forcesRaw = layer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    end
+end
+
 function display:CreateMainFrame()
     if self.frame then
+        self:EnsureForcesTexts()
         return self.frame
     end
 
@@ -282,10 +304,7 @@ function display:CreateMainFrame()
 
     frame.forcesSection = CreateFrame('Frame', nil, frame)
     frame.forcesBar = self:CreateBar(frame.forcesSection, 'forces')
-    local forcesTextLayer = self:EnsureTextLayer(frame.forcesSection)
-    frame.forcesPercent = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
-    frame.forcesDelta = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
-    frame.forcesRaw = forcesTextLayer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    self:EnsureForcesTexts()
 
     frame.bossSection = CreateFrame('Frame', nil, frame)
     frame.bossSection.lines = {}
@@ -343,6 +362,8 @@ function display:ApplyLayout(db)
         return
     end
 
+    self:EnsureForcesTexts()
+
     local spacing = defaults.SPACING
     local barWidth = db.barWidth or 220
     local isRight = db.bossAlign == 'RIGHT'
@@ -378,7 +399,7 @@ function display:ApplyLayout(db)
     end
 
     local topTextHeight = self:GetTimerTopTextHeight(db)
-    stackRow(frame.timerSection, self:GetTimerSectionHeight(db), spacing.bar)
+    stackRow(frame.timerSection, self:GetTimerSectionHeight(db), spacing.timerToForces or (spacing.bar + 3))
 
     self:ApplyTextLayer(frame.timerSection, frame.timerBar, {
         frame.maxTimer,
@@ -388,6 +409,7 @@ function display:ApplyLayout(db)
         frame.milestoneTimer,
     })
     self:ApplyTextLayer(frame.forcesSection, frame.forcesBar, {
+        frame.forcesSplit,
         frame.forcesPercent,
         frame.forcesDelta,
         frame.forcesRaw,
@@ -426,6 +448,12 @@ function display:ApplyLayout(db)
     frame.forcesBar:ClearAllPoints()
     frame.forcesBar:SetPoint('TOPLEFT', frame.forcesSection, 'TOPLEFT', 0, 0)
     frame.forcesBar:SetPoint('TOPRIGHT', frame.forcesSection, 'TOPRIGHT', 0, 0)
+
+    if frame.forcesSplit then
+        frame.forcesSplit:ClearAllPoints()
+        frame.forcesSplit:SetPoint('LEFT', frame.forcesBar, 'TOPLEFT', 2, 0)
+        frame.forcesSplit:SetJustifyH('LEFT')
+    end
 
     frame.forcesPercent:ClearAllPoints()
     frame.forcesPercent:SetPoint('LEFT', frame.forcesBar, 'BOTTOMLEFT', 2, 0)
@@ -472,10 +500,17 @@ function display:ApplyStyles(db)
     self:ApplyFontString(frame.keyLevel, 'keyLevelFont', 'keyLevelFontSize', 'keyLevelFontFlag', db, db.elapsedColor)
     self:ApplyFontString(frame.milestoneTimer, 'milestoneFont', 'milestoneFontSize', 'milestoneFontFlag', db,
         db.elapsedColor)
+    self:ApplyFontString(frame.forcesSplit, 'forcesPercentFont', 'forcesPercentFontSize', 'forcesPercentFontFlag', db,
+        db.elapsedColor)
     self:ApplyFontString(frame.forcesPercent, 'forcesPercentFont', 'forcesPercentFontSize', 'forcesPercentFontFlag', db,
         db.elapsedColor)
-    self:ApplyFontString(frame.forcesDelta, 'forcesPercentFont', 'forcesPercentFontSize', 'forcesPercentFontFlag', db,
-        db.elapsedColor)
+    local deltaFont, deltaSize, deltaFlag = self:GetFont('forcesPercentFont', 'forcesPercentFontSize',
+        'forcesPercentFontFlag', db)
+    frame.forcesDelta:SetFont(deltaFont, math.max(8, deltaSize - 2), deltaFlag)
+    if db.elapsedColor then
+        frame.forcesDelta:SetTextColor(db.elapsedColor.r, db.elapsedColor.g, db.elapsedColor.b,
+            db.elapsedColor.a or 1)
+    end
     self:ApplyFontString(frame.forcesRaw, 'forcesRawFont', 'forcesRawFontSize', 'forcesRawFontFlag', db, db.elapsedColor)
 
     self:ApplyBarStyle(frame.timerBar, db.timerBar, db, self:GetTimerBarHeight(db))
@@ -588,22 +623,49 @@ local function setTextIfChanged(fontString, text)
     fontString:SetText(text)
 end
 
-function display:UpdateForcesDelta(snapshot, db)
+function display:IsForcesComplete(forces)
+    if not forces then
+        return false
+    end
+    if (forces.percent or 0) >= 100 then
+        return true
+    end
+    local total = forces.total or 0
+    return total > 0 and (forces.current or 0) >= total
+end
+
+function display:UpdateForcesSplits(snapshot, db)
     local frame = self.frame
-    if not frame or not frame.forcesDelta then
+    if not frame then
+        return
+    end
+
+    local showSplits = db.showSplitComparison ~= false
+    local comparison = snapshot.comparison
+    local totalSplit = showSplits and comparison and comparison.forcesSplit
+    local currentSplit = showSplits and comparison and comparison.forcesHistoric
+
+    if frame.forcesSplit then
+        local splitText = totalSplit and self:FormatClock(totalSplit) or ''
+        setTextIfChanged(frame.forcesSplit, splitText)
+        if not frame.forcesSplit:IsShown() then
+            frame.forcesSplit:Show()
+        end
+    end
+
+    if not frame.forcesDelta then
         return
     end
 
     local deltaText = ''
     local color = db.elapsedColor
-    local forcesPercent = snapshot.forces and snapshot.forces.percent or 0
-    if db.showSplitComparison ~= false
-        and snapshot.comparison
-        and snapshot.comparison.forcesHistoric
-        and forcesPercent > 0 then
-        local delta = (snapshot.elapsed or 0) - snapshot.comparison.forcesHistoric
+    if self:IsForcesComplete(snapshot.forces) and totalSplit then
+        local completedTime = snapshot.forces.completedTime or snapshot.elapsed or 0
+        local delta = completedTime - totalSplit
         deltaText = self:FormatDelta(delta)
         color = self:GetSplitColor(db, delta)
+    elseif currentSplit and (snapshot.forces and (snapshot.forces.percent or 0) > 0) then
+        deltaText = self:FormatClock(currentSplit)
     end
 
     setTextIfChanged(frame.forcesDelta, deltaText)
@@ -701,7 +763,7 @@ function display:RenderSnapshot(snapshot, db)
         setTextIfChanged(frame.forcesPercent, '0.00%')
         setTextIfChanged(frame.forcesRaw, self:FormatForcesCount(0, 0))
     end
-    self:UpdateForcesDelta(snapshot, db)
+    self:UpdateForcesSplits(snapshot, db)
 
     local bosses = snapshot.bosses or {}
     if frame.bossSection and frame.bossSection.lines then
@@ -730,7 +792,7 @@ function display:CalculateTotalHeight(db, bossCount, bossSectionHeight)
         height = height + db.deathFontSize + 2 + spacing.section
     end
 
-    height = height + self:GetTimerSectionHeight(db) + spacing.bar
+    height = height + self:GetTimerSectionHeight(db) + (spacing.timerToForces or (spacing.bar + 3))
     height = height + self:GetForcesSectionHeight(db) + spacing.bar
 
     if db.showBossNames and bossCount > 0 then
@@ -850,6 +912,9 @@ function display:InvalidateStyleCache()
         if self.frame.forcesDelta then
             self.frame.forcesDelta._exuiText = nil
             self.frame.forcesDelta._exuiDeltaColor = nil
+        end
+        if self.frame.forcesSplit then
+            self.frame.forcesSplit._exuiText = nil
         end
     end
 end

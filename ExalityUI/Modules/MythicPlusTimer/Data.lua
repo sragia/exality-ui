@@ -26,6 +26,10 @@ timerData.fullSnapshot = nil
 timerData.tickerSnapshot = nil
 timerData.structuralDirty = true
 timerData.isCompletedLinger = false
+timerData.lastGoodForces = nil
+timerData.lastGoodBosses = nil
+timerData.lastGoodComparison = nil
+timerData.forcesCompleteTime = nil
 
 timerData.EVENTS = {
     'PLAYER_ENTERING_WORLD',
@@ -82,6 +86,10 @@ function timerData:ResetRunState()
     self.fullSnapshot = nil
     self.tickerSnapshot = nil
     self.isCompletedLinger = false
+    self.lastGoodForces = nil
+    self.lastGoodBosses = nil
+    self.lastGoodComparison = nil
+    self.forcesCompleteTime = nil
     history:ClearSession()
     self:InvalidateStructuralCache()
 end
@@ -94,6 +102,7 @@ local function copyForces(forces)
         percent = forces.percent,
         current = forces.current,
         total = forces.total,
+        completedTime = forces.completedTime,
     }
 end
 
@@ -126,29 +135,104 @@ local function copyComparison(comparison)
     return {
         bosses = bosses,
         forcesHistoric = comparison.forcesHistoric,
+        forcesSplit = comparison.forcesSplit,
         sourceLevel = comparison.sourceLevel,
     }
+end
+
+local function countKillTimes(bosses)
+    local count = 0
+    if not bosses then
+        return count
+    end
+    for _, boss in ipairs(bosses) do
+        if boss.killTime and boss.killTime > 0 then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+local function forcesCurrent(forces)
+    return forces and forces.current or 0
+end
+
+function timerData:CaptureLastGoodObjectives()
+    local forces = self.cachedForces
+    if forces and forcesCurrent(forces) > 0 then
+        if forcesCurrent(forces) >= forcesCurrent(self.lastGoodForces) then
+            self.lastGoodForces = copyForces(forces)
+        end
+    end
+
+    local killTimes = countKillTimes(self.bossList)
+    if self.bossList and #self.bossList > 0 and killTimes >= countKillTimes(self.lastGoodBosses) then
+        if killTimes > 0 or not self.lastGoodBosses then
+            self.lastGoodBosses = copyBosses(self.bossList)
+        end
+    end
+
+    if self.fullSnapshot and self.fullSnapshot.comparison then
+        self.lastGoodComparison = copyComparison(self.fullSnapshot.comparison)
+    end
+end
+
+function timerData:GetBestForces()
+    local live = self.cachedForces
+    local saved = self.lastGoodForces
+    if forcesCurrent(live) >= forcesCurrent(saved) and forcesCurrent(live) > 0 then
+        return live
+    end
+    return saved or live
+end
+
+function timerData:IsForcesComplete(forces)
+    if not forces then
+        return false
+    end
+    if (forces.percent or 0) >= 100 then
+        return true
+    end
+    local total = forces.total or 0
+    return total > 0 and (forces.current or 0) >= total
+end
+
+function timerData:GetBestBosses()
+    local live = self.bossList
+    local saved = self.lastGoodBosses
+    if countKillTimes(live) >= countKillTimes(saved) and live and #live > 0 then
+        if countKillTimes(live) > 0 or not saved then
+            return live
+        end
+    end
+    return saved or live
 end
 
 function timerData:FreezeCompletedRun()
     self:FlushHistory()
 
-    local snapshot = self.fullSnapshot
-    if snapshot then
-        local elapsed = self:GetCompletionElapsed(snapshot.elapsed)
-        snapshot.elapsed = elapsed
-        if snapshot.timeLimit and snapshot.timeLimit > 0 then
-            snapshot.elapsedPercent = math.min(1, elapsed / snapshot.timeLimit)
-        end
-        snapshot.milestoneIndex = nil
-        snapshot.milestoneRemaining = nil
-        snapshot.forces = copyForces(snapshot.forces or self.cachedForces)
-        snapshot.bosses = copyBosses(snapshot.bosses or self.bossList)
-        snapshot.comparison = copyComparison(snapshot.comparison)
-        self.fullSnapshot = snapshot
-        self.tickerSnapshot = nil
+    local snapshot = self.fullSnapshot or {}
+    local elapsed = self:GetCompletionElapsed(snapshot.elapsed or self:GetElapsedSeconds())
+    snapshot.elapsed = elapsed
+    snapshot.timeLimit = snapshot.timeLimit or self.cachedTimeLimit
+    if snapshot.timeLimit and snapshot.timeLimit > 0 then
+        snapshot.elapsedPercent = math.min(1, elapsed / snapshot.timeLimit)
     end
-
+    snapshot.mapID = snapshot.mapID or self.cachedMapID
+    snapshot.keyLevel = snapshot.keyLevel or self.cachedKeyLevel
+    snapshot.levelText = snapshot.levelText or self.cachedLevelText
+    snapshot.milestoneIndex = nil
+    snapshot.milestoneRemaining = nil
+    snapshot.forces = copyForces(self.lastGoodForces or self:GetBestForces() or snapshot.forces)
+    snapshot.bosses = copyBosses(self.lastGoodBosses or self:GetBestBosses() or snapshot.bosses)
+    snapshot.comparison = copyComparison(self.lastGoodComparison or snapshot.comparison)
+    if snapshot.forces and self:IsForcesComplete(snapshot.forces) then
+        snapshot.forces.completedTime = self.forcesCompleteTime
+            or snapshot.forces.completedTime
+            or elapsed
+    end
+    self.fullSnapshot = snapshot
+    self.tickerSnapshot = nil
     self.isCompletedLinger = true
     history:ClearSession()
 end
@@ -182,7 +266,13 @@ function timerData:FlushHistory()
     end
 
     local elapsed = self:GetCompletionElapsed(self:GetElapsedSeconds())
-    history:RecordRunProgress(self.cachedMapID, self.cachedKeyLevel, self.bossList, self.cachedForces, elapsed)
+    history:RecordRunProgress(
+        self.cachedMapID,
+        self.cachedKeyLevel,
+        self:GetBestBosses(),
+        self:GetBestForces(),
+        elapsed
+    )
 end
 
 function timerData:GetScenarioCriteriaCount()
@@ -260,29 +350,60 @@ function timerData:GetBossKillTime(criteria)
 end
 
 function timerData:BuildBossList()
-    wipe(self.bossList)
-
     if not self:IsActive() or not C_ScenarioInfo or not C_ScenarioInfo.GetCriteriaInfo then
         return
     end
 
+    local previousByOrder = {}
+    for _, boss in ipairs(self.bossList) do
+        previousByOrder[boss.order] = boss
+    end
+    if self.lastGoodBosses then
+        for _, boss in ipairs(self.lastGoodBosses) do
+            if not previousByOrder[boss.order] then
+                previousByOrder[boss.order] = boss
+            end
+        end
+    end
+
+    local newList = {}
     local bossCount = self:GetBossCriteriaCount()
     for index = 1, bossCount do
         local criteria = C_ScenarioInfo.GetCriteriaInfo(index)
         if criteria then
             local name = self:ParseBossNameFromCriteria(criteria.description)
-            self.bossList[#self.bossList + 1] = {
+            local killTime = self:GetBossKillTime(criteria)
+            local prev = previousByOrder[index]
+            if (not killTime or killTime <= 0) and prev and prev.killTime and prev.killTime > 0 then
+                killTime = prev.killTime
+            end
+            newList[#newList + 1] = {
                 criteriaIndex = index,
-                name = name or ('Boss ' .. index),
-                killTime = self:GetBossKillTime(criteria),
+                name = name or (prev and prev.name) or ('Boss ' .. index),
+                killTime = killTime,
                 order = index,
             }
         end
     end
 
+    if #newList == 0 then
+        return
+    end
+
+    if countKillTimes(newList) < countKillTimes(self.bossList)
+        or countKillTimes(newList) < countKillTimes(self.lastGoodBosses) then
+        return
+    end
+
+    wipe(self.bossList)
+    for index, boss in ipairs(newList) do
+        self.bossList[index] = boss
+    end
+
     table.sort(self.bossList, function(a, b)
         return a.order < b.order
     end)
+    self:CaptureLastGoodObjectives()
 end
 
 function timerData:ScheduleBossListRetry()
@@ -332,26 +453,26 @@ function timerData:ParseForcesCount(criteria)
 end
 
 function timerData:GetForcesInfo()
+    local function keepExisting()
+        return self.cachedForces or self.lastGoodForces
+    end
+
     if not C_Scenario or not C_Scenario.IsInScenario or not C_Scenario.IsInScenario() then
-        self.cachedForces = nil
-        return nil
+        return keepExisting()
     end
 
     if not C_ScenarioInfo or not C_ScenarioInfo.GetCriteriaInfo then
-        self.cachedForces = nil
-        return nil
+        return keepExisting()
     end
 
     local criteriaIndex = self:GetForcesCriteriaIndex()
     if not criteriaIndex then
-        self.cachedForces = nil
-        return nil
+        return keepExisting()
     end
 
     local criteria = C_ScenarioInfo.GetCriteriaInfo(criteriaIndex)
     if not criteria then
-        self.cachedForces = nil
-        return nil
+        return keepExisting()
     end
 
     local current, total = self:ParseForcesCount(criteria)
@@ -366,14 +487,30 @@ function timerData:GetForcesInfo()
         percent = weightedProgress or 0
     end
 
+    current = math.floor(current + 0.5)
+    local existing = keepExisting()
+    if current <= 0 and forcesCurrent(existing) > 0 then
+        return existing
+    end
+    if forcesCurrent(existing) > current then
+        return existing
+    end
+    if total <= 0 and existing and (existing.total or 0) > 0 then
+        return existing
+    end
+    if total <= 0 and percent <= 0 then
+        return existing
+    end
+
     local forces = self.cachedForces
     if not forces then
         forces = {}
         self.cachedForces = forces
     end
     forces.percent = percent
-    forces.current = math.floor(current + 0.5)
+    forces.current = current
     forces.total = total
+    self:CaptureLastGoodObjectives()
     return forces
 end
 
@@ -490,11 +627,16 @@ function timerData:GetTimerSnapshot()
     snapshot.elapsedPercent = math.min(1, elapsed / timeLimit)
     snapshot.milestoneIndex = milestoneIndex
     snapshot.milestoneRemaining = milestoneRemaining
-    snapshot.forces = self.cachedForces or self:GetForcesInfo()
-    snapshot.bosses = self.bossList
+    snapshot.forces = self:GetBestForces() or self:GetForcesInfo()
+    snapshot.bosses = self:GetBestBosses()
+    if snapshot.forces and self:IsForcesComplete(snapshot.forces) then
+        self.forcesCompleteTime = self.forcesCompleteTime or snapshot.forces.completedTime or elapsed
+        snapshot.forces.completedTime = self.forcesCompleteTime
+    end
 
     history:AttachComparison(snapshot, mythicPlusTimer.Data and mythicPlusTimer.Data:GetDB())
     self:RecordCurrentProgress(elapsed)
+    self:CaptureLastGoodObjectives()
 
     return snapshot
 end

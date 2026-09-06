@@ -243,6 +243,7 @@ function history:AttachComparison(snapshot, db)
     snapshot.comparison = {
         bosses = record.bosses,
         forcesHistoric = self:GetForcesHistoricTime(record, snapshot.forces and snapshot.forces.percent),
+        forcesSplit = self:GetForcesHistoricTime(record, 100),
         sourceLevel = sourceLevel,
     }
 end
