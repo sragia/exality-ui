@@ -17,6 +17,9 @@ keybind.buttons = {}
 keybind.hooked = false
 keybind.pendingReassign = false
 keybind.inHousing = false
+keybind.usingCustomModal = false
+keybind.reopenOptions = false
+keybind.engineHooked = false
 
 local function getBindingKeys(commandName)
     local keys = {}
@@ -242,14 +245,164 @@ keybind.HookBindingEvents = function(self)
     end
 end
 
+keybind.SetEngineMouseEnabled = function(self, enabled)
+    local frame = QuickKeybindFrame
+    if not frame then
+        return
+    end
+
+    local function apply(target)
+        if target.EnableMouse then
+            target:EnableMouse(enabled)
+        end
+        if target.EnableMouseWheel then
+            target:EnableMouseWheel(enabled)
+        end
+        for _, child in ipairs({ target:GetChildren() }) do
+            apply(child)
+        end
+    end
+
+    apply(frame)
+end
+
+keybind.HideEngineVisuals = function(self)
+    local frame = QuickKeybindFrame
+    if not frame then
+        return
+    end
+    if frame._exuiAlpha == nil then
+        frame._exuiAlpha = frame:GetAlpha()
+    end
+    frame:SetAlpha(0)
+    self:SetEngineMouseEnabled(false)
+end
+
+keybind.RestoreEngineVisuals = function(self)
+    local frame = QuickKeybindFrame
+    if not frame then
+        return
+    end
+    frame:SetAlpha(frame._exuiAlpha or 1)
+    frame._exuiAlpha = nil
+    self:SetEngineMouseEnabled(true)
+end
+
+keybind.HideEngine = function(self)
+    if not QuickKeybindFrame then
+        return
+    end
+    if HideUIPanel then
+        HideUIPanel(QuickKeybindFrame)
+    end
+    if QuickKeybindFrame:IsShown() then
+        QuickKeybindFrame:Hide()
+    end
+end
+
+keybind.OnEngineHide = function(self)
+    if EventRegistry then
+        EventRegistry:TriggerEvent('QuickKeybindFrame.QuickKeybindModeDisabled')
+    end
+
+    if ActionButtonUtil then
+        if ActionButtonUtil.HideAllActionButtonGrids then
+            ActionButtonUtil.HideAllActionButtonGrids()
+        end
+        if ActionButtonUtil.HideAllQuickKeybindButtonHighlights then
+            ActionButtonUtil.HideAllQuickKeybindButtonHighlights()
+        end
+    end
+    if ExtraActionBar_CancelForceShow then
+        ExtraActionBar_CancelForceShow()
+    end
+
+    self:RestoreEngineVisuals()
+
+    local reopen = self.reopenOptions
+    self.usingCustomModal = false
+    self.reopenOptions = false
+    self:HideModal()
+
+    if reopen then
+        EXUI:GetModule('options-main'):Show()
+    end
+end
+
+keybind.HookEngineFrame = function(self)
+    if self.engineHooked or not QuickKeybindFrame then
+        return
+    end
+    self.engineHooked = true
+
+    QuickKeybindFrame:HookScript('OnShow', function()
+        if keybind.usingCustomModal then
+            keybind:HideEngineVisuals()
+        end
+    end)
+
+    self.originalEngineOnHide = QuickKeybindFrame.OnHide
+        or (QuickKeybindFrameMixin and QuickKeybindFrameMixin.OnHide)
+    QuickKeybindFrame:SetScript('OnHide', function(frame)
+        if keybind.usingCustomModal then
+            keybind:OnEngineHide()
+        elseif keybind.originalEngineOnHide then
+            keybind.originalEngineOnHide(frame)
+        end
+    end)
+end
+
+keybind.CommitSession = function(self)
+    if KeybindListener then
+        KeybindListener:Commit()
+    end
+    self:HideEngine()
+end
+
+keybind.CancelSession = function(self)
+    if QuickKeybindFrame and QuickKeybindFrame.CancelBinding then
+        QuickKeybindFrame:CancelBinding()
+        if QuickKeybindFrame:IsShown() then
+            self:HideEngine()
+        end
+        return
+    end
+    if KeybindListener then
+        LoadBindings(GetCurrentBindingSet())
+        KeybindListener:StopListening()
+    end
+    self:HideEngine()
+end
+
 keybind.EnterQuickKeybindMode = function(self)
+    if InCombatLockdown() then
+        EXUI.utils.printOut('You cannot enter keybind mode during combat.')
+        return
+    end
+
     self:HookActionButtonUtil()
     self:HookBindingEvents()
-    if KeybindFrames_ToggleQuickKeybindMode then
-        KeybindFrames_ToggleQuickKeybindMode()
-    elseif QuickKeybindFrame then
-        QuickKeybindFrame:Show()
+    self:HookEngineFrame()
+
+    if not QuickKeybindFrame then
+        return
     end
+
+    if self.usingCustomModal and QuickKeybindFrame:IsShown() then
+        self:ShowModal()
+        return
+    end
+
+    local optionsMain = EXUI:GetModule('options-main')
+    self.reopenOptions = optionsMain.window and optionsMain.window:IsShown() or false
+    if self.reopenOptions then
+        optionsMain.window:HideWindow()
+    end
+
+    self.usingCustomModal = true
+    QuickKeybindFrame:Show()
+    self:HideEngineVisuals()
+    self:ShowModal()
 end
 
 keybind.Init = function(self)
@@ -262,6 +415,9 @@ keybind.Init = function(self)
 end
 
 keybind.Clear = function(self)
+    if self.usingCustomModal then
+        self:CancelSession()
+    end
     self:ClearOverrides()
     wipe(self.buttons)
     self.pendingReassign = false

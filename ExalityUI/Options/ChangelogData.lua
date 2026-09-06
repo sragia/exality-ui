@@ -6,6 +6,7 @@ EXUI.changelog = [[
 - [Action Bars] Allow to ping action bars.
 - [Bags] Add keystone level text to the item.
 - [Mythic+ Timer] Add historic data and keep timer visible until you leave key.
+- [Action Bars] Add our own keybind mode dialog instead of using Blizzard one.
 
 # |cffdb49000.9.4|r
 - [Minimap] Instance difficulty is now overlay text instead of a minimap button.

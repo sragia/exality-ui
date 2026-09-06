@@ -14,6 +14,7 @@
     <Script file="Bar.lua"/>
     <Script file="BlizzardSuppress.lua"/>
     <Script file="StateController.lua"/>
+    <Script file="KeybindModal.lua"/>
     <Script file="Keybind.lua"/>
     <Script file="MicroMenu.lua"/>
     <Script file="ExtraAbilities.lua"/>
