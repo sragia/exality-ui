@@ -24,6 +24,7 @@ local icons = {
     ['Custom Windows'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/custom-windows.png]],
     ['Bags'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/custom-windows.png]],
     ['Aura Displays'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/aura-displays.png]],
+    ['Damage Meters'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/raid-tools.png]],
     ['Nameplates'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/nameplates.png]],
 }
 

@@ -64,6 +64,7 @@ Modules/UnitFrames/Auras/Auras.xml
 Modules/XPBar.lua
 Modules/ObjectiveTracker/ObjectiveTracker.xml
 Modules/MythicPlusTimer/MythicPlusTimer.xml
+Modules/DamageMeters/DamageMeters.xml
 Modules/ActionBars/ActionBars.xml
 Modules/TweaksAndBugfixes.lua
 

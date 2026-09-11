@@ -98,6 +98,7 @@ EXUI.const = {
                 eye = [[Interface/Addons/ExalityUI/Assets/Images/Icons/eye.png]],
                 eyeOff = [[Interface/Addons/ExalityUI/Assets/Images/Icons/eye-off.png]],
                 auraTypeBorder = [[Interface/Addons/ExalityUI/Assets/Images/Icons/aura-type-border.png]],
+                alignRight = [[Interface/Addons/ExalityUI/Assets/Images/Icons/align-right.png]],
             },
             previewIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/preview_icon.png]],
         },

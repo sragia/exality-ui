@@ -1,0 +1,12 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Views.lua"/>
+	<Script file="Defaults.lua"/>
+	<Script file="Data.lua"/>
+	<Script file="Bars.lua"/>
+	<Script file="SpellTooltip.lua"/>
+	<Script file="Window.lua"/>
+	<Script file="Options/GeneralOptions.lua"/>
+	<Script file="Options/StyleOptions.lua"/>
+	<Script file="Options/TextOptions.lua"/>
+	<Script file="DamageMeters.lua"/>
+</Ui>
