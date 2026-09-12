@@ -58,9 +58,56 @@ local function clearDim(frame)
     frame:SetAlpha(1)
 end
 
+local function hideHealthOverlay(frame)
+    local bar = frame and frame.Health
+    local tex = bar and bar._exuiHoverLight
+    if tex then
+        tex:Hide()
+    end
+end
+
+local function ensureHealthOverlay(frame)
+    local bar = frame and frame.Health
+    if not bar then
+        return nil
+    end
+    if bar._exuiHoverLight then
+        return bar._exuiHoverLight
+    end
+    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    if not fill then
+        return nil
+    end
+    local tex = bar:CreateTexture(nil, 'ARTWORK', nil, 7)
+    tex:SetAllPoints(fill)
+    tex:SetColorTexture(1, 1, 1, 1)
+    tex:Hide()
+    bar._exuiHoverLight = tex
+    return tex
+end
+
+local function applyHealthOverlay(frame, show)
+    if not show then
+        hideHealthOverlay(frame)
+        return
+    end
+    local tex = ensureHealthOverlay(frame)
+    if not tex then
+        return
+    end
+    local amount = frame.db and frame.db.mouseoverLightenAmount or 0.15
+    if amount <= 0 then
+        tex:Hide()
+        return
+    end
+    tex:SetAlpha(amount)
+    tex:Show()
+end
+
 local function resetChrome(frame)
     stopGlow(frame)
     clearDim(frame)
+    hideHealthOverlay(frame)
     EXUI:GetModule('np-core'):ApplyHealthChrome(frame)
 end
 
@@ -72,14 +119,6 @@ end
 
 local function isCurrentTargetUnit(unit)
     return unit and UnitExists('target') and UnitIsUnit(unit, 'target')
-end
-
-local function refreshHealthColor(frame, unit)
-    local bar = frame.Health
-    if not bar then
-        return
-    end
-    EXUI:GetModule('np-element-health').PostUpdateColor(bar, unit)
 end
 
 local function plateFrameForUnit(unit)
@@ -185,6 +224,7 @@ highlight.ForgetHover = function(self, frame)
         self.prevTargetFrame = nil
     end
     if frame then
+        hideHealthOverlay(frame)
         frame._exuiHL = nil
         frame._exuiLighten = nil
     end
@@ -388,28 +428,6 @@ highlight.ShouldLightenHealth = function(self, frame)
     return isHoverVisual(self, frame, unit)
 end
 
-highlight.ApplyHealthLighten = function(self, frame, bar)
-    bar = bar or (frame and frame.Health)
-    if not bar then
-        return
-    end
-    if frame._exuiLighten ~= true
-        and self.hoverFrame ~= frame
-        and self.plateCursorFrame ~= frame
-        and self.stickyHoverFrame ~= frame then
-        return
-    end
-    if not self:ShouldLightenHealth(frame) then
-        return
-    end
-    local amount = frame.db.mouseoverLightenAmount or 0.25
-    if amount <= 0 then
-        return
-    end
-    local r, g, b, a = bar:GetStatusBarColor()
-    bar:SetStatusBarColor(r + (1 - r) * amount, g + (1 - g) * amount, b + (1 - b) * amount, a)
-end
-
 highlight.Update = function(self, frame, force)
     local db = frame.db
     local npCore = EXUI:GetModule('np-core')
@@ -422,6 +440,8 @@ highlight.Update = function(self, frame, force)
         end
         if force or frame._exuiHL then
             resetChrome(frame)
+        else
+            hideHealthOverlay(frame)
         end
         frame._exuiHL = nil
         frame._exuiLighten = nil
@@ -435,7 +455,6 @@ highlight.Update = function(self, frame, force)
     if not force and frame._exuiHL == state and prevLighten == lighten then
         return
     end
-    local lightenChanged = prevLighten ~= lighten
     frame._exuiHL = state
     frame._exuiLighten = lighten
 
@@ -473,7 +492,5 @@ highlight.Update = function(self, frame, force)
         end
     end
 
-    if lightenChanged then
-        refreshHealthColor(frame, unit)
-    end
+    applyHealthOverlay(frame, lighten)
 end

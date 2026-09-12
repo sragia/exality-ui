@@ -312,7 +312,6 @@ health.PostUpdateColor = function(self, unit)
     end
 
     applyBackdrop(self, db)
-    EXUI:GetModule('np-element-target-highlight'):ApplyHealthLighten(self.__owner, self)
 end
 
 health.Update = function(self, frame)

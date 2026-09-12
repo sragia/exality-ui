@@ -603,8 +603,6 @@ bankWindow.Create = function(self)
     scroll:SetPoint('TOPLEFT', 0, -(PAD - CLIP_INSET))
     scroll:SetPoint('BOTTOMRIGHT', -(PAD - CLIP_INSET), PAD - CLIP_INSET)
     self.content = scroll.child
-    self.content:EnableMouseWheel(true)
-    self.content:SetScript('OnMouseWheel', scroll:GetScript('OnMouseWheel'))
 
     self:CreateFooter(footer)
     views:CreateHeaders(self.content, POOL)
