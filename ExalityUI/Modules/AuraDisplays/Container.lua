@@ -291,16 +291,7 @@ end
 
 function containerModule:Refresh(frame, displayID, display)
     if not self:IsAvailable() then
-        frame.unavailableText = frame.unavailableText or frame:CreateFontString(nil, 'OVERLAY')
-        frame.unavailableText:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
-        frame.unavailableText:SetPoint('CENTER')
-        frame.unavailableText:SetText('Aura Containers require WoW 12.1')
-        frame.unavailableText:Show()
         return
-    end
-
-    if frame.unavailableText then
-        frame.unavailableText:Hide()
     end
 
     local hardSig = self:GetHardSignature(displayID, display)

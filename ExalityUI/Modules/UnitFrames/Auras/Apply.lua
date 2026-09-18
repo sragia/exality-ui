@@ -50,9 +50,6 @@ function apply:Init()
     if self.eventHandler then
         return
     end
-    if not ufAuras:IsSupported() then
-        return
-    end
     self.eventHandler = CreateFrame('Frame')
     self.eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
     self.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
@@ -257,9 +254,6 @@ function apply:CountPooledContainers(hardSig)
 end
 
 function apply:GetRequiredAuraContainerCount(unitType)
-    if not ufAuras:IsSupported() then
-        return 0
-    end
     local num = ufAuras:GetMaxDisplaysForUnitType(unitType)
     local db = ufCore:GetDBForUnit(unitType)
     if db and db.dispelOverlayEnable then
@@ -269,9 +263,6 @@ function apply:GetRequiredAuraContainerCount(unitType)
 end
 
 function apply:EnsureHeaderContainers(unitType)
-    if not ufAuras:IsSupported() then
-        return
-    end
     local headers = ufCore.headers
     if not headers then return end
 
@@ -437,7 +428,7 @@ function apply:GetHardSignature(displayID, display)
 end
 
 function apply:CreateContainer(frame, display)
-    if not ufAuras:IsSupported() or not frame.CreateAuras then
+    if not frame.CreateAuras then
         return nil
     end
 
@@ -500,7 +491,7 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
 end
 
 function apply:PrewarmPool()
-    if InCombatLockdown() or not ufAuras:IsSupported() then
+    if InCombatLockdown() then
         return
     end
 
@@ -580,7 +571,7 @@ function apply:SuppressLiveAurasOnFakeFrame(frame)
 end
 
 function apply:UpdateFrame(frame)
-    if not frame or not ufAuras:IsSupported() then
+    if not frame then
         return
     end
 
@@ -665,9 +656,6 @@ function apply:UpdateFrame(frame)
 end
 
 function apply:RefreshDisplay(displayID)
-    if not ufAuras:IsSupported() then
-        return
-    end
     self:InvalidateSignatures()
     local display = ufAuras:GetDisplay(displayID)
     if not display then
@@ -683,9 +671,6 @@ function apply:RefreshDisplay(displayID)
 end
 
 function apply:RefreshAll()
-    if not ufAuras:IsSupported() then
-        return
-    end
     self:InvalidateSignatures()
     self:PurgeYard()
     for _, unitType in ipairs(defaults.UNIT_ORDER) do

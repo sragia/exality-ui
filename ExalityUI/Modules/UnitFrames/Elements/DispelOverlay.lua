@@ -377,7 +377,7 @@ end
 dispelOverlay.Update = function(self, frame)
     local db = frame.db
     local preview = frame.DispelOverlay
-    if not preview or not ufAuras:IsSupported() then
+    if not preview then
         return
     end
 

@@ -34,9 +34,6 @@ function apply:Init()
     if self.eventHandler then
         return
     end
-    if not npAuras:IsSupported() then
-        return
-    end
     self.eventHandler = CreateFrame('Frame')
     self.eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
     self.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
@@ -187,7 +184,7 @@ function apply:ClearFrame(frame)
 end
 
 function apply:BindFrame(frame)
-    if not frame or not npAuras:IsSupported() then
+    if not frame then
         return
     end
     if frame.isPreview or frame.isFriendly then
@@ -327,9 +324,6 @@ function apply:GetRowWidth(frame, display)
 end
 
 function apply:CreateContainer(frame, display, parent)
-    if not npAuras:IsSupported() then
-        return nil
-    end
     local adContainer = EXUI:GetModule('aura-displays-container')
     if adContainer and adContainer.IsAvailable and not adContainer:IsAvailable() then
         return nil
@@ -395,7 +389,7 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
 end
 
 function apply:PrewarmPool()
-    if InCombatLockdown() or not npAuras:IsSupported() then
+    if InCombatLockdown() then
         return
     end
 
@@ -460,7 +454,7 @@ function apply:ConfigureContainer(frame, displayID, display, container)
 end
 
 function apply:UpdateFrame(frame)
-    if not frame or not npAuras:IsSupported() then
+    if not frame then
         return
     end
     if frame.isPreview or frame.isFriendly then

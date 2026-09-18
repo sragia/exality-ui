@@ -7,9 +7,6 @@ local EXFrames = EXUI.EXFrames
 ---@class EXUIUnitFramesCore
 local ufCore = EXUI:GetModule('uf-core')
 
----@class EXUIUnitFramesAuras
-local ufAuras = EXUI:GetModule('uf-auras')
-
 ---@class EXUIUnitFramesOptionsCore
 local core = EXUI:GetModule('uf-options-core')
 
@@ -221,15 +218,11 @@ core.OnTabChange = function(self, id)
     local _, option = FindInTableIf(self.options, function(option) return option.id == id end)
     if (option) then
         local items = {}
-        local aurasSupported = ufAuras:IsSupported()
         for _, item in ipairs(option.menu) do
-            -- Aura containers / dispel overlay require 12.1+ (build 120100).
-            if aurasSupported or (item.id ~= 'auras' and item.id ~= 'dispeloverlay') then
-                table.insert(items, {
-                    ID = item.id,
-                    label = item.name
-                })
-            end
+            table.insert(items, {
+                ID = item.id,
+                label = item.name
+            })
         end
 
         self.tabOptions:AddItems(items)

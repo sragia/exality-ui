@@ -140,7 +140,7 @@ end
 
 function preview:RefreshOnPlate(frame)
     self:ClearPreviewStates()
-    if not frame or not frame:IsShown() or not npAuras:IsSupported() then
+    if not frame or not frame:IsShown() then
         return
     end
 
@@ -153,9 +153,6 @@ end
 
 function preview:GetHostExtra()
     local extraW, extraH = 0, 0
-    if not npAuras:IsSupported() then
-        return extraW, extraH
-    end
 
     for displayID, display in pairs(npAuras:GetDisplays()) do
         if self:ShouldPreviewDisplay(displayID, display) then

@@ -16,19 +16,10 @@ local loadConditions = EXUI:GetModule('aura-displays-load-conditions')
 ---@class EXUINameplatesAuras
 local npAuras = EXUI:GetModule('np-auras')
 
-local MIN_SUPPORTED_BUILD = 120100
-
 npAuras.currGroupID = nil
 npAuras.skipScreenPosition = true
 
-function npAuras:IsSupported()
-    return select(4, GetBuildInfo()) >= MIN_SUPPORTED_BUILD
-end
-
 function npAuras:Init()
-    if not self:IsSupported() then
-        return
-    end
     self:EnsureDB()
     EXUI:GetModule('np-auras-preview'):Init()
 end

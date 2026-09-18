@@ -1,9 +1,6 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
----@class EXUINameplatesAuras
-local npAuras = EXUI:GetModule('np-auras')
-
 ---@class EXUINameplatesOptionsAuras
 local auras = EXUI:GetModule('np-options-auras')
 
@@ -13,15 +10,6 @@ function auras:GetMenu()
             id = 'displays',
             name = 'Displays',
             options = function()
-                if not npAuras:IsSupported() then
-                    return {
-                        {
-                            type = 'description',
-                            label = 'Aura containers require WoW 12.1 or newer.',
-                            width = 100,
-                        },
-                    }
-                end
                 return {
                     {
                         type = 'button',
