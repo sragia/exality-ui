@@ -73,6 +73,18 @@ function apply:GetPoolHolder()
     return self.poolHolder
 end
 
+function apply:DestroyContainer(container)
+    if not container then
+        return
+    end
+    if container.SetEnabled then
+        container:SetEnabled(false)
+    end
+    container:Hide()
+    container:ClearAllPoints()
+    container:SetParent(nil)
+end
+
 function apply:ReturnContainerToPool(container)
     if not container then
         return
@@ -86,15 +98,47 @@ function apply:ReturnContainerToPool(container)
     self.containerGraveyard[#self.containerGraveyard + 1] = container
 end
 
+function apply:ReleaseContainer(container, hardSig)
+    if not container then
+        return
+    end
+    if hardSig and container._exuiHardSig == hardSig then
+        self:ReturnContainerToPool(container)
+        return
+    end
+    self:DestroyContainer(container)
+end
+
+function apply:PurgeYard(displayID)
+    local yard = self.containerGraveyard
+    if #yard == 0 then
+        return
+    end
+    if not displayID then
+        for i = 1, #yard do
+            self:DestroyContainer(yard[i])
+        end
+        wipe(yard)
+        return
+    end
+    local kept = {}
+    for i = 1, #yard do
+        local container = yard[i]
+        if container._exuiDisplayID ~= displayID then
+            kept[#kept + 1] = container
+        else
+            self:DestroyContainer(container)
+        end
+    end
+    self.containerGraveyard = kept
+end
+
 function apply:PopPooledContainer(hardSig)
     local yard = self.containerGraveyard
     for i = #yard, 1, -1 do
         if yard[i]._exuiHardSig == hardSig then
             return table.remove(yard, i)
         end
-    end
-    if #yard > 0 then
-        return table.remove(yard)
     end
 end
 
@@ -214,37 +258,18 @@ function apply:ApplyProcessingPolicy(container, display)
 end
 
 function apply:RebuildGroups(container, displayID, display, frame)
-    local getGroupKey = function(id, groupID)
-        return defaults:GetGroupKey(id, groupID)
-    end
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
-        return loadConditions:ShouldLoad(load)
-    end)) do
-        local options = resolver:ResolveGroupOptions(
-            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
-        )
-        if container.HasAuraGroup and container:HasAuraGroup(options.groupKey) then
-            resolver:ApplyGroupOptions(container, options)
-            if options.initializeFrame and container.GetAuraGroupFrameCount and container.GetAuraGroupFrame then
-                local count = container:GetAuraGroupFrameCount(options.groupKey) or 0
-                for i = 1, count do
-                    local auraButton = container:GetAuraGroupFrame(options.groupKey, i)
-                    if auraButton then
-                        options.initializeFrame(auraButton)
-                    end
-                end
-            end
-        elseif container.AddAuraGroup then
-            container:AddAuraGroup(options.groupKey, options.filterString, {
-                maxFrameCount = options.maxFrameCount,
-                sortMethod = options.sortMethod,
-                sortDirection = options.sortDirection,
-                candidateFilters = options.candidateFilters,
-                layout = options.layout,
-                initializeFrame = options.initializeFrame,
-            })
+    resolver:RebuildGroups(
+        container,
+        displayID,
+        display,
+        buttonStyle,
+        function(id, groupID)
+            return defaults:GetGroupKey(id, groupID)
+        end,
+        function(load)
+            return loadConditions:ShouldLoad(load)
         end
-    end
+    )
 end
 
 function apply:UpdateGroupsInPlace(container, displayID, display)
@@ -335,6 +360,7 @@ end
 
 function apply:PrepareContainer(container, displayID, display, hardSig, frame)
     container._exuiHardSig = hardSig
+    container._exuiDisplayID = displayID
     if container.SetFlowLayoutMaximumLineSize then
         container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
     end
@@ -359,6 +385,9 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
         container:SetEnabled(display.enable ~= false)
     end
     self:ApplyProcessingPolicy(container, display)
+    if not self:UpdateGroupsInPlace(container, displayID, display) then
+        self:RebuildGroups(container, displayID, display, frame)
+    end
     container:Show()
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
@@ -411,6 +440,7 @@ function apply:PrewarmPool()
 end
 
 function apply:ConfigureContainer(frame, displayID, display, container)
+    container._exuiDisplayID = displayID
     self:AnchorContainer(container, frame, display)
     self:ApplyFrameLayer(container, frame, display)
     self:ApplyLayout(container, display)
@@ -464,7 +494,7 @@ function apply:UpdateFrame(frame)
             else
                 if container then
                     frame.NPAuraContainers[displayID] = nil
-                    self:ReturnContainerToPool(container)
+                    self:ReleaseContainer(container, hardSig)
                     container = nil
                 end
                 if not container then
@@ -480,6 +510,7 @@ function apply:UpdateFrame(frame)
                     return
                 end
                 frame.NPAuraContainers[displayID] = container
+                container._exuiDisplayID = displayID
                 if container._exuiHardSig == hardSig then
                     self:BindPreparedContainer(frame, displayID, display, container)
                 else
@@ -501,10 +532,12 @@ end
 
 function apply:RefreshDisplay(displayID)
     self:InvalidateSignatures()
+    self:PurgeYard(displayID)
     npCore:UpdateAllPlates()
 end
 
 function apply:RefreshAll()
     self:InvalidateSignatures()
+    self:PurgeYard()
     npCore:UpdateAllPlates()
 end

@@ -297,6 +297,55 @@ function resolver:ApplyGroupOptions(container, options)
     end
 end
 
+function resolver:ApplyInitializeFrame(container, options)
+    if not options or not options.initializeFrame then
+        return
+    end
+    if not container.GetAuraGroupFrameCount or not container.GetAuraGroupFrame then
+        return
+    end
+    local count = container:GetAuraGroupFrameCount(options.groupKey) or 0
+    for i = 1, count do
+        local auraButton = container:GetAuraGroupFrame(options.groupKey, i)
+        if auraButton then
+            options.initializeFrame(auraButton)
+        end
+    end
+end
+
+function resolver:AddOrUpdateAuraGroup(container, options)
+    if not container or not options or not options.groupKey then
+        return
+    end
+    if container.HasAuraGroup and container:HasAuraGroup(options.groupKey) then
+        self:ApplyGroupOptions(container, options)
+        self:ApplyInitializeFrame(container, options)
+        return
+    end
+    if container.AddAuraGroup then
+        container:AddAuraGroup(options.groupKey, options.filterString, {
+            maxFrameCount = options.maxFrameCount,
+            sortMethod = options.sortMethod,
+            sortDirection = options.sortDirection,
+            candidateFilters = options.candidateFilters,
+            layout = options.layout,
+            initializeFrame = options.initializeFrame,
+        })
+    end
+end
+
+function resolver:RebuildGroups(container, displayID, display, buttonStyle, getGroupKey, shouldLoadGroup)
+    if not container then
+        return
+    end
+    for _, entry in ipairs(self:IterActiveGroups(display, shouldLoadGroup)) do
+        local options = self:ResolveGroupOptions(
+            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
+        )
+        self:AddOrUpdateAuraGroup(container, options)
+    end
+end
+
 function resolver:IterActiveGroups(display, shouldLoadGroup)
     local active = {}
     for layoutIndex, groupID in ipairs(display.groupOrder or {}) do
@@ -315,7 +364,7 @@ function resolver:IterActiveGroups(display, shouldLoadGroup)
 end
 
 -- Signature of config that requires discarding/recreating the container
--- (visual chrome, group membership, item enchants, process-aura policy).
+-- (visual chrome, group membership, conditions, item enchants, process-aura policy).
 function resolver:BuildHardSignature(displayID, display, groupKeyBuilder, shouldLoadGroup)
     local parts = { displayID or '' }
     local container = display.container or {}
@@ -340,6 +389,8 @@ function resolver:BuildHardSignature(displayID, display, groupKeyBuilder, should
         parts[#parts + 1] = groupKeyBuilder(displayID, entry.groupID)
         parts[#parts + 1] = ':'
         AppendSerialized(parts, entry.group.visual)
+        parts[#parts + 1] = '#'
+        AppendSerialized(parts, entry.group.conditions)
     end
 
     return table.concat(parts)

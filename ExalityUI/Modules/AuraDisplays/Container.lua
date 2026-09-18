@@ -215,28 +215,18 @@ function containerModule:ApplyProcessingPolicy(container, display)
 end
 
 function containerModule:RebuildGroups(frame, displayID, display)
-    local container = frame.AuraContainer
-    if not container then
-        return
-    end
-
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
-        return loadConditions:ShouldLoad(load)
-    end)) do
-        local options = resolver:ResolveGroupOptions(
-            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex
-        )
-        if container.AddAuraGroup then
-            container:AddAuraGroup(options.groupKey, options.filterString, {
-                maxFrameCount = options.maxFrameCount,
-                sortMethod = options.sortMethod,
-                sortDirection = options.sortDirection,
-                candidateFilters = options.candidateFilters,
-                layout = options.layout,
-                initializeFrame = options.initializeFrame,
-            })
+    resolver:RebuildGroups(
+        frame.AuraContainer,
+        displayID,
+        display,
+        buttonStyle,
+        function(id, groupID)
+            return defaults:GetGroupKey(id, groupID)
+        end,
+        function(load)
+            return loadConditions:ShouldLoad(load)
         end
-    end
+    )
 end
 
 function containerModule:UpdateGroupsInPlace(frame, displayID, display)

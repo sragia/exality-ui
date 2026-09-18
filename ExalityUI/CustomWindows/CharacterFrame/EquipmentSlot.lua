@@ -64,7 +64,21 @@ local EVENTS = {
     "CURSOR_CHANGED",
     "UPDATE_INVENTORY_ALERTS",
     "BAG_UPDATE_COOLDOWN",
+    "ENCHANT_SPELL_COMPLETED",
+    "SOCKET_INFO_SUCCESS",
 }
+
+local function RefreshSlotAfterItemChange(slot)
+    EXUI.utils.InvalidateItemGemCache(GetInventoryItemLink('player', slot:GetID()))
+    slot:Update()
+    C_Timer.After(0, function()
+        if not slot:IsShown() then
+            return
+        end
+        EXUI.utils.InvalidateItemGemCache(GetInventoryItemLink('player', slot:GetID()))
+        slot:Update()
+    end)
+end
 
 equipmentSlot.GetItemColorAndBorder = function(self, ilvl)
     local result = EXUI.utils.getIlvlInfo(ilvl)
@@ -494,6 +508,16 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             else
                 self.Icon:SetVertexColor(1, 1, 1, 1)
             end
+
+            local item = Item:CreateFromEquipmentSlot(self:GetID())
+            if item and not item:IsItemEmpty() and item:GetItemID() and not item:IsItemDataCached() then
+                local slotId = self:GetID()
+                item:ContinueOnItemLoad(function()
+                    if self:GetID() == slotId then
+                        self:Update()
+                    end
+                end)
+            end
         else
             self.Icon:SetTexture(self.emptyTexture)
             self.Border:SetTexture(EXUI.const.textures.characterFrame.border.empty)
@@ -513,7 +537,16 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
         elseif (event == 'BAG_UPDATE_COOLDOWN') then
             self:UpdateCooldown()
         elseif (event == 'UPDATE_INVENTORY_ALERTS') then
-            self:UpdateDurability()
+            self:Update()
+        elseif (event == 'ENCHANT_SPELL_COMPLETED') then
+            local successful, enchantedItem = ...
+            if successful and enchantedItem and enchantedItem:IsValid()
+                and enchantedItem:IsEquipmentSlot()
+                and enchantedItem:GetEquipmentSlot() == self:GetID() then
+                RefreshSlotAfterItemChange(self)
+            end
+        elseif (event == 'SOCKET_INFO_SUCCESS') then
+            RefreshSlotAfterItemChange(self)
         elseif (event == 'CURSOR_CHANGED') then
             if C_PaperDollInfo.CanCursorCanGoInSlot(self:GetID()) then
                 self.Highlight:SetAlpha(1)

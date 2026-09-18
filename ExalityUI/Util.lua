@@ -251,13 +251,22 @@ EXUI.utils = {
         if not enchantId or enchantId == 0 then
             return
         end
-        if enchantNameCache[enchantId] ~= nil then
-            local cached = enchantNameCache[enchantId]
-            return cached ~= false and cached or nil, enchantId
+        local cached = enchantNameCache[enchantId]
+        if cached then
+            return cached, enchantId
         end
         local name = resolveEnchantName(itemLink, enchantId)
-        enchantNameCache[enchantId] = name or false
+        if name then
+            enchantNameCache[enchantId] = name
+        end
         return name, enchantId
+    end,
+    InvalidateItemGemCache = function(itemLink)
+        if not itemLink then
+            return
+        end
+        gemResultCache[itemLink] = nil
+        gemPendingCallbacks[itemLink] = nil
     end,
     GetItemGems = function(itemLink, onReady)
         if not itemLink then

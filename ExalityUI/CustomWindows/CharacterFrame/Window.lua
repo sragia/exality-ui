@@ -160,7 +160,10 @@ characterFrame.UpdateHeader = function(self)
     self.window.CharacterGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
 end
 
-EXUI:RegisterEventHandler('PLAYER_EQUIPMENT_CHANGED', 'char-frame-update-header', function()
+EXUI:RegisterEventHandler({
+    'PLAYER_EQUIPMENT_CHANGED',
+    'PLAYER_AVG_ITEM_LEVEL_UPDATE',
+}, 'char-frame-update-header', function()
     if (characterFrame.window and characterFrame.window:IsShown()) then
         characterFrame:UpdateHeader()
     end

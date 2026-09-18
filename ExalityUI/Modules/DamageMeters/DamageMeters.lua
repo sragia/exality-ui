@@ -70,6 +70,7 @@ local function getMeterEvents()
         'ENCOUNTER_END',
         'CHALLENGE_MODE_START',
         'CHALLENGE_MODE_COMPLETED',
+        'CHALLENGE_MODE_RESET',
         'PLAYER_DEAD',
         'GROUP_ROSTER_UPDATE',
         'PLAYER_ENTERING_WORLD',
@@ -612,10 +613,9 @@ function meters:OnEvent(event, ...)
         return
     end
 
-    if event == 'CHALLENGE_MODE_START' then
-        self.holdLiveDisplay = false
-        self.ignoreNewCombatUntil = 0
-        self:SetDisplayMode(MODE_PULL)
+    if event == 'CHALLENGE_MODE_START' or event == 'CHALLENGE_MODE_RESET' then
+        meterData:ResetAllSessions()
+        self:ClearSessionTracking()
         self:UpdateAll()
         return
     end
