@@ -273,3 +273,14 @@ EXUI.const.crestCurrencyIDs = {
 }
 
 EXFrames:SetTheme(EXUI.const.theme)
+
+local _,_,_,version = GetBuildInfo()
+
+-- TODO: Use PROJECT_IDs later when they are available in forever.
+EXUI.IsRetail = function()
+    return version > 120000
+end
+
+EXUI.IsForever = function()
+    return version > 16000 and version < 17000
+end
