@@ -146,7 +146,7 @@ editor.GetOptions = function(self, id)
                 ctCore:UpdateValue(id, 'tag', value)
                 npCore:UpdateAllPlates()
             end,
-            width = 50,
+            width = 92,
         },
         {
             type = 'button',
@@ -160,7 +160,9 @@ editor.GetOptions = function(self, id)
             end,
             tooltip = { text = 'Available tags' },
             color = { 3 / 255, 140 / 255, 252 / 255, 1 },
-            width = 12,
+            width = 8,
+            squareSize = 29,
+            align = 'bottom',
         },
     }
 end

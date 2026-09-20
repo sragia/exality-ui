@@ -369,7 +369,7 @@ function containerOptions:GetOptions(displayID)
                 type = 'toggle',
                 label = 'Ranged',
                 name = 'itemEnchantRanged',
-                width = 33,
+                width = 34,
                 currentValue = function() return ufAuras:GetContainerValue(displayID, 'itemEnchantRanged') end,
                 onChange = function(v)
                     ufAuras:UpdateContainerValue(displayID, 'itemEnchantRanged', v)

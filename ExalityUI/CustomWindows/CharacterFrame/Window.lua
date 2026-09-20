@@ -343,12 +343,26 @@ characterFrame.CreateSideTabs = function(self, parent)
 end
 
 characterFrame.Create = function(self)
+    local theme = EXUI.const.theme
     local window = windowConstruct:Create({
         size = {
             800,
             470
         },
-        title = 'Exality'
+        title = 'Exality',
+        legacyChrome = {
+            hideHeaderBar = true,
+            close = {
+                width = 38,
+                height = 28,
+                inset = { 8, 5 },
+                buttonBg = EXUI.const.textures.characterFrame.input.buttonBg,
+                closeIcon = EXUI.const.textures.frame.closeIcon,
+                iconSize = 14,
+                normalColor = theme.faded,
+                hoverColor = theme.dangerHover,
+            },
+        },
     });
     self.window = window
 

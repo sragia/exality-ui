@@ -162,7 +162,6 @@ function styleOptions:GetOptions()
     options[#options + 1] = {
         type = 'title',
         label = 'Text Colors',
-        size = 14,
         width = 100,
         depends = enabled,
     }
@@ -260,7 +259,6 @@ function styleOptions:GetOptions()
     options[#options + 1] = {
         type = 'title',
         label = 'Bars',
-        size = 14,
         width = 100,
         depends = enabled,
     }
@@ -328,7 +326,6 @@ function styleOptions:GetOptions()
     options[#options + 1] = {
         type = 'title',
         label = 'Timer Bar',
-        size = 14,
         width = 100,
         depends = enabled,
     }
@@ -358,7 +355,6 @@ function styleOptions:GetOptions()
     options[#options + 1] = {
         type = 'title',
         label = 'Forces Bar',
-        size = 14,
         width = 100,
         depends = enabled,
     }

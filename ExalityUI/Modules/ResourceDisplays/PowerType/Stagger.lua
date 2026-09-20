@@ -113,7 +113,7 @@ stagger.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'hideWhenZero', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -126,7 +126,7 @@ stagger.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'staggerShowPercent', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'range',

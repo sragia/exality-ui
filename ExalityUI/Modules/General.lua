@@ -65,132 +65,82 @@ generalModule.GetDefaults = function(self)
 end
 
 generalModule.GetOptions = function(self)
-    local options = {
-        {
-            type = 'section',
-            label = 'Scale',
-            children = {
-                {
-                    type = 'row',
-                    children = {
-                        {
-                            label = 'UI Scale',
-                            name = 'uiScale',
-                            type = 'range',
-                            min = 0.2,
-                            max = 1,
-                            step = 0.001,
-                            flex = 1,
-                            currentValue = function()
-                                local stored = data:GetData().uiScale
-                                if type(stored) == 'number' then
-                                    return stored
-                                end
-                                return UIParent:GetScale()
-                            end,
-                            onChange = function(value)
-                                if (value == data:GetData().uiScale) then return end
-                                data:SetDataByKey('uiScale', value)
-                                EXUI:GetModule('options-reload-dialog'):ShowDialog()
+    local scaleGroup = {
+        type = 'optionGroup',
+        label = 'Scale',
+        flex = 1,
+        collapsible = true,
+        expanded = true,
+        children = {
+            {
+                type = 'row',
+                children = {
+                    {
+                        label = 'UI Scale',
+                        name = 'uiScale',
+                        type = 'range',
+                        min = 0.2,
+                        max = 1,
+                        step = 0.001,
+                        flex = 1,
+                        currentValue = function()
+                            local stored = data:GetData().uiScale
+                            if type(stored) == 'number' then
+                                return stored
                             end
-                        },
-                        {
-                            label = 'Auto Scale',
-                            name = 'autoScale',
-                            type = 'button',
-                            onClick = function()
-                                local _, screenHeight = GetPhysicalScreenSize()
-                                local uiScale = 768 / screenHeight
-                                data:SetDataByKey('uiScale', uiScale)
-                                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-                            end,
-                            width = 140,
-                            color = { 219 / 255, 73 / 255, 0, 1 }
-                        },
+                            return UIParent:GetScale()
+                        end,
+                        onChange = function(value)
+                            if (value == data:GetData().uiScale) then return end
+                            data:SetDataByKey('uiScale', value)
+                            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                        end
                     },
-                },
-                {
-                    type = 'row',
-                    children = {
-                        {
-                            label = 'Options Window Scale',
-                            name = 'optionsWindowScale',
-                            type = 'range',
-                            min = 0.6,
-                            max = 1.4,
-                            step = 0.05,
-                            flex = 1,
-                            currentValue = function()
-                                return EXUI:GetModule('options-main'):GetScale()
-                            end,
-                            onChange = function(value)
-                                EXUI:GetModule('options-main'):SetScale(value)
-                            end
-                        },
+                    {
+                        label = 'Auto Scale',
+                        name = 'autoScale',
+                        type = 'button',
+                        onClick = function()
+                            local _, screenHeight = GetPhysicalScreenSize()
+                            local uiScale = 768 / screenHeight
+                            data:SetDataByKey('uiScale', uiScale)
+                            EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                        end,
+                        width = 140,
+                        align = 'BOTTOM',
+                        hoverColor = EXUI.EXFrames.Theme.accent,
                     },
                 },
             },
-        },
-        {
-            type = 'section',
-            label = 'Skins',
-            children = {
-                {
-                    label = 'Enable Skins',
-                    name = 'skinsEnabled',
-                    type = 'toggle',
-                    onChange = function(value)
-                        data:SetDataByKey('skinsEnabled', value)
-                        EXUI:GetModule('options-reload-dialog'):ShowDialog()
-                        optionsFields:RefreshOptions()
-                    end,
-                    currentValue = function()
-                        return data:GetDataByKey('skinsEnabled') ~= false
-                    end,
-                },
-                {
-                    type = 'columns',
-                    count = 3,
-                    children = {},
+            {
+                type = 'row',
+                children = {
+                    {
+                        label = 'Options Window Scale',
+                        name = 'optionsWindowScale',
+                        type = 'range',
+                        min = 0.6,
+                        max = 1.4,
+                        step = 0.05,
+                        flex = 1,
+                        currentValue = function()
+                            return EXUI:GetModule('options-main'):GetScale()
+                        end,
+                        onChange = function(value)
+                            EXUI:GetModule('options-main'):SetScale(value)
+                        end
+                    },
                 },
             },
         },
     }
 
-    local skinColumns = options[2].children[2]
-    for _, entry in ipairs(skins.list) do
-        local skinKey = entry.key
-        table.insert(skinColumns.children, {
-            label = entry.label,
-            name = 'skin_' .. skinKey,
-            type = 'checkbox',
-            depends = function()
-                return data:GetDataByKey('skinsEnabled') ~= false
-            end,
-            tooltip = entry.tooltip and { text = entry.tooltip } or nil,
-            onChange = function(value)
-                local db = data:GetDataByKey('skins')
-                if (type(db) ~= 'table') then
-                    db = skins:GetDefaultSkins()
-                end
-                db[skinKey] = value
-                data:SetDataByKey('skins', db)
-                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-            end,
-            currentValue = function()
-                local db = data:GetDataByKey('skins')
-                if (type(db) ~= 'table' or db[skinKey] == nil) then
-                    return skins:GetEntryDefaultEnabled(skinKey)
-                end
-                return db[skinKey] and true or false
-            end,
-            flex = 1,
-        })
-    end
-
-    table.insert(options, {
-        type = 'section',
+    local interfaceGroup = {
+        type = 'optionGroup',
         label = 'Interface',
+        flex = 1,
+        collapsible = true,
+        expanded = false,
         children = {
             {
                 label = 'Paper Doll Improvements',
@@ -273,9 +223,77 @@ generalModule.GetOptions = function(self)
                 end,
             },
         },
-    })
+    }
 
-    return options
+    local skinsGroup = {
+        type = 'optionGroup',
+        label = 'Skins',
+        widthPercent = 100,
+        collapsible = true,
+        expanded = true,
+        children = {
+            {
+                label = 'Enable Skins',
+                name = 'skinsEnabled',
+                type = 'toggle',
+                onChange = function(value)
+                    data:SetDataByKey('skinsEnabled', value)
+                    EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                    optionsFields:RefreshOptions()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('skinsEnabled') ~= false
+                end,
+            },
+            {
+                type = 'columns',
+                count = 3,
+                children = {},
+            },
+        },
+    }
+
+    for _, entry in ipairs(skins.list) do
+        local skinKey = entry.key
+        table.insert(skinsGroup.children[2].children, {
+            label = entry.label,
+            name = 'skin_' .. skinKey,
+            type = 'checkbox',
+            depends = function()
+                return data:GetDataByKey('skinsEnabled') ~= false
+            end,
+            tooltip = entry.tooltip and { text = entry.tooltip } or nil,
+            onChange = function(value)
+                local db = data:GetDataByKey('skins')
+                if (type(db) ~= 'table') then
+                    db = skins:GetDefaultSkins()
+                end
+                db[skinKey] = value
+                data:SetDataByKey('skins', db)
+                EXUI:GetModule('options-reload-dialog'):ShowDialog()
+            end,
+            currentValue = function()
+                local db = data:GetDataByKey('skins')
+                if (type(db) ~= 'table' or db[skinKey] == nil) then
+                    return skins:GetEntryDefaultEnabled(skinKey)
+                end
+                return db[skinKey] and true or false
+            end,
+            flex = 1,
+        })
+    end
+
+    return {
+        {
+            type = 'row',
+            gap = 10,
+            children = {
+                scaleGroup,
+                interfaceGroup,
+            },
+        },
+        skinsGroup,
+    }
 end
 
 generalModule.UpdateUIScale = function(self, applyScale)

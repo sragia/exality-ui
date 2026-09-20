@@ -328,7 +328,7 @@ core:AddOption({
                         ufCore:UpdateValueForUnit('party', 'groupRoleIndicatorHideTank', value)
                         ufCore:UpdateFrameForUnit('party')
                     end,
-                    width = 100
+                    width = 33
                 },
                 {
                     type = 'toggle',
@@ -341,7 +341,7 @@ core:AddOption({
                         ufCore:UpdateValueForUnit('party', 'groupRoleIndicatorHideHealer', value)
                         ufCore:UpdateFrameForUnit('party')
                     end,
-                    width = 100
+                    width = 33
                 },
                 {
                     type = 'toggle',
@@ -354,7 +354,7 @@ core:AddOption({
                         ufCore:UpdateValueForUnit('party', 'groupRoleIndicatorHideDamager', value)
                         ufCore:UpdateFrameForUnit('party')
                     end,
-                    width = 100
+                    width = 34
                 },
                 {
                     type = 'range',

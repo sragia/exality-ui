@@ -14,11 +14,6 @@ function generalOptions:GetOptions()
     local selfModule = mythicPlusTimer
     return {
         {
-            type = 'title',
-            label = 'M+ Timer',
-            width = 100,
-        },
-        {
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
@@ -44,7 +39,6 @@ function generalOptions:GetOptions()
         {
             type = 'title',
             label = 'Position',
-            size = 14,
             width = 100,
             depends = function()
                 return selfModule.Data:GetValue('enable')
@@ -161,7 +155,6 @@ function generalOptions:GetOptions()
         {
             type = 'title',
             label = 'Visibility',
-            size = 14,
             width = 100,
             depends = function()
                 return selfModule.Data:GetValue('enable')
@@ -181,7 +174,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('hideObjectiveTracker')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -197,7 +190,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('showDeathCounter')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -213,7 +206,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('showMaxTimer')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -229,7 +222,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('showBossNames')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'dropdown',
@@ -256,7 +249,6 @@ function generalOptions:GetOptions()
         {
             type = 'title',
             label = 'Splits',
-            size = 14,
             width = 100,
             depends = function()
                 return selfModule.Data:GetValue('enable')

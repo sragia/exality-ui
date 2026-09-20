@@ -89,7 +89,7 @@ absorbs.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'healAbsorbEnable')
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'toggle',
@@ -105,7 +105,7 @@ absorbs.GetOptions = function(self, unit)
             currentValue = function()
                 return core:GetValueForUnit(unit, 'healAbsorbShowOverIndicator')
             end,
-            width = 100
+            width = 50
         },
     }
 end

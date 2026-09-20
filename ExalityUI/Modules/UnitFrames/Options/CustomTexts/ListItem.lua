@@ -42,8 +42,9 @@ local function ConfigureFrame(f)
     })
     f.dialog:SetText('Are you sure you want to delete this custom text?')
 
-    local deleteButton = EXFrames:GetFrame('button'):Create({
-        text = 'Delete',
+    local deleteButton = EXFrames:GetFrame('simple-button'):Create(f)
+    deleteButton:SetOptionData({
+        label = 'Delete',
         onClick = function(self)
             self:GetParent().dialog:SetButtons({
                 {
@@ -66,20 +67,23 @@ local function ConfigureFrame(f)
             })
             self:GetParent().dialog:ShowDialog()
         end,
-        size = { 70, 25 },
-        color = { 171 / 255, 0, 20 / 255, 1 }
-    }, f)
+        color = { 171 / 255, 0, 20 / 255, 1 },
+        hoverColor = EXFrames.Theme.dangerHover,
+        hoverBorderColor = EXFrames.Theme.dangerHover,
+    })
+    deleteButton:SetSize(70, 25)
     deleteButton:SetPoint('RIGHT', -10, 0)
     f.DeleteButton = deleteButton
 
-    local editButton = EXFrames:GetFrame('button'):Create({
-        text = 'Edit',
+    local editButton = EXFrames:GetFrame('simple-button'):Create(f)
+    editButton:SetOptionData({
+        label = 'Edit',
         onClick = function(self)
             EXUI:GetModule('custom-texts-editor'):Show(self.customTexts.unit, self.customTexts.id, self:GetParent())
         end,
-        size = { 70, 25 },
-        color = { 219 / 255, 73 / 255, 0, 1 }
-    }, f)
+        color = { 219 / 255, 73 / 255, 0, 1 },
+    })
+    editButton:SetSize(70, 25)
     editButton:SetPoint('RIGHT', deleteButton, 'LEFT', -10, 0)
     f.EditButton = editButton
 

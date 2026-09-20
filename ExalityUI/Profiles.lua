@@ -16,7 +16,7 @@ local optionsController = EXUI:GetModule('options-controller')
 ---@class EXUIProfiles
 local profiles = EXUI:GetModule('profiles')
 
-local WINDOW_SIZE = { 980, 660 }
+local WINDOW_SIZE = { 980, 690 }
 local COLUMN_GAP = 10
 local PANEL_INSET = 10
 
@@ -246,8 +246,9 @@ profiles.SetupWindow = function(self)
     createInput:SetPoint('TOPLEFT', createTitle, 'BOTTOMLEFT', 0, -8)
     createInput:SetPoint('TOPRIGHT', createTitle, 'BOTTOMRIGHT', 0, -8)
 
-    local createButton = EXFrames:GetFrame('button'):Create({
-        text = 'Create',
+    local createButton = EXFrames:GetFrame('simple-button'):Create(profilePanel)
+    createButton:SetOptionData({
+        label = 'Create',
         onClick = function()
             if (self.newProfileName and self.newProfileName ~= '') then
                 data:CreateProfile(self.newProfileName, self.copyFromCurrent)
@@ -256,9 +257,8 @@ profiles.SetupWindow = function(self)
             end
         end,
         color = { 0, 130 / 255, 9 / 255, 1 },
-        size = { 80, 27 }
     })
-    createButton:SetParent(profilePanel)
+    createButton:SetSize(80, 27)
     createButton:SetPoint('TOPLEFT', createInput, 'BOTTOMLEFT', 0, -10)
 
     local shouldCopyToggle = EXFrames:GetFrame('toggle'):Create({
@@ -281,14 +281,14 @@ profiles.SetupWindow = function(self)
 
     self:CreateSectionTitle(importPanel, 'Import Profile')
 
-    local importButton = EXFrames:GetFrame('button'):Create({
-        text = 'Import',
+    local importButton = EXFrames:GetFrame('simple-button'):Create(importPanel)
+    importButton:SetOptionData({
+        label = 'Import',
         onClick = function()
             self:OnImport()
         end,
         color = { 0, 130 / 255, 9 / 255, 1 },
     })
-    importButton:SetParent(importPanel)
     importButton:SetHeight(27)
     importButton:SetPoint('BOTTOMLEFT', importPanel, 'BOTTOMLEFT', PANEL_INSET, PANEL_INSET)
     importButton:SetPoint('BOTTOMRIGHT', importPanel, 'BOTTOMRIGHT', -PANEL_INSET, PANEL_INSET)
@@ -320,14 +320,14 @@ profiles.SetupWindow = function(self)
     exportBottom:SetPoint('BOTTOMRIGHT', exportPanel, 'BOTTOMRIGHT', -PANEL_INSET, PANEL_INSET)
     exportBottom:SetHeight(280)
 
-    local exportButton = EXFrames:GetFrame('button'):Create({
-        text = 'Export',
+    local exportButton = EXFrames:GetFrame('simple-button'):Create(exportBottom)
+    exportButton:SetOptionData({
+        label = 'Export',
         onClick = function()
             self:GenerateExportString()
         end,
         color = { 237 / 255, 138 / 255, 0, 1 },
     })
-    exportButton:SetParent(exportBottom)
     exportButton:SetHeight(27)
     exportButton:SetPoint('BOTTOMLEFT', exportBottom, 'BOTTOMLEFT', 0, 0)
     exportButton:SetPoint('BOTTOMRIGHT', exportBottom, 'BOTTOMRIGHT', 0, 0)

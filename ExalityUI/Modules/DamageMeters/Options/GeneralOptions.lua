@@ -160,7 +160,7 @@ function generalOptions:GetOptions(windowID)
             type = 'toggle',
             label = 'Lock Position',
             name = 'locked',
-            width = 100,
+            width = 50,
             depends = windowEnabled,
             currentValue = function()
                 return meters:GetValue(windowID, 'locked')
@@ -174,7 +174,7 @@ function generalOptions:GetOptions(windowID)
             type = 'toggle',
             label = 'Click Through',
             name = 'clickThrough',
-            width = 100,
+            width = 50,
             depends = windowEnabled,
             currentValue = function()
                 return meters:GetValue(windowID, 'clickThrough')

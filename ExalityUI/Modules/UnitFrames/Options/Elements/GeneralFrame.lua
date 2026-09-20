@@ -61,17 +61,20 @@ generalFrame.GetOptions = function(self, unit)
             width = 100
         },
         {
-            type = 'title',
+            type = 'optionGroup',
             label = 'Overrides',
-            width = 100
-        },
-        {
-            type = 'title',
-            label = 'Textures',
-            accent = EXUI.const.colors.accentSecondary,
-            width = 100,
-            size = 14
-        },
+            flex = 1,
+            collapsible = true,
+            expanded = false,
+            children = {
+                {
+                    type = 'optionGroup',
+                    label = 'Textures',
+                    accent = EXUI.const.colors.accentSecondary,
+                    titleSize = 14,
+                    collapsible = true,
+                    expanded = false,
+                    children = {
         {
             type = 'dropdown',
             name = 'overrideStatusBarTexture',
@@ -183,13 +186,16 @@ generalFrame.GetOptions = function(self, unit)
             type = 'spacer',
             width = 50
         },
-        {
-            type = 'title',
-            label = 'Health',
-            accent = EXUI.const.colors.accentSecondary,
-            width = 100,
-            size = 14
-        },
+                    },
+                },
+                {
+                    type = 'optionGroup',
+                    label = 'Health',
+                    accent = EXUI.const.colors.accentSecondary,
+                    titleSize = 14,
+                    collapsible = true,
+                    expanded = false,
+                    children = {
         {
             type = 'toggle',
             name = 'overrideHealthColor',
@@ -218,7 +224,7 @@ generalFrame.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'useCustomHealthColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'color-picker',
@@ -250,7 +256,7 @@ generalFrame.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'useSmoothHealthColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'toggle',
@@ -266,7 +272,7 @@ generalFrame.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'useClassColoredBackdrop', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'toggle',
@@ -282,7 +288,7 @@ generalFrame.GetOptions = function(self, unit)
                 core:UpdateValueForUnit(unit, 'useCustomBackdropColor', value)
                 core:UpdateFrameForUnit(unit)
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'color-picker',
@@ -300,13 +306,16 @@ generalFrame.GetOptions = function(self, unit)
             end,
             width = 20
         },
-        {
-            type = 'title',
-            label = 'Health Absorbs',
-            accent = EXUI.const.colors.accentSecondary,
-            width = 100,
-            size = 14
-        },
+                    },
+                },
+                {
+                    type = 'optionGroup',
+                    label = 'Health Absorbs',
+                    accent = EXUI.const.colors.accentSecondary,
+                    titleSize = 14,
+                    collapsible = true,
+                    expanded = false,
+                    children = {
         {
             type = 'toggle',
             label = 'Use Custom Health Absorbs Color',
@@ -353,75 +362,83 @@ generalFrame.GetOptions = function(self, unit)
             end,
             width = 20
         },
+                    },
+                },
+            },
+        },
     }
 
     if unit == 'party' or unit == 'raid' then
-        table.insert(options, {
-            type = 'title',
+        local overridesGroup = options[#options]
+        table.insert(overridesGroup.children, {
+            type = 'optionGroup',
             label = 'Targeting',
             accent = EXUI.const.colors.accentSecondary,
-            width = 100,
-            size = 14
-        })
-        table.insert(options, {
-            type = 'toggle',
-            label = 'Highlight Target',
-            name = 'targetBorderEnable',
-            currentValue = function()
-                return core:GetValueForUnit(unit, 'targetBorderEnable')
-            end,
-            onChange = function(value)
-                core:UpdateValueForUnit(unit, 'targetBorderEnable', value)
-                core:UpdateFrameForUnit(unit)
-                optionsCore:RefreshCurrentView()
-            end,
-            width = 100
-        })
-        table.insert(options, {
-            type = 'color-picker',
-            label = 'Target Border Color',
-            name = 'targetBorderColor',
-            currentValue = function()
-                return core:GetValueForUnit(unit, 'targetBorderColor')
-            end,
-            depends = function()
-                return core:GetValueForUnit(unit, 'targetBorderEnable')
-            end,
-            onChange = function(value)
-                core:UpdateValueForUnit(unit, 'targetBorderColor', value)
-                core:UpdateFrameForUnit(unit)
-            end,
-            width = 20
-        })
-        table.insert(options, {
-            type = 'toggle',
-            label = 'Highlight Mouseover',
-            name = 'mouseoverBorderEnable',
-            currentValue = function()
-                return core:GetValueForUnit(unit, 'mouseoverBorderEnable')
-            end,
-            onChange = function(value)
-                core:UpdateValueForUnit(unit, 'mouseoverBorderEnable', value)
-                core:UpdateFrameForUnit(unit)
-                optionsCore:RefreshCurrentView()
-            end,
-            width = 100
-        })
-        table.insert(options, {
-            type = 'color-picker',
-            label = 'Mouseover Border Color',
-            name = 'mouseoverBorderColor',
-            currentValue = function()
-                return core:GetValueForUnit(unit, 'mouseoverBorderColor')
-            end,
-            depends = function()
-                return core:GetValueForUnit(unit, 'mouseoverBorderEnable')
-            end,
-            onChange = function(value)
-                core:UpdateValueForUnit(unit, 'mouseoverBorderColor', value)
-                core:UpdateFrameForUnit(unit)
-            end,
-            width = 20
+            titleSize = 14,
+            collapsible = true,
+            expanded = false,
+            children = {
+                {
+                    type = 'toggle',
+                    label = 'Highlight Target',
+                    name = 'targetBorderEnable',
+                    currentValue = function()
+                        return core:GetValueForUnit(unit, 'targetBorderEnable')
+                    end,
+                    onChange = function(value)
+                        core:UpdateValueForUnit(unit, 'targetBorderEnable', value)
+                        core:UpdateFrameForUnit(unit)
+                        optionsCore:RefreshCurrentView()
+                    end,
+                    width = 50
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Target Border Color',
+                    name = 'targetBorderColor',
+                    currentValue = function()
+                        return core:GetValueForUnit(unit, 'targetBorderColor')
+                    end,
+                    depends = function()
+                        return core:GetValueForUnit(unit, 'targetBorderEnable')
+                    end,
+                    onChange = function(value)
+                        core:UpdateValueForUnit(unit, 'targetBorderColor', value)
+                        core:UpdateFrameForUnit(unit)
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'toggle',
+                    label = 'Highlight Mouseover',
+                    name = 'mouseoverBorderEnable',
+                    currentValue = function()
+                        return core:GetValueForUnit(unit, 'mouseoverBorderEnable')
+                    end,
+                    onChange = function(value)
+                        core:UpdateValueForUnit(unit, 'mouseoverBorderEnable', value)
+                        core:UpdateFrameForUnit(unit)
+                        optionsCore:RefreshCurrentView()
+                    end,
+                    width = 50
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Mouseover Border Color',
+                    name = 'mouseoverBorderColor',
+                    currentValue = function()
+                        return core:GetValueForUnit(unit, 'mouseoverBorderColor')
+                    end,
+                    depends = function()
+                        return core:GetValueForUnit(unit, 'mouseoverBorderEnable')
+                    end,
+                    onChange = function(value)
+                        core:UpdateValueForUnit(unit, 'mouseoverBorderColor', value)
+                        core:UpdateFrameForUnit(unit)
+                    end,
+                    width = 20
+                },
+            },
         })
     end
 

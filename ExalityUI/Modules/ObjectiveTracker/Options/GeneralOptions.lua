@@ -17,11 +17,6 @@ function generalOptions:GetOptions()
     local selfModule = objectiveTracker
     return {
         {
-            type = 'title',
-            label = 'Objective Tracker',
-            width = 100,
-        },
-        {
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
@@ -48,7 +43,6 @@ function generalOptions:GetOptions()
         {
             type = 'title',
             label = 'Layout',
-            size = 14,
             width = 100,
             depends = function()
                 return selfModule.Data:GetValue('enable')
@@ -114,7 +108,6 @@ function generalOptions:GetOptions()
         {
             type = 'title',
             label = 'Position',
-            size = 14,
             width = 100,
             depends = function()
                 return selfModule.Data:GetValue('enable')
@@ -193,7 +186,6 @@ function generalOptions:GetOptions()
         {
             type = 'title',
             label = 'Visibility & Behavior',
-            size = 14,
             width = 100,
             depends = function()
                 return selfModule.Data:GetValue('enable')
@@ -213,7 +205,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('hideContainerHeader')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -232,7 +224,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('showCategoryChips')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -248,7 +240,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('hideCollapseButtons')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -264,7 +256,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('hideModuleMinimizeButtons')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -371,7 +363,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('autoHideWhenEmpty')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -391,7 +383,7 @@ function generalOptions:GetOptions()
                 end
                 return value
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -407,7 +399,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('hideInMythicPlus')
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -423,7 +415,7 @@ function generalOptions:GetOptions()
             currentValue = function()
                 return selfModule.Data:GetValue('hideQuestPOI')
             end,
-            width = 100,
+            width = 50,
         },
     }
 end

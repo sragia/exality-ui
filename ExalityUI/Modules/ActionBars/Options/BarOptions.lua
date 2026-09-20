@@ -29,7 +29,9 @@ barOptions.GetPositionFields = function(self, mod, db, scope, onRefresh)
 
     return {
         {
-            type = 'section',
+            type = 'optionGroup',
+            collapsible = true,
+            expanded = true,
             label = 'Position',
             children = {
                 {

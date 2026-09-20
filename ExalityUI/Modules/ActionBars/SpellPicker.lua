@@ -321,12 +321,12 @@ spellPicker.UpdateFilterButtons = function(self)
     local function apply(btn, enabled)
         if enabled then
             btn.icon:SetAlpha(1)
-            btn.border:SetBorderColor(theme.accent[1], theme.accent[2], theme.accent[3], 1)
-            btn.bg:SetColorTexture(theme.backgroundLight[1], theme.backgroundLight[2], theme.backgroundLight[3], 1)
+            btn.PPBorder:SetBorderColor(theme.accent[1], theme.accent[2], theme.accent[3], 1)
+            btn.bg:SetVertexColor(theme.backgroundLight[1], theme.backgroundLight[2], theme.backgroundLight[3], 1)
         else
             btn.icon:SetAlpha(0.35)
-            btn.border:SetBorderColor(theme.border[1], theme.border[2], theme.border[3], 1)
-            btn.bg:SetColorTexture(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 1)
+            btn.PPBorder:SetBorderColor(theme.border[1], theme.border[2], theme.border[3], 1)
+            btn.bg:SetVertexColor(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 1)
         end
     end
 
@@ -347,31 +347,24 @@ end
 
 spellPicker.CreateFilterButton = function(self, parent, tooltip)
     local theme = EXUI.const.theme
-    local btn = CreateFrame('Button', nil, parent)
+    local btn = EXFrames:GetFrame('simple-button'):Create(parent)
     btn:SetSize(FILTER_SIZE, FILTER_SIZE)
-    btn:RegisterForClicks('LeftButtonUp')
+    btn:SetOptionData({
+        square = true,
+        color = theme.backgroundDeep,
+    })
+    btn.icon:ClearAllPoints()
+    btn.icon:SetPoint('TOPLEFT', 2, -2)
+    btn.icon:SetPoint('BOTTOMRIGHT', -2, 2)
+    btn.icon:SetTexCoord(EXUI.utils.getTexCoords(1, 1, ICON_ZOOM))
+    btn.icon:Show()
 
-    local bg = btn:CreateTexture(nil, 'BACKGROUND')
-    bg:SetAllPoints()
-    bg:SetColorTexture(theme.backgroundLight[1], theme.backgroundLight[2], theme.backgroundLight[3], 1)
-    btn.bg = bg
-
-    local icon = btn:CreateTexture(nil, 'ARTWORK')
-    icon:SetPoint('TOPLEFT', 2, -2)
-    icon:SetPoint('BOTTOMRIGHT', -2, 2)
-    icon:SetTexCoord(EXUI.utils.getTexCoords(1, 1, ICON_ZOOM))
-    btn.icon = icon
-
-    local border = EXUI:AddPixelPerfectBorder(btn, 1, { register = false })
-    border:SetBorderColor(theme.border[1], theme.border[2], theme.border[3], 1)
-    btn.border = border
-
-    btn:SetScript('OnEnter', function(self)
+    btn:HookScript('OnEnter', function(self)
         GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
         GameTooltip:SetText(tooltip)
         GameTooltip:Show()
     end)
-    btn:SetScript('OnLeave', function()
+    btn:HookScript('OnLeave', function()
         GameTooltip:Hide()
     end)
 

@@ -238,7 +238,7 @@ statusBar.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'reverseFill', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 100,
+            width = 50,
         },
         {
             type = 'toggle',
@@ -251,7 +251,7 @@ statusBar.GetOptions = function(self, displayID)
                 RDCore:UpdateValueForDisplay(displayID, 'smoothFill', value)
                 RDCore:RefreshDisplayByID(displayID)
             end,
-            width = 100,
+            width = 50,
         },
     }
 end

@@ -118,7 +118,7 @@ comboPoints.GetOptions = function(self, displayID)
             RDCore:UpdateValueForDisplay(displayID, 'catFormOnly', value)
             RDCore:RefreshDisplayByID(displayID)
         end,
-        width = 100,
+        width = 50,
     })
     table.insert(options, {
         type = 'toggle',
@@ -131,7 +131,7 @@ comboPoints.GetOptions = function(self, displayID)
             RDCore:UpdateValueForDisplay(displayID, 'showSegmentText', value)
             RDCore:RefreshDisplayByID(displayID)
         end,
-        width = 100,
+        width = 50,
     })
     return options
 end

@@ -240,7 +240,7 @@ function containerOptions:GetOptions(displayID)
                 type = 'toggle',
                 label = 'Main Hand',
                 name = 'itemEnchantMainHand',
-                width = 100,
+                width = 33,
                 currentValue = function() return auraDisplays:GetContainerValue(displayID, 'itemEnchantMainHand') end,
                 onChange = function(v)
                     auraDisplays:UpdateContainerValue(displayID, 'itemEnchantMainHand', v); auraDisplays:RefreshDisplay(
@@ -251,7 +251,7 @@ function containerOptions:GetOptions(displayID)
                 type = 'toggle',
                 label = 'Off Hand',
                 name = 'itemEnchantOffHand',
-                width = 100,
+                width = 33,
                 currentValue = function() return auraDisplays:GetContainerValue(displayID, 'itemEnchantOffHand') end,
                 onChange = function(v)
                     auraDisplays:UpdateContainerValue(displayID, 'itemEnchantOffHand', v); auraDisplays:RefreshDisplay(
@@ -262,7 +262,7 @@ function containerOptions:GetOptions(displayID)
                 type = 'toggle',
                 label = 'Ranged',
                 name = 'itemEnchantRanged',
-                width = 100,
+                width = 34,
                 currentValue = function() return auraDisplays:GetContainerValue(displayID, 'itemEnchantRanged') end,
                 onChange = function(v)
                     auraDisplays:UpdateContainerValue(displayID, 'itemEnchantRanged', v); auraDisplays:RefreshDisplay(

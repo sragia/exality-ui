@@ -136,7 +136,7 @@ function loadOptions:GetOptions(displayID, groupID)
             onChange = function(v) auraDisplays:UpdateGroupLoad(displayID, groupID, 'dontLoadOnPlayer', v); auraDisplays:RefreshDisplay(displayID) end,
         },
         {
-            type = 'toggle', label = 'In Combat Only', name = 'loadInCombat', width = 100,
+            type = 'toggle', label = 'In Combat Only', name = 'loadInCombat', width = 50,
             depends = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions') end,
             currentValue = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'loadInCombat') == true end,
             onChange = function(v)
@@ -146,7 +146,7 @@ function loadOptions:GetOptions(displayID, groupID)
             end,
         },
         {
-            type = 'toggle', label = 'Out Of Combat Only', name = 'loadOutOfCombat', width = 100,
+            type = 'toggle', label = 'Out Of Combat Only', name = 'loadOutOfCombat', width = 50,
             depends = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions') end,
             currentValue = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'loadOutOfCombat') == true end,
             onChange = function(v)

@@ -367,7 +367,7 @@ core:AddOption({
                         ufCore:UpdateValueForUnit('raid', 'groupRoleIndicatorHideTank', value)
                         ufCore:UpdateFrameForUnit('raid')
                     end,
-                    width = 100
+                    width = 33
                 },
                 {
                     type = 'toggle',
@@ -380,7 +380,7 @@ core:AddOption({
                         ufCore:UpdateValueForUnit('raid', 'groupRoleIndicatorHideHealer', value)
                         ufCore:UpdateFrameForUnit('raid')
                     end,
-                    width = 100
+                    width = 33
                 },
                 {
                     type = 'toggle',
@@ -393,7 +393,7 @@ core:AddOption({
                         ufCore:UpdateValueForUnit('raid', 'groupRoleIndicatorHideDamager', value)
                         ufCore:UpdateFrameForUnit('raid')
                     end,
-                    width = 100
+                    width = 34
                 },
                 {
                     type = 'range',

@@ -98,7 +98,7 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
     end
 
     local fields = {
-        { type = 'section', label = label, children = {} },
+        { type = 'optionGroup', label = label, flex = 1, collapsible = true, expanded = true, children = {} },
     }
 
     local depends = not isGlobal and function()
@@ -311,7 +311,7 @@ globalOptions.GetOptions = function(self, mod, section)
                 type = 'toggle',
                 label = 'Show Border',
                 name = 'global_showBorder',
-                width = 100,
+                width = 50,
                 currentValue = function() return db.global.showBorder end,
                 onChange = function(v)
                     db.global.showBorder = v; mod.Data:SetDB(db); mod:RefreshBars()
@@ -321,7 +321,7 @@ globalOptions.GetOptions = function(self, mod, section)
                 type = 'toggle',
                 label = 'Button Background',
                 name = 'global_showBackdrop',
-                width = 100,
+                width = 50,
                 currentValue = function() return db.global.showBackdrop ~= false end,
                 onChange = function(v)
                     db.global.showBackdrop = v; mod.Data:SetDB(db); mod:RefreshBars()
@@ -365,7 +365,7 @@ globalOptions.GetOptions = function(self, mod, section)
                 type = 'toggle',
                 label = 'Cooldown Swipe',
                 name = 'global_showCooldownSwipe',
-                width = 100,
+                width = 50,
                 currentValue = function() return db.global.showCooldownSwipe end,
                 onChange = function(v)
                     db.global.showCooldownSwipe = v; mod.Data:SetDB(db); mod:RefreshBars()
@@ -375,7 +375,7 @@ globalOptions.GetOptions = function(self, mod, section)
                 type = 'toggle',
                 label = 'Cooldown Text',
                 name = 'global_showCooldownText',
-                width = 100,
+                width = 50,
                 currentValue = function() return db.global.showCooldownText end,
                 onChange = function(v)
                     db.global.showCooldownText = v; mod.Data:SetDB(db); mod:RefreshBars()
@@ -385,7 +385,7 @@ globalOptions.GetOptions = function(self, mod, section)
                 type = 'toggle',
                 label = 'Hide Cooldown Charge',
                 name = 'global_hideCooldownCharge',
-                width = 100,
+                width = 50,
                 currentValue = function() return db.global.hideCooldownCharge == true end,
                 onChange = function(v)
                     db.global.hideCooldownCharge = v; mod.Data:SetDB(db); mod:RefreshBars()

@@ -125,7 +125,7 @@ dispelOverlay.GetOptions = function(self, unit)
                 refreshUnit(unit)
                 EXUI:GetModule('options-fields'):RefreshOptions()
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'toggle',
@@ -142,7 +142,7 @@ dispelOverlay.GetOptions = function(self, unit)
                 refreshUnit(unit)
                 EXUI:GetModule('options-fields'):RefreshOptions()
             end,
-            width = 100
+            width = 50
         },
     }
 

@@ -100,7 +100,7 @@ editor.EnsureOptionBar = function(self)
     end
 
     local theme = EXUI.const.theme
-    local buttonFrame = EXFrames:GetFrame('button')
+    local simpleButton = EXFrames:GetFrame('simple-button')
     local checkbox = EXFrames:GetFrame('checkbox')
 
     local contentWidth = BAR_WIDTH - PADDING * 2
@@ -197,14 +197,17 @@ editor.EnsureOptionBar = function(self)
     yInput:SetPoint('LEFT', yLabel, 'RIGHT', 6, 0)
     bar.yInput = yInput
 
-    local exitBtn = buttonFrame:Create({
-        text = 'Exit Edit Mode',
-        size = { contentWidth, EXIT_HEIGHT },
+    local exitBtn = simpleButton:Create(bar)
+    exitBtn:SetOptionData({
+        label = 'Exit Edit Mode',
         color = theme.danger,
+        hoverColor = theme.dangerHover,
+        hoverBorderColor = theme.dangerHover,
         onClick = function()
             editor:DisableEditor()
         end,
-    }, bar)
+    })
+    exitBtn:SetSize(contentWidth, EXIT_HEIGHT)
     exitBtn:SetPoint('TOPLEFT', offsetRow, 'BOTTOMLEFT', 0, -ROW_GAP)
     exitBtn:SetPoint('TOPRIGHT', offsetRow, 'BOTTOMRIGHT', 0, -ROW_GAP)
     exitBtn:SetHeight(EXIT_HEIGHT)

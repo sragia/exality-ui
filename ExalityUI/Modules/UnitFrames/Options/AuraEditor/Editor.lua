@@ -57,6 +57,9 @@ function editor:CreateWindow()
         size = { 920, 650 },
         title = 'Unit Frame Aura Editor',
     })
+    window:HookScript('OnHide', function()
+        editor:ClearFields()
+    end)
     return window
 end
 
@@ -76,14 +79,32 @@ function editor:GetOptions(tabID, displayID)
     return {}
 end
 
+function editor:GetFieldCacheKeyOverride()
+    return string.format(
+        'UF Aura Editor:%s:%s:%s:%s',
+        self.contextUnit or '',
+        self.currItemID or '',
+        self.currTabID or '',
+        ufAuras.currGroupID or ''
+    )
+end
+
+function editor:UpdateFieldsScroll()
+    if self.innerTabs and self.innerTabs.UpdateScroll then
+        self.innerTabs:UpdateScroll()
+    elseif self.splitView and self.splitView.UpdateScroll then
+        self.splitView:UpdateScroll()
+    end
+end
+
 function editor:ClearFields()
+    self._optionsMountHost = nil
+    if self.layoutRoot then
+        self.layoutRoot:Destroy()
+        self.layoutRoot = nil
+    end
     for _, field in ipairs(self.fields) do
-        if field.Destroy then
-            field:Destroy()
-        else
-            field:Hide()
-            field:SetParent(nil)
-        end
+        optionsFields:ReleaseField(field)
     end
     wipe(self.fields)
 end
@@ -123,43 +144,43 @@ function editor:PopulateFields()
     end
 
     local options = self:GetOptions(self.currTabID, self.currItemID)
-    for _, option in ipairs(options) do
-        if not option.depends or option.depends() then
-            local field = optionsFields:GetField(option)
-            if field then
-                optionsFields:CreateOrUpdateTooltip(field, option.tooltip)
-                field:SetOptionData(option)
-                field:SetParent(container)
-                table.insert(self.fields, field)
-            end
-        end
-    end
+    self._optionsMountHost = {
+        container = container,
+        getWidth = function()
+            return self:GetFieldsLayoutWidth()
+        end,
+        updateScroll = function()
+            self:UpdateFieldsScroll()
+        end,
+    }
+    self.layoutRoot = optionsFields:MountOptionsOnContainer(
+        container,
+        options,
+        layoutWidth,
+        self.fields,
+        self:GetFieldCacheKeyOverride(),
+        self._optionsMountHost
+    )
 
-    EXUI:GetModule('options-fields'):LayoutWidgets(container, self.fields, 10, 10, 10)
-
-    if self.innerTabs and self.innerTabs.UpdateScroll then
-        self.innerTabs:UpdateScroll()
-    elseif self.splitView and self.splitView.UpdateScroll then
-        self.splitView:UpdateScroll()
-    end
+    self:UpdateFieldsScroll()
 end
 
 function editor:RelayoutFields()
     if not self.window or not self.window:IsShown() then
         return
     end
-    if not self.fields or #self.fields == 0 then
+    if not self.layoutRoot then
         return
     end
     local container = self:GetFieldsContainer()
     if not container then
         return
     end
-    EXUI:GetModule('options-fields'):LayoutWidgets(container, self.fields, 10, 10, 10)
-    if self.innerTabs and self.innerTabs.UpdateScroll then
-        self.innerTabs:UpdateScroll()
-    elseif self.splitView and self.splitView.UpdateScroll then
-        self.splitView:UpdateScroll()
+    if self._optionsMountHost and self._optionsMountHost.layoutRoot then
+        optionsFields:LayoutMountedOptionsHost(self._optionsMountHost)
+    else
+        optionsFields:LayoutMountedOptionsRoot(container, self.layoutRoot, self:GetFieldsLayoutWidth())
+        self:UpdateFieldsScroll()
     end
 end
 
@@ -314,7 +335,6 @@ function editor:EnsureSplitView()
 
     self.splitView:AddExtraButton({
         text = 'Create Display',
-        color = { 249 / 255, 95 / 255, 9 / 255, 1 },
         onClick = function()
             local displayID = ufAuras:CreateNewDisplay(self.contextUnit)
             ufAuras:RefreshDisplay(displayID)

@@ -26,12 +26,27 @@ optionsFields.fields = {}
 optionsFields.fieldCache = {}
 optionsFields.layoutRoot = nil
 optionsFields.widgetLayouts = {}
+optionsFields.optionGroupExpandSession = {}
 
 local LAYOUT_TYPES = {
     section = true,
+    optionGroup = true,
     row = true,
     stack = true,
     columns = true,
+}
+
+local BOTTOM_ALIGN_FIELD_TYPES = {
+    range = true,
+    dropdown = true,
+    checkbox = true,
+    ['tri-state-checkbox'] = true,
+    toggle = true,
+    ['color-picker'] = true,
+    button = true,
+    ['edit-box'] = true,
+    editbox = true,
+    ['anchor-point'] = true,
 }
 
 optionsFields.Init = function(self)
@@ -282,6 +297,7 @@ optionsFields.AddTabs = function(self, module)
                 self.splitView:Destroy()
                 self.splitView = nil
             end
+            self:ClearLayout()
             self:AddSplitView(currentModule)
             if currentModule.useInnerTabs and self.splitView then
                 if self:HasInnerTabs(currentModule, self.currItemID) then
@@ -345,7 +361,7 @@ optionsFields.GetContentWidth = function(self)
     if self.host then
         local width = self.host:GetWidth()
         if usable(width) then
-            return math.max(1, width - 20)
+            return math.max(1, width)
         end
     end
     if self.container then
@@ -367,6 +383,17 @@ optionsFields.UpdateActiveScroll = function(self)
         self.splitView:UpdateScroll()
     elseif self.pageScroll and self.pageScroll:IsShown() and root then
         self.pageScroll:UpdateScrollChild(self:GetContentWidth(), root:GetHeight())
+    end
+end
+
+optionsFields.LayoutMountedOptionsHost = function(self, host)
+    if not host or not host.layoutRoot or not host.container then
+        return
+    end
+    local width = host.getWidth and host.getWidth() or host.container:GetWidth()
+    self:LayoutMountedOptionsRoot(host.container, host.layoutRoot, width)
+    if host.updateScroll then
+        host.updateScroll()
     end
 end
 
@@ -496,7 +523,12 @@ optionsFields.RefreshOptionsDelayed = function(self, delay)
     end)
 end
 
+optionsFields._fieldCacheKeyOverride = nil
+
 optionsFields.GetFieldCacheKey = function(self)
+    if self._fieldCacheKeyOverride then
+        return self._fieldCacheKeyOverride
+    end
     local module = optionsController:GetSelectedModule()
     if not module or not module.module or not module.module.GetName then
         return nil
@@ -507,6 +539,11 @@ optionsFields.GetFieldCacheKey = function(self)
     end
     local groupID = module.module.currGroupID or ''
     return string.format('%s:%s:%s:%s', moduleName, self.currItemID or '', self.currTabID or '', groupID)
+end
+
+optionsFields.GetOptionGroupExpandSessionKey = function(self, mountPath, label)
+    local cacheKey = self:GetFieldCacheKey() or ''
+    return string.format('%s|%s|%s', cacheKey, mountPath or '', label or '')
 end
 
 optionsFields.InvalidateFieldCache = function(self, key)
@@ -544,13 +581,29 @@ optionsFields.IsLayoutNode = function(self, field)
 end
 
 optionsFields.FieldLayoutSpec = function(self, field)
+    local spec
     if field._widthPercent then
-        return { flex = field._widthPercent }
+        spec = { flex = field._widthPercent }
+    elseif field.width and not field.flex then
+        spec = { width = field.width }
+    else
+        spec = { flex = field.flex or 1 }
     end
-    if field.width and not field.flex then
-        return { width = field.width }
+    local align = field.align
+    if not align and field.type and BOTTOM_ALIGN_FIELD_TYPES[field.type] then
+        align = 'bottom'
     end
-    return { flex = field.flex or 1 }
+    if align then
+        spec.align = align
+    end
+    return spec
+end
+
+optionsFields.LayoutMountSpec = function(self, node)
+    if type(node.widthPercent) == 'number' then
+        return { widthPercent = node.widthPercent }
+    end
+    return { flex = node.flex or 1 }
 end
 
 optionsFields.WrapPercentRows = function(self, fields)
@@ -605,7 +658,14 @@ optionsFields.AdaptToTree = function(self, fields)
             flush()
             if field.children then
                 local children = self:ExpandOptions(field.children)
-                if field.type == 'section' then
+                if field.type == 'section' or field.type == 'optionGroup' then
+                    if field.type == 'section' then
+                        field.type = 'optionGroup'
+                        field.collapsible = field.collapsible ~= false
+                        if field.expanded == nil then
+                            field.expanded = true
+                        end
+                    end
                     field.children = self:AdaptToTree(children)
                 else
                     field.children = children
@@ -620,8 +680,87 @@ optionsFields.AdaptToTree = function(self, fields)
     return result
 end
 
+-- Module options may still declare `type = 'title'`; NormalizeOptions converts them to optionGroup trees.
+local function isSubTitleField(field)
+    if field.type ~= 'title' then
+        return false
+    end
+    if field.accent then
+        return true
+    end
+    if field.size and field.size <= 14 then
+        return true
+    end
+    return false
+end
+
+local function titleFieldToOptionGroup(field)
+    local group = {
+        type = 'optionGroup',
+        label = field.label,
+        collapsible = true,
+        expanded = field.expanded ~= nil and field.expanded or true,
+        children = {},
+    }
+    if field.depends then
+        group.depends = field.depends
+    end
+    if field.accent then
+        group.accent = field.accent
+    end
+    if field.size then
+        group.titleSize = field.size
+    end
+    if field.flex then
+        group.flex = field.flex
+    elseif field.width == 100 then
+        group.flex = 1
+    elseif field.width then
+        group.width = field.width
+    end
+    return group
+end
+
+optionsFields.ConvertTitleFieldsToGroups = function(self, fields)
+    local out = {}
+    local stack = {}
+
+    local function currentList()
+        if #stack == 0 then
+            return out
+        end
+        return stack[#stack].children
+    end
+
+    for _, field in ipairs(fields or {}) do
+        if type(field) == 'table' and field.type == 'title' then
+            local group = titleFieldToOptionGroup(field)
+            if isSubTitleField(field) and #stack > 0 then
+                table.insert(stack[#stack].children, group)
+            else
+                while #stack > 0 do
+                    table.remove(stack)
+                end
+                table.insert(out, group)
+            end
+            table.insert(stack, group)
+        elseif type(field) == 'table' and self:IsLayoutNode(field) then
+            if field.children then
+                field.children = self:ConvertTitleFieldsToGroups(field.children)
+            end
+            table.insert(currentList(), field)
+        elseif type(field) == 'table' then
+            table.insert(currentList(), field)
+        end
+    end
+
+    return out
+end
+
 optionsFields.NormalizeOptions = function(self, fields)
-    return self:AdaptToTree(self:ExpandOptions(fields))
+    local expanded = self:ExpandOptions(fields)
+    local grouped = self:ConvertTitleFieldsToGroups(expanded)
+    return self:AdaptToTree(grouped)
 end
 
 optionsFields.ClearLayout = function(self)
@@ -635,11 +774,82 @@ optionsFields.CreateLayoutFrame = function(self, parent, options)
     return EXFrames:GetFrame('layout-frame'):Create(parent, options)
 end
 
-optionsFields.AcquireField = function(self, node, cachedFields)
-    if cachedFields then
+optionsFields.PrepareOptionGroupForMount = function(self, group, parentLayout)
+    if not group or not group.SetBodyLayout then
+        return
+    end
+    local bodyLayout = group.bodyLayout
+    if not bodyLayout then
+        return
+    end
+    if bodyLayout == parentLayout then
+        group.bodyLayout = nil
+        return
+    end
+    group:SetBodyLayout(nil)
+end
+
+optionsFields.CreateOptionGroupBodyLayout = function(self, group, parentLayout, options)
+    local body = group.GetBody and group:GetBody()
+    if not body or not group.SetBodyLayout then
+        return nil
+    end
+    local layout = EXFrames:GetFrame('layout-frame'):CreateDedicated(body, options)
+    if layout and layout ~= parentLayout and layout ~= group and group:SetBodyLayout(layout, parentLayout) then
+        return layout
+    end
+    if layout and layout.Destroy then
+        layout:Destroy()
+    end
+    return nil
+end
+
+local function wouldReparentCycle(groupFrame, parentLayout)
+    if not groupFrame or not parentLayout or not groupFrame.GetBody then
+        return false
+    end
+    if groupFrame == parentLayout then
+        return true
+    end
+    local body = groupFrame:GetBody()
+    local p = parentLayout
+    while p do
+        if p == groupFrame or p == body then
+            return true
+        end
+        p = p:GetParent()
+    end
+    return false
+end
+
+local function cachedFieldMatchesNode(frame, node, parentLayout, mountPath)
+    if not frame or not node or not node.type then
+        return false
+    end
+    local optionData = frame.optionData
+    local frameType = optionData and optionData.type
+    if frameType ~= node.type then
+        return false
+    end
+    if node.type == 'optionGroup' then
+        if wouldReparentCycle(frame, parentLayout) then
+            return false
+        end
+        if mountPath and frame._mountPath then
+            return frame._mountPath == mountPath
+        end
+        return optionData and optionData.label == node.label
+    end
+    if node.name then
+        return optionData and optionData.name == node.name
+    end
+    return true
+end
+
+optionsFields.AcquireField = function(self, node, cachedFields, parentLayout, mountPath)
+    if node.type ~= 'optionGroup' and cachedFields then
         for i, frame in ipairs(cachedFields) do
-            local frameType = frame.optionData and frame.optionData.type
-            if frameType == node.type then
+            if cachedFieldMatchesNode(frame, node, parentLayout, mountPath) then
                 return table.remove(cachedFields, i)
             end
         end
@@ -647,48 +857,108 @@ optionsFields.AcquireField = function(self, node, cachedFields)
     return self:GetField(node)
 end
 
-optionsFields.MountTree = function(self, parentLayout, nodes, builtFields, cachedFields)
-    for _, node in ipairs(nodes) do
+optionsFields.ShouldMountOptionNode = function(self, node)
+    if not node or type(node) ~= 'table' then
+        return false
+    end
+    if node.depends and not node.depends() then
+        return false
+    end
+    if node.type == 'optionGroup' or node.type == 'section' then
+        for _, child in ipairs(node.children or {}) do
+            if self:ShouldMountOptionNode(child) then
+                return true
+            end
+        end
+        return false
+    end
+    if self:IsLayoutNode(node) then
+        for _, child in ipairs(node.children or {}) do
+            if self:ShouldMountOptionNode(child) then
+                return true
+            end
+        end
+        return false
+    end
+    return true
+end
+
+optionsFields.MountTree = function(self, parentLayout, nodes, builtFields, cachedFields, mountPath, onLayoutRequest)
+    mountPath = mountPath or ''
+    if not onLayoutRequest then
+        onLayoutRequest = function()
+            self:LayoutMountedFields()
+        end
+    end
+    for index, node in ipairs(nodes) do
         if self:IsLayoutNode(node) then
-            if not node.depends or node.depends() then
-                if node.type == 'columns' then
+            if self:ShouldMountOptionNode(node) then
+                if node.type == 'optionGroup' or node.type == 'section' then
+                    if node.type == 'section' then
+                        node.type = 'optionGroup'
+                    end
+                    local pathKey = mountPath == '' and tostring(index) or (mountPath .. '/' .. index)
+                    local group = self:AcquireField(node, cachedFields, parentLayout, pathKey)
+                    if group then
+                        group._mountPath = pathKey
+                        group.onLayoutRequest = onLayoutRequest
+                        self:PrepareOptionGroupForMount(group, parentLayout)
+                        local layoutOptions = {
+                            direction = 'stack',
+                            gap = node.gap or 10,
+                        }
+                        local innerLayout = self:CreateOptionGroupBodyLayout(group, parentLayout, layoutOptions)
+                        if not innerLayout then
+                            innerLayout = EXFrames:GetFrame('layout-frame'):CreateDedicated(group:GetBody(), layoutOptions)
+                            if innerLayout == parentLayout
+                                or not group:SetBodyLayout(innerLayout, parentLayout) then
+                                if innerLayout and innerLayout.Destroy then
+                                    innerLayout:Destroy()
+                                end
+                                innerLayout = nil
+                            end
+                        end
+                        if innerLayout and innerLayout ~= parentLayout and not wouldReparentCycle(group, parentLayout) then
+                            self:MountTree(innerLayout, node.children or {}, builtFields, cachedFields, pathKey, onLayoutRequest)
+                            group.expandSessionKey = self:GetOptionGroupExpandSessionKey(pathKey, node.label)
+                            group:SetOptionData(node)
+                            table.insert(builtFields, group)
+                            parentLayout:Add(group, self:LayoutMountSpec(node))
+                            group:Layout()
+                        end
+                    end
+                elseif node.type == 'columns' then
                     local count = node.count or 2
                     local stack = self:CreateLayoutFrame(parentLayout, { direction = 'stack', gap = node.gap or 10 })
                     local row
                     local index = 0
                     for _, child in ipairs(node.children or {}) do
-                        if not child.depends or child.depends() then
+                        if self:ShouldMountOptionNode(child) then
                             if index % count == 0 then
                                 row = self:CreateLayoutFrame(stack, { direction = 'row', gap = node.gap or 10 })
                                 stack:Add(row, { flex = 1 })
                             end
-                            self:MountTree(row, { child }, builtFields, cachedFields)
+                            self:MountTree(row, { child }, builtFields, cachedFields, mountPath .. '/' .. index, onLayoutRequest)
                             index = index + 1
                         end
                     end
-                    parentLayout:Add(stack, { flex = 1 })
+                    if index > 0 then
+                        parentLayout:Add(stack, { flex = 1 })
+                    else
+                        stack:Destroy()
+                    end
                 else
                     local direction = node.type == 'row' and 'row' or 'stack'
                     local childLayout = self:CreateLayoutFrame(parentLayout, {
                         direction = direction,
                         gap = node.gap or 10,
                     })
-                    if node.type == 'section' and node.label then
-                        local titleField = { type = 'title', label = node.label, size = node.size }
-                        local title = self:AcquireField(titleField, cachedFields)
-                        if title then
-                            title:SetOptionData(titleField)
-                            title:Show()
-                            table.insert(builtFields, title)
-                            childLayout:Add(title, { flex = 1 })
-                        end
-                    end
-                    self:MountTree(childLayout, node.children or {}, builtFields, cachedFields)
+                    self:MountTree(childLayout, node.children or {}, builtFields, cachedFields, mountPath, onLayoutRequest)
                     parentLayout:Add(childLayout, { flex = 1 })
                 end
             end
-        elseif not node.depends or node.depends() then
-            local fieldFrame = self:AcquireField(node, cachedFields)
+        elseif self:ShouldMountOptionNode(node) then
+            local fieldFrame = self:AcquireField(node, cachedFields, parentLayout, mountPath)
             if fieldFrame then
                 self:CreateOrUpdateTooltip(fieldFrame, node.tooltip)
                 if fieldFrame.SetOptionData then
@@ -702,6 +972,59 @@ optionsFields.MountTree = function(self, parentLayout, nodes, builtFields, cache
             end
         end
     end
+end
+
+optionsFields.LayoutMountedOptionsRoot = function(self, container, layoutRoot, width)
+    if not layoutRoot or not container then
+        return
+    end
+    width = math.max(1, width or container:GetWidth() or 600)
+    if container.SetWidth then
+        container:SetWidth(width)
+    end
+    layoutRoot:SetWidth(width)
+    layoutRoot:Layout()
+    if container.exuiAutoSizeHeight then
+        container:SetHeight(layoutRoot:GetHeight())
+    end
+end
+
+--- Mount normalized option trees (title → optionGroup, rows, etc.) on a scroll container.
+---@param cacheKeyOverride? string Session key prefix for option-group expand state
+---@param mountHost? table Optional relayout target for expand/collapse (container, layoutRoot, getWidth, updateScroll)
+optionsFields.MountOptionsOnContainer = function(self, container, rawFields, width, builtFields, cacheKeyOverride, mountHost)
+    builtFields = builtFields or {}
+    width = math.max(1, width or 600)
+    local prevOverride = self._fieldCacheKeyOverride
+    self._fieldCacheKeyOverride = cacheKeyOverride
+    local tree = self:NormalizeOptions(rawFields or {})
+    if container.SetWidth then
+        container:SetWidth(width)
+    end
+    local root = self:CreateLayoutFrame(container, {
+        direction = 'stack',
+        gap = 10,
+    })
+    root:SetPoint('TOPLEFT')
+    root:SetWidth(width)
+    local onLayoutRequest
+    if mountHost then
+        mountHost.container = mountHost.container or container
+        onLayoutRequest = function()
+            mountHost.layoutRoot = root
+            self:LayoutMountedOptionsHost(mountHost)
+        end
+    end
+    self:MountTree(root, tree, builtFields, nil, '', onLayoutRequest)
+    self._fieldCacheKeyOverride = prevOverride
+    if mountHost then
+        mountHost.layoutRoot = root
+    end
+    root:Layout()
+    if container.exuiAutoSizeHeight then
+        container:SetHeight(root:GetHeight())
+    end
+    return root
 end
 
 optionsFields.LayoutWidgets = function(self, container, widgets, gap, offsetX, offsetY)
@@ -765,6 +1088,9 @@ end
 
 optionsFields.ReleaseField = function(self, field)
     if self:IsFieldInCache(field) then
+        if field.SetBodyLayout then
+            field:SetBodyLayout(nil)
+        end
         field:Hide()
         return
     end
@@ -855,7 +1181,13 @@ optionsFields._RefreshFields = function(self)
     if cacheKey and self.fieldCache[cacheKey] then
         cachedCopy = {}
         for _, fieldFrame in ipairs(self.fieldCache[cacheKey]) do
-            table.insert(cachedCopy, fieldFrame)
+            if fieldFrame.SetBodyLayout and fieldFrame.header then
+                if fieldFrame.Destroy then
+                    fieldFrame:Destroy()
+                end
+            else
+                table.insert(cachedCopy, fieldFrame)
+            end
         end
     end
 
@@ -868,7 +1200,6 @@ optionsFields._RefreshFields = function(self)
     local root = self:CreateLayoutFrame(self.container, {
         direction = 'stack',
         gap = 10,
-        padding = { 10, 10, 10, 10 },
     })
     root:SetPoint('TOPLEFT')
     root:SetWidth(width)
@@ -876,7 +1207,7 @@ optionsFields._RefreshFields = function(self)
     self.layoutRoot = root
     self:LayoutMountedFields()
 
-    if cacheKey and not self.fieldCache[cacheKey] and #newFields > 0 then
+    if cacheKey and #newFields > 0 then
         self.fieldCache[cacheKey] = newFields
     end
 
@@ -935,8 +1266,7 @@ optionsFields.GetField = function(self, field)
             return f
         end,
         ['button'] = function()
-            local f = EXFrames:GetFrame('button'):Create()
-            return f
+            return EXFrames:GetFrame('simple-button'):Create()
         end,
         ['toggle'] = function()
             local f = EXFrames:GetFrame('toggle'):Create({
@@ -957,9 +1287,8 @@ optionsFields.GetField = function(self, field)
             local f = EXFrames:GetFrame('color-picker'):Create()
             return f
         end,
-        ['title'] = function()
-            local f = EXFrames:GetFrame('title'):Create()
-            return f
+        ['optionGroup'] = function()
+            return EXFrames:GetFrame('option-group'):Create()
         end,
         ['description'] = function()
             local f = EXFrames:GetFrame('description'):Create()

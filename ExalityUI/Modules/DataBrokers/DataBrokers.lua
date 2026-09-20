@@ -123,7 +123,6 @@ dataBrokers.GetOptions = function(self, _, currItemId)
         {
             type = 'title',
             label = 'Size & Position',
-            size = 14,
             width = 100
         },
         {
@@ -231,7 +230,6 @@ dataBrokers.GetOptions = function(self, _, currItemId)
         {
             type = 'title',
             label = 'Font',
-            size = 14,
             width = 100
         },
         {
@@ -357,7 +355,6 @@ dataBrokers.GetOptions = function(self, _, currItemId)
         {
             type = 'title',
             label = 'Actions',
-            size = 14,
             width = 100
         },
         {

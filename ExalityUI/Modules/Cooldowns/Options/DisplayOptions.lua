@@ -24,7 +24,6 @@ function displayOptions:GetOptions(cdID)
             type = 'title',
             label = 'Size & Position',
             width = 100,
-            size = 14,
         },
         {
             type = 'range',
@@ -163,7 +162,6 @@ function displayOptions:GetOptions(cdID)
         {
             type = 'title',
             label = 'Style',
-            size = 14,
             width = 100,
         },
         {
@@ -199,7 +197,6 @@ function displayOptions:GetOptions(cdID)
             type = 'title',
             label = 'Cooldown Text',
             width = 100,
-            size = 14,
         },
         {
             type = 'range',
@@ -451,7 +448,6 @@ function displayOptions:GetOptions(cdID)
             type = 'title',
             label = 'Stacks Text',
             width = 100,
-            size = 14,
             depends = function()
                 return cooldowns:GetValueForCD(cdID, 'showStacks') and
                     cooldowns:GetValueForCD(cdID, 'cooldownSource') ~= 'equipment'

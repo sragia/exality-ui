@@ -145,7 +145,6 @@ function styleOptions:GetOptions()
     table.insert(options, {
         type = 'title',
         label = 'Progress Bar',
-        size = 14,
         width = 100,
         depends = function()
             return objectiveTracker.Data:GetValue('enable')
@@ -241,7 +240,6 @@ function styleOptions:GetOptions()
     table.insert(options, {
         type = 'title',
         label = 'Colors',
-        size = 14,
         width = 100,
         depends = function()
             return objectiveTracker.Data:GetValue('enable')
@@ -290,7 +288,6 @@ function styleOptions:GetOptions()
     table.insert(options, {
         type = 'title',
         label = 'Header Styling',
-        size = 14,
         width = 100,
         depends = function()
             return objectiveTracker.Data:GetValue('enable')

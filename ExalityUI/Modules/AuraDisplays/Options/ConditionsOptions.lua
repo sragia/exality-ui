@@ -109,12 +109,12 @@ function conditionsOptions:GetFilterFields(displayID, groupID)
     local fields = {
         { type = 'title', label = 'Filter Tokens', width = 100 }
     }
-    for _, token in ipairs(defaults.FILTER_TOKENS) do
-        table.insert(fields, {
+    defaults:AppendFilterTokenOptionFields(fields, function(token, colWidth)
+        return {
             type = 'tri-state-checkbox',
             label = token,
             name = 'filter_' .. token,
-            width = 33,
+            width = colWidth,
             tooltip = {
                 text = defaults.FILTER_TOKEN_TOOLTIPS[token],
             },
@@ -126,8 +126,8 @@ function conditionsOptions:GetFilterFields(displayID, groupID)
                 auraDisplays:RefreshDisplay(displayID)
                 optionsFields:RefreshOptions()
             end,
-        })
-    end
+        }
+    end)
     table.insert(fields, {
         type = 'description',
         label = 'Filter Preview: ' .. self:GetFilterPreviewText(displayID, groupID),
@@ -200,87 +200,13 @@ function conditionsOptions:GetOptions(displayID, groupID)
 
     append(fields, self:GetFilterFields(displayID, groupID))
 
-    append(fields, {
-        { type = 'title', label = 'Spell IDs',  width = 100 },
-        {
-            type = 'disclaimer',
-            label =
-            'Spell ID filters always apply to non-secret auras on any unit. For other auras they only apply to HELPFUL on friendly units and HARMFUL on enemy units.',
-            name = 'spellIdNotice',
-            width = 100,
-            depends = function()
-                return conditionsOptions:ShouldShowSpellIdNotice(displayID, groupID)
-            end,
-        },
-        {
-            type = 'spell-id-input',
-            label = 'Include SpellIDs',
-            name = 'includeSpellIDs',
-            width = 50,
-            align = 'TOP',
-            getFilterString = function() return conditionsOptions:GetFilterPreview(displayID, groupID) end,
-            currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'includeSpellIDs') end,
-            onChange = function(v)
-                auraDisplays:UpdateGroupConditions(displayID, groupID, 'includeSpellIDs', v); auraDisplays
-                    :RefreshDisplay(displayID)
-            end,
-        },
-        {
-            type = 'spell-id-input',
-            label = 'Exclude SpellIDs',
-            name = 'excludeSpellIDs',
-            width = 50,
-            align = 'TOP',
-            getFilterString = function() return conditionsOptions:GetFilterPreview(displayID, groupID) end,
-            currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'excludeSpellIDs') end,
-            onChange = function(v)
-                auraDisplays:UpdateGroupConditions(displayID, groupID, 'excludeSpellIDs', v); auraDisplays
-                    :RefreshDisplay(displayID)
-            end,
-        },
-        {
-            type = 'checkbox',
-            label = 'Show spell IDs in aura tooltips',
-            name = 'tooltipShowAuraSpellIDs',
-            width = 100,
-            tooltip = {
-                text = 'Session only. Stays enabled until you exit the game.',
-            },
-            currentValue = function()
-                if C_CVar and C_CVar.GetCVarBool then
-                    return C_CVar.GetCVarBool('tooltipShowAuraSpellIDs')
-                end
-                return GetCVarBool and GetCVarBool('tooltipShowAuraSpellIDs')
-            end,
-            onChange = function(v)
-                local value = v and '1' or '0'
-                if C_CVar and C_CVar.SetCVar then
-                    C_CVar.SetCVar('tooltipShowAuraSpellIDs', value)
-                elseif SetCVar then
-                    SetCVar('tooltipShowAuraSpellIDs', value)
-                end
-                optionsFields:RefreshOptions()
-            end,
-        },
-        {
-            type = 'range',
-            label = 'Max Duration (0=off)',
-            name = 'maxDuration',
-            min = 0,
-            max = 600,
-            step = 1,
-            width = 50,
-            currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'maxDuration') end,
-            onChange = function(v)
-                auraDisplays:UpdateGroupConditions(displayID, groupID, 'maxDuration', v); auraDisplays:RefreshDisplay(
-                    displayID)
-            end,
-        },
-        { type = 'title', label = 'Aura Flags', width = 100 },
-    })
+    local function getCondition(key)
+        return auraDisplays:GetGroupConditions(displayID, groupID, key)
+    end
 
+    local auraFlagChildren = {}
     for _, entry in ipairs(defaults.BOOL_CONDITION_FIELDS) do
-        table.insert(fields, {
+        table.insert(auraFlagChildren, {
             type = 'tri-state-checkbox',
             label = defaults.BOOL_CONDITION_LABELS[entry] or entry,
             name = entry,
@@ -289,7 +215,7 @@ function conditionsOptions:GetOptions(displayID, groupID)
                 text = defaults.BOOL_CONDITION_TOOLTIPS[entry],
             },
             currentValue = function()
-                local value = auraDisplays:GetGroupConditions(displayID, groupID, entry)
+                local value = getCondition(entry)
                 if value == true then return 1 end
                 if value == false then return 2 end
                 return 0
@@ -309,6 +235,102 @@ function conditionsOptions:GetOptions(displayID, groupID)
             end,
         })
     end
+
+    append(fields, {
+        {
+            type = 'optionGroup',
+            label = 'Spell IDs',
+            collapsible = true,
+            expanded = function()
+                return defaults:ShouldExpandSpellIdSection(getCondition)
+            end,
+            children = {
+                {
+                    type = 'disclaimer',
+                    label =
+                    'Spell ID filters always apply to non-secret auras on any unit. For other auras they only apply to HELPFUL on friendly units and HARMFUL on enemy units.',
+                    name = 'spellIdNotice',
+                    width = 100,
+                    depends = function()
+                        return conditionsOptions:ShouldShowSpellIdNotice(displayID, groupID)
+                    end,
+                },
+                {
+                    type = 'spell-id-input',
+                    label = 'Include SpellIDs',
+                    name = 'includeSpellIDs',
+                    width = 50,
+                    align = 'TOP',
+                    getFilterString = function() return conditionsOptions:GetFilterPreview(displayID, groupID) end,
+                    currentValue = function() return getCondition('includeSpellIDs') end,
+                    onChange = function(v)
+                        auraDisplays:UpdateGroupConditions(displayID, groupID, 'includeSpellIDs', v); auraDisplays
+                            :RefreshDisplay(displayID)
+                    end,
+                },
+                {
+                    type = 'spell-id-input',
+                    label = 'Exclude SpellIDs',
+                    name = 'excludeSpellIDs',
+                    width = 50,
+                    align = 'TOP',
+                    getFilterString = function() return conditionsOptions:GetFilterPreview(displayID, groupID) end,
+                    currentValue = function() return getCondition('excludeSpellIDs') end,
+                    onChange = function(v)
+                        auraDisplays:UpdateGroupConditions(displayID, groupID, 'excludeSpellIDs', v); auraDisplays
+                            :RefreshDisplay(displayID)
+                    end,
+                },
+                {
+                    type = 'checkbox',
+                    label = 'Show spell IDs in aura tooltips',
+                    name = 'tooltipShowAuraSpellIDs',
+                    width = 100,
+                    tooltip = {
+                        text = 'Session only. Stays enabled until you exit the game.',
+                    },
+                    currentValue = function()
+                        if C_CVar and C_CVar.GetCVarBool then
+                            return C_CVar.GetCVarBool('tooltipShowAuraSpellIDs')
+                        end
+                        return GetCVarBool and GetCVarBool('tooltipShowAuraSpellIDs')
+                    end,
+                    onChange = function(v)
+                        local value = v and '1' or '0'
+                        if C_CVar and C_CVar.SetCVar then
+                            C_CVar.SetCVar('tooltipShowAuraSpellIDs', value)
+                        elseif SetCVar then
+                            SetCVar('tooltipShowAuraSpellIDs', value)
+                        end
+                        optionsFields:RefreshOptions()
+                    end,
+                },
+                {
+                    type = 'range',
+                    label = 'Max Duration (0=off)',
+                    name = 'maxDuration',
+                    min = 0,
+                    max = 600,
+                    step = 1,
+                    width = 50,
+                    currentValue = function() return getCondition('maxDuration') end,
+                    onChange = function(v)
+                        auraDisplays:UpdateGroupConditions(displayID, groupID, 'maxDuration', v); auraDisplays
+                            :RefreshDisplay(displayID)
+                    end,
+                },
+            },
+        },
+        {
+            type = 'optionGroup',
+            label = 'Aura Flags',
+            collapsible = true,
+            expanded = function()
+                return defaults:ShouldExpandAuraFlagsSection(getCondition)
+            end,
+            children = auraFlagChildren,
+        },
+    })
 
     return fields
 end

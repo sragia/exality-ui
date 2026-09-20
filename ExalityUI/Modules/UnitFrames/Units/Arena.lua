@@ -1,6 +1,8 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+if (EXUI:IsForever()) then return end
+
 ---@class EXUIUnitFramesCore
 local core = EXUI:GetModule('uf-core')
 

@@ -18,7 +18,7 @@ local function tagField(prefix)
         type = 'edit-box',
         label = 'Tag',
         name = prefix .. 'Tag',
-        width = 25,
+        width = 92,
         currentValue = function()
             return npCore:GetValue(prefix .. 'Tag')
         end,
@@ -42,6 +42,8 @@ local function tagInfoButton()
         tooltip = { text = 'Available tags' },
         color = { 3 / 255, 140 / 255, 252 / 255, 1 },
         width = 8,
+        squareSize = 29,
+        align = 'bottom',
     }
 end
 
@@ -55,6 +57,7 @@ local function textSection(prefix, extra)
             table.insert(options, field)
         end
     end
+    table.insert(options, { type = 'title', label = 'Tag', width = 100, size = 18 })
     table.insert(options, tagField(prefix))
     table.insert(options, tagInfoButton())
     return options

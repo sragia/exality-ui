@@ -43,6 +43,8 @@ defaults.BOOL_CONDITION_TOOLTIPS = {
     isBossOrRoleAura = 'Aura is a boss aura or a role aura.',
 }
 
+defaults.FILTER_TOKEN_COL_WIDTH = 33
+
 defaults.FILTER_TOKENS = {
     'HELPFUL',
     'HARMFUL',
@@ -76,6 +78,24 @@ defaults.FILTER_TOKEN_TOOLTIPS = {
     IMPORTANT = 'Include only auras flagged as important (helpful auras on enemy nameplates even if non-stealable).',
     DISPELLABLE = 'Include only auras with any dispel type, regardless of whether the raid can dispel them.',
 }
+
+function defaults:AppendFilterTokenOptionFields(fields, buildField)
+    local colWidth = self.FILTER_TOKEN_COL_WIDTH
+    local tokens = self.FILTER_TOKENS
+    local n = #tokens
+    local rem = n % 3
+
+    for i, token in ipairs(tokens) do
+        if i == n and rem == 2 then
+            table.insert(fields, { type = 'spacer', width = colWidth })
+        end
+        table.insert(fields, buildField(token, colWidth))
+    end
+    if rem == 1 then
+        table.insert(fields, { type = 'spacer', width = colWidth })
+        table.insert(fields, { type = 'spacer', width = colWidth })
+    end
+end
 
 defaults.DISPEL_TYPES = { 'Magic', 'Curse', 'Disease', 'Poison', 'Bleed', 'None' }
 
@@ -274,6 +294,37 @@ function defaults:BuildNewDisplay()
     }
     display.createdAt = time()
     return displayID, display
+end
+
+local function conditionTextHasContent(text)
+    return text ~= nil and tostring(text):match('%S') ~= nil
+end
+
+function defaults:ShouldExpandSpellIdSection(getValue)
+    if type(getValue) ~= 'function' then
+        return false
+    end
+    if conditionTextHasContent(getValue('includeSpellIDs')) then
+        return true
+    end
+    if conditionTextHasContent(getValue('excludeSpellIDs')) then
+        return true
+    end
+    local maxDuration = getValue('maxDuration') or 0
+    return maxDuration > 0
+end
+
+function defaults:ShouldExpandAuraFlagsSection(getValue)
+    if type(getValue) ~= 'function' then
+        return false
+    end
+    for _, field in ipairs(self.BOOL_CONDITION_FIELDS) do
+        local value = getValue(field)
+        if value == true or value == false then
+            return true
+        end
+    end
+    return false
 end
 
 function defaults:MigrateBoolConditionFlags(conditions)

@@ -153,10 +153,12 @@ local function createRow(editor, index)
 
     row.index = index
 
-    row.DeleteButton = EXFrames:GetFrame('button'):Create({
-        size = { DELETE_BUTTON_SIZE, DELETE_BUTTON_SIZE },
+    row.DeleteButton = EXFrames:GetFrame('simple-button'):Create(row)
+    row.DeleteButton:SetOptionData({
         color = EXUI.const.theme.faded,
-        hoverColor = EXUI.const.theme.dangerHover,
+        hoverColor = EXUI.const.theme.backgroundLight,
+        hoverBorderColor = EXUI.const.theme.danger,
+        square = true,
         icon = {
             texture = EXUI.const.textures.frame.icons.delete,
             width = 14,
@@ -165,7 +167,8 @@ local function createRow(editor, index)
         onClick = function()
             editor:RemovePoint(row.index)
         end,
-    }, row)
+    })
+    row.DeleteButton:SetSize(DELETE_BUTTON_SIZE, DELETE_BUTTON_SIZE)
     row.DeleteButton:SetPoint('RIGHT', row, 'RIGHT', -4, 0)
     row.DeleteButton:SetFrameLevel(row:GetFrameLevel() + 2)
 
@@ -259,14 +262,15 @@ local function configureEditor(editor)
     editor.RowsContainer:SetPoint('TOPLEFT', editor, 'TOPLEFT', PADDING, -28)
     editor.RowsContainer:SetPoint('TOPRIGHT', editor, 'TOPRIGHT', -PADDING, -28)
 
-    editor.AddButton = EXFrames:GetFrame('button'):Create({
-        text = 'Add Breakpoint',
-        size = { 140, ADD_BUTTON_HEIGHT },
+    editor.AddButton = EXFrames:GetFrame('simple-button'):Create(editor)
+    editor.AddButton:SetOptionData({
+        label = 'Add Breakpoint',
         color = { 30 / 255, 120 / 255, 0, 1 },
         onClick = function()
             editor:AddPoint()
         end,
-    }, editor)
+    })
+    editor.AddButton:SetSize(140, ADD_BUTTON_HEIGHT)
     editor.AddButton:SetPoint('TOPLEFT', editor.RowsContainer, 'BOTTOMLEFT', 0, -ROW_GAP)
 
     editor.RemovePoint = function(self, index)

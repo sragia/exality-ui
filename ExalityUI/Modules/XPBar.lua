@@ -121,11 +121,6 @@ end
 xpBar.GetOptions = function(self)
     return {
         {
-            type = 'title',
-            label = 'XP Bar',
-            width = 100,
-        },
-        {
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
@@ -154,7 +149,7 @@ xpBar.GetOptions = function(self)
             currentValue = function()
                 return self.Data:GetValue('showAtMaxLevel')
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'toggle',
@@ -170,12 +165,11 @@ xpBar.GetOptions = function(self)
             currentValue = function()
                 return self.Data:GetValue('showWatchedReputation')
             end,
-            width = 100
+            width = 50
         },
         {
             type = 'title',
             label = 'Size & Position',
-            size = 14,
             width = 100,
         },
         {
@@ -310,7 +304,6 @@ xpBar.GetOptions = function(self)
             depends = function()
                 return self.Data:GetValue('enable')
             end,
-            size = 14,
             width = 100,
         },
         {

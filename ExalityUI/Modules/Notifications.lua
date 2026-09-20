@@ -70,11 +70,6 @@ end
 notifications.GetOptions = function(self)
     return {
         {
-            type = 'title',
-            label = 'Notifications',
-            width = 100,
-        },
-        {
             type = 'toggle',
             label = 'Enable',
             name = 'enable',
@@ -125,7 +120,6 @@ notifications.GetOptions = function(self)
                 return self.Data:GetValue('enable')
             end,
             width = 100,
-            accent = EXUI.const.colors.accentSecondary
         },
         {
             type = 'anchor-point',
@@ -231,7 +225,6 @@ notifications.GetOptions = function(self)
                 return self.Data:GetValue('enable')
             end,
             width = 100,
-            accent = EXUI.const.colors.accentSecondary
         },
         {
             type = 'dropdown',

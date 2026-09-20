@@ -119,7 +119,7 @@ function meters:GetOrder()
 end
 
 function meters:GetIcon()
-    return [[Interface/Addons/ExalityUI/Assets/Images/Menu/raid-tools.png]]
+    return [[Interface/Addons/ExalityUI/Assets/Images/Menu/damage-meters.png]]
 end
 
 function meters:GetProfileExportSpec()
@@ -183,8 +183,8 @@ function meters:GetSectionTabs(itemId)
     end
     return {
         { ID = 'general', label = 'General' },
-        { ID = 'style', label = 'Style' },
-        { ID = 'texts', label = 'Texts' },
+        { ID = 'style',   label = 'Style' },
+        { ID = 'texts',   label = 'Texts' },
     }
 end
 

@@ -155,7 +155,6 @@ core.UpdateOptionsChrome = function(self, fields)
         fields.splitView:AddExtraButton({
             text = 'Show Preview',
             onClick = onClick.show,
-            color = { 249 / 255, 95 / 255, 9 / 255, 1 },
         })
     else
         fields.splitView:DisableExtraButton()
@@ -163,35 +162,14 @@ core.UpdateOptionsChrome = function(self, fields)
 
     local _, item = tab and FindInTableIf(tab.menu, function(menuItem) return menuItem.id == fields.currItemID end)
     if item and item.allowPreview then
-        if not fields.splitView.previewButton then
-            local previewButton = CreateFrame('Button', nil, fields.splitView.container)
-            previewButton:SetSize(140, 30)
-            previewButton:SetPoint('TOPRIGHT')
-            previewButton:SetAlpha(0.7)
-            local previewIcon = previewButton:CreateTexture(nil, 'BACKGROUND')
-            previewIcon:SetTexture(EXUI.const.textures.frame.previewIcon)
-            previewIcon:SetSize(40 * 15 / 24, 15)
-            previewIcon:SetPoint('RIGHT')
-            local previewText = previewButton:CreateFontString(nil, 'OVERLAY')
-            previewText:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
-            previewText:SetText('Toggle Preview')
-            previewText:SetWidth(0)
-            previewText:SetPoint('RIGHT', previewIcon, 'LEFT', -5, 0)
-            previewText:SetJustifyH('RIGHT')
-            previewButton:SetScript('OnEnter', function()
-                previewButton:SetAlpha(1)
-            end)
-            previewButton:SetScript('OnLeave', function()
-                previewButton:SetAlpha(0.7)
-            end)
-            previewButton:SetScript('OnClick', function()
+        fields.splitView:SetContentActionButton({
+            text = 'Toggle Preview',
+            onClick = function()
                 core:ToggleOptionPreview()
-            end)
-            fields.splitView.previewButton = previewButton
-        end
-        fields.splitView.previewButton:Show()
-    elseif fields.splitView.previewButton then
-        fields.splitView.previewButton:Hide()
+            end,
+        })
+    else
+        fields.splitView:SetContentActionButton(nil)
     end
 end
 
@@ -207,8 +185,8 @@ end
 
 core.TeardownOptions = function(self)
     if (self.tabOptions) then
-        if (self.tabOptions.previewButton) then
-            self.tabOptions.previewButton:Hide()
+        if self.tabOptions.SetContentActionButton then
+            self.tabOptions:SetContentActionButton(nil)
         end
         self.tabOptions:Destroy()
         self.tabOptions = nil
@@ -237,40 +215,6 @@ core.SetupTabs = function(self, container)
     tabOptions.container.exuiAutoSizeHeight = true
     if (tabOptions.scrollFrame) then
         tabOptions.scrollFrame:Show()
-    end
-
-    if (not tabOptions.previewButton) then
-        local previewButton = CreateFrame('Button', nil, tabOptions.container)
-        previewButton:SetSize(140, 30)
-        previewButton:SetPoint('TOPRIGHT')
-        previewButton:SetAlpha(0.7)
-
-        local previewIcon = previewButton:CreateTexture(nil, 'BACKGROUND')
-        previewIcon:SetTexture(EXUI.const.textures.frame.previewIcon)
-        previewIcon:SetSize(40 * 15 / 24, 15)
-        previewIcon:SetPoint('RIGHT')
-
-        local previewText = previewButton:CreateFontString(nil, 'OVERLAY')
-        previewText:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
-        previewText:SetText('Toggle Preview')
-        previewText:SetWidth(0)
-        previewText:SetPoint('RIGHT', previewIcon, 'LEFT', -5, 0)
-        previewText:SetJustifyH('RIGHT')
-
-
-        previewButton:SetScript('OnEnter', function()
-            previewButton:SetAlpha(1)
-        end)
-        previewButton:SetScript('OnLeave', function()
-            previewButton:SetAlpha(0.7)
-        end)
-
-        previewButton:SetScript('OnClick', function()
-            core:ToggleOptionPreview()
-        end)
-
-        previewButton:Hide()
-        tabOptions.previewButton = previewButton
     end
 
     self.tabs = tabs
@@ -345,7 +289,6 @@ core.OnTabChange = function(self, id)
             self.tabOptions:AddExtraButton({
                 text = 'Show Preview',
                 onClick = onClick.show,
-                color = { 249 / 255, 95 / 255, 9 / 255, 1 }
             })
         else
             self.tabOptions:DisableExtraButton()
@@ -392,10 +335,15 @@ core.HandleOptions = function(self)
         self.tabOptions.scrollFrame:Show()
     end
 
-    if (menu.allowPreview and self.tabOptions.previewButton) then
-        self.tabOptions.previewButton:Show()
-    elseif (self.tabOptions.previewButton) then
-        self.tabOptions.previewButton:Hide()
+    if menu.allowPreview and self.tabOptions.SetContentActionButton then
+        self.tabOptions:SetContentActionButton({
+            text = 'Toggle Preview',
+            onClick = function()
+                core:ToggleOptionPreview()
+            end,
+        })
+    elseif self.tabOptions.SetContentActionButton then
+        self.tabOptions:SetContentActionButton(nil)
     end
 
     self.tabOptions:UpdateScroll()

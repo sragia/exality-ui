@@ -22,6 +22,7 @@ optionsModuleSelector.scrollFrame = nil
 optionsModuleSelector.container = nil
 optionsModuleSelector.containerParent = nil
 optionsModuleSelector.buttons = {}
+optionsModuleSelector.navEntries = {}
 optionsModuleSelector.isCompact = false
 optionsModuleSelector.flyout = nil
 optionsModuleSelector.flyoutItems = nil
@@ -35,9 +36,54 @@ local categoryItems = {
     }
 }
 
-local COMPACT_GAP = 5
+local COMPACT_GAP = 3
+local ITEM_GAP = 3
+local CATEGORY_TOP_GAP = 14
+local CATEGORY_AFTER_GAP = 2
+local CATEGORY_HEADER_HEIGHT = 16
+local CATEGORY_TITLE_BLEND = 0.42
 local menuItemFrame = EXFrames:GetFrame('menu-item')
 local COMPACT_SIZE = menuItemFrame.COMPACT_SIZE or 26
+
+local function CategoryTitleColor()
+    local bright = EXFrames.Theme.white
+    local muted = EXFrames.Theme.textMuted
+    local t = CATEGORY_TITLE_BLEND
+    return {
+        bright[1] * (1 - t) + muted[1] * t,
+        bright[2] * (1 - t) + muted[2] * t,
+        bright[3] * (1 - t) + muted[3] * t,
+        1,
+    }
+end
+
+local function CreateCategoryHeader(parent, name)
+    local header = CreateFrame('Frame', nil, parent)
+    header:SetHeight(CATEGORY_HEADER_HEIGHT)
+
+    local text = header:CreateFontString(nil, 'OVERLAY')
+    text:SetFont(EXFrames.assets.font.default(), 11, '')
+    text:SetTextColor(unpack(CategoryTitleColor()))
+    text:SetPoint('LEFT', 8, 0)
+    text:SetJustifyH('LEFT')
+    text:SetText(name)
+    header.label = text
+
+    return header
+end
+
+local function GapBeforeNavEntry(entry, index, prevEntry)
+    if index == 1 then
+        return ITEM_GAP
+    end
+    if entry.kind == 'category' then
+        return CATEGORY_TOP_GAP
+    end
+    if prevEntry and prevEntry.kind == 'category' then
+        return CATEGORY_AFTER_GAP
+    end
+    return ITEM_GAP
+end
 
 local function AnchorCompactItem(item, parent, y)
     item:ClearAllPoints()
@@ -82,12 +128,19 @@ optionsModuleSelector.UpdateScroll = function(self)
     local width = math.max(1, scrollFrame:GetWidth())
     local contentHeight = 1
     if (self.isCompact) then
-        contentHeight = COMPACT_GAP + #self.buttons * (COMPACT_SIZE + COMPACT_GAP)
+        local itemCount = 0
+        for _, entry in ipairs(self.navEntries) do
+            if (entry.kind == 'item') then
+                itemCount = itemCount + 1
+            end
+        end
+        contentHeight = COMPACT_GAP + itemCount * (COMPACT_SIZE + COMPACT_GAP)
     else
-        local gap = 5
-        contentHeight = gap
-        for _, button in ipairs(self.buttons) do
-            contentHeight = contentHeight + button:GetHeight() + gap
+        contentHeight = 0
+        local prevEntry = nil
+        for index, entry in ipairs(self.navEntries) do
+            contentHeight = contentHeight + GapBeforeNavEntry(entry, index, prevEntry) + entry.frame:GetHeight()
+            prevEntry = entry
         end
     end
 
@@ -97,17 +150,40 @@ end
 optionsModuleSelector.Relayout = function(self)
     if (self.isCompact) then
         local y = COMPACT_GAP
-        for _, child in ipairs(self.buttons) do
-            AnchorCompactItem(child, self.container, y)
-            y = y + COMPACT_SIZE + COMPACT_GAP
+        for _, entry in ipairs(self.navEntries) do
+            if (entry.kind == 'category') then
+                entry.frame:Hide()
+            else
+                AnchorCompactItem(entry.frame, self.container, y)
+                y = y + COMPACT_SIZE + COMPACT_GAP
+            end
         end
         self:UpdateScroll()
         return
     end
 
-    local gap = 5
     local gapX = 3
-    EXUI.utils.organizeFramesInList(self.buttons, gap, self.container, gapX)
+    local prev = nil
+    local prevEntry = nil
+    for index, entry in ipairs(self.navEntries) do
+        local frame = entry.frame
+        if (entry.kind == 'category') then
+            frame:Show()
+        end
+
+        frame:ClearAllPoints()
+        local topGap = GapBeforeNavEntry(entry, index, prevEntry)
+        if (not prev) then
+            frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', gapX, -topGap)
+            frame:SetPoint('TOPRIGHT', self.container, 'TOPRIGHT', -gapX, -topGap)
+        else
+            frame:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, -topGap)
+            frame:SetPoint('TOPRIGHT', prev, 'BOTTOMRIGHT', 0, -topGap)
+        end
+        frame:Show()
+        prev = frame
+        prevEntry = entry
+    end
     self:UpdateScroll()
 end
 
@@ -195,46 +271,25 @@ optionsModuleSelector.ConfigureItem = function(self, item, module)
     item._navModule = module
     item:SetIcon(navIcons:Get(module.name, module.data))
     item:SetText(module.name)
-
-    if (module.subMenu) then
-        item:SetSubMenuItems(module.subMenu)
-        item:SetExpandable(true)
-        item:SetSelected(false)
-    else
-        item:SetExpandable(false)
-        item:SetOnClick(module.onClick)
-        item:SetData(module.data)
-        item:SetSelected(optionsController.selectedModule)
-    end
+    item:SetExpandable(false)
+    item:SetOnClick(module.onClick)
+    item:SetData(module.data)
+    item:SetSelected(optionsController.selectedModule)
 end
 
 optionsModuleSelector.RestoreExpandedItem = function(self, item, module)
     item:SetOnClick(nil)
-    if (module.subMenu) then
-        item:SetSubMenuItems(module.subMenu)
-        item:SetExpandable(true)
-        item:SetSelected(false)
-    else
-        item:SetExpandable(false)
-        item:SetOnClick(module.onClick)
-        item:SetData(module.data)
-        item:SetSelected(optionsController.selectedModule)
-    end
+    item:SetExpandable(false)
+    item:SetOnClick(module.onClick)
+    item:SetData(module.data)
+    item:SetSelected(optionsController.selectedModule)
 end
 
 optionsModuleSelector.ConfigureCompactItem = function(self, item, module)
-    if (module.subMenu) then
-        item:SetExpandable(false)
-        item:SetOnClick(function(clicked)
-            self:ToggleFlyout(clicked)
-        end)
-        item:SetSelected(false)
-    else
-        item:SetExpandable(false)
-        item:SetOnClick(module.onClick)
-        item:SetData(module.data)
-        item:SetSelected(optionsController.selectedModule)
-    end
+    item:SetExpandable(false)
+    item:SetOnClick(module.onClick)
+    item:SetData(module.data)
+    item:SetSelected(optionsController.selectedModule)
 end
 
 optionsModuleSelector.SetCompactMode = function(self, compact)
@@ -244,14 +299,23 @@ optionsModuleSelector.SetCompactMode = function(self, compact)
     self.isCompact = compact
     self:HideFlyout()
 
-    for _, item in ipairs(self.buttons) do
-        local module = item._navModule
-        item:SetCompact(compact)
-        if (module) then
+    for _, entry in ipairs(self.navEntries) do
+        if (entry.kind == 'category') then
             if (compact) then
-                self:ConfigureCompactItem(item, module)
+                entry.frame:Hide()
             else
-                self:RestoreExpandedItem(item, module)
+                entry.frame:Show()
+            end
+        else
+            local item = entry.frame
+            local module = entry.module
+            item:SetCompact(compact)
+            if (module) then
+                if (compact) then
+                    self:ConfigureCompactItem(item, module)
+                else
+                    self:RestoreExpandedItem(item, module)
+                end
             end
         end
     end
@@ -263,17 +327,44 @@ optionsModuleSelector.SetCompactMode = function(self, compact)
     self:Relayout()
 end
 
-optionsModuleSelector.Populate = function(self)
+optionsModuleSelector.BuildNavList = function(self)
     local tree = self:BuildTree()
+    local list = {}
 
-    for _, module in EXUI.utils.spairs(tree, function(t, a, b) return t[a].order < t[b].order end) do
-        local item = EXFrames:GetFrame('menu-item'):Create(self.container)
-        self:ConfigureItem(item, module)
-        if (self.isCompact) then
-            item:SetCompact(true)
-            self:ConfigureCompactItem(item, module)
+    for _, node in EXUI.utils.spairs(tree, function(t, a, b) return t[a].order < t[b].order end) do
+        if (node.subMenu and #node.subMenu > 0) then
+            table.insert(list, { kind = 'category', name = node.name })
+            table.sort(node.subMenu, function(a, b) return a.order < b.order end)
+            for _, sub in ipairs(node.subMenu) do
+                table.insert(list, { kind = 'item', module = sub })
+            end
+        elseif (node.data) then
+            table.insert(list, { kind = 'item', module = node })
         end
-        table.insert(self.buttons, item)
+    end
+
+    return list
+end
+
+optionsModuleSelector.Populate = function(self)
+    self.navEntries = {}
+    self.buttons = {}
+
+    for _, entry in ipairs(self:BuildNavList()) do
+        if (entry.kind == 'category') then
+            local header = CreateCategoryHeader(self.container, entry.name)
+            table.insert(self.navEntries, { kind = 'category', frame = header })
+        else
+            local module = entry.module
+            local item = EXFrames:GetFrame('menu-item'):Create(self.container)
+            self:ConfigureItem(item, module)
+            if (self.isCompact) then
+                item:SetCompact(true)
+                self:ConfigureCompactItem(item, module)
+            end
+            table.insert(self.navEntries, { kind = 'item', frame = item, module = module })
+            table.insert(self.buttons, item)
+        end
     end
 
     self:Relayout()
@@ -285,8 +376,6 @@ optionsModuleSelector.BuildTree = function(self)
         tree[category.name] = {
             order = category.order,
             name = category.name,
-            isExpandable = true,
-            onClick = nil,
             subMenu = {}
         }
     end
