@@ -300,7 +300,9 @@ function auraDisplays:GetSplitViewItems()
 end
 
 function auraDisplays:GetSectionTabs(itemId)
-    if not itemId then return {} end
+    if not itemId or not self:GetDisplay(itemId) then
+        return {}
+    end
     groupNav:EnsureGroupSelected(itemId)
     return {
         { ID = 'container', label = 'Container' },
@@ -311,6 +313,10 @@ function auraDisplays:GetSectionTabs(itemId)
 end
 
 function auraDisplays:GetOptions(currTabID, currItemID)
+    if not currItemID then
+        local items = self:GetSplitViewItems()
+        currItemID = items[1] and items[1].ID
+    end
     if not currItemID then return {} end
     local display = self:GetDisplay(currItemID)
     if not display then return {} end

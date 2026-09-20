@@ -27,8 +27,33 @@ options.currTabId = options.TABS.GENERAL
 options.currItemId = nil
 options.fields = {}
 
+options.useSplitView = true
+options.useInnerTabs = true
+options.splitViewExtraButton = {
+    text = 'Create New',
+    color = { 249 / 255, 95 / 255, 9 / 255, 1 },
+    onClick = function()
+        local id = customData:Create()
+        local fields = EXUI:GetModule('options-fields')
+        fields:RefreshItemList()
+        fields:SetItemID(id)
+    end,
+}
+
 options.Init = function(self)
-    optionsController:RegisterModule(self, self.OptionHandler)
+    optionsController:RegisterModule(self)
+end
+
+options.GetSplitViewItems = function(self)
+    return customData:GetItems()
+end
+
+options.GetSectionTabs = function(self)
+    return {
+        { ID = options.TABS.GENERAL, label = 'General' },
+        { ID = options.TABS.DISPLAY, label = 'Display' },
+        { ID = options.TABS.LOGIC, label = 'Logic' },
+    }
 end
 
 options.GetName = function(self)
@@ -94,6 +119,14 @@ options.Refresh = function(self)
 end
 
 options.GetOptions = function(self, tabId, itemId)
+    tabId = tabId or options.TABS.GENERAL
+    if not itemId then
+        local items = self:GetSplitViewItems()
+        itemId = items and items[1] and items[1].ID
+    end
+    if not itemId then
+        return {}
+    end
     if (tabId == options.TABS.GENERAL) then
         return self:GetGeneralOptions(itemId)
     elseif (tabId == options.TABS.DISPLAY) then

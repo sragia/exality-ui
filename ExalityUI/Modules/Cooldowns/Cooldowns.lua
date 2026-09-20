@@ -168,6 +168,10 @@ end
 
 function cooldowns:GetOptions(currTabID, currItemID)
     if not currItemID then
+        local items = self:GetSplitViewItems()
+        currItemID = items[1] and items[1].ID
+    end
+    if not currItemID then
         return {}
     end
 

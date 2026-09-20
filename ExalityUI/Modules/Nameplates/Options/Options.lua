@@ -68,6 +68,39 @@ function options:TeardownOptions()
     self.fields = {}
 end
 
+function options:GetTabs()
+    local tabs = {}
+    for _, tab in ipairs(TABS) do
+        table.insert(tabs, { ID = tab.id, label = tab.name })
+    end
+    return tabs
+end
+
+function options:GetSplitViewItems()
+    local tabId = EXUI:GetModule('options-fields').currTabID or self.currTabId
+    local menu = getTabMenu(findTab(tabId) or TABS[1])
+    local items = {}
+    for _, item in ipairs(menu) do
+        table.insert(items, { ID = item.id, label = item.name })
+    end
+    return items
+end
+
+function options:GetOptions(tabId, itemId)
+    self.currTabId = tabId or self.currTabId or TABS[1].id
+    local tab = findTab(self.currTabId) or TABS[1]
+    local menu = getTabMenu(tab)
+    self.currItemId = itemId or self.currItemId or (menu[1] and menu[1].id)
+    local item = findMenuItem(menu, self.currItemId) or menu[1]
+    if not item then
+        return {}
+    end
+    if type(item.options) == 'function' then
+        return item.options() or {}
+    end
+    return item.options or {}
+end
+
 function options:GetCurrentOptions()
     local tab = findTab(self.currTabId)
     local item = findMenuItem(getTabMenu(tab), self.currItemId)
@@ -144,11 +177,7 @@ function options:OnTabChange(id)
 end
 
 function options:RefreshCurrentView()
-    C_Timer.After(0.05, function()
-        if self.tabOptions then
-            self:HandleOptions()
-        end
-    end)
+    EXUI:GetModule('options-fields'):RefreshOptionsDelayed(0.05)
 end
 
 function options:Setup(container)

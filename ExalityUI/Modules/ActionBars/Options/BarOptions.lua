@@ -28,57 +28,71 @@ barOptions.GetPositionFields = function(self, mod, db, scope, onRefresh)
     end
 
     return {
-        { type = 'title', label = 'Position', width = 100 },
         {
-            type = 'anchor-point',
-            label = 'Anchor Point',
-            name = 'anchorPoint',
-            width = 23,
-            currentValue = function() return scope.anchorPoint end,
-            onChange = function(v)
-                scope.anchorPoint = v
-                save(true)
-            end,
-        },
-        {
-            type = 'anchor-point',
-            label = 'Relative Anchor Point',
-            name = 'relativeAnchor',
-            width = 23,
-            currentValue = function() return scope.relativeAnchor end,
-            onChange = function(v)
-                scope.relativeAnchor = v
-                save(true)
-            end,
-        },
-        { type = 'spacer', width = 54 },
-        {
-            type = 'range',
-            label = 'X Offset',
-            name = 'xOffset',
-            width = 23,
-            min = -1000,
-            max = 1000,
-            step = 1,
-            currentValue = function() return scope.xOffset or 0 end,
-            onChange = function(v)
-                scope.xOffset = v
-                save(true)
-            end,
-        },
-        {
-            type = 'range',
-            label = 'Y Offset',
-            name = 'yOffset',
-            width = 23,
-            min = -1000,
-            max = 1000,
-            step = 1,
-            currentValue = function() return scope.yOffset or 0 end,
-            onChange = function(v)
-                scope.yOffset = v
-                save(true)
-            end,
+            type = 'section',
+            label = 'Position',
+            children = {
+                {
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'anchor-point',
+                            label = 'Anchor Point',
+                            name = 'anchorPoint',
+                            flex = 1,
+                            currentValue = function() return scope.anchorPoint end,
+                            onChange = function(v)
+                                scope.anchorPoint = v
+                                save(true)
+                            end,
+                        },
+                        {
+                            type = 'anchor-point',
+                            label = 'Relative Anchor Point',
+                            name = 'relativeAnchor',
+                            flex = 1,
+                            currentValue = function() return scope.relativeAnchor end,
+                            onChange = function(v)
+                                scope.relativeAnchor = v
+                                save(true)
+                            end,
+                        },
+                    },
+                },
+                {
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'range',
+                            label = 'X Offset',
+                            name = 'xOffset',
+                            flex = 1,
+                            min = -1000,
+                            max = 1000,
+                            step = 1,
+                            currentValue = function() return scope.xOffset or 0 end,
+                            onChange = function(v)
+                                scope.xOffset = v
+                                save(true)
+                            end,
+                        },
+                        {
+                            type = 'range',
+                            label = 'Y Offset',
+                            name = 'yOffset',
+                            flex = 1,
+                            min = -1000,
+                            max = 1000,
+                            step = 1,
+                            currentValue = function() return scope.yOffset or 0 end,
+                            onChange = function(v)
+                                scope.yOffset = v
+                                save(true)
+                            end,
+                        },
+                    },
+                },
+            },
         },
     }
 end

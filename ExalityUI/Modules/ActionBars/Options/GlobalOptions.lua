@@ -98,7 +98,7 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
     end
 
     local fields = {
-        { type = 'title', label = label, width = 100 },
+        { type = 'section', label = label, children = {} },
     }
 
     local depends = not isGlobal and function()

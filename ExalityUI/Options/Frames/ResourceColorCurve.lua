@@ -97,7 +97,7 @@ local function relayoutOptions()
         if not optionsFields.fields or not optionsFields.container then
             return
         end
-        EXUI.utils.organizeFramesInGrid('fields', optionsFields.fields, 10, optionsFields.container, 10, 10)
+        optionsFields:RefreshOptions()
         if optionsFields.splitView and optionsFields.splitView.UpdateScroll then
             optionsFields.splitView:UpdateScroll()
         elseif optionsFields.innerTabs and optionsFields.innerTabs.UpdateScroll then

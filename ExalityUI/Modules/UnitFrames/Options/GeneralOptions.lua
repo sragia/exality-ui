@@ -20,78 +20,85 @@ core:AddOption({
             id = 'textures',
             options = {
                 {
-                    type = 'dropdown',
-                    name = 'statusBarTexture',
-                    label = 'Status Bar Texture',
-                    getOptions = function()
-                        local list = LSM:List('statusbar')
-                        local options = {}
-                        for _, texture in pairs(list) do
-                            options[texture] = texture
-                        end
-                        return options
-                    end,
-                    isTextureDropdown = true,
-                    currentValue = function()
-                        return ufCore:GetValueForUnit('general', 'statusBarTexture')
-                    end,
-                    onChange = function(value)
-                        ufCore:UpdateValueForUnit('general', 'statusBarTexture', value)
-                        ufCore:UpdateAllFrames()
-                    end,
-                    width = 50
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'dropdown',
+                            name = 'statusBarTexture',
+                            label = 'Status Bar Texture',
+                            getOptions = function()
+                                local list = LSM:List('statusbar')
+                                local options = {}
+                                for _, texture in pairs(list) do
+                                    options[texture] = texture
+                                end
+                                return options
+                            end,
+                            isTextureDropdown = true,
+                            currentValue = function()
+                                return ufCore:GetValueForUnit('general', 'statusBarTexture')
+                            end,
+                            onChange = function(value)
+                                ufCore:UpdateValueForUnit('general', 'statusBarTexture', value)
+                                ufCore:UpdateAllFrames()
+                            end,
+                            flex = 1,
+                        },
+                    },
                 },
                 {
-                    type = 'spacer',
-                    width = 50
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'dropdown',
+                            name = 'damageAbsorbTexture',
+                            label = 'Damage Absorb Texture',
+                            getOptions = function()
+                                local list = LSM:List('statusbar')
+                                local options = {}
+                                for _, texture in pairs(list) do
+                                    options[texture] = texture
+                                end
+                                return options
+                            end,
+                            isTextureDropdown = true,
+                            currentValue = function()
+                                return ufCore:GetValueForUnit('general', 'damageAbsorbTexture')
+                            end,
+                            onChange = function(value)
+                                ufCore:UpdateValueForUnit('general', 'damageAbsorbTexture', value)
+                                ufCore:UpdateAllFrames()
+                            end,
+                            flex = 1,
+                        },
+                    },
                 },
                 {
-                    type = 'dropdown',
-                    name = 'damageAbsorbTexture',
-                    label = 'Damage Absorb Texture',
-                    getOptions = function()
-                        local list = LSM:List('statusbar')
-                        local options = {}
-                        for _, texture in pairs(list) do
-                            options[texture] = texture
-                        end
-                        return options
-                    end,
-                    isTextureDropdown = true,
-                    currentValue = function()
-                        return ufCore:GetValueForUnit('general', 'damageAbsorbTexture')
-                    end,
-                    onChange = function(value)
-                        ufCore:UpdateValueForUnit('general', 'damageAbsorbTexture', value)
-                        ufCore:UpdateAllFrames()
-                    end,
-                    width = 50
-                },
-                {
-                    type = 'spacer',
-                    width = 50
-                },
-                {
-                    type = 'dropdown',
-                    name = 'healAbsorbTexture',
-                    label = 'Heal Absorb Texture',
-                    getOptions = function()
-                        local list = LSM:List('statusbar')
-                        local options = {}
-                        for _, texture in pairs(list) do
-                            options[texture] = texture
-                        end
-                        return options
-                    end,
-                    isTextureDropdown = true,
-                    currentValue = function()
-                        return ufCore:GetValueForUnit('general', 'healAbsorbTexture')
-                    end,
-                    onChange = function(value)
-                        ufCore:UpdateValueForUnit('general', 'healAbsorbTexture', value)
-                        ufCore:UpdateAllFrames()
-                    end,
-                    width = 50
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'dropdown',
+                            name = 'healAbsorbTexture',
+                            label = 'Heal Absorb Texture',
+                            getOptions = function()
+                                local list = LSM:List('statusbar')
+                                local options = {}
+                                for _, texture in pairs(list) do
+                                    options[texture] = texture
+                                end
+                                return options
+                            end,
+                            isTextureDropdown = true,
+                            currentValue = function()
+                                return ufCore:GetValueForUnit('general', 'healAbsorbTexture')
+                            end,
+                            onChange = function(value)
+                                ufCore:UpdateValueForUnit('general', 'healAbsorbTexture', value)
+                                ufCore:UpdateAllFrames()
+                            end,
+                            flex = 1,
+                        },
+                    },
                 },
             }
         },

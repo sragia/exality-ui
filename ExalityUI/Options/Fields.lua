@@ -24,6 +24,15 @@ optionsFields.currTabID = nil
 optionsFields.currItemID = nil
 optionsFields.fields = {}
 optionsFields.fieldCache = {}
+optionsFields.layoutRoot = nil
+optionsFields.widgetLayouts = {}
+
+local LAYOUT_TYPES = {
+    section = true,
+    row = true,
+    stack = true,
+    columns = true,
+}
 
 optionsFields.Init = function(self)
     EXUI.utils.addObserver(self)
@@ -34,22 +43,64 @@ optionsFields.Init = function(self)
 end
 
 optionsFields.Create = function(self, container)
-    self.container = container
-    self.baseContainer = container
+    self.host = container
+    local scroll = EXFrames:GetFrame('smooth-scroll-frame'):Create(container)
+    scroll:SetAllPoints()
+    scroll.child.exuiAutoSizeHeight = true
+    self.pageScroll = scroll
+    self.baseContainer = scroll.child
+    self.container = scroll.child
 
     self:Refresh()
 end
 
-optionsFields.AddSplitView = function(self, module)
-    self.splitView = EXFrames:GetFrame('split-options-frame'):Create()
-    if (self.tabs) then
-        self.splitView:SetParent(self.tabs.container)
-        self.splitView:SetAllPoints()
+optionsFields.ShowPageScroll = function(self)
+    if self.pageScroll then
+        self.pageScroll:Show()
+    end
+end
+
+optionsFields.HidePageScroll = function(self)
+    if self.pageScroll then
+        self.pageScroll:Hide()
+    end
+end
+
+optionsFields.RequestFieldsRefresh = function(self)
+    if self._buildingChrome then
+        return
+    end
+    self:RefreshFields()
+end
+
+optionsFields.AttachSplitView = function(self)
+    if not self.splitView then
+        return
+    end
+    if self.tabs then
+        if self.tabs.scrollFrame then
+            self.tabs.scrollFrame:Hide()
+        end
+        local parent = self.tabs.panel or self.tabs
+        self.splitView:SetParent(parent)
+        self.splitView:ClearAllPoints()
+        self.splitView:SetAllPoints(parent)
     else
-        self.splitView:SetParent(self.baseContainer)
-        self.splitView:SetAllPoints()
+        self:HidePageScroll()
+        local parent = self.host or self.baseContainer
+        self.splitView:SetParent(parent)
+        self.splitView:ClearAllPoints()
+        self.splitView:SetAllPoints(parent)
+    end
+    if self.splitView.ApplyPanelLayout then
+        self.splitView:ApplyPanelLayout()
     end
     self.splitView:UpdateScroll()
+end
+
+optionsFields.AddSplitView = function(self, module)
+    self.splitView = EXFrames:GetFrame('split-options-frame'):Create()
+    self:AttachSplitView()
 
     if (module.splitViewExtraButton) then
         self.splitView:AddExtraButton(module.splitViewExtraButton)
@@ -71,7 +122,7 @@ optionsFields.AddSplitView = function(self, module)
             self:ClearInnerTabs()
             self:UseSplitViewContainer()
         end
-        self:RefreshFields()
+        self:RequestFieldsRefresh()
     end)
     if (#items > 0) then
         local found = false
@@ -139,11 +190,20 @@ optionsFields.AddInnerTabs = function(self, module)
     self.innerTabs:SetPoint('TOPLEFT', rightPanel, 'TOPLEFT', 5, -5)
     self.innerTabs:SetPoint('BOTTOMRIGHT', rightPanel, 'BOTTOMRIGHT', -5, 5)
 
+    if (self.splitView.scrollFrame) then
+        self.splitView.scrollFrame:Hide()
+    end
+    self.container = self.innerTabs.container
+    self.container.exuiAutoSizeHeight = true
+    if self.innerTabs.UpdateScroll then
+        self.innerTabs:UpdateScroll()
+    end
+
     local tabs = module:GetSectionTabs(self.currItemID)
     self.innerTabs:AddTabs(tabs)
     self.innerTabs:SetOnTabChange(function(id)
         self.currTabID = id
-        self:RefreshFields()
+        self:RequestFieldsRefresh()
     end)
 
     if (#tabs > 0) then
@@ -161,13 +221,8 @@ optionsFields.AddInnerTabs = function(self, module)
         end
     end
 
-    if (self.splitView.scrollFrame) then
-        self.splitView.scrollFrame:Hide()
-    end
-    self.container = self.innerTabs.container
-
     if module.UpdateOptionsChrome then
-        module:UpdateOptionsChrome(self)
+        pcall(module.UpdateOptionsChrome, module, self)
     end
 end
 
@@ -189,18 +244,24 @@ optionsFields.RefreshSplitViewForTab = function(self)
         self.splitView = nil
         self.currItemID = nil
         if (self.tabs) then
+            if self.tabs.scrollFrame then
+                self.tabs.scrollFrame:Show()
+            end
             self.container = self.tabs.container
         else
+            self:ShowPageScroll()
             self.container = self.baseContainer
         end
     end
 
-    self:RefreshFields()
+    self:RequestFieldsRefresh()
 end
 
 optionsFields.AddTabs = function(self, module)
-    self.tabs = EXFrames:GetFrame('tabs-frame'):Create({ scrollable = true })
-    self.tabs:SetParent(self.baseContainer)
+    local scrollable = not module.useSplitView or module.splitViewTabID
+    self.tabs = EXFrames:GetFrame('tabs-frame'):Create(scrollable and { scrollable = true } or nil)
+    self:HidePageScroll()
+    self.tabs:SetParent(self.host or self.baseContainer)
     self.tabs:SetAllPoints()
     self.container = self.tabs.container
 
@@ -211,10 +272,29 @@ optionsFields.AddTabs = function(self, module)
     self.tabs:SetOnTabChange(function(id)
         self.currTabID = id
         local selected = optionsController:GetSelectedModule()
-        if (selected and selected.module and selected.module.splitViewTabID) then
+        local currentModule = selected and selected.module
+        if currentModule and currentModule.splitViewTabID then
             self:RefreshSplitViewForTab()
+        elseif currentModule and currentModule.useSplitView then
+            self.currItemID = nil
+            self:ClearInnerTabs()
+            if self.splitView then
+                self.splitView:Destroy()
+                self.splitView = nil
+            end
+            self:AddSplitView(currentModule)
+            if currentModule.useInnerTabs and self.splitView then
+                if self:HasInnerTabs(currentModule, self.currItemID) then
+                    if not self.innerTabs then
+                        self:AddInnerTabs(currentModule)
+                    end
+                else
+                    self:ClearInnerTabs()
+                    self:UseSplitViewContainer()
+                end
+            end
         else
-            self:RefreshFields()
+            self:RequestFieldsRefresh()
         end
     end)
 
@@ -233,16 +313,124 @@ optionsFields.AddTabs = function(self, module)
     end
 end
 
+optionsFields.GetContentWidth = function(self)
+    local function usable(width)
+        return type(width) == 'number' and width >= 64
+    end
+
+    if self.splitView and self.splitView.rightPanel then
+        local width = self.splitView.rightPanel:GetWidth()
+        if usable(width) then
+            return math.max(1, width - 20)
+        end
+    end
+    if self.innerTabs and self.innerTabs.panel then
+        local width = self.innerTabs.panel:GetWidth()
+        if usable(width) then
+            return math.max(1, width - 20)
+        end
+    end
+    if self.tabs and self.tabs.panel then
+        local width = self.tabs.panel:GetWidth()
+        if usable(width) then
+            return math.max(1, width - 20)
+        end
+    end
+    if self.pageScroll and self.pageScroll:IsShown() then
+        local width = self.pageScroll:GetWidth()
+        if usable(width) then
+            return width
+        end
+    end
+    if self.host then
+        local width = self.host:GetWidth()
+        if usable(width) then
+            return math.max(1, width - 20)
+        end
+    end
+    if self.container then
+        local width = self.container:GetWidth()
+        if usable(width) then
+            return width
+        end
+    end
+    return 640
+end
+
+optionsFields.UpdateActiveScroll = function(self)
+    local root = self.layoutRoot
+    if self.tabs and self.tabs.scrollable and self.tabs.UpdateScroll and self.container == self.tabs.container then
+        self.tabs:UpdateScroll()
+    elseif self.innerTabs and self.innerTabs.scrollable and self.innerTabs.UpdateScroll and self.container == self.innerTabs.container then
+        self.innerTabs:UpdateScroll()
+    elseif self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
+        self.splitView:UpdateScroll()
+    elseif self.pageScroll and self.pageScroll:IsShown() and root then
+        self.pageScroll:UpdateScrollChild(self:GetContentWidth(), root:GetHeight())
+    end
+end
+
+optionsFields.LayoutMountedFields = function(self)
+    local root = self.layoutRoot
+    if not root then
+        return
+    end
+    local width = self:GetContentWidth()
+    if self.container and self.container.SetWidth then
+        self.container:SetWidth(width)
+    end
+    root:SetWidth(width)
+    root:Layout()
+    if self.container and self.container.exuiAutoSizeHeight then
+        self.container:SetHeight(root:GetHeight())
+    end
+    self:UpdateActiveScroll()
+end
+
+optionsFields.ResolveOptionIDs = function(self, module)
+    if not self.currItemID and module.GetSplitViewItems then
+        local items = module:GetSplitViewItems()
+        if items then
+            for _, item in ipairs(items) do
+                if item.ID and item.type ~= 'category' then
+                    self.currItemID = item.ID
+                    break
+                end
+            end
+        end
+    end
+    if not self.currTabID and module.useInnerTabs and module.GetSectionTabs then
+        local tabs = module:GetSectionTabs(self.currItemID)
+        if tabs and tabs[1] then
+            self.currTabID = tabs[1].ID
+        end
+    end
+    if not self.currTabID and module.useTabs and module.GetTabs then
+        local tabs = module:GetTabs()
+        if tabs and tabs[1] then
+            self.currTabID = tabs[1].ID
+        end
+    end
+end
+
 optionsFields.Refresh = function(self)
+    self._refreshingFields = false
     local module = optionsController:GetSelectedModule()
+    if not module then
+        return
+    end
+    local currentModule = module.module
+    local moduleKey = currentModule and currentModule.GetName and currentModule:GetName()
+    if self._moduleKey ~= moduleKey then
+        self.currTabID = nil
+        self.currItemID = nil
+        self._moduleKey = moduleKey
+    end
 
     self:InvalidateFieldCache()
-    for _, module in pairs(optionsController:GetAllModules()) do
-        if module.module and module.module.TeardownOptionsChrome then
-            module.module:TeardownOptionsChrome()
-        end
-        if (module.optionHandler) then
-            module.optionHandler(self.container, true)
+    for _, registered in pairs(optionsController:GetAllModules()) do
+        if registered.module and registered.module.TeardownOptionsChrome then
+            registered.module:TeardownOptionsChrome()
         end
     end
     if (self.splitView) then
@@ -261,13 +449,9 @@ optionsFields.Refresh = function(self)
     end
 
     self.container = self.baseContainer
+    self:ShowPageScroll()
 
-    if (module.optionHandler) then
-        module.optionHandler(self.container)
-        return;
-    end
-    local currentModule = module.module
-
+    self._buildingChrome = true
     if (currentModule) then
         if (currentModule.useTabs) then
             self:AddTabs(currentModule)
@@ -280,7 +464,11 @@ optionsFields.Refresh = function(self)
             end
             if (currentModule.useInnerTabs and self.splitView) then
                 if self:HasInnerTabs(currentModule, self.currItemID) then
-                    self:AddInnerTabs(currentModule)
+                    if not self.innerTabs then
+                        self:AddInnerTabs(currentModule)
+                    else
+                        self.container = self.innerTabs.container
+                    end
                 else
                     self:ClearInnerTabs()
                     self:UseSplitViewContainer()
@@ -288,7 +476,7 @@ optionsFields.Refresh = function(self)
             end
         end
     end
-
+    self._buildingChrome = false
     self:RefreshFields()
 end
 
@@ -348,6 +536,214 @@ optionsFields.InvalidateFieldCache = function(self, key)
     end
     self.fieldCache = {}
     self.fields = {}
+    self:ClearLayout()
+end
+
+optionsFields.IsLayoutNode = function(self, field)
+    return type(field) == 'table' and LAYOUT_TYPES[field.type]
+end
+
+optionsFields.FieldLayoutSpec = function(self, field)
+    if field._widthPercent then
+        return { flex = field._widthPercent }
+    end
+    if field.width and not field.flex then
+        return { width = field.width }
+    end
+    return { flex = field.flex or 1 }
+end
+
+optionsFields.WrapPercentRows = function(self, fields)
+    local rows = {}
+    local current = nil
+    local running = 100
+    for _, field in ipairs(fields) do
+        local perc = field.width or 25
+        if not current or (running - perc) < 0 then
+            current = { type = 'row', children = {} }
+            table.insert(rows, current)
+            running = 100
+        end
+        field._widthPercent = perc
+        table.insert(current.children, field)
+        running = running - perc
+    end
+    return rows
+end
+
+optionsFields.ExpandOptions = function(self, fields)
+    local expanded = {}
+    for _, field in ipairs(fields or {}) do
+        if type(field) == 'function' then
+            local result = field()
+            if result then
+                for _, item in ipairs(self:ExpandOptions(result)) do
+                    table.insert(expanded, item)
+                end
+            end
+        else
+            table.insert(expanded, field)
+        end
+    end
+    return expanded
+end
+
+optionsFields.AdaptToTree = function(self, fields)
+    local result = {}
+    local pending = {}
+    local function flush()
+        if #pending == 0 then
+            return
+        end
+        for _, row in ipairs(self:WrapPercentRows(pending)) do
+            table.insert(result, row)
+        end
+        wipe(pending)
+    end
+    for _, field in ipairs(fields) do
+        if self:IsLayoutNode(field) then
+            flush()
+            if field.children then
+                local children = self:ExpandOptions(field.children)
+                if field.type == 'section' then
+                    field.children = self:AdaptToTree(children)
+                else
+                    field.children = children
+                end
+            end
+            table.insert(result, field)
+        else
+            table.insert(pending, field)
+        end
+    end
+    flush()
+    return result
+end
+
+optionsFields.NormalizeOptions = function(self, fields)
+    return self:AdaptToTree(self:ExpandOptions(fields))
+end
+
+optionsFields.ClearLayout = function(self)
+    if self.layoutRoot then
+        self.layoutRoot:Destroy()
+        self.layoutRoot = nil
+    end
+end
+
+optionsFields.CreateLayoutFrame = function(self, parent, options)
+    return EXFrames:GetFrame('layout-frame'):Create(parent, options)
+end
+
+optionsFields.AcquireField = function(self, node, cachedFields)
+    if cachedFields then
+        for i, frame in ipairs(cachedFields) do
+            local frameType = frame.optionData and frame.optionData.type
+            if frameType == node.type then
+                return table.remove(cachedFields, i)
+            end
+        end
+    end
+    return self:GetField(node)
+end
+
+optionsFields.MountTree = function(self, parentLayout, nodes, builtFields, cachedFields)
+    for _, node in ipairs(nodes) do
+        if self:IsLayoutNode(node) then
+            if not node.depends or node.depends() then
+                if node.type == 'columns' then
+                    local count = node.count or 2
+                    local stack = self:CreateLayoutFrame(parentLayout, { direction = 'stack', gap = node.gap or 10 })
+                    local row
+                    local index = 0
+                    for _, child in ipairs(node.children or {}) do
+                        if not child.depends or child.depends() then
+                            if index % count == 0 then
+                                row = self:CreateLayoutFrame(stack, { direction = 'row', gap = node.gap or 10 })
+                                stack:Add(row, { flex = 1 })
+                            end
+                            self:MountTree(row, { child }, builtFields, cachedFields)
+                            index = index + 1
+                        end
+                    end
+                    parentLayout:Add(stack, { flex = 1 })
+                else
+                    local direction = node.type == 'row' and 'row' or 'stack'
+                    local childLayout = self:CreateLayoutFrame(parentLayout, {
+                        direction = direction,
+                        gap = node.gap or 10,
+                    })
+                    if node.type == 'section' and node.label then
+                        local titleField = { type = 'title', label = node.label, size = node.size }
+                        local title = self:AcquireField(titleField, cachedFields)
+                        if title then
+                            title:SetOptionData(titleField)
+                            title:Show()
+                            table.insert(builtFields, title)
+                            childLayout:Add(title, { flex = 1 })
+                        end
+                    end
+                    self:MountTree(childLayout, node.children or {}, builtFields, cachedFields)
+                    parentLayout:Add(childLayout, { flex = 1 })
+                end
+            end
+        elseif not node.depends or node.depends() then
+            local fieldFrame = self:AcquireField(node, cachedFields)
+            if fieldFrame then
+                self:CreateOrUpdateTooltip(fieldFrame, node.tooltip)
+                if fieldFrame.SetOptionData then
+                    fieldFrame.suppressOnChange = true
+                    fieldFrame:SetOptionData(node)
+                    fieldFrame.suppressOnChange = false
+                end
+                fieldFrame:Show()
+                table.insert(builtFields, fieldFrame)
+                parentLayout:Add(fieldFrame, self:FieldLayoutSpec(node))
+            end
+        end
+    end
+end
+
+optionsFields.LayoutWidgets = function(self, container, widgets, gap, offsetX, offsetY)
+    local existing = self.widgetLayouts[container]
+    if existing then
+        existing:Destroy()
+        self.widgetLayouts[container] = nil
+    end
+
+    local descriptors = {}
+    for _, widget in ipairs(widgets) do
+        local optionData = widget.optionData or { width = 25 }
+        widget.optionData = optionData
+        optionData._widget = widget
+        table.insert(descriptors, optionData)
+    end
+
+    local tree = self:WrapPercentRows(descriptors)
+    local root = self:CreateLayoutFrame(container, {
+        direction = 'stack',
+        gap = gap or 10,
+        padding = { offsetX or 10, offsetY or 10, offsetX or 10, offsetY or 10 },
+    })
+    root:SetPoint('TOPLEFT')
+    root:SetWidth(math.max(1, container:GetWidth()))
+
+    for _, row in ipairs(tree) do
+        local rowLayout = self:CreateLayoutFrame(root, { direction = 'row', gap = gap or 10 })
+        for _, field in ipairs(row.children) do
+            local widget = field._widget
+            if widget then
+                rowLayout:Add(widget, self:FieldLayoutSpec(field))
+            end
+        end
+        root:Add(rowLayout, { flex = 1 })
+    end
+    root:Layout()
+    self.widgetLayouts[container] = root
+    if container.exuiAutoSizeHeight then
+        container:SetHeight(root:GetHeight())
+    end
+    return root
 end
 
 optionsFields.HideActiveFields = function(self)
@@ -381,9 +777,9 @@ end
 
 optionsFields.CreateOrUpdateTooltip = function(self, field, tooltipInfo)
     if (not field.Tooltip and tooltipInfo) then
-        local tooltip = tooltip:Get({
+        local tooltip = tooltip:Create(field, {
             text = tooltipInfo.text,
-        }, field)
+        })
         field.Tooltip = tooltip
         field.isTooltipEnabled = true
 
@@ -417,37 +813,20 @@ optionsFields.CreateOrUpdateTooltip = function(self, field, tooltipInfo)
 end
 
 optionsFields.RefreshFields = function(self)
-    local module = optionsController:GetSelectedModule()
-    if (not module) then
+    if self._refreshingFields then
         return
     end
+    self._refreshingFields = true
+    local ok, err = pcall(self._RefreshFields, self)
+    self._refreshingFields = false
+    if not ok then
+        error(err)
+    end
+end
 
-    if (module.optionHandler) then
-        local currentModule = module.module
-        if (currentModule) then
-            if (currentModule.HandleOptions) then
-                C_Timer.After(0, function()
-                    if (optionsController:GetSelectedModule() == module) then
-                        currentModule:HandleOptions()
-                    end
-                end)
-            elseif (currentModule.Refresh) then
-                C_Timer.After(0, function()
-                    if (optionsController:GetSelectedModule() == module) then
-                        currentModule:Refresh()
-                    end
-                end)
-            elseif (currentModule.RefreshCurrentView) then
-                currentModule:RefreshCurrentView()
-            end
-
-            if (currentModule.tabOptions and currentModule.tabOptions.UpdateScroll) then
-                currentModule.tabOptions:UpdateScroll()
-            end
-            if (currentModule.splitFrame and currentModule.splitFrame.UpdateScroll) then
-                currentModule.splitFrame:UpdateScroll()
-            end
-        end
+optionsFields._RefreshFields = function(self)
+    local module = optionsController:GetSelectedModule()
+    if (not module) then
         return
     end
 
@@ -457,8 +836,10 @@ optionsFields.RefreshFields = function(self)
     end
 
     if currentModule.UpdateOptionsChrome then
-        currentModule:UpdateOptionsChrome(self)
+        pcall(currentModule.UpdateOptionsChrome, currentModule, self)
     end
+
+    self:ResolveOptionIDs(currentModule)
 
     local oldFields = self.fields or {}
     local newFields = {}
@@ -467,59 +848,36 @@ optionsFields.RefreshFields = function(self)
         self.splitView:UpdateScroll()
     end
 
+    self:ClearLayout()
+
     local cacheKey = self:GetFieldCacheKey()
+    local cachedCopy
     if cacheKey and self.fieldCache[cacheKey] then
+        cachedCopy = {}
         for _, fieldFrame in ipairs(self.fieldCache[cacheKey]) do
-            fieldFrame:SetParent(self.container)
-            if fieldFrame.SetOptionData and fieldFrame.optionData then
-                fieldFrame.suppressOnChange = true
-                fieldFrame:SetOptionData(fieldFrame.optionData)
-                fieldFrame.suppressOnChange = false
-            elseif fieldFrame.GetState and fieldFrame.SetState and fieldFrame.optionData then
-                fieldFrame.suppressOnChange = true
-                local value = 0
-                if fieldFrame.optionData.currentValue then
-                    value = fieldFrame.optionData.currentValue()
-                end
-                fieldFrame:SetState(value)
-                fieldFrame.suppressOnChange = false
-            end
-            fieldFrame:Show()
-            table.insert(newFields, fieldFrame)
+            table.insert(cachedCopy, fieldFrame)
         end
-    else
-        local builtFields = {}
-        local fields = currentModule:GetOptions(self.currTabID, self.currItemID)
-        for _, field in ipairs(fields) do
-            if (type(field) == 'function') then
-                local funcFields = field()
-                if (funcFields) then
-                    for _, funcField in ipairs(funcFields) do
-                        local fieldFrame = self:GetField(funcField)
-                        self:CreateOrUpdateTooltip(fieldFrame, funcField.tooltip)
-                        if (fieldFrame) then
-                            fieldFrame:SetOptionData(funcField)
-                            fieldFrame:SetParent(self.container)
-                            fieldFrame:Show()
-                            table.insert(builtFields, fieldFrame)
-                        end
-                    end
-                end
-            elseif (not field.depends or field.depends()) then
-                local fieldFrame = self:GetField(field)
-                self:CreateOrUpdateTooltip(fieldFrame, field.tooltip)
-                if (fieldFrame) then
-                    fieldFrame:SetOptionData(field)
-                    fieldFrame:SetParent(self.container)
-                    fieldFrame:Show()
-                    table.insert(builtFields, fieldFrame)
-                end
-            end
-        end
-        newFields = builtFields
-        if cacheKey then
-            self.fieldCache[cacheKey] = builtFields
-        end
+    end
+
+    local rawFields = currentModule:GetOptions(self.currTabID, self.currItemID) or {}
+    local tree = self:NormalizeOptions(rawFields)
+    local width = self:GetContentWidth()
+    if self.container and self.container.SetWidth then
+        self.container:SetWidth(width)
+    end
+    local root = self:CreateLayoutFrame(self.container, {
+        direction = 'stack',
+        gap = 10,
+        padding = { 10, 10, 10, 10 },
+    })
+    root:SetPoint('TOPLEFT')
+    root:SetWidth(width)
+    self:MountTree(root, tree, newFields, cachedCopy)
+    self.layoutRoot = root
+    self:LayoutMountedFields()
+
+    if cacheKey and not self.fieldCache[cacheKey] and #newFields > 0 then
+        self.fieldCache[cacheKey] = newFields
     end
 
     self.fields = newFields
@@ -536,17 +894,10 @@ optionsFields.RefreshFields = function(self)
             self:ReleaseField(oldField)
         end
     end
-
-    EXUI.utils.organizeFramesInGrid('fields', self.fields, 10, self.container, 10, 10)
-    if self.tabs and self.tabs.scrollable and self.tabs.UpdateScroll and self.container == self.tabs.container then
-        self.tabs:UpdateScroll()
-    elseif self.innerTabs and self.innerTabs.scrollable and self.innerTabs.UpdateScroll and self.container == self.innerTabs.container then
-        self.innerTabs:UpdateScroll()
-    elseif self.splitView and self.container == self.splitView.container and self.splitView.UpdateScroll then
-        self.splitView:UpdateScroll()
-    end
-
     C_Timer.After(0, function()
+        if self.layoutRoot then
+            self:LayoutMountedFields()
+        end
         if EXFrames.RefreshPixelPerfect then
             EXFrames:RefreshPixelPerfect()
         end

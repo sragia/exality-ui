@@ -30,7 +30,7 @@ nameplates.Init = function(self)
     EXUI:GetModule('np-element-custom-texts'):Init()
     EXUI:GetModule('np-auras'):Init()
     EXUI:GetModule('np-preview'):Init()
-    optionsController:RegisterModule(self, npOptions.OptionHandler)
+    optionsController:RegisterModule(self)
 
     if npCore:GetValue('enable') then
         self:Enable()
@@ -57,12 +57,32 @@ nameplates.GetProfileExportSpec = function()
     return { id = 'nameplates', keys = { 'nameplates' } }
 end
 
+nameplates.useTabs = true
+nameplates.useSplitView = true
+
+nameplates.GetTabs = function(self)
+    return npOptions:GetTabs()
+end
+
+nameplates.GetSplitViewItems = function(self)
+    return npOptions:GetSplitViewItems()
+end
+
+nameplates.GetOptions = function(self, tabId, itemId)
+    return npOptions:GetOptions(tabId, itemId)
+end
+
 nameplates.HandleOptions = function(self)
-    npOptions:HandleOptions()
+    EXUI:GetModule('options-fields'):RefreshOptions()
 end
 
 nameplates.RefreshCurrentView = function(self)
-    npOptions:RefreshCurrentView()
+    EXUI:GetModule('options-fields'):RefreshOptionsDelayed()
+end
+
+nameplates.UpdateOptionsChrome = function(self)
+    EXUI:GetModule('np-preview'):Show()
+    EXUI:GetModule('np-preview'):Refresh()
 end
 
 nameplates.TeardownOptionsChrome = function(self)

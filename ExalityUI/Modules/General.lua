@@ -67,63 +67,100 @@ end
 generalModule.GetOptions = function(self)
     local options = {
         {
-            label = 'UI Scale',
-            name = 'uiScale',
-            type = 'range',
-            min = 0.2,
-            max = 1,
-            step = 0.001,
-            width = 25,
-            currentValue = function()
-                local stored = data:GetData().uiScale
-                if type(stored) == 'number' then
-                    return stored
-                end
-                return UIParent:GetScale()
-            end,
-            onChange = function(value)
-                if (value == data:GetData().uiScale) then return end
-                data:SetDataByKey('uiScale', value)
-                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-            end
+            type = 'section',
+            label = 'Scale',
+            children = {
+                {
+                    type = 'row',
+                    children = {
+                        {
+                            label = 'UI Scale',
+                            name = 'uiScale',
+                            type = 'range',
+                            min = 0.2,
+                            max = 1,
+                            step = 0.001,
+                            flex = 1,
+                            currentValue = function()
+                                local stored = data:GetData().uiScale
+                                if type(stored) == 'number' then
+                                    return stored
+                                end
+                                return UIParent:GetScale()
+                            end,
+                            onChange = function(value)
+                                if (value == data:GetData().uiScale) then return end
+                                data:SetDataByKey('uiScale', value)
+                                EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                            end
+                        },
+                        {
+                            label = 'Auto Scale',
+                            name = 'autoScale',
+                            type = 'button',
+                            onClick = function()
+                                local _, screenHeight = GetPhysicalScreenSize()
+                                local uiScale = 768 / screenHeight
+                                data:SetDataByKey('uiScale', uiScale)
+                                EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                            end,
+                            width = 140,
+                            color = { 219 / 255, 73 / 255, 0, 1 }
+                        },
+                    },
+                },
+                {
+                    type = 'row',
+                    children = {
+                        {
+                            label = 'Options Window Scale',
+                            name = 'optionsWindowScale',
+                            type = 'range',
+                            min = 0.6,
+                            max = 1.4,
+                            step = 0.05,
+                            flex = 1,
+                            currentValue = function()
+                                return EXUI:GetModule('options-main'):GetScale()
+                            end,
+                            onChange = function(value)
+                                EXUI:GetModule('options-main'):SetScale(value)
+                            end
+                        },
+                    },
+                },
+            },
         },
         {
-            label = 'Auto Scale',
-            name = 'autoScale',
-            type = 'button',
-            onClick = function()
-                local _, screenHeight = GetPhysicalScreenSize()
-                local uiScale = 768 / screenHeight
-                data:SetDataByKey('uiScale', uiScale)
-                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-            end,
-            width = 16,
-            color = { 219 / 255, 73 / 255, 0, 1 }
-        },
-        {
-            type = 'title',
+            type = 'section',
             label = 'Skins',
-            width = 100,
-        },
-        {
-            label = 'Enable Skins',
-            name = 'skinsEnabled',
-            type = 'toggle',
-            onChange = function(value)
-                data:SetDataByKey('skinsEnabled', value)
-                EXUI:GetModule('options-reload-dialog'):ShowDialog()
-                optionsFields:RefreshOptions()
-            end,
-            currentValue = function()
-                return data:GetDataByKey('skinsEnabled') ~= false
-            end,
-            width = 100,
+            children = {
+                {
+                    label = 'Enable Skins',
+                    name = 'skinsEnabled',
+                    type = 'toggle',
+                    onChange = function(value)
+                        data:SetDataByKey('skinsEnabled', value)
+                        EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                        optionsFields:RefreshOptions()
+                    end,
+                    currentValue = function()
+                        return data:GetDataByKey('skinsEnabled') ~= false
+                    end,
+                },
+                {
+                    type = 'columns',
+                    count = 3,
+                    children = {},
+                },
+            },
         },
     }
 
+    local skinColumns = options[2].children[2]
     for _, entry in ipairs(skins.list) do
         local skinKey = entry.key
-        table.insert(options, {
+        table.insert(skinColumns.children, {
             label = entry.label,
             name = 'skin_' .. skinKey,
             type = 'checkbox',
@@ -147,91 +184,95 @@ generalModule.GetOptions = function(self)
                 end
                 return db[skinKey] and true or false
             end,
-            width = 33,
+            flex = 1,
         })
     end
 
-    table.insert(options, { type = 'spacer', width = 100 })
     table.insert(options, {
-        label = 'Paper Doll Improvements',
-        name = 'paperDollEnabled',
-        type = 'toggle',
-        onChange = function(value)
-            data:SetDataByKey('paperDollEnabled', value)
-            EXUI:GetModule('options-reload-dialog'):ShowDialog()
-        end,
-        currentValue = function()
-            return data:GetDataByKey('paperDollEnabled')
-        end,
-        width = 100,
-    })
-    table.insert(options, {
-        label = 'Add Bottom Vignette',
-        name = 'bottomVignette',
-        type = 'toggle',
-        onChange = function(value)
-            data:SetDataByKey('bottomVignette', value)
-            generalModule:Refresh()
-        end,
-        currentValue = function()
-            return data:GetDataByKey('bottomVignette')
-        end,
-        width = 100,
-    })
-    table.insert(options, {
-        label = 'Replace All Fonts',
-        name = 'replaceFonts',
-        type = 'toggle',
-        onChange = function(value)
-            data:SetDataByKey('replaceFonts', value)
-            -- Damage numbers need a full logout; UI fonts apply on reload
-            EXUI:GetModule('options-reload-dialog'):ShowDialog(
-                'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
-            )
-            optionsFields:RefreshOptions()
-        end,
-        currentValue = function()
-            return data:GetDataByKey('replaceFonts')
-        end,
-        width = 100,
-    })
-    table.insert(options, {
-        label = 'Replacement Font',
-        name = 'font',
-        type = 'dropdown',
-        getOptions = function()
-            local fonts = LSM:List('font')
-            table.sort(fonts)
-            local fontOptions = {}
-            for _, font in ipairs(fonts) do
-                fontOptions[font] = font
-            end
-            return fontOptions
-        end,
-        depends = function()
-            return data:GetDataByKey('replaceFonts')
-        end,
-        isFontDropdown = true,
-        onChange = function(value)
-            data:SetDataByKey('font', value)
-            EXUI:GetModule('options-reload-dialog'):ShowDialog(
-                'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
-            )
-        end,
-        currentValue = function()
-            return data:GetDataByKey('font')
-        end,
-        width = 33,
-    })
-    table.insert(options, {
-        type = 'disclaimer',
-        label =
-        'Relog (character select) is required for floating damage numbers to use the new font. A /reload is not enough.',
-        name = 'fontRelogNotice',
-        width = 100,
-        depends = function()
-            return data:GetDataByKey('replaceFonts')
-        end,
+        type = 'section',
+        label = 'Interface',
+        children = {
+            {
+                label = 'Paper Doll Improvements',
+                name = 'paperDollEnabled',
+                type = 'toggle',
+                onChange = function(value)
+                    data:SetDataByKey('paperDollEnabled', value)
+                    EXUI:GetModule('options-reload-dialog'):ShowDialog()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('paperDollEnabled')
+                end,
+            },
+            {
+                label = 'Add Bottom Vignette',
+                name = 'bottomVignette',
+                type = 'toggle',
+                onChange = function(value)
+                    data:SetDataByKey('bottomVignette', value)
+                    generalModule:Refresh()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('bottomVignette')
+                end,
+            },
+            {
+                label = 'Replace All Fonts',
+                name = 'replaceFonts',
+                type = 'toggle',
+                onChange = function(value)
+                    data:SetDataByKey('replaceFonts', value)
+                    EXUI:GetModule('options-reload-dialog'):ShowDialog(
+                        'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
+                    )
+                    optionsFields:RefreshOptions()
+                end,
+                currentValue = function()
+                    return data:GetDataByKey('replaceFonts')
+                end,
+            },
+            {
+                type = 'row',
+                children = {
+                    {
+                        label = 'Replacement Font',
+                        name = 'font',
+                        type = 'dropdown',
+                        getOptions = function()
+                            local fonts = LSM:List('font')
+                            table.sort(fonts)
+                            local fontOptions = {}
+                            for _, font in ipairs(fonts) do
+                                fontOptions[font] = font
+                            end
+                            return fontOptions
+                        end,
+                        depends = function()
+                            return data:GetDataByKey('replaceFonts')
+                        end,
+                        isFontDropdown = true,
+                        onChange = function(value)
+                            data:SetDataByKey('font', value)
+                            EXUI:GetModule('options-reload-dialog'):ShowDialog(
+                                'Log out to the character select screen to apply font changes (including damage numbers). A /reload is not enough for floating damage text.'
+                            )
+                        end,
+                        currentValue = function()
+                            return data:GetDataByKey('font')
+                        end,
+                        flex = 1,
+                    },
+                },
+            },
+            {
+                type = 'disclaimer',
+                label = 'Relog (character select) is required for floating damage numbers to use the new font. A /reload is not enough.',
+                name = 'fontRelogNotice',
+                depends = function()
+                    return data:GetDataByKey('replaceFonts')
+                end,
+            },
+        },
     })
 
     return options
@@ -300,7 +341,7 @@ end
 
 generalModule.paperDoll = {
     Init = function(self)
-        if (not data:GetDataByKey('paperDollEnabled')) then return end
+        if (not data:GetDataByKey('paperDollEnabled') or true) then return end
         local callback = function()
             C_Timer.After(1, function() generalModule.paperDoll:Refresh() end)
             generalModule.paperDoll:Refresh()
@@ -515,79 +556,80 @@ generalModule.paperDoll = {
         ['Crystalline Radiance'] = 'Primary Stat'
     },
     Refresh = function(self)
-        C_Timer.After(0.1, function() generalModule.paperDoll:ModifyLayout() end)
-        for _, gearSlot in ipairs(self.gearMap) do
-            if (not gearSlot.frame) then
-                local baseFrame = CreateFrame('Frame', nil, _G[gearSlot.frameName])
-                baseFrame:SetSize(1, 1)
-                baseFrame:SetPoint(
-                    gearSlot.point,
-                    _G[gearSlot.frameName],
-                    gearSlot.relativePoint,
-                    gearSlot.offsetX,
-                    gearSlot.offsetY
-                )
-                local ilvlText = EXUI.utils.createSimpleText('', 12, 'CENTER', baseFrame)
-                local enchantText = EXUI.utils.createSimpleText('', 10, gearSlot.textAlign, baseFrame, gearSlot.maxWidth)
-                local gemText = EXUI.utils.createSimpleText('', 12, gearSlot.textAlign, baseFrame)
-                ilvlText:SetPoint('BOTTOM', _G[gearSlot.frameName], 0, 3)
-                enchantText:SetPoint('BOTTOMLEFT')
-                gemText:SetPoint(
-                    gearSlot.gemAlign == 'LEFT' and 'BOTTOMLEFT' or 'BOTTOMRIGHT',
-                    enchantText,
-                    gearSlot.gemAlign == 'LEFT' and 'TOPLEFT' or 'TOPRIGHT',
-                    0,
-                    12
-                )
+        return
+        -- C_Timer.After(0.1, function() generalModule.paperDoll:ModifyLayout() end)
+        -- for _, gearSlot in ipairs(self.gearMap) do
+        --     if (not gearSlot.frame) then
+        --         local baseFrame = CreateFrame('Frame', nil, _G[gearSlot.frameName])
+        --         baseFrame:SetSize(1, 1)
+        --         baseFrame:SetPoint(
+        --             gearSlot.point,
+        --             _G[gearSlot.frameName],
+        --             gearSlot.relativePoint,
+        --             gearSlot.offsetX,
+        --             gearSlot.offsetY
+        --         )
+        --         local ilvlText = EXUI.utils.createSimpleText('', 12, 'CENTER', baseFrame)
+        --         local enchantText = EXUI.utils.createSimpleText('', 10, gearSlot.textAlign, baseFrame, gearSlot.maxWidth)
+        --         local gemText = EXUI.utils.createSimpleText('', 12, gearSlot.textAlign, baseFrame)
+        --         ilvlText:SetPoint('BOTTOM', _G[gearSlot.frameName], 0, 3)
+        --         enchantText:SetPoint('BOTTOMLEFT')
+        --         gemText:SetPoint(
+        --             gearSlot.gemAlign == 'LEFT' and 'BOTTOMLEFT' or 'BOTTOMRIGHT',
+        --             enchantText,
+        --             gearSlot.gemAlign == 'LEFT' and 'TOPLEFT' or 'TOPRIGHT',
+        --             0,
+        --             12
+        --         )
 
-                baseFrame.SetIlvlText = function(self, ilvl)
-                    if (not ilvl) then
-                        ilvlText:SetText('')
-                        return
-                    end
-                    ilvlText:SetText(WrapTextInColorCode(ilvl, EXUI.utils.getIlvlColor(ilvl)))
-                end
-                baseFrame.SetEnchant = function(self, enchant)
-                    if (not enchant) then
-                        enchantText:SetText('')
-                        return
-                    end
-                    enchantText:SetText(WrapTextInColorCode(enchant, 'ff98f907'))
-                end
-                baseFrame.SetGem = function(self, gem)
-                    gemText:SetText(gem or '')
-                end
+        --         baseFrame.SetIlvlText = function(self, ilvl)
+        --             if (not ilvl) then
+        --                 ilvlText:SetText('')
+        --                 return
+        --             end
+        --             ilvlText:SetText(WrapTextInColorCode(ilvl, EXUI.utils.getIlvlColor(ilvl)))
+        --         end
+        --         baseFrame.SetEnchant = function(self, enchant)
+        --             if (not enchant) then
+        --                 enchantText:SetText('')
+        --                 return
+        --             end
+        --             enchantText:SetText(WrapTextInColorCode(enchant, 'ff98f907'))
+        --         end
+        --         baseFrame.SetGem = function(self, gem)
+        --             gemText:SetText(gem or '')
+        --         end
 
-                gearSlot.frame = baseFrame
-            end
+        --         gearSlot.frame = baseFrame
+        --     end
 
-            local iLink = GetInventoryItemLink("player", gearSlot.slotId)
-            if iLink then
-                local itemLocation = ItemLocation:CreateFromEquipmentSlot(gearSlot.slotId);
-                local ilvl = C_Item.GetCurrentItemLevel(itemLocation)
-                gearSlot.frame:SetIlvlText(ilvl)
-                local enchant = EXUI.utils.GetItemEnchant(iLink)
-                if (enchant) then
-                    for pattern, replacement in pairs(self.replacements) do
-                        enchant = string.gsub(enchant, pattern, replacement)
-                    end
-                end
-                gearSlot.frame:SetEnchant(enchant and string.gsub(enchant, '|A.-|a', ''))
-                gearSlot.frame:SetGem(self:GetGemString(iLink))
-            else
-                gearSlot.frame:SetIlvlText()
-                gearSlot.frame:SetEnchant()
-                gearSlot.frame:SetGem()
-            end
-        end
+        --     local iLink = GetInventoryItemLink("player", gearSlot.slotId)
+        --     if iLink then
+        --         local itemLocation = ItemLocation:CreateFromEquipmentSlot(gearSlot.slotId);
+        --         local ilvl = C_Item.GetCurrentItemLevel(itemLocation)
+        --         gearSlot.frame:SetIlvlText(ilvl)
+        --         local enchant = EXUI.utils.GetItemEnchant(iLink)
+        --         if (enchant) then
+        --             for pattern, replacement in pairs(self.replacements) do
+        --                 enchant = string.gsub(enchant, pattern, replacement)
+        --             end
+        --         end
+        --         gearSlot.frame:SetEnchant(enchant and string.gsub(enchant, '|A.-|a', ''))
+        --         gearSlot.frame:SetGem(self:GetGemString(iLink))
+        --     else
+        --         gearSlot.frame:SetIlvlText()
+        --         gearSlot.frame:SetEnchant()
+        --         gearSlot.frame:SetGem()
+        --     end
+        -- end
 
-        local avgIlvl, avgEquipped = GetAverageItemLevel()
-        local ilvlString = string.format('%.2f', avgEquipped)
-        if (avgIlvl ~= avgEquipped) then
-            ilvlString = string.format('%.2f / %.2f', avgEquipped, avgIlvl)
-        end
-        PaperDollFrame_SetLabelAndText(CharacterStatsPane.ItemLevelFrame, STAT_AVERAGE_ITEM_LEVEL, ilvlString, false,
-            avgIlvl)
+        -- local avgIlvl, avgEquipped = GetAverageItemLevel()
+        -- local ilvlString = string.format('%.2f', avgEquipped)
+        -- if (avgIlvl ~= avgEquipped) then
+        --     ilvlString = string.format('%.2f / %.2f', avgEquipped, avgIlvl)
+        -- end
+        -- PaperDollFrame_SetLabelAndText(CharacterStatsPane.ItemLevelFrame, STAT_AVERAGE_ITEM_LEVEL, ilvlString, false,
+        --     avgIlvl)
     end,
     ModifyLayout = function(self)
         CharacterFrame:SetWidth(700)

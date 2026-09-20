@@ -25,10 +25,14 @@ data.Init = function(self)
         ExalityUICharData = {
             currentProfile = self.currentProfile,
             optionsNavCompact = false,
+            optionsWindowScale = 1,
         }
     end
     if (ExalityUICharData.optionsNavCompact == nil) then
         ExalityUICharData.optionsNavCompact = false
+    end
+    if type(ExalityUICharData.optionsWindowScale) ~= 'number' then
+        ExalityUICharData.optionsWindowScale = 1
     end
     if self.data.mythicPlusHistory == nil then
         self.data.mythicPlusHistory = {}

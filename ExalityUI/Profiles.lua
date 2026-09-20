@@ -207,6 +207,7 @@ profiles.SetupWindow = function(self)
 
     -- Left column: profile + create
     local profilePanel = panel:Create()
+    profilePanel:SetSubtleChrome()
     profilePanel:SetParent(leftColumn)
     profilePanel:SetPoint('TOPLEFT')
     profilePanel:SetPoint('TOPRIGHT')
@@ -273,6 +274,7 @@ profiles.SetupWindow = function(self)
 
     -- Left column: import
     local importPanel = panel:Create()
+    importPanel:SetSubtleChrome()
     importPanel:SetParent(leftColumn)
     importPanel:SetPoint('TOPLEFT', profilePanel, 'BOTTOMLEFT', 0, -COLUMN_GAP)
     importPanel:SetPoint('BOTTOMRIGHT')
@@ -300,6 +302,7 @@ profiles.SetupWindow = function(self)
 
     -- Right column: export
     local exportPanel = panel:Create()
+    exportPanel:SetSubtleChrome()
     exportPanel:SetParent(rightColumn)
     exportPanel:SetAllPoints()
 

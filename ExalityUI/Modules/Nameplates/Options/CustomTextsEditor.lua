@@ -179,7 +179,7 @@ editor.Populate = function(self, id)
             table.insert(self.fields, field)
         end
     end
-    EXUI.utils.organizeFramesInGrid('np-custom-text-editor-fields', self.fields, 10, self.window.container, 10, 10)
+    EXUI:GetModule('options-fields'):LayoutWidgets(self.window.container, self.fields, 10, 10, 10)
 end
 
 editor.Show = function(self, id)

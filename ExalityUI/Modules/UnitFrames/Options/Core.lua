@@ -22,7 +22,7 @@ core.currItem = nil
 core.fields = {}
 
 core.Init = function(self)
-    optionsController:RegisterModule(self, self.OptionHandler)
+    optionsController:RegisterModule(self)
     local defaults = {
         ['useCustomHealthColor'] = true,
         ['customHealthColor'] = { r = 0.125490203499794, g = 0.125490203499794, b = 0.125490203499794, a = 1 },
@@ -91,6 +91,108 @@ end
 
 core.GetProfileExportSpec = function(self)
     return { id = 'unit-frames', keys = { 'UF' } }
+end
+
+core.useTabs = true
+core.useSplitView = true
+
+core.GetTabs = function(self)
+    local tabs = {}
+    for _, option in ipairs(self.options) do
+        table.insert(tabs, { ID = option.id, label = option.name })
+    end
+    return tabs
+end
+
+core.GetSplitViewItems = function(self)
+    local tabId = EXUI:GetModule('options-fields').currTabID
+    local _, tab = FindInTableIf(self.options, function(option) return option.id == tabId end)
+    tab = tab or self.options[1]
+    if not tab then
+        return {}
+    end
+    local items = {}
+    for _, item in ipairs(tab.menu) do
+        table.insert(items, { ID = item.id, label = item.name })
+    end
+    return items
+end
+
+core.GetOptions = function(self, tabId, itemId)
+    local _, tab = FindInTableIf(self.options, function(option) return option.id == tabId end)
+    tab = tab or self.options[1]
+    if not tab then
+        return {}
+    end
+    local _, item = FindInTableIf(tab.menu, function(menuItem) return menuItem.id == itemId end)
+    item = item or tab.menu[1]
+    if not item then
+        return {}
+    end
+    self.currTabId = tabId
+    self.currItemId = itemId
+    self.currItem = item
+    return item.options or {}
+end
+
+core.UpdateOptionsChrome = function(self, fields)
+    if not fields or not fields.splitView then
+        return
+    end
+    local _, tab = FindInTableIf(self.options, function(option) return option.id == fields.currTabID end)
+    if tab and tab.allowPreview then
+        local onClick = {}
+        onClick.show = function(_, button)
+            ufCore:ForceShow(tab.id)
+            button:SetText('Hide Preview')
+            button:SetOnClick(onClick.hide)
+        end
+        onClick.hide = function(_, button)
+            ufCore:Unforce(tab.id)
+            button:SetText('Show Preview')
+            button:SetOnClick(onClick.show)
+        end
+        fields.splitView:AddExtraButton({
+            text = 'Show Preview',
+            onClick = onClick.show,
+            color = { 249 / 255, 95 / 255, 9 / 255, 1 },
+        })
+    else
+        fields.splitView:DisableExtraButton()
+    end
+
+    local _, item = tab and FindInTableIf(tab.menu, function(menuItem) return menuItem.id == fields.currItemID end)
+    if item and item.allowPreview then
+        if not fields.splitView.previewButton then
+            local previewButton = CreateFrame('Button', nil, fields.splitView.container)
+            previewButton:SetSize(140, 30)
+            previewButton:SetPoint('TOPRIGHT')
+            previewButton:SetAlpha(0.7)
+            local previewIcon = previewButton:CreateTexture(nil, 'BACKGROUND')
+            previewIcon:SetTexture(EXUI.const.textures.frame.previewIcon)
+            previewIcon:SetSize(40 * 15 / 24, 15)
+            previewIcon:SetPoint('RIGHT')
+            local previewText = previewButton:CreateFontString(nil, 'OVERLAY')
+            previewText:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
+            previewText:SetText('Toggle Preview')
+            previewText:SetWidth(0)
+            previewText:SetPoint('RIGHT', previewIcon, 'LEFT', -5, 0)
+            previewText:SetJustifyH('RIGHT')
+            previewButton:SetScript('OnEnter', function()
+                previewButton:SetAlpha(1)
+            end)
+            previewButton:SetScript('OnLeave', function()
+                previewButton:SetAlpha(0.7)
+            end)
+            previewButton:SetScript('OnClick', function()
+                core:ToggleOptionPreview()
+            end)
+            fields.splitView.previewButton = previewButton
+        end
+        fields.splitView.previewButton:Show()
+    elseif fields.splitView.previewButton then
+        fields.splitView.previewButton:Hide()
+    end
 end
 
 core.ToggleOptionPreview = function(self)
@@ -335,9 +437,5 @@ core.AddOption = function(self, option)
 end
 
 core.RefreshCurrentView = function(self)
-    C_Timer.After(0.3, function() -- Small delay to allow inputs to finish animating
-        if (self.tabOptions) then
-            self:HandleOptions()
-        end
-    end)
+    EXUI:GetModule('options-fields'):RefreshOptionsDelayed(0.3)
 end

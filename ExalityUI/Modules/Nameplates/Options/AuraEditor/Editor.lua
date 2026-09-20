@@ -135,7 +135,7 @@ function editor:PopulateFields()
         end
     end
 
-    EXUI.utils.organizeFramesInGrid('np-aura-editor-fields', self.fields, 10, container, 10, 10)
+    EXUI:GetModule('options-fields'):LayoutWidgets(container, self.fields, 10, 10, 10)
 
     if self.innerTabs and self.innerTabs.UpdateScroll then
         self.innerTabs:UpdateScroll()
@@ -155,7 +155,7 @@ function editor:RelayoutFields()
     if not container then
         return
     end
-    EXUI.utils.organizeFramesInGrid('np-aura-editor-fields', self.fields, 10, container, 10, 10)
+    EXUI:GetModule('options-fields'):LayoutWidgets(container, self.fields, 10, 10, 10)
     if self.innerTabs and self.innerTabs.UpdateScroll then
         self.innerTabs:UpdateScroll()
     elseif self.splitView and self.splitView.UpdateScroll then

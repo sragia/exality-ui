@@ -346,6 +346,14 @@ core.GetSectionTabs = function(self, itemId)
 
     end
 
+    local db = self:GetDB()
+
+    if not self:IsDisplayEntry(itemId, db and db[itemId]) then
+
+        return {}
+
+    end
+
     return {
 
         { ID = 'general', label = 'General' },
@@ -361,6 +369,14 @@ end
 
 
 core.GetOptions = function(self, currTabID, currItemID)
+
+    if not currItemID then
+
+        local items = self:GetSplitViewItems()
+
+        currItemID = items[1] and items[1].ID
+
+    end
 
     if not currItemID then
 
