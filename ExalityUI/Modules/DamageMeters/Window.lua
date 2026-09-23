@@ -25,6 +25,11 @@ local windowMod = EXUI:GetModule('damage-meters-window')
 local EXFrames = EXUI.EXFrames
 local HEADER_HEIGHT = 22
 local SESSION_ICON_SIZE = 14
+local FAVORITE_COLUMNS = 2
+local FAVORITE_SLOT_HEIGHT = 28
+local FAVORITE_PAD = 6
+local FAVORITE_GAP = 4
+local FAVORITE_PLUS_SIZE = 14
 
 local function colorRGBA(color, fallback)
     color = color or fallback
@@ -127,15 +132,15 @@ function windowMod:BindScripts(frame)
         return frame.dragStopAt and (GetTime() - frame.dragStopAt) < 0.2
     end
 
-    local function openViewOnRightClick(anchor)
+    local function openFavoritesOnRightClick()
         return function(_, button)
             if button == 'RightButton' and not wasDragged() and (not frame.db or not frame.db.clickThrough) then
-                self:OpenViewMenu(frame, anchor or frame.header)
+                self:ToggleFavoriteOverlay(frame)
             end
         end
     end
 
-    local function bindRightClick(widget, anchor)
+    local function bindRightClick(widget)
         if not widget then
             return
         end
@@ -143,7 +148,7 @@ function windowMod:BindScripts(frame)
         if widget.RegisterForClicks then
             widget:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
         end
-        widget:SetScript('OnMouseUp', openViewOnRightClick(anchor))
+        widget:SetScript('OnMouseUp', openFavoritesOnRightClick())
     end
 
     local function bindDrag(widget)
@@ -201,10 +206,10 @@ function windowMod:BindScripts(frame)
         self:OpenSessionMenu(frame, frame.sessionButton)
     end)
 
-    bindRightClick(frame, frame.header)
-    bindRightClick(frame.scroll, frame.header)
-    bindRightClick(frame.scroll and frame.scroll.content, frame.header)
-    bindRightClick(frame.scrollChild, frame.header)
+    bindRightClick(frame)
+    bindRightClick(frame.scroll)
+    bindRightClick(frame.scroll and frame.scroll.content)
+    bindRightClick(frame.scrollChild)
 
     frame.sessionButton:SetScript('OnEnter', function(btn)
         if not frame.db or frame.db.clickThrough then
@@ -230,17 +235,14 @@ function windowMod:BindScripts(frame)
 
     frame.body:EnableMouseWheel(true)
     frame.body:SetScript('OnMouseWheel', forwardScroll)
-    frame.body:SetScript('OnClick', function(_, button)
-        if button == 'RightButton' then
-            self:OpenViewMenu(frame, frame.header)
-        end
-    end)
+    frame.body:SetScript('OnClick', openFavoritesOnRightClick())
 
     frame:SetScript('OnHide', function()
         if spellTooltip.owner and (spellTooltip.owner:GetParent() == frame.scrollChild or spellTooltip.owner == frame.pinnedSelf) then
             spellTooltip:Hide()
         end
         self:HidePinnedSelf(frame)
+        self:HideFavoriteOverlay(frame)
     end)
 
     if frame.scroll then
@@ -261,7 +263,12 @@ function windowMod:BindRow(frame, row)
     end)
     row:SetScript('OnClick', function(btn, button)
         if button == 'RightButton' then
-            self:OpenViewMenu(frame, btn)
+            if frame.dragStopAt and (GetTime() - frame.dragStopAt) < 0.2 then
+                return
+            end
+            if not frame.db or not frame.db.clickThrough then
+                self:ToggleFavoriteOverlay(frame)
+            end
             return
         end
         local source = btn.source
@@ -444,6 +451,7 @@ function windowMod:ApplyClickThrough(frame, db)
         frame.scrollChild:EnableMouse(enabled)
     end
     if not enabled then
+        self:HideFavoriteOverlay(frame)
         spellTooltip:Hide()
         GameTooltip:Hide()
     end
@@ -765,47 +773,291 @@ function windowMod:Refresh(frame)
     else
         frame.emptyText:Hide()
     end
+
+    if frame.favoriteOverlay and frame.favoriteOverlay:IsShown() then
+        self:RefreshFavoriteOverlay(frame)
+    end
 end
 
-function windowMod:BuildViewMenu(frame)
+function windowMod:PaintFavoriteSlot(slot)
+    local theme = EXUI.const.theme
+    local bg = theme.backgroundLight
+    if slot.hovered then
+        slot.bg:SetColorTexture(56 / 255, 46 / 255, 40 / 255, 1)
+    else
+        slot.bg:SetColorTexture(bg[1], bg[2], bg[3], bg[4] or 1)
+    end
+
+    local text = slot.selected and theme.accent or theme.text
+    slot.label:SetTextColor(text[1], text[2], text[3], text[4] or 1)
+
+    local plus = slot.hovered and theme.text or theme.textMuted
+    slot.plus:SetVertexColor(plus[1], plus[2], plus[3], 1)
+end
+
+function windowMod:EnsureFavoriteOverlay(frame)
+    if frame.favoriteOverlay then
+        return frame.favoriteOverlay
+    end
+
+    local overlay = CreateFrame('Frame', nil, frame.body)
+    overlay:SetAllPoints()
+    overlay:EnableMouse(true)
+    overlay:EnableMouseWheel(true)
+    overlay:Hide()
+
+    overlay.bg = overlay:CreateTexture(nil, 'BACKGROUND')
+    overlay.bg:SetAllPoints()
+    local deep = EXUI.const.theme.backgroundDeep
+    overlay.bg:SetColorTexture(deep[1], deep[2], deep[3], 0.94)
+
+    overlay:SetScript('OnMouseUp', function(_, button)
+        if button == 'RightButton' then
+            self:HideFavoriteOverlay(frame)
+        end
+    end)
+    overlay:SetScript('OnMouseWheel', function(_, delta)
+        if overlay.scroll and overlay.scroll.HandleMouseWheel then
+            overlay.scroll:HandleMouseWheel(delta)
+        end
+    end)
+    overlay:SetPropagateKeyboardInput(true)
+    overlay:SetScript('OnKeyDown', function(selfOverlay, key)
+        if key ~= 'ESCAPE' then
+            if not InCombatLockdown() then
+                selfOverlay:SetPropagateKeyboardInput(true)
+            end
+            return
+        end
+        if not InCombatLockdown() then
+            selfOverlay:SetPropagateKeyboardInput(false)
+        end
+        self:HideFavoriteOverlay(frame)
+    end)
+    overlay:SetScript('OnShow', function(selfOverlay)
+        selfOverlay:EnableKeyboard(true)
+        selfOverlay:SetFrameLevel(frame.body:GetFrameLevel() + 20)
+    end)
+    overlay:SetScript('OnHide', function(selfOverlay)
+        selfOverlay:EnableKeyboard(false)
+    end)
+
+    local scroll = EXFrames:GetFrame('smooth-scroll-frame'):Create()
+    scroll.hideScrollbar = true
+    if scroll.scrollBar then
+        scroll.scrollBar:Hide()
+    end
+    scroll:SetParent(overlay)
+    scroll:SetAllPoints()
+    overlay.scroll = scroll
+
+    local function forwardWheel(_, delta)
+        if scroll.HandleMouseWheel then
+            scroll:HandleMouseWheel(delta)
+        end
+    end
+
+    overlay.slots = {}
+    local child = scroll.child
+    for i = 1, defaults.FAVORITE_SLOT_COUNT do
+        local slot = CreateFrame('Button', nil, child)
+        slot:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
+        slot:EnableMouseWheel(true)
+        slot.slotIndex = i
+        slot.bg = slot:CreateTexture(nil, 'BACKGROUND')
+        slot.bg:SetAllPoints()
+        slot.content = CreateFrame('Frame', nil, slot)
+        slot.content:SetPoint('CENTER')
+        slot.typeIcon = slot.content:CreateTexture(nil, 'ARTWORK')
+        slot.typeIcon:SetPoint('LEFT', slot.content, 'LEFT', 0, 0)
+        slot.typeIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        slot.label = slot.content:CreateFontString(nil, 'OVERLAY')
+        slot.label:SetPoint('LEFT', slot.typeIcon, 'RIGHT', 4, 0)
+        slot.label:SetJustifyH('LEFT')
+        slot.label:SetWordWrap(false)
+        slot.plus = slot:CreateTexture(nil, 'ARTWORK')
+        slot.plus:SetTexture(EXUI.const.textures.frame.icons.plus)
+        slot.plus:SetPoint('CENTER')
+        slot:SetScript('OnMouseWheel', forwardWheel)
+        slot:SetScript('OnEnter', function(btn)
+            btn.hovered = true
+            self:PaintFavoriteSlot(btn)
+        end)
+        slot:SetScript('OnLeave', function(btn)
+            btn.hovered = false
+            self:PaintFavoriteSlot(btn)
+        end)
+        slot:SetScript('OnClick', function(btn, button)
+            local meterType = btn.meterType
+            if type(meterType) == 'number' and button == 'LeftButton' then
+                meters:UpdateValue(frame.ID, 'damageMeterType', meterType)
+                self:Refresh(frame)
+                self:HideFavoriteOverlay(frame)
+                return
+            end
+            self:OpenSlotMenu(frame, btn.slotIndex, btn)
+        end)
+        overlay.slots[i] = slot
+    end
+
+    frame.favoriteOverlay = overlay
+    return overlay
+end
+
+function windowMod:RefreshFavoriteOverlay(frame)
+    local overlay = frame.favoriteOverlay
+    if not overlay or not overlay:IsShown() then
+        return
+    end
+    if frame.body then
+        overlay:SetFrameLevel(frame.body:GetFrameLevel() + 20)
+    end
+
     local db = frame.db
-    local favorites = meters:GetFavoriteViews()
+    local scroll = overlay.scroll
+    if not db or not scroll then
+        return
+    end
+
+    local width = scroll:GetWidth()
+    if width < 1 and frame.body then
+        width = frame.body:GetWidth()
+    end
+    if width < 1 then
+        return
+    end
+
+    local pad = EXUI:ScalePixel(FAVORITE_PAD, frame)
+    local gap = EXUI:ScalePixel(FAVORITE_GAP, frame)
+    local slotHeight = EXUI:ScalePixel(FAVORITE_SLOT_HEIGHT, frame)
+    local plusSize = EXUI:ScalePixel(FAVORITE_PLUS_SIZE, frame)
+    local slotWidth = (width - pad * 2 - gap * (FAVORITE_COLUMNS - 1)) / FAVORITE_COLUMNS
+    if slotWidth < 1 then
+        return
+    end
+
+    local fontPath, fontSize, fontFlag = bars:GetFont(db)
+    local saved = meters:GetFavoriteSlots()
+    local current = db.damageMeterType
+    local count = defaults.FAVORITE_SLOT_COUNT
+    local signature = {}
+    for i = 1, count do
+        signature[i] = tostring(saved[i])
+    end
+    local layoutKey = table.concat(signature, ',')
+        .. '|' .. tostring(current)
+        .. '|' .. tostring(math.floor(width))
+        .. '|' .. tostring(fontPath)
+        .. '|' .. tostring(fontSize)
+        .. '|' .. tostring(fontFlag)
+    if overlay.layoutKey == layoutKey then
+        return
+    end
+    overlay.layoutKey = layoutKey
+
+    local child = scroll.child
+    for i = 1, count do
+        local slot = overlay.slots[i]
+        local col = (i - 1) % FAVORITE_COLUMNS
+        local row = math.floor((i - 1) / FAVORITE_COLUMNS)
+        local meterType = saved[i]
+        local filled = type(meterType) == 'number'
+        slot.meterType = filled and meterType or nil
+        slot.selected = filled and meterType == current
+        slot:ClearAllPoints()
+        slot:SetSize(slotWidth, slotHeight)
+        slot:SetPoint(
+            'TOPLEFT',
+            child,
+            'TOPLEFT',
+            pad + col * (slotWidth + gap),
+            -(pad + row * (slotHeight + gap))
+        )
+        slot.label:SetFont(fontPath, fontSize, fontFlag)
+        slot.plus:SetSize(plusSize, plusSize)
+        slot.typeIcon:SetSize(plusSize, plusSize)
+        if filled then
+            local iconGap = EXUI:ScalePixel(4, frame)
+            slot.label:SetText(views:GetTypeName(meterType))
+            slot.typeIcon:SetTexture(views:GetTypeIcon(meterType))
+            local textWidth = slot.label:GetStringWidth()
+            local maxText = math.max(1, slotWidth - plusSize - iconGap - EXUI:ScalePixel(8, frame))
+            if textWidth > maxText then
+                textWidth = maxText
+            end
+            slot.label:SetWidth(textWidth)
+            slot.content:SetSize(plusSize + iconGap + textWidth, slotHeight)
+            slot.content:Show()
+            slot.typeIcon:Show()
+            slot.label:Show()
+            slot.plus:Hide()
+        else
+            slot.label:SetText('')
+            slot.content:Hide()
+            slot.plus:Show()
+        end
+        self:PaintFavoriteSlot(slot)
+        slot:Show()
+    end
+
+    local rows = math.ceil(count / FAVORITE_COLUMNS)
+    local contentHeight = pad * 2 + rows * slotHeight + math.max(0, rows - 1) * gap
+    scroll:UpdateScrollChild(width, math.max(contentHeight, 1))
+end
+
+function windowMod:HideFavoriteOverlay(frame)
+    local overlay = frame.favoriteOverlay
+    if not overlay then
+        return
+    end
+    overlay.layoutKey = nil
+    overlay:Hide()
+end
+
+function windowMod:ShowFavoriteOverlay(frame)
+    if not frame.db or frame.db.clickThrough then
+        return
+    end
+    local overlay = self:EnsureFavoriteOverlay(frame)
+    EXFrames:GetFrame('list-menu-frame'):Hide()
+    overlay.layoutKey = nil
+    overlay:Show()
+    self:RefreshFavoriteOverlay(frame)
+end
+
+function windowMod:ToggleFavoriteOverlay(frame)
+    if frame.favoriteOverlay and frame.favoriteOverlay:IsShown() then
+        self:HideFavoriteOverlay(frame)
+        return
+    end
+    self:ShowFavoriteOverlay(frame)
+end
+
+function windowMod:BuildViewMenu(frame, slotIndex)
+    local db = frame.db
+    local slots = meters:GetFavoriteSlots()
     local entries = {}
     local current = db.damageMeterType
+    if slotIndex then
+        current = slots[slotIndex]
+    end
 
     local function addView(meterType)
-        local favorited = favorites[meterType]
         table.insert(entries, {
             text = views:GetTypeName(meterType),
-            icon = favorited and 'auctionhouse-icon-favorite' or nil,
+            icon = views:GetTypeIcon(meterType),
             color = current == meterType and EXUI.const.theme.accent or nil,
-            onClick = function(_, button)
-                if button == 'RightButton' then
-                    meters:ToggleFavorite(meterType)
-                    local listMenu = EXFrames:GetFrame('list-menu-frame')
-                    listMenu:ShowAt(listMenu:GetAnchor() or frame.viewButton, self:BuildViewMenu(frame))
-                    return false
+            onClick = function()
+                if slotIndex then
+                    meters:SetFavoriteSlot(slotIndex, meterType)
+                    self:RefreshFavoriteOverlay(frame)
+                    return
                 end
                 meters:UpdateValue(frame.ID, 'damageMeterType', meterType)
                 self:Refresh(frame)
+                self:HideFavoriteOverlay(frame)
             end,
         })
-    end
-
-    local favoriteOrder = {}
-    for _, category in ipairs(views:GetCategories()) do
-        for _, meterType in ipairs(category.types) do
-            if favorites[meterType] then
-                table.insert(favoriteOrder, meterType)
-            end
-        end
-    end
-
-    if #favoriteOrder > 0 then
-        table.insert(entries, { text = 'Favorites', isHeader = true })
-        for _, meterType in ipairs(favoriteOrder) do
-            addView(meterType)
-        end
     end
 
     for _, category in ipairs(views:GetCategories()) do
@@ -815,15 +1067,33 @@ function windowMod:BuildViewMenu(frame)
         end
     end
 
-    table.insert(entries, { text = 'Reset All Sessions', color = EXUI.const.theme.danger, onClick = function()
-        meterData:ResetAllSessions()
-    end })
+    if slotIndex then
+        if type(slots[slotIndex]) == 'number' then
+            table.insert(entries, {
+                text = 'Clear',
+                color = EXUI.const.theme.danger,
+                onClick = function()
+                    meters:SetFavoriteSlot(slotIndex, false)
+                    self:RefreshFavoriteOverlay(frame)
+                end,
+            })
+        end
+    else
+        table.insert(entries, { text = 'Reset All Sessions', color = EXUI.const.theme.danger, onClick = function()
+            meterData:ResetAllSessions()
+        end })
+    end
 
     return entries
 end
 
 function windowMod:OpenViewMenu(frame, anchor)
+    self:HideFavoriteOverlay(frame)
     EXFrames:GetFrame('list-menu-frame'):ToggleAt(anchor or frame.viewButton, self:BuildViewMenu(frame))
+end
+
+function windowMod:OpenSlotMenu(frame, slotIndex, anchor)
+    EXFrames:GetFrame('list-menu-frame'):ShowAt(anchor or frame.header, self:BuildViewMenu(frame, slotIndex))
 end
 
 function windowMod:BuildSessionMenu(frame)

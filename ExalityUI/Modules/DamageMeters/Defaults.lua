@@ -9,6 +9,7 @@ local defaults = EXUI:GetModule('damage-meters-defaults')
 
 defaults.SCHEMA_VERSION = 7
 defaults.BAR_TEXTURE = 'ExalityUI Status Bar'
+defaults.FAVORITE_SLOT_COUNT = 10
 
 defaults.MODULE = {
     enable = false,
@@ -171,10 +172,48 @@ function defaults:MergeWindowDefaults(entry)
     self:MergeNestedDefaults(entry.icon, self.WINDOW.icon)
 end
 
+function defaults:BuildDefaultFavoriteSlots()
+    local slots = {}
+    for i = 1, self.FAVORITE_SLOT_COUNT do
+        slots[i] = false
+    end
+    slots[1] = views.Type.Dps
+    slots[2] = views.Type.Hps
+    return slots
+end
+
+function defaults:MigrateFavoriteSlots(db)
+    if type(db) ~= 'table' or db.__favoriteSlots ~= nil then
+        return
+    end
+
+    local slots = self:BuildDefaultFavoriteSlots()
+    local old = db.__favoriteViews
+    if type(old) == 'table' then
+        local used = {
+            [slots[1]] = true,
+            [slots[2]] = true,
+        }
+        local index = 3
+        for _, category in ipairs(views:GetCategories()) do
+            for _, meterType in ipairs(category.types) do
+                if old[meterType] and not used[meterType] and index <= self.FAVORITE_SLOT_COUNT then
+                    slots[index] = meterType
+                    used[meterType] = true
+                    index = index + 1
+                end
+            end
+        end
+    end
+    db.__favoriteSlots = slots
+end
+
 function defaults:MergeModuleDefaults(db)
     if type(db) ~= 'table' then
         return
     end
+
+    self:MigrateFavoriteSlots(db)
 
     for key, value in pairs(self.MODULE) do
         local storedKey = '__' .. key

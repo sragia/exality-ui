@@ -55,6 +55,20 @@ local FALLBACK_NAMES = {
     [views.Type.EnemyDamageTaken] = 'Enemy Damage Taken',
 }
 
+local TYPE_ICONS = {
+    [views.Type.DamageDone] = [[Interface\Icons\INV_Sword_04]],
+    [views.Type.Dps] = [[Interface\Icons\Ability_DualWield]],
+    [views.Type.HealingDone] = [[Interface\Icons\Spell_Holy_Heal]],
+    [views.Type.Hps] = [[Interface\Icons\Spell_Holy_FlashHeal]],
+    [views.Type.Absorbs] = [[Interface\Icons\Spell_Holy_PowerWordShield]],
+    [views.Type.Interrupts] = [[Interface\Icons\Ability_Kick]],
+    [views.Type.Dispels] = [[Interface\Icons\Spell_Holy_DispelMagic]],
+    [views.Type.DamageTaken] = [[Interface\Icons\INV_Shield_04]],
+    [views.Type.AvoidableDamageTaken] = [[Interface\Icons\Spell_Shadow_ShadowWordPain]],
+    [views.Type.Deaths] = [[Interface\Icons\Ability_Rogue_FeignDeath]],
+    [views.Type.EnemyDamageTaken] = [[Interface\Icons\Ability_Creature_Cursed_02]],
+}
+
 local GLOBAL_NAMES = {
     [views.Type.DamageDone] = 'DAMAGE_METER_TYPE_DAMAGE_DONE',
     [views.Type.Dps] = 'DAMAGE_METER_TYPE_DPS',
@@ -78,6 +92,10 @@ local SUPPRESS_PER_SECOND = {
     [views.Type.Interrupts] = true,
     [views.Type.Dispels] = true,
 }
+
+function views:GetTypeIcon(meterType)
+    return TYPE_ICONS[meterType]
+end
 
 function views:GetTypeName(meterType)
     local globalName = GLOBAL_NAMES[meterType]

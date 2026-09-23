@@ -534,6 +534,11 @@ characterFrame.Create = function(self)
         disableResize = true,
     })
 
+    -- Content inset from before the window chrome rework.
+    container:ClearAllPoints()
+    container:SetPoint('TOPLEFT', 15, -42)
+    container:SetPoint('BOTTOMRIGHT', -15, 15)
+
     window.title:ClearAllPoints()
     window.title:SetPoint('CENTER', window, 'TOP', 0, 0)
 

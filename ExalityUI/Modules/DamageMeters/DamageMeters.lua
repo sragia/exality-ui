@@ -859,21 +859,51 @@ function meters:SetModuleValue(key, value)
     self:SaveBaseDB(db)
 end
 
-function meters:GetFavoriteViews()
-    local favorites = self:GetModuleValue('favoriteViews')
-    if type(favorites) ~= 'table' then
-        favorites = {}
-        self:SetModuleValue('favoriteViews', favorites)
+function meters:GetFavoriteSlots()
+    local stored = self:GetModuleValue('favoriteSlots')
+    local count = defaults.FAVORITE_SLOT_COUNT
+    local slots = {}
+    local seen = {}
+    local dirty = type(stored) ~= 'table'
+    if dirty then
+        stored = defaults:BuildDefaultFavoriteSlots()
     end
-    return favorites
+
+    for i = 1, count do
+        local value = type(stored) == 'table' and stored[i] or nil
+        if type(value) == 'number' and not seen[value] then
+            slots[i] = value
+            seen[value] = true
+        else
+            slots[i] = false
+            if type(stored) == 'table' and value ~= false then
+                dirty = true
+            end
+        end
+    end
+
+    if dirty then
+        self:SetModuleValue('favoriteSlots', slots)
+    end
+    return slots
 end
 
-function meters:ToggleFavorite(meterType)
-    local favorites = self:GetFavoriteViews()
-    if favorites[meterType] then
-        favorites[meterType] = nil
-    else
-        favorites[meterType] = true
+function meters:SetFavoriteSlot(index, meterType)
+    local count = defaults.FAVORITE_SLOT_COUNT
+    if type(index) ~= 'number' or index < 1 or index > count then
+        return
     end
-    self:SetModuleValue('favoriteViews', favorites)
+
+    local slots = self:GetFavoriteSlots()
+    if type(meterType) ~= 'number' then
+        slots[index] = false
+    else
+        for i = 1, count do
+            if slots[i] == meterType then
+                slots[i] = false
+            end
+        end
+        slots[index] = meterType
+    end
+    self:SetModuleValue('favoriteSlots', slots)
 end
