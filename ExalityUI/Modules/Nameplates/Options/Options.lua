@@ -80,9 +80,22 @@ end
 function options:GetSplitViewItems()
     local tabId = EXUI:GetModule('options-fields').currTabID or self.currTabId
     local menu = getTabMenu(findTab(tabId) or TABS[1])
+    local icons = EXUI.const.textures.frame.icons
+    local driver = EXUI:GetModule('np-driver')
     local items = {}
     for _, item in ipairs(menu) do
-        table.insert(items, { ID = item.id, label = item.name })
+        local entry = { ID = item.id, label = item.name }
+        if item.id == 'hitbox' then
+            entry.preview = {
+                enabled = driver.hitBoxPreview and true or false,
+                iconOn = icons.eye,
+                iconOff = icons.eyeOff,
+                onToggle = function(_, enabled)
+                    driver:SetHitBoxPreview(enabled)
+                end,
+            }
+        end
+        table.insert(items, entry)
     end
     return items
 end

@@ -111,16 +111,36 @@ local function startCastLoop(frame, db)
     end)
 end
 
+local function hideHitBoxPreview()
+    local driver = EXUI:GetModule('np-driver')
+    if not driver or not driver.hitBoxPreview or not driver.SetHitBoxPreview then
+        return
+    end
+    driver:SetHitBoxPreview(false)
+    local fields = EXUI:GetModule('options-fields')
+    local split = fields and fields.splitView
+    if not split or not split.items then
+        return
+    end
+    for _, item in ipairs(split.items) do
+        if item.ID == 'hitbox' and item.SetPreviewEnabled then
+            item:SetPreviewEnabled(false)
+        end
+    end
+end
+
 preview.HookOptionsWindow = function(self, window)
     if not window or window.exuiNPPreviewHooked then
         return
     end
     window.exuiNPPreviewHooked = true
     window:HookScript('OnHide', function()
+        hideHitBoxPreview()
         preview:Hide()
     end)
     local previousOnClose = window.onClose
     window.onClose = function()
+        hideHitBoxPreview()
         preview:Hide()
         if previousOnClose then
             previousOnClose()
@@ -280,6 +300,15 @@ preview.Refresh = function(self)
     end
     if db.healthEnable then
         frame.HealthText:SetText('65k')
+    end
+
+    local driver = EXUI:GetModule('np-driver')
+    local anchor = frame.HealthHost or frame
+    if npCore:IsFriendlyNameOnly({ isFriendly = true, db = db }) then
+        anchor = frame.Name or anchor
+    end
+    if driver and driver.ShowHitBoxMarker then
+        driver:ShowHitBoxMarker(frame, anchor, driver.hitBoxPreview)
     end
 
     if db.raidTargetIndicatorEnable then

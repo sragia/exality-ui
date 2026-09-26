@@ -48,6 +48,21 @@ local function disableOUFDriverSize(oUFDriver)
     end
 end
 
+driver.ApplyEnginePlateSize = function(self)
+    local visW, visH = npCore:GetPlateSize()
+    local db = npCore:GetDB()
+    local hitW = math.max(1, db and db.friendlyHitWidth or 80)
+    local hitH = math.max(1, db and db.friendlyHitHeight or 18)
+    if not self.blizzardPlateWidth and C_NamePlate and C_NamePlate.GetNamePlateSize then
+        self.blizzardPlateWidth, self.blizzardPlateHeight = C_NamePlate.GetNamePlateSize()
+    end
+    local width = math.max(self.blizzardPlateWidth or visW, visW, hitW)
+    local height = math.max(self.blizzardPlateHeight or visH, visH, hitH)
+    if C_NamePlate and C_NamePlate.SetNamePlateSize then
+        pcall(C_NamePlate.SetNamePlateSize, width, height)
+    end
+end
+
 driver.ApplySize = function(self)
     local width, height = npCore:GetPlateSize()
     if NamePlateDriverFrame then
@@ -58,6 +73,7 @@ driver.ApplySize = function(self)
         self.oUFDriver.plateWidth = width
         self.oUFDriver.plateHeight = height
     end
+    self:ApplyEnginePlateSize()
     npCore:ForEachPlate(function(frame)
         self:ApplyFrameSize(frame)
     end)
@@ -73,7 +89,106 @@ driver.ApplyFrameSize = function(self, frame)
     frame:SetSize(width, height)
     if plate then
         frame:SetPoint('BOTTOM', plate, 'BOTTOM')
+        if plate.SetStackingBoundsFrame then
+            plate:SetStackingBoundsFrame(frame)
+        end
     end
+end
+
+local HIT_PREVIEW_COLOR = { 1, 0.82, 0.2, 1 }
+local HIT_PREVIEW_FILL = { 1, 0.82, 0.2, 0.22 }
+
+local function ensureHitMarker(owner)
+    local marker = owner.exuiHitMarker
+    if marker then
+        return marker
+    end
+    marker = CreateFrame('Frame', nil, owner)
+    marker:EnableMouse(false)
+    local fill = marker:CreateTexture(nil, 'BACKGROUND')
+    fill:SetAllPoints()
+    fill:SetColorTexture(unpack(HIT_PREVIEW_FILL))
+    marker.fill = fill
+    local edges = {}
+    for _, key in ipairs({ 'Top', 'Bottom', 'Left', 'Right' }) do
+        local edge = marker:CreateTexture(nil, 'OVERLAY')
+        edge:SetColorTexture(unpack(HIT_PREVIEW_COLOR))
+        edges[key] = edge
+    end
+    marker.edges = edges
+    owner.exuiHitMarker = marker
+    return marker
+end
+
+local function layoutHitMarker(marker)
+    local edges = marker.edges
+    local thickness = 2
+    edges.Top:ClearAllPoints()
+    edges.Top:SetPoint('TOPLEFT')
+    edges.Top:SetPoint('TOPRIGHT')
+    edges.Top:SetHeight(thickness)
+    edges.Bottom:ClearAllPoints()
+    edges.Bottom:SetPoint('BOTTOMLEFT')
+    edges.Bottom:SetPoint('BOTTOMRIGHT')
+    edges.Bottom:SetHeight(thickness)
+    edges.Left:ClearAllPoints()
+    edges.Left:SetPoint('TOPLEFT')
+    edges.Left:SetPoint('BOTTOMLEFT')
+    edges.Left:SetWidth(thickness)
+    edges.Right:ClearAllPoints()
+    edges.Right:SetPoint('TOPRIGHT')
+    edges.Right:SetPoint('BOTTOMRIGHT')
+    edges.Right:SetWidth(thickness)
+end
+
+driver.hitBoxPreview = false
+
+driver.ShowHitBoxMarker = function(self, owner, anchor, shown)
+    if not owner then
+        return
+    end
+    local marker = owner.exuiHitMarker
+    if not shown or not anchor then
+        if marker then
+            marker:Hide()
+        end
+        return
+    end
+    local db = npCore:GetDB()
+    marker = ensureHitMarker(owner)
+    marker:SetSize(math.max(1, db and db.friendlyHitWidth or 80), math.max(1, db and db.friendlyHitHeight or 18))
+    layoutHitMarker(marker)
+    marker:ClearAllPoints()
+    marker:SetPoint('CENTER', anchor, 'CENTER')
+    marker:SetFrameStrata(owner:GetFrameStrata() or 'MEDIUM')
+    local level = owner:GetFrameLevel() or 0
+    if anchor.GetFrameLevel then
+        level = anchor:GetFrameLevel() or level
+    end
+    marker:SetFrameLevel(level + 20)
+    marker:Show()
+end
+
+driver.SetHitBoxPreview = function(self, enabled)
+    self.hitBoxPreview = enabled and true or false
+    npCore:ForEachPlate(function(frame)
+        self:ApplyFriendlyHitTest(frame)
+    end)
+    local preview = EXUI:GetModule('np-preview')
+    if preview and preview.Refresh then
+        preview:Refresh()
+    end
+end
+
+local function ensureFriendlyHitFrame(plate)
+    local hit = plate.exuiFriendlyHit
+    if hit then
+        return hit
+    end
+    hit = CreateFrame('Frame', nil, plate)
+    hit:EnableMouse(false)
+    plate.exuiFriendlyHit = hit
+    return hit
 end
 
 driver.ApplyFriendlyHitTest = function(self, frame)
@@ -81,15 +196,12 @@ driver.ApplyFriendlyHitTest = function(self, frame)
         return
     end
     local plate = frame:GetParent()
-    if not plate or plate:IsForbidden() or not plate.SetHitTestPoints then
-        return
-    end
-    if plate.CanChangeHitTestPoints and not plate:CanChangeHitTestPoints() then
+    if not plate or plate:IsForbidden() or not plate.SetAllHitTestPoints then
         return
     end
     local db = frame.db or npCore:GetDB()
-    local width = db and db.friendlyHitWidth or 80
-    local height = db and db.friendlyHitHeight or 18
+    local width = math.max(1, db and db.friendlyHitWidth or 80)
+    local height = math.max(1, db and db.friendlyHitHeight or 18)
     local anchor = frame.Name
     if not npCore:IsFriendlyNameOnly(frame) then
         anchor = frame.HealthHost or frame.Health or anchor
@@ -97,24 +209,30 @@ driver.ApplyFriendlyHitTest = function(self, frame)
     if not anchor then
         return
     end
-    local halfW = width / 2
-    local halfH = height / 2
-    pcall(plate.SetHitTestPoints, plate, {
-        {
-            point = 'TOPLEFT',
-            relativeTo = anchor,
-            relativePoint = 'CENTER',
-            offsetX = -halfW,
-            offsetY = halfH,
-        },
-        {
-            point = 'BOTTOMRIGHT',
-            relativeTo = anchor,
-            relativePoint = 'CENTER',
-            offsetX = halfW,
-            offsetY = -halfH,
-        },
-    })
+    local hit = ensureFriendlyHitFrame(plate)
+    hit:ClearAllPoints()
+    hit:SetSize(width, height)
+    hit:SetPoint('CENTER', anchor, 'CENTER')
+    hit:Show()
+    self:ShowHitBoxMarker(plate, anchor, self.hitBoxPreview)
+    if plate.CanChangeHitTestPoints and not plate:CanChangeHitTestPoints() then
+        return
+    end
+    plate:SetAllHitTestPoints(hit)
+end
+
+local function hookFriendlyHitTest()
+    if driver.hitTestHooked or not NamePlateUnitFrameMixin or not NamePlateUnitFrameMixin.UpdateHitTestArea then
+        return
+    end
+    hooksecurefunc(NamePlateUnitFrameMixin, 'UpdateHitTestArea', function(unitFrame)
+        local plate = unitFrame.namePlateFrame
+        local owner = plate and plate.unitFrame
+        if owner and owner.isNamePlate and not owner:IsForbidden() then
+            driver:ApplyFriendlyHitTest(owner)
+        end
+    end)
+    driver.hitTestHooked = true
 end
 
 local function hookBlizzardPlateSize()
@@ -122,6 +240,9 @@ local function hookBlizzardPlateSize()
         return
     end
     local function reapply()
+        if C_NamePlate and C_NamePlate.GetNamePlateSize then
+            driver.blizzardPlateWidth, driver.blizzardPlateHeight = C_NamePlate.GetNamePlateSize()
+        end
         driver:ApplySize()
     end
     if NamePlateDriverFrame.UpdateNamePlateOptions then
@@ -200,6 +321,7 @@ driver.Enable = function(self)
 
     wrapProtectedNamePlateApis()
     hookBlizzardPlateSize()
+    hookFriendlyHitTest()
 
     local oUF = EXUI.oUF
     oUF:RegisterStyle(npCore.STYLE_NAME, npCore.Style)
