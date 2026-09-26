@@ -2,10 +2,7 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
-# |cffdb49000.9.5|r
-- [Action Bars] Allow to ping action bars.
-- [Bags] Add keystone level text to the item.
-- [Mythic+ Timer] Add historic data and keep timer visible until you leave key.
+# |cffdb49000.9.6|r
 - [Action Bars] Add our own keybind mode dialog instead of using Blizzard one.
 - [Options] Visul rework of options. Probably more to come to improve UX more.
 - [Misc] Bunch of small fixes and improvements.
@@ -14,6 +11,11 @@ EXUI.changelog = [[
 
 ## Damage Meter |cffeb7a34New|r
 For now fairly alpha version of them. Mostly mimicking default damage meters. With some added customization options of how you are displaying the values on bars.
+
+# |cffdb49000.9.5|r
+- [Action Bars] Allow to ping action bars.
+- [Bags] Add keystone level text to the item.
+- [Mythic+ Timer] Add historic data and keep timer visible until you leave key.
 
 # |cffdb49000.9.4|r
 - [Minimap] Instance difficulty is now overlay text instead of a minimap button.
