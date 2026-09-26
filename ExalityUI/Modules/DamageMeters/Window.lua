@@ -670,7 +670,11 @@ function windowMod:GetCombatSession(frame, db)
 end
 
 function windowMod:UpdateHeader(frame, db, session, isDummy)
-    frame.viewButton.label:SetText(views:GetTypeName(db.damageMeterType))
+    local title = views:GetTypeName(db.damageMeterType)
+    if db.titleUseWindowName and db.name and db.name ~= '' then
+        title = db.name
+    end
+    frame.viewButton.label:SetText(title)
 
     local duration = nil
     if not isDummy then

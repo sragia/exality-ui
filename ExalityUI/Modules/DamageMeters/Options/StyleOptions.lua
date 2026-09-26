@@ -36,6 +36,28 @@ function styleOptions:GetOptions(windowID)
             onChange = function(value)
                 meters:UpdateValue(windowID, 'showTitle', value)
                 meters:UpdateById(windowID)
+                C_Timer.After(0, function()
+                    EXUI:GetModule('options-fields'):RefreshOptions()
+                end)
+            end,
+        },
+        {
+            type = 'toggle',
+            label = 'Use Window Name',
+            name = 'titleUseWindowName',
+            width = 100,
+            tooltip = {
+                text = 'Show this window\'s name in the header instead of the view category.',
+            },
+            depends = function()
+                return enabled() and meters:GetValue(windowID, 'showTitle') ~= false
+            end,
+            currentValue = function()
+                return meters:GetValue(windowID, 'titleUseWindowName')
+            end,
+            onChange = function(value)
+                meters:UpdateValue(windowID, 'titleUseWindowName', value)
+                meters:UpdateById(windowID)
             end,
         },
         {

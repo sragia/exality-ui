@@ -62,6 +62,7 @@ defaults.WINDOW = {
     width = 240,
     height = 180,
     showTitle = true,
+    titleUseWindowName = false,
     showTimer = true,
     borderColor = { r = 61 / 255, g = 53 / 255, b = 48 / 255, a = 1 },
     backdropColor = { r = 0.05, g = 0.04, b = 0.03, a = 0.75 },

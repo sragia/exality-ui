@@ -21,8 +21,18 @@ function meterData:FormatPlayerName(name)
     if name == nil then
         return ''
     end
+    if self:IsSecret(name) then
+        if Ambiguate then
+            return Ambiguate(name, 'all')
+        end
+        return name
+    end
     if Ambiguate then
-        return Ambiguate(name, 'all')
+        name = Ambiguate(name, 'all')
+    end
+    local short = name:match('^([^%-]+)%-[^%-]+$')
+    if short and short ~= '' then
+        return short
     end
     return name
 end

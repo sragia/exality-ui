@@ -48,7 +48,37 @@ local function disableOUFDriverSize(oUFDriver)
     end
 end
 
+local PLATE_SIZE_RESTRICTIONS = {
+    'Combat',
+    'Encounter',
+    'ChallengeMode',
+    'PvPMatch',
+    'Map',
+}
+
+local function isNamePlateSizeRestricted()
+    if InCombatLockdown() then
+        return true
+    end
+    local restricted = C_RestrictedActions and C_RestrictedActions.IsAddOnRestrictionActive
+    local types = Enum and Enum.AddOnRestrictionType
+    if not restricted or not types then
+        return false
+    end
+    for _, key in ipairs(PLATE_SIZE_RESTRICTIONS) do
+        local restrictionType = types[key]
+        if restrictionType and restricted(restrictionType) then
+            return true
+        end
+    end
+    return false
+end
+
 driver.ApplyEnginePlateSize = function(self)
+    if isNamePlateSizeRestricted() then
+        self.engineSizeDirty = true
+        return
+    end
     local visW, visH = npCore:GetPlateSize()
     local db = npCore:GetDB()
     local hitW = math.max(1, db and db.friendlyHitWidth or 80)
@@ -58,8 +88,13 @@ driver.ApplyEnginePlateSize = function(self)
     end
     local width = math.max(self.blizzardPlateWidth or visW, visW, hitW)
     local height = math.max(self.blizzardPlateHeight or visH, visH, hitH)
+    if issecretvalue and (issecretvalue(width) or issecretvalue(height)) then
+        self.engineSizeDirty = true
+        return
+    end
+    self.engineSizeDirty = nil
     if C_NamePlate and C_NamePlate.SetNamePlateSize then
-        pcall(C_NamePlate.SetNamePlateSize, width, height)
+        C_NamePlate.SetNamePlateSize(width, height)
     end
 end
 
@@ -362,6 +397,7 @@ driver.RegisterSupportEvents = function(self)
     frame:RegisterEvent('GROUP_ROSTER_UPDATE')
     frame:RegisterEvent('PLAYER_ENTERING_WORLD')
     frame:RegisterEvent('PLAYER_REGEN_ENABLED')
+    frame:RegisterEvent('ADDON_RESTRICTION_STATE_CHANGED')
     frame:RegisterEvent('PLAYER_TARGET_CHANGED')
     frame:RegisterEvent('UPDATE_MOUSEOVER_UNIT')
     frame:RegisterEvent('UNIT_CLASSIFICATION_CHANGED')
@@ -375,7 +411,7 @@ driver.RegisterSupportEvents = function(self)
     frame:RegisterEvent('UNIT_SPELLCAST_CHANNEL_STOP')
     frame:RegisterEvent('UNIT_SPELLCAST_INTERRUPTED')
     frame:RegisterEvent('UNIT_SPELLCAST_FAILED')
-    frame:SetScript('OnEvent', function(_, event, unit)
+    frame:SetScript('OnEvent', function(_, event, unit, arg2)
         if event == 'PLAYER_TARGET_CHANGED' then
             EXUI:GetModule('np-element-target-highlight'):OnTargetChanged()
         elseif event == 'UPDATE_MOUSEOVER_UNIT' then
@@ -394,7 +430,14 @@ driver.RegisterSupportEvents = function(self)
                 npCore:ScanCoTank()
                 npCore.rosterDirty = false
             end
+            if driver.engineSizeDirty then
+                driver:ApplyEnginePlateSize()
+            end
             npCore:UpdateAllPlates()
+        elseif event == 'ADDON_RESTRICTION_STATE_CHANGED' then
+            if driver.engineSizeDirty and arg2 == Enum.AddOnRestrictionState.Inactive then
+                driver:ApplyEnginePlateSize()
+            end
         elseif event == 'UNIT_CLASSIFICATION_CHANGED' or event == 'QUEST_LOG_UPDATE' then
             npCore:RefreshPlateHealthColors()
         elseif event == 'INSTANCE_ENCOUNTER_ENGAGE_UNIT' then
