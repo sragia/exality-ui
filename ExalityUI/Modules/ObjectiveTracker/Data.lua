@@ -48,6 +48,32 @@ local function recycleCurrencies(currencies)
     releaseTable(currencies)
 end
 
+local function recycleSpells(spells)
+    if not spells then
+        return
+    end
+    for i = 1, #spells do
+        releaseTable(spells[i])
+        spells[i] = nil
+    end
+    releaseTable(spells)
+end
+
+local function recycleDelve(delve)
+    if not delve then
+        return
+    end
+    recycleCurrencies(delve.currencies)
+    delve.currencies = nil
+    recycleSpells(delve.spells)
+    delve.spells = nil
+    if delve.reward then
+        releaseTable(delve.reward)
+        delve.reward = nil
+    end
+    releaseTable(delve)
+end
+
 local function recycleCategoryBlocks(blocks)
     if not blocks then
         return
@@ -58,8 +84,7 @@ local function recycleCategoryBlocks(blocks)
             recycleObjectives(block.objectives)
             block.objectives = nil
             if block.delve then
-                recycleCurrencies(block.delve.currencies)
-                releaseTable(block.delve)
+                recycleDelve(block.delve)
                 block.delve = nil
             end
             if block.stage then
@@ -835,6 +860,107 @@ function trackerData:CollectDelveCurrencies(info)
     return currencies
 end
 
+function trackerData:CollectDelveSpells(info)
+    local spells = acquireTable()
+    if not info or not info.spells or not Enum or not Enum.WidgetShownState then
+        return spells
+    end
+
+    local textShown = Enum.SpellDisplayTextShownStateType
+        and Enum.SpellDisplayTextShownStateType.Shown
+    local disabledState = Enum.WidgetEnabledState and Enum.WidgetEnabledState.Disabled
+
+    for _, spellInfo in ipairs(info.spells) do
+        if spellInfo.shownState ~= Enum.WidgetShownState.Hidden then
+            local spellData = spellInfo.spellID
+                and C_Spell
+                and C_Spell.GetSpellInfo
+                and C_Spell.GetSpellInfo(spellInfo.spellID)
+            local icon = spellData and (spellData.iconID or spellData.icon)
+            local name = spellData and spellData.name
+            local widgetText = spellInfo.text
+            local showText = textShown ~= nil and spellInfo.textShownState == textShown
+            local stackDisplay = spellInfo.stackDisplay or 0
+            local hasLabel = (showText and widgetText and widgetText ~= '')
+                or (name and name ~= '')
+                or stackDisplay > 0
+            if (icon and icon ~= 0) or hasLabel then
+                local spell = acquireTable()
+                spell.spellID = spellInfo.spellID
+                spell.icon = icon
+                spell.name = name
+                spell.text = widgetText
+                spell.textShown = showText
+                spell.stackDisplay = stackDisplay
+                spell.tooltip = spellInfo.tooltip
+                spell.showAsEarned = spellInfo.showAsEarned
+                spell.disabled = disabledState ~= nil and spellInfo.enabledState == disabledState
+                spells[#spells + 1] = spell
+            end
+        end
+    end
+
+    return spells
+end
+
+function trackerData:CollectDelveReward(info)
+    if not info
+        or not info.rewardInfo
+        or not Enum
+        or not Enum.UIWidgetRewardShownState
+        or info.rewardInfo.shownState == Enum.UIWidgetRewardShownState.Hidden then
+        return nil
+    end
+
+    local earned = info.rewardInfo.shownState == Enum.UIWidgetRewardShownState.ShownEarned
+    local atlas
+    local textureKit = info.frameTextureKit
+    if textureKit and textureKit ~= '' then
+        atlas = textureKit .. (earned and '-treasure-available' or '-treasure-unavailable')
+    end
+    if not atlas then
+        return nil
+    end
+
+    local reward = acquireTable()
+    reward.earned = earned
+    reward.atlas = atlas
+    reward.earnedTooltip = info.rewardInfo.earnedTooltip
+    reward.unearnedTooltip = info.rewardInfo.unearnedTooltip
+    return reward
+end
+
+function trackerData:BuildScenarioHeaderDelve(widgetID, info)
+    local tierText = self:FormatDelveTierText(info.tierText)
+    local currencies = self:CollectDelveCurrencies(info)
+    local spells = self:CollectDelveSpells(info)
+    local reward = self:CollectDelveReward(info)
+    local headerText = info.headerText
+    if headerText == '' then
+        headerText = nil
+    end
+
+    if not tierText and #currencies == 0 and not headerText and #spells == 0 and not reward then
+        recycleCurrencies(currencies)
+        recycleSpells(spells)
+        return nil
+    end
+
+    local delve = acquireTable()
+    delve.widgetID = widgetID
+    delve.tierText = tierText
+    delve.headerText = headerText
+    delve.currencies = currencies
+    delve.spells = spells
+    delve.reward = reward
+    delve.frameTextureKit = info.frameTextureKit
+    return delve
+end
+
+function trackerData:ReleaseDelve(delve)
+    recycleDelve(delve)
+end
+
 function trackerData:GetScenarioHeaderDelvesInfo(widgetSetID)
     if not widgetSetID
         or not C_UIWidgetManager
@@ -855,16 +981,7 @@ function trackerData:GetScenarioHeaderDelvesInfo(widgetSetID)
         if widget.widgetType == Enum.UIWidgetVisualizationType.ScenarioHeaderDelves then
             local info = C_UIWidgetManager.GetScenarioHeaderDelvesWidgetVisualizationInfo(widget.widgetID)
             if info and info.shownState ~= Enum.WidgetShownState.Hidden then
-                local tierText = self:FormatDelveTierText(info.tierText)
-                local currencies = self:CollectDelveCurrencies(info)
-                if tierText or #currencies > 0 then
-                    local delve = acquireTable()
-                    delve.widgetID = widget.widgetID
-                    delve.tierText = tierText
-                    delve.currencies = currencies
-                    return delve
-                end
-                recycleCurrencies(currencies)
+                return self:BuildScenarioHeaderDelve(widget.widgetID, info)
             end
         end
     end
@@ -886,18 +1003,7 @@ function trackerData:GetScenarioHeaderDelvesInfoByWidgetID(widgetID)
         return nil
     end
 
-    local tierText = self:FormatDelveTierText(info.tierText)
-    local currencies = self:CollectDelveCurrencies(info)
-    if tierText or #currencies > 0 then
-        local delve = acquireTable()
-        delve.widgetID = widgetID
-        delve.tierText = tierText
-        delve.currencies = currencies
-        return delve
-    end
-
-    recycleCurrencies(currencies)
-    return nil
+    return self:BuildScenarioHeaderDelve(widgetID, info)
 end
 
 function trackerData:GetActiveDelveInfo()
@@ -1136,6 +1242,7 @@ local EVENT_COLLECTORS = {
     CURRENCY_DISPLAY_UPDATE = { 'recipes', 'scenario' },
     SCENARIO_UPDATE = { 'scenario' },
     SCENARIO_CRITERIA_UPDATE = { 'scenario' },
+    SCENARIO_SPELL_UPDATE = { 'scenario' },
     UPDATE_UI_WIDGET = { 'scenario' },
     ACTIVE_DELVE_DATA_UPDATE = { 'scenario' },
     CHALLENGE_MODE_START = { 'scenario' },

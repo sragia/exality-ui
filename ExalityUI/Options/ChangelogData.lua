@@ -10,6 +10,7 @@ EXUI.changelog = [[
 - [Options] Visul rework of options. Probably more to come to improve UX more.
 - [Misc] Bunch of small fixes and improvements.
 - [Nameplates] Add bunch of options for friendly nameplates.
+- [Objective Tracker] Add "affixes" display for delves.
 
 ## Damage Meter |cffeb7a34New|r
 For now fairly alpha version of them. Mostly mimicking default damage meters. With some added customization options of how you are displaying the values on bars.

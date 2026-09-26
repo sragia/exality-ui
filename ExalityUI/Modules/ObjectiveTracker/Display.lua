@@ -26,6 +26,9 @@ display.scenarioHeaderTimerFrames = {}
 display.SCENARIO_CATEGORY_ID = 'scenario'
 display.inEncounter = false
 
+local DELVE_DISABLED_COLOR = { r = 0.5, g = 0.5, b = 0.5, a = 1 }
+local DELVE_SPELL_ICON_SIZE = 26
+
 display.categoryPool = CreateFramePool('Frame', UIParent, 'BackdropTemplate')
 display.blockPool = CreateFramePool('Frame', UIParent, 'BackdropTemplate')
 display.linePool = CreateFramePool('Frame', UIParent)
@@ -74,7 +77,10 @@ display.EVENTS = {
     'CURRENCY_DISPLAY_UPDATE',
     'SCENARIO_UPDATE',
     'SCENARIO_CRITERIA_UPDATE',
+    'SCENARIO_SPELL_UPDATE',
     'UPDATE_UI_WIDGET',
+    'DISPLAY_EVENT_TOASTS',
+    'SPELL_TEXT_UPDATE',
     'ACTIVE_DELVE_DATA_UPDATE',
     'CHALLENGE_MODE_START',
     'CHALLENGE_MODE_COMPLETED',
@@ -437,9 +443,23 @@ function display:GetStructureKey(categories, db)
             local stage = block.stage
             local showStage = stage and stage.total and stage.total > 1
             local hasTimer = stage and stage.headerTimer and stage.headerTimer.widgetID
+            local delve = block.delve
             local delveCount = 0
-            if block.delve and block.delve.currencies then
-                delveCount = #block.delve.currencies
+            local spellCount = 0
+            local hasTier = false
+            local hasHeader = false
+            local hasReward = false
+            if delve then
+                if delve.currencies then
+                    delveCount = #delve.currencies
+                end
+                if delve.spells then
+                    spellCount = #delve.spells
+                end
+                hasTier = delve.tierText and delve.tierText ~= ''
+                local headerText = delve.headerText
+                hasHeader = headerText and headerText ~= '' and headerText ~= block.title
+                hasReward = delve.reward ~= nil
             end
             signatureParts[#signatureParts + 1] = textCount
             signatureParts[#signatureParts + 1] = barCount
@@ -448,6 +468,10 @@ function display:GetStructureKey(categories, db)
             signatureParts[#signatureParts + 1] = (stage and stage.description and stage.description ~= '') and '1' or '0'
             signatureParts[#signatureParts + 1] = (stage and stage.weightedProgress ~= nil) and '1' or '0'
             signatureParts[#signatureParts + 1] = delveCount
+            signatureParts[#signatureParts + 1] = hasTier and '1' or '0'
+            signatureParts[#signatureParts + 1] = hasHeader and '1' or '0'
+            signatureParts[#signatureParts + 1] = spellCount
+            signatureParts[#signatureParts + 1] = hasReward and '1' or '0'
             signatureParts[#signatureParts + 1] = block.challengeMode and '1' or '0'
             signatureParts[#signatureParts + 1] = block.isAutoQuestPopUp and '1' or '0'
             signatureParts[#signatureParts + 1] = (block.untrackType == 'quest' and not block.isAutoQuestPopUp) and '1' or '0'
@@ -486,11 +510,30 @@ function display:GetContentSignature(categories)
             local delve = block.delve
             if delve then
                 signatureParts[#signatureParts + 1] = delve.tierText
+                signatureParts[#signatureParts + 1] = delve.headerText
                 for _, currency in ipairs(delve.currencies or {}) do
                     signatureParts[#signatureParts + 1] = currency.text
                     signatureParts[#signatureParts + 1] = currency.leadingText
                     signatureParts[#signatureParts + 1] = currency.iconFileID
                     signatureParts[#signatureParts + 1] = currency.isCurrencyMaxed
+                end
+                for _, spell in ipairs(delve.spells or {}) do
+                    signatureParts[#signatureParts + 1] = spell.spellID
+                    signatureParts[#signatureParts + 1] = spell.name
+                    signatureParts[#signatureParts + 1] = spell.text
+                    signatureParts[#signatureParts + 1] = spell.textShown
+                    signatureParts[#signatureParts + 1] = spell.stackDisplay
+                    signatureParts[#signatureParts + 1] = spell.icon
+                    signatureParts[#signatureParts + 1] = spell.showAsEarned
+                    signatureParts[#signatureParts + 1] = spell.disabled
+                    signatureParts[#signatureParts + 1] = spell.tooltip
+                end
+                local reward = delve.reward
+                if reward then
+                    signatureParts[#signatureParts + 1] = reward.earned
+                    signatureParts[#signatureParts + 1] = reward.atlas
+                    signatureParts[#signatureParts + 1] = reward.earnedTooltip
+                    signatureParts[#signatureParts + 1] = reward.unearnedTooltip
                 end
             end
             local challengeMode = block.challengeMode
@@ -510,14 +553,142 @@ function display:TrackOwnedRow(parent, child)
     return child
 end
 
+function display:IsShownDelveSpell(spellID)
+    if not spellID then
+        return false
+    end
+    for _, blockFrame in ipairs(self.blockFrames) do
+        local spells = blockFrame.blockData and blockFrame.blockData.delve and blockFrame.blockData.delve.spells
+        if spells then
+            for _, spell in ipairs(spells) do
+                if spell.spellID == spellID then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+function display:RefreshDelveSpellStacks(delve)
+    if not delve or not delve.widgetID or not delve.spells then
+        return
+    end
+
+    local fresh = trackerData:GetScenarioHeaderDelvesInfoByWidgetID(delve.widgetID)
+    if not fresh or not fresh.spells then
+        if fresh then
+            trackerData:ReleaseDelve(fresh)
+        end
+        return
+    end
+
+    local stacks = {}
+    for _, spell in ipairs(fresh.spells) do
+        if spell.spellID then
+            stacks[spell.spellID] = spell.stackDisplay
+        end
+    end
+    trackerData:ReleaseDelve(fresh)
+
+    for _, spell in ipairs(delve.spells) do
+        if spell.spellID and stacks[spell.spellID] ~= nil then
+            spell.stackDisplay = stacks[spell.spellID]
+        end
+    end
+end
+
+function display:UpdateDelveSpellCounts()
+    for _, blockFrame in ipairs(self.blockFrames) do
+        local line = blockFrame.ownedDelveSpellLine
+        local delve = blockFrame.blockData and blockFrame.blockData.delve
+        local spells = delve and delve.spells
+        if line and line.spellButtons and spells then
+            self:RefreshDelveSpellStacks(delve)
+            local index = 0
+            for _, spell in ipairs(spells) do
+                if self:FormatDelveSpellIcon(spell) then
+                    index = index + 1
+                    local button = line.spellButtons[index]
+                    if button then
+                        self:SetDelveSpellAmount(button, self:GetDelveSpellCountText(spell), line.delveTextureKit or delve.frameTextureKit, DELVE_SPELL_ICON_SIZE)
+                    end
+                end
+            end
+        end
+    end
+end
+
+function display:HasDelveSpellButtons()
+    for _, blockFrame in ipairs(self.blockFrames) do
+        local buttons = blockFrame.ownedDelveSpellLine and blockFrame.ownedDelveSpellLine.spellButtons
+        if buttons and #buttons > 0 then
+            return true
+        end
+    end
+    return false
+end
+
+function display:QueueDelveSpellCountRefresh()
+    if not self:HasDelveSpellButtons() then
+        return
+    end
+    self:UpdateDelveSpellCounts()
+    if self.delveSpellCountRefreshQueued then
+        return
+    end
+    self.delveSpellCountRefreshQueued = true
+    C_Timer.After(0.25, function()
+        display.delveSpellCountRefreshQueued = false
+        if objectiveTracker.enabled then
+            display:UpdateDelveSpellCounts()
+        end
+    end)
+end
+
+function display:StartDelveSpellCountWatch()
+    local hasSpells = false
+    for _, blockFrame in ipairs(self.blockFrames) do
+        if blockFrame.ownedDelveSpellLine and blockFrame.ownedDelveSpellLine.spellButtons and #blockFrame.ownedDelveSpellLine.spellButtons > 0 then
+            hasSpells = true
+            break
+        end
+    end
+    if not hasSpells then
+        self:StopDelveSpellCountWatch()
+        return
+    end
+    if self.delveSpellCountTicker then
+        self:UpdateDelveSpellCounts()
+        return
+    end
+    self.delveSpellCountTicker = C_Timer.NewTicker(0.5, function()
+        display:UpdateDelveSpellCounts()
+    end)
+    self:UpdateDelveSpellCounts()
+end
+
+function display:StopDelveSpellCountWatch()
+    if self.delveSpellCountTicker then
+        self.delveSpellCountTicker:Cancel()
+        self.delveSpellCountTicker = nil
+    end
+end
+
 function display:ReleaseLayout()
     self:StopChallengeModeTimerWatch()
     self:StopScenarioHeaderTimerWatch()
+    self:StopDelveSpellCountWatch()
 
     for _, frame in ipairs(self.progressBarFrames) do
         self.progressBarPool:Release(frame)
     end
     for _, frame in ipairs(self.lineFrames) do
+        self:ReleaseDelveSpellButtons(frame)
+        frame:EnableMouse(false)
+        frame.delveTooltip = nil
+        frame.delveSpellID = nil
+        frame.delveSpellTips = nil
         self.linePool:Release(frame)
     end
     for _, frame in ipairs(self.blockFrames) do
@@ -527,6 +698,8 @@ function display:ReleaseLayout()
         frame.ownedStageLine = nil
         frame.ownedDescLine = nil
         frame.ownedDelveLines = nil
+        frame.ownedDelveSpellLine = nil
+        frame.ownedDelveRewardLine = nil
         frame.ownedTextLines = nil
         frame.ownedProgressBars = nil
         frame.challengeLevelLine = nil
@@ -931,17 +1104,21 @@ function display:GetScenarioHeaderTimeRemaining(headerTimer)
     return math.max(0, timerValue - info.timerMin)
 end
 
-function display:SetScenarioStageLineText(stageLine, stageLabel, timeRemaining, db, tierText)
+function display:SetScenarioStageLineText(stageLine, stageLabel, timeRemaining, db, tierText, headerText)
     if not stageLine or not stageLine.text then
         return
     end
 
     local stageColor = self:GetColor(db, 'BlockHeader')
     local white = self:GetColor(db, 'NormalHighlight')
+    local hasHeader = headerText and headerText ~= ''
     local hasTier = tierText and tierText ~= ''
     local hasStage = stageLabel and stageLabel ~= ''
 
     local parts = {}
+    if hasHeader then
+        parts[#parts + 1] = self:FormatColorCode(stageColor):WrapTextInColorCode(headerText)
+    end
     if hasTier then
         parts[#parts + 1] = self:FormatColorCode(white):WrapTextInColorCode(tierText)
     end
@@ -991,6 +1168,502 @@ function display:FormatDelveCurrencyText(currency, iconSize)
     end
 
     return table.concat(parts, ' ')
+end
+
+function display:GetDelveHeaderText(block)
+    local headerText = block and block.delve and block.delve.headerText
+    if not headerText or headerText == '' or headerText == block.title then
+        return nil
+    end
+    return headerText
+end
+
+function display:GetDelveSpellTooltipCount(spell)
+    local spellID = spell and spell.spellID
+    if not spellID or not C_TooltipInfo or not C_TooltipInfo.GetSpellByID then
+        return nil
+    end
+
+    local data = C_TooltipInfo.GetSpellByID(spellID, false, true)
+    if not data or not data.lines then
+        return nil
+    end
+
+    for _, line in ipairs(data.lines) do
+        local text = line.leftText
+        if type(text) == 'string' and text ~= '' then
+            local plain = text:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '')
+            local current = plain:match('(%d+)%s*/%s*%d+')
+            if current then
+                return current
+            end
+        end
+    end
+
+    return nil
+end
+
+function display:GetDelveSpellCountText(spell)
+    if not spell then
+        return nil
+    end
+
+    if spell.stackDisplay and spell.stackDisplay > 0 then
+        return tostring(spell.stackDisplay)
+    end
+
+    local widgetText = spell.text
+    if spell.textShown and widgetText and widgetText ~= '' and widgetText ~= spell.name and widgetText:match('^%d+$') then
+        return widgetText
+    end
+
+    local description = spell.spellID and C_Spell and C_Spell.GetSpellDescription and C_Spell.GetSpellDescription(spell.spellID)
+    if type(description) == 'string' and description ~= '' then
+        local plain = description:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '')
+        local current = plain:match('(%d+)%s*/%s*%d+')
+        if current then
+            return current
+        end
+    end
+
+    return self:GetDelveSpellTooltipCount(spell)
+end
+
+function display:FormatDelveSpellIcon(spell, iconSize)
+    if not spell or not spell.icon or spell.icon == 0 then
+        return nil
+    end
+
+    iconSize = iconSize or 14
+    if CreateTextureMarkup then
+        return CreateTextureMarkup(spell.icon, 64, 64, iconSize, iconSize, 0, 1, 0, 1)
+    end
+    return string.format('|T%d:%d:%d|t', spell.icon, iconSize, iconSize)
+end
+
+function display:FormatDelveSpellText(spell, iconSize, db)
+    local icon = self:FormatDelveSpellIcon(spell, iconSize)
+    if not icon then
+        return nil
+    end
+
+    local countText = self:GetDelveSpellCountText(spell)
+    if not countText then
+        return icon
+    end
+
+    if db then
+        countText = self:FormatColorCode(self:GetDelveSpellColor(db, spell)):WrapTextInColorCode(countText)
+    end
+    return icon .. ' ' .. countText
+end
+
+function display:FormatDelveSpellRow(spells, iconSize, db)
+    if not spells or #spells == 0 then
+        return nil
+    end
+
+    local parts = {}
+    for _, spell in ipairs(spells) do
+        local piece = self:FormatDelveSpellText(spell, iconSize, db)
+        if piece then
+            parts[#parts + 1] = piece
+        end
+    end
+    if #parts == 0 then
+        return nil
+    end
+    return table.concat(parts, '  ')
+end
+
+function display:GetDelveSpellColor(db, spell)
+    if spell and spell.showAsEarned then
+        return self:GetColor(db, 'Complete')
+    end
+    if spell and spell.disabled then
+        return DELVE_DISABLED_COLOR
+    end
+    return self:GetColor(db, 'BlockHeader')
+end
+
+function display:GetDelveSpellTooltip(spell)
+    if spell and spell.tooltip and spell.tooltip ~= '' then
+        return spell.tooltip
+    end
+    return nil
+end
+
+function display:FormatDelveRewardText(reward, iconSize)
+    if not reward or not reward.atlas or reward.atlas == '' then
+        return nil
+    end
+
+    iconSize = iconSize or 14
+    if CreateAtlasMarkup then
+        return CreateAtlasMarkup(reward.atlas, iconSize, iconSize)
+    end
+    return string.format('|A:%s:%d:%d|a', reward.atlas, iconSize, iconSize)
+end
+
+function display:GetDelveRewardTooltip(reward)
+    if not reward then
+        return nil
+    end
+    local tooltip = reward.earned and reward.earnedTooltip or reward.unearnedTooltip
+    if not tooltip or tooltip == '' then
+        return nil
+    end
+    return tooltip
+end
+
+function display:EnsureDelveLineTooltip(line)
+    if line.delveTooltipHooked then
+        return
+    end
+    line.delveTooltipHooked = true
+    line:SetScript('OnEnter', function(row)
+        local tips = row.delveSpellTips
+        if tips and #tips > 0 then
+            GameTooltip:SetOwner(row, 'ANCHOR_RIGHT')
+            if #tips == 1 and (not tips[1].tooltip or tips[1].tooltip == '') and tips[1].spellID then
+                GameTooltip:SetSpellByID(tips[1].spellID)
+                GameTooltip:Show()
+                return
+            end
+            local shown = false
+            for _, tip in ipairs(tips) do
+                local title = tip.name
+                local body = tip.tooltip
+                if title and title ~= '' then
+                    if not shown then
+                        GameTooltip:SetText(title, 1, 0.82, 0, 1, true)
+                    else
+                        GameTooltip:AddLine(title, 1, 0.82, 0, true)
+                    end
+                    shown = true
+                    if body and body ~= '' and body ~= title then
+                        GameTooltip:AddLine(body, 1, 1, 1, true)
+                    end
+                elseif body and body ~= '' then
+                    if not shown then
+                        GameTooltip:SetText(body, 1, 1, 1, 1, true)
+                    else
+                        GameTooltip:AddLine(body, 1, 1, 1, true)
+                    end
+                    shown = true
+                end
+            end
+            if shown then
+                GameTooltip:Show()
+            end
+            return
+        end
+        if (not row.delveTooltip or row.delveTooltip == '') and not row.delveSpellID then
+            return
+        end
+        GameTooltip:SetOwner(row, 'ANCHOR_RIGHT')
+        if row.delveTooltip and row.delveTooltip ~= '' then
+            GameTooltip:SetText(row.delveTooltip, 1, 1, 1, 1, true)
+        else
+            GameTooltip:SetSpellByID(row.delveSpellID)
+        end
+        GameTooltip:Show()
+    end)
+    line:SetScript('OnLeave', function()
+        GameTooltip:Hide()
+    end)
+end
+
+function display:SetDelveLineTooltip(line, tooltipText, spellID)
+    line.delveSpellTips = nil
+    line.delveTooltip = tooltipText
+    line.delveSpellID = spellID
+    if (tooltipText and tooltipText ~= '') or spellID then
+        line:EnableMouse(true)
+        self:EnsureDelveLineTooltip(line)
+    else
+        line:EnableMouse(false)
+    end
+end
+
+function display:SetDelveSpellRowTooltip(line, spells)
+    line.delveTooltip = nil
+    line.delveSpellID = nil
+    local tips = line.delveSpellTips
+    if tips then
+        wipe(tips)
+    else
+        tips = {}
+        line.delveSpellTips = tips
+    end
+    for _, spell in ipairs(spells or {}) do
+        if self:FormatDelveSpellIcon(spell) then
+            local tip = {}
+            tip.name = spell.name
+            tip.tooltip = self:GetDelveSpellTooltip(spell)
+            tip.spellID = spell.spellID
+            tips[#tips + 1] = tip
+        end
+    end
+    if #tips > 0 then
+        line:EnableMouse(true)
+        self:EnsureDelveLineTooltip(line)
+    else
+        line.delveSpellTips = nil
+        line:EnableMouse(false)
+    end
+end
+
+function display:PrepareTrackerLine(line, parent, blockWidth, lineIndent, isRightAlign, fontPath, fontSize, fontFlag)
+    line:SetParent(parent)
+    line:Show()
+    line:SetWidth(blockWidth)
+    line.text = line.text or line:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    line.text:SetParent(line)
+    line.text:ClearAllPoints()
+    if isRightAlign then
+        line.text:SetPoint('TOPLEFT', line, 'TOPLEFT', 0, 0)
+        line.text:SetPoint('TOPRIGHT', line, 'TOPRIGHT', -lineIndent, 0)
+    else
+        line.text:SetPoint('TOPLEFT', line, 'TOPLEFT', lineIndent, 0)
+        line.text:SetPoint('TOPRIGHT', line, 'TOPRIGHT', 0, 0)
+    end
+    line.text:SetJustifyH(isRightAlign and 'RIGHT' or 'LEFT')
+    line.text:SetWordWrap(false)
+    line.text:SetFont(fontPath, fontSize, fontFlag)
+    return line
+end
+
+function display:GetDelveSpellButtonPool()
+    if not self.delveSpellButtonPool then
+        self.delveSpellButtonPool = CreateFramePool('Button', UIParent)
+    end
+    return self.delveSpellButtonPool
+end
+
+function display:ReleaseDelveSpellButtons(line)
+    if not line or not line.spellButtons then
+        return
+    end
+    local pool = self.delveSpellButtonPool
+    for i = 1, #line.spellButtons do
+        local button = line.spellButtons[i]
+        button.spellID = nil
+        button:Hide()
+        button:ClearAllPoints()
+        if pool then
+            pool:Release(button)
+        end
+        line.spellButtons[i] = nil
+    end
+end
+
+function display:ConfigureDelveSpellButton(button)
+    if not button.icon then
+        button.icon = button:CreateTexture(nil, 'ARTWORK')
+        button:SetScript('OnEnter', function(self)
+            display:ShowDelveSpellTooltip(self)
+        end)
+        button:SetScript('OnLeave', function()
+            display:HideDelveSpellTooltip()
+        end)
+    end
+    if not button.amount then
+        button.amount = button:CreateTexture(nil, 'OVERLAY')
+    end
+    if not button.count then
+        button.count = button:CreateFontString(nil, 'OVERLAY', 'NumberFontNormal')
+        button.count:SetJustifyH('CENTER')
+        button.count:SetJustifyV('MIDDLE')
+        local font, size = button.count:GetFont()
+        if font then
+            button.count:SetFont(font, size or 12, 'OUTLINE')
+        end
+    end
+end
+
+function display:SetDelveSpellAmount(button, countText, textureKit, iconSize)
+    iconSize = iconSize or DELVE_SPELL_ICON_SIZE
+    button.icon:ClearAllPoints()
+    button.icon:SetPoint('TOPLEFT', button, 'TOPLEFT', 0, 0)
+    button.icon:SetSize(iconSize, iconSize)
+    button:SetSize(iconSize, iconSize)
+    if button.amount then
+        button.amount:Hide()
+    end
+    button.count:ClearAllPoints()
+    button.count:SetPoint('TOPLEFT', button.icon, 'TOPLEFT', -1, 2)
+
+    if not countText then
+        button.count:Hide()
+        return iconSize
+    end
+
+    button.count:SetText(countText)
+    button.count:Show()
+    return iconSize
+end
+
+function display:ShowDelveSpellTooltip(button)
+    local spellID = button and button.spellID
+    if not spellID then
+        return
+    end
+    local tooltip = EmbeddedItemTooltip or GameTooltip
+    if not tooltip or not tooltip.SetSpellByID then
+        return
+    end
+    tooltip:SetOwner(button, 'ANCHOR_RIGHT')
+    tooltip:SetSpellByID(spellID, false, true)
+    tooltip:Show()
+end
+
+function display:HideDelveSpellTooltip()
+    if EmbeddedItemTooltip then
+        EmbeddedItemTooltip:Hide()
+    end
+    if GameTooltip then
+        GameTooltip:Hide()
+    end
+end
+
+function display:ApplyDelveSpellLine(line, spells, db, iconSize, textureKit)
+    self:ReleaseDelveSpellButtons(line)
+    line:EnableMouse(false)
+    line.delveSpellTips = nil
+    line.delveTooltip = nil
+    line.delveSpellID = nil
+    if line.text then
+        line.text:SetText('')
+    end
+
+    iconSize = iconSize or DELVE_SPELL_ICON_SIZE
+    line.delveIconSize = iconSize
+    line.spellButtons = line.spellButtons or {}
+
+    local visible = {}
+    for _, spell in ipairs(spells or {}) do
+        if self:FormatDelveSpellIcon(spell, iconSize) then
+            visible[#visible + 1] = spell
+        end
+    end
+    if #visible == 0 then
+        return false
+    end
+
+    local gap = 6
+    local blockWidth = line.delveBlockWidth or line:GetWidth()
+    local lineIndent = line.delveLineIndent or 0
+    local pool = self:GetDelveSpellButtonPool()
+    textureKit = textureKit or line.delveTextureKit
+    local buttons = {}
+    local widths = {}
+
+    for index, spell in ipairs(visible) do
+        local button = pool:Acquire()
+        button:SetParent(line)
+        self:ConfigureDelveSpellButton(button)
+        button.icon:SetTexture(spell.icon)
+        button.icon:SetDesaturated(spell.disabled and true or false)
+        button.spellID = spell.spellID
+        widths[index] = self:SetDelveSpellAmount(button, self:GetDelveSpellCountText(spell), textureKit, iconSize)
+        button:SetFrameLevel(line:GetFrameLevel() + 2)
+        button:Show()
+        buttons[index] = button
+        line.spellButtons[#line.spellButtons + 1] = button
+    end
+
+    local total = 0
+    for index, width in ipairs(widths) do
+        total = total + width
+        if index > 1 then
+            total = total + gap
+        end
+    end
+    local x = line.delveRightAlign and (blockWidth - lineIndent - total) or lineIndent
+    for index, button in ipairs(buttons) do
+        button:ClearAllPoints()
+        button:SetPoint('TOPLEFT', line, 'TOPLEFT', x, 0)
+        x = x + widths[index] + gap
+    end
+
+    line:SetHeight(iconSize)
+    return true
+end
+
+function display:ApplyDelveRewardLine(line, reward, db, iconSize)
+    local rewardText = self:FormatDelveRewardText(reward, iconSize)
+    if not rewardText then
+        return false
+    end
+    line.text:SetText(rewardText)
+    local color = self:GetColor(db, reward.earned and 'Complete' or 'BlockHeader')
+    line.text:SetTextColor(color.r, color.g, color.b)
+    self:SetDelveLineTooltip(line, self:GetDelveRewardTooltip(reward), nil)
+    return true
+end
+
+function display:AppendDelveSpells(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+    local spells = block.delve and block.delve.spells
+    if not spells or #spells == 0 then
+        return blockHeight
+    end
+
+    local align = self:GetTextAlign(db)
+    local isRightAlign = align == 'RIGHT'
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local iconSize = DELVE_SPELL_ICON_SIZE
+    local spellLine = self.linePool:Acquire()
+    self:PrepareTrackerLine(spellLine, frame, blockWidth, lineIndent, isRightAlign, headerFontPath, headerFontSize, headerFontFlag)
+    spellLine.delveBlockWidth = blockWidth
+    spellLine.delveLineIndent = lineIndent
+    spellLine.delveRightAlign = isRightAlign
+    spellLine.delveTextureKit = block.delve and block.delve.frameTextureKit
+    if not self:ApplyDelveSpellLine(spellLine, spells, db, iconSize, spellLine.delveTextureKit) then
+        spellLine:EnableMouse(false)
+        spellLine.delveTooltip = nil
+        spellLine.delveSpellID = nil
+        spellLine.delveSpellTips = nil
+        self.linePool:Release(spellLine)
+        return blockHeight
+    end
+
+    spellLine:SetHeight(iconSize)
+    blockHeight = self:AppendBlockRow(frame, spellLine, blockHeight, spacing)
+    self.lineFrames[#self.lineFrames + 1] = spellLine
+    self:TrackOwnedRow(frame, spellLine)
+    frame.ownedDelveSpellLine = spellLine
+    return blockHeight
+end
+
+function display:AppendDelveReward(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+    local reward = block.delve and block.delve.reward
+    if not reward then
+        return blockHeight
+    end
+
+    local align = self:GetTextAlign(db)
+    local isRightAlign = align == 'RIGHT'
+    local lineTextWidth = blockWidth - lineIndent
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local iconSize = math.max(12, headerFontSize)
+    local rewardLine = self.linePool:Acquire()
+    self:PrepareTrackerLine(rewardLine, frame, blockWidth, lineIndent, isRightAlign, headerFontPath, headerFontSize, headerFontFlag)
+    if not self:ApplyDelveRewardLine(rewardLine, reward, db, iconSize) then
+        rewardLine:EnableMouse(false)
+        rewardLine.delveTooltip = nil
+        rewardLine.delveSpellID = nil
+        self.linePool:Release(rewardLine)
+        return blockHeight
+    end
+
+    local rewardHeight = self:MeasureFontString(rewardLine.text, headerFontSize, lineTextWidth, headerFontFlag)
+    rewardLine:SetHeight(rewardHeight)
+    blockHeight = self:AppendBlockRow(frame, rewardLine, blockHeight, spacing)
+    self.lineFrames[#self.lineFrames + 1] = rewardLine
+    self:TrackOwnedRow(frame, rewardLine)
+    frame.ownedDelveRewardLine = rewardLine
+    return blockHeight
 end
 
 function display:AppendDelveCurrencies(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
@@ -1048,7 +1721,10 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
     local delve = block.delve
     local hasTier = delve and delve.tierText and delve.tierText ~= ''
     local hasLives = delve and delve.currencies and #delve.currencies > 0
-    if not stage and not hasTier and not hasLives then
+    local headerText = self:GetDelveHeaderText(block)
+    local hasSpells = delve and delve.spells and #delve.spells > 0
+    local hasReward = delve and delve.reward ~= nil
+    if not stage and not hasTier and not hasLives and not headerText and not hasSpells and not hasReward then
         return blockHeight
     end
 
@@ -1056,8 +1732,8 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
     local headerTimer = stage and stage.headerTimer
     local timeRemaining = headerTimer and (headerTimer.timeRemaining or self:GetScenarioHeaderTimeRemaining(headerTimer))
     local hasTimer = timeRemaining ~= nil
-    local showStageLine = showStage or hasTimer or hasTier
-    if not showStageLine and not hasLives then
+    local showStageLine = showStage or hasTimer or hasTier or headerText
+    if not showStageLine and not hasLives and not hasSpells and not hasReward then
         return blockHeight
     end
 
@@ -1094,7 +1770,7 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
         stageLine.text:SetMaxLines(0)
         stageLine.text:SetNonSpaceWrap(false)
         stageLine.text:SetFont(headerFontPath, headerFontSize, headerFontFlag)
-        self:SetScenarioStageLineText(stageLine, stageLabel, hasTimer and timeRemaining or nil, db, tierText)
+        self:SetScenarioStageLineText(stageLine, stageLabel, hasTimer and timeRemaining or nil, db, tierText, headerText)
 
         local stageHeight = self:MeasureFontString(stageLine.text, headerFontSize, lineTextWidth, headerFontFlag)
         stageLine:SetHeight(stageHeight)
@@ -1108,13 +1784,16 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
                 widgetID = headerTimer.widgetID,
                 stageLabel = stageLabel,
                 tierText = tierText,
+                headerText = headerText,
                 stageLine = stageLine,
             }
             self.scenarioHeaderTimerFrames[#self.scenarioHeaderTimerFrames + 1] = frame.scenarioHeaderTimer
         end
     end
 
+    blockHeight = self:AppendDelveSpells(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
     blockHeight = self:AppendDelveCurrencies(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
+    blockHeight = self:AppendDelveReward(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
 
     local description = stage and stage.description
     if (showStage or hasTimer) and description and description ~= '' then
@@ -1170,7 +1849,7 @@ function display:UpdateScenarioHeaderTimers()
         if timeRemaining == nil then
             needsRebuild = true
         else
-            self:SetScenarioStageLineText(timer.stageLine, timer.stageLabel, timeRemaining, db, timer.tierText)
+            self:SetScenarioStageLineText(timer.stageLine, timer.stageLabel, timeRemaining, db, timer.tierText, timer.headerText)
         end
     end
 
@@ -1978,6 +2657,8 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
     wipe(frame.ownedProgressBars)
     frame.ownedDelveLines = frame.ownedDelveLines or {}
     wipe(frame.ownedDelveLines)
+    frame.ownedDelveSpellLine = nil
+    frame.ownedDelveRewardLine = nil
     frame.ownedStageLine = nil
     frame.ownedDescLine = nil
     frame.ownedStageProgressBar = nil
@@ -2231,19 +2912,21 @@ function display:PatchBlockFrame(frame, block, db, blockWidth)
         stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
     end
     local tierText = delve and delve.tierText or nil
+    local headerText = self:GetDelveHeaderText(block)
+    local iconSize = math.max(12, headerFontSize)
     if frame.ownedStageLine then
-        self:SetScenarioStageLineText(frame.ownedStageLine, stageLabel, timeRemaining, db, tierText)
+        self:SetScenarioStageLineText(frame.ownedStageLine, stageLabel, timeRemaining, db, tierText, headerText)
         if headerTimer and headerTimer.widgetID then
             frame.scenarioHeaderTimer = frame.scenarioHeaderTimer or {}
             frame.scenarioHeaderTimer.widgetID = headerTimer.widgetID
             frame.scenarioHeaderTimer.stageLabel = stageLabel
             frame.scenarioHeaderTimer.tierText = tierText
+            frame.scenarioHeaderTimer.headerText = headerText
             frame.scenarioHeaderTimer.stageLine = frame.ownedStageLine
         end
     end
 
     if frame.ownedDelveLines then
-        local iconSize = math.max(12, headerFontSize)
         local lineIndex = 1
         for _, currency in ipairs((delve and delve.currencies) or {}) do
             local currencyText = self:FormatDelveCurrencyText(currency, iconSize)
@@ -2259,6 +2942,26 @@ function display:PatchBlockFrame(frame, block, db, blockWidth)
                 lineIndex = lineIndex + 1
             end
         end
+    end
+
+    if frame.ownedDelveSpellLine then
+        if not delve then
+            return nil
+        end
+        frame.ownedDelveSpellLine.delveTextureKit = delve.frameTextureKit
+        if not self:ApplyDelveSpellLine(frame.ownedDelveSpellLine, delve.spells, db, DELVE_SPELL_ICON_SIZE, delve.frameTextureKit) then
+            return nil
+        end
+    elseif delve and self:FormatDelveSpellRow(delve.spells, iconSize, db) then
+        return nil
+    end
+
+    if frame.ownedDelveRewardLine then
+        if not delve or not delve.reward or not self:ApplyDelveRewardLine(frame.ownedDelveRewardLine, delve.reward, db, iconSize) then
+            return nil
+        end
+    elseif delve and delve.reward and self:FormatDelveRewardText(delve.reward, iconSize) then
+        return nil
     end
 
     if frame.ownedDescLine and stage then
@@ -2302,8 +3005,10 @@ function display:PatchBlockFrame(frame, block, db, blockWidth)
 
     local blockHeight = contentPad + self:MeasureFontString(frame.title, fontSize, titleWidth, fontFlag)
     for _, child in ipairs(frame.ownedRows) do
-        if child.text then
-            local useHeader = child == frame.ownedStageLine or child == frame.challengeLevelLine
+        if child == frame.ownedDelveSpellLine then
+            child:SetHeight(child.delveIconSize or headerFontSize)
+        elseif child.text then
+            local useHeader = child == frame.ownedStageLine or child == frame.challengeLevelLine or child == frame.ownedDelveRewardLine
             if not useHeader and frame.ownedDelveLines then
                 for i = 1, #frame.ownedDelveLines do
                     if frame.ownedDelveLines[i] == child then
@@ -2400,6 +3105,19 @@ function display:TryPatchLayout(categories, db)
     return true
 end
 
+function display:ScenarioStageLineNeeded(block, delve)
+    local stage = block and block.stage
+    local showStage = stage and stage.total and stage.total > 1
+    local hasTimer = stage and stage.headerTimer and stage.headerTimer.widgetID
+    local hasTier = delve and delve.tierText and delve.tierText ~= ''
+    local headerText = delve and delve.headerText
+    local hasHeader = headerText and headerText ~= '' and block and headerText ~= block.title
+    if showStage or hasTimer or hasTier or hasHeader then
+        return true
+    end
+    return false
+end
+
 function display:TryUpdateDelveHeaderInPlace()
     if not self.frame or not self.frame:IsShown() then
         return false
@@ -2419,20 +3137,48 @@ function display:TryUpdateDelveHeaderInPlace()
                 return false
             end
 
-            local newCount = 0
+            local iconSize = math.max(12, db.blockHeaderFontSize or 12)
+            local newCurrencyCount = 0
             for _, currency in ipairs(delve.currencies or {}) do
-                if self:FormatDelveCurrencyText(currency) then
-                    newCount = newCount + 1
+                if self:FormatDelveCurrencyText(currency, iconSize) then
+                    newCurrencyCount = newCurrencyCount + 1
                 end
             end
-            local oldCount = blockFrame.ownedDelveLines and #blockFrame.ownedDelveLines or 0
-            if newCount ~= oldCount then
+            local oldCurrencyCount = blockFrame.ownedDelveLines and #blockFrame.ownedDelveLines or 0
+            local newSpellCount = 0
+            for _, spell in ipairs(delve.spells or {}) do
+                if self:FormatDelveSpellText(spell, iconSize) then
+                    newSpellCount = newSpellCount + 1
+                end
+            end
+            local oldSpellCount = 0
+            for _, spell in ipairs((block.delve and block.delve.spells) or {}) do
+                if self:FormatDelveSpellText(spell, iconSize) then
+                    oldSpellCount = oldSpellCount + 1
+                end
+            end
+            if (newSpellCount > 0) ~= (blockFrame.ownedDelveSpellLine ~= nil) then
+                trackerData:ReleaseDelve(delve)
+                return false
+            end
+            local newHasReward = self:FormatDelveRewardText(delve.reward, iconSize) ~= nil
+            local oldHasReward = blockFrame.ownedDelveRewardLine ~= nil
+            local needsStageLine = self:ScenarioStageLineNeeded(block, delve)
+            local hasStageLine = blockFrame.ownedStageLine ~= nil
+            if newCurrencyCount ~= oldCurrencyCount
+                or newSpellCount ~= oldSpellCount
+                or newHasReward ~= oldHasReward
+                or needsStageLine ~= hasStageLine then
+                trackerData:ReleaseDelve(delve)
                 return false
             end
 
+            local oldDelve = block.delve
             block.delve = delve
-            local headerFontSize = db.blockHeaderFontSize or 12
-            local iconSize = math.max(12, headerFontSize)
+            if oldDelve ~= delve then
+                trackerData:ReleaseDelve(oldDelve)
+            end
+
             local lineIndex = 1
             for _, currency in ipairs(delve.currencies or {}) do
                 local currencyText = self:FormatDelveCurrencyText(currency, iconSize)
@@ -2446,6 +3192,15 @@ function display:TryUpdateDelveHeaderInPlace()
                 end
             end
 
+            if blockFrame.ownedDelveSpellLine then
+                blockFrame.ownedDelveSpellLine.delveTextureKit = delve.frameTextureKit
+                self:ApplyDelveSpellLine(blockFrame.ownedDelveSpellLine, delve.spells, db, DELVE_SPELL_ICON_SIZE, delve.frameTextureKit)
+            end
+
+            if newHasReward then
+                self:ApplyDelveRewardLine(blockFrame.ownedDelveRewardLine, delve.reward, db, iconSize)
+            end
+
             if blockFrame.ownedStageLine then
                 local stage = block.stage
                 local showStage = stage and stage.total and stage.total > 1
@@ -2455,9 +3210,11 @@ function display:TryUpdateDelveHeaderInPlace()
                 if showStage then
                     stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
                 end
-                self:SetScenarioStageLineText(blockFrame.ownedStageLine, stageLabel, timeRemaining, db, delve.tierText)
+                local headerText = self:GetDelveHeaderText(block)
+                self:SetScenarioStageLineText(blockFrame.ownedStageLine, stageLabel, timeRemaining, db, delve.tierText, headerText)
                 if blockFrame.scenarioHeaderTimer then
                     blockFrame.scenarioHeaderTimer.tierText = delve.tierText
+                    blockFrame.scenarioHeaderTimer.headerText = headerText
                     blockFrame.scenarioHeaderTimer.stageLabel = stageLabel
                 end
             end
@@ -2655,6 +3412,7 @@ function display:Update()
         self:ApplyTrackerVisibility(db, categories)
         self:StopChallengeModeTimerWatch()
         self:StopScenarioHeaderTimerWatch()
+        self:StopDelveSpellCountWatch()
         return
     end
 
@@ -2662,6 +3420,7 @@ function display:Update()
         self.frame:Hide()
         self:StopChallengeModeTimerWatch()
         self:StopScenarioHeaderTimerWatch()
+        self:StopDelveSpellCountWatch()
         return
     end
 
@@ -2675,6 +3434,7 @@ function display:Update()
         and structureKey == self.lastStructureKey then
         self:StartChallengeModeTimerWatch()
         self:StartScenarioHeaderTimerWatch()
+        self:StartDelveSpellCountWatch()
         return
     end
 
@@ -2684,6 +3444,7 @@ function display:Update()
         self.lastSettingsSignature = settingsSignature
         self:StartChallengeModeTimerWatch()
         self:StartScenarioHeaderTimerWatch()
+        self:StartDelveSpellCountWatch()
         return
     end
 
@@ -2693,6 +3454,7 @@ function display:Update()
     self.lastSettingsSignature = settingsSignature
     self:StartChallengeModeTimerWatch()
     self:StartScenarioHeaderTimerWatch()
+    self:StartDelveSpellCountWatch()
 end
 
 function display:Show()
@@ -2783,7 +3545,19 @@ function display:RegisterEvents()
                     PlaySound(SOUNDKIT.UI_AUTO_QUEST_COMPLETE)
                 end
             end
+        elseif event == 'SPELL_TEXT_UPDATE' then
+            local spellID = ...
+            if display:IsShownDelveSpell(spellID) then
+                display:QueueDelveSpellCountRefresh()
+            end
+            return
+        elseif event == 'DISPLAY_EVENT_TOASTS' then
+            display:QueueDelveSpellCountRefresh()
+            return
+        elseif event == 'SCENARIO_SPELL_UPDATE' or event == 'SCENARIO_CRITERIA_UPDATE' then
+            display:QueueDelveSpellCountRefresh()
         elseif event == 'UPDATE_UI_WIDGET' then
+            display:QueueDelveSpellCountRefresh()
             local widgetInfo = ...
             if not widgetInfo
                 or not Enum
