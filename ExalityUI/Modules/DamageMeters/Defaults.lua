@@ -13,7 +13,6 @@ defaults.FAVORITE_SLOT_COUNT = 10
 
 defaults.MODULE = {
     enable = false,
-    hideBlizzard = true,
     favoriteViews = {},
 }
 

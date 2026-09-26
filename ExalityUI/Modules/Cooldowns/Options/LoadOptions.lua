@@ -43,11 +43,7 @@ function loadOptions:GetOptions(cdID)
                 cooldowns:UpdateValueForCD(cdID, 'onlyLoadOnPlayer', value)
                 cooldowns:UpdateById(cdID)
             end,
-            width = 40,
-        },
-        {
-            type = 'spacer',
-            width = 60,
+            width = 50,
         },
         {
             type = 'edit-box',
@@ -66,7 +62,7 @@ function loadOptions:GetOptions(cdID)
                 cooldowns:UpdateValueForCD(cdID, 'dontLoadOnPlayer', value)
                 cooldowns:UpdateById(cdID)
             end,
-            width = 40,
+            width = 50,
         },
     }
 end

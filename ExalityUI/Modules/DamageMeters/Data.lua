@@ -408,6 +408,54 @@ local DUMMY_CLASSES = {
     'MONK', 'DEMONHUNTER', 'EVOKER',
 }
 
+local DUMMY_NAMES = {
+    'Vexira', 'Thorgrim', 'Liriel', 'Dunric', 'Saelune',
+    'Brammek', 'Ysoria', 'Falkor', 'Nerissa', 'Gorrim',
+    'Elowyn', 'Miravel', 'Haldrin', 'Iskara', 'Tavian',
+    'Orinna', 'Jorund', 'Selthara', 'Caelum', 'Elandra',
+}
+
+local DUMMY_SPELLS = {
+    116, 133, 30451, 44614, 11366, 2948, 5143, 2136, 1449, 122,
+    585, 589, 403, 5176, 12294, 23881, 49998, 348,
+}
+
+local DUMMY_SPELL_WEIGHTS = { 0.42, 0.24, 0.15, 0.1, 0.06, 0.03 }
+
+local function buildDummySpells(total, index)
+    local count = 4 + ((index - 1) % 3)
+    local spells = {}
+    local assigned = 0
+    for n = 1, count do
+        local amount
+        if n == count then
+            amount = math.max(1, total - assigned)
+        else
+            amount = math.max(1, math.floor(total * DUMMY_SPELL_WEIGHTS[n]))
+            assigned = assigned + amount
+        end
+        spells[n] = {
+            spellID = DUMMY_SPELLS[((index + n - 2) % #DUMMY_SPELLS) + 1],
+            totalAmount = amount,
+            amountPerSecond = amount / 84,
+            creatureName = '',
+            overkillAmount = 0,
+            isAvoidable = false,
+            isDeadly = false,
+            combatSpellDetails = {
+                unitName = '',
+                unitClassFilename = '',
+                classification = '',
+                isPet = false,
+                isMob = true,
+                amount = amount,
+                specIconID = 0,
+            },
+        }
+    end
+    return spells
+end
+
 function meterData:GetDummySession()
     local sources = {}
     local totalAmount = 0
@@ -420,18 +468,43 @@ function meterData:GetDummySession()
             maxAmount = total
         end
         sources[i] = {
-            name = 'Player ' .. i,
+            name = DUMMY_NAMES[((i - 1) % #DUMMY_NAMES) + 1],
             classFilename = DUMMY_CLASSES[((i - 1) % #DUMMY_CLASSES) + 1],
             totalAmount = total,
             amountPerSecond = amountPerSecond,
-            isLocalPlayer = i == 1,
+            isLocalPlayer = false,
             deathRecapID = 0,
             deathTimeSeconds = 0,
             classification = '',
             sourceDisplayType = views.SourceDisplay.Ally,
             specIconID = 0,
+            combatSpells = buildDummySpells(total, i),
         }
     end
+
+    local _, classFilename = UnitClass('player')
+    local playerName = UnitName('player') or 'You'
+    local insertAt = math.max(1, #sources - 2)
+    local above = sources[insertAt - 1]
+    local below = sources[insertAt]
+    local playerTotal = 4200
+    if above and below then
+        playerTotal = math.floor(((above.totalAmount or 0) + (below.totalAmount or 0)) / 2)
+    end
+    totalAmount = totalAmount + playerTotal
+    table.insert(sources, insertAt, {
+        name = playerName,
+        classFilename = classFilename or 'MAGE',
+        totalAmount = playerTotal,
+        amountPerSecond = playerTotal / 84,
+        isLocalPlayer = true,
+        deathRecapID = 0,
+        deathTimeSeconds = 0,
+        classification = '',
+        sourceDisplayType = views.SourceDisplay.Ally,
+        specIconID = 0,
+        combatSpells = buildDummySpells(playerTotal, insertAt),
+    })
 
     return {
         maxAmount = maxAmount,
@@ -455,7 +528,7 @@ function meterData:HideBlizzardMeter()
     self.blizzardHooked = true
     hooksecurefunc(DamageMeter, 'Show', function()
         local meters = EXUI:GetModule('damage-meters')
-        if meters.enabled and meters:GetModuleValue('hideBlizzard') then
+        if meters.enabled then
             DamageMeter:Hide()
         end
     end)
@@ -474,7 +547,7 @@ end
 
 function meterData:ShouldHideBlizzard()
     local meters = EXUI:GetModule('damage-meters')
-    return meters.enabled and meters:GetModuleValue('hideBlizzard')
+    return meters.enabled
 end
 
 function meterData:UpdateBlizzardVisibility()

@@ -453,14 +453,28 @@ function tooltip:ShowForSource(anchor, db, windowDB, source)
         return
     end
 
-    local sessionSource = meterData:GetSessionSource(
-        sessionType,
-        sessionID,
-        meterType,
-        source.sourceGUID,
-        source.sourceCreatureID
-    )
-    local spells = sessionSource and sessionSource.combatSpells or {}
+    local spells = source.combatSpells
+    local maxAmount = 0
+    local totalAmount = source.totalAmount or 0
+    if spells and #spells > 0 then
+        for _, spell in ipairs(spells) do
+            local amount = spell.totalAmount or 0
+            if amount > maxAmount then
+                maxAmount = amount
+            end
+        end
+    else
+        local sessionSource = meterData:GetSessionSource(
+            sessionType,
+            sessionID,
+            meterType,
+            source.sourceGUID,
+            source.sourceCreatureID
+        )
+        spells = sessionSource and sessionSource.combatSpells or {}
+        maxAmount = sessionSource and sessionSource.maxAmount or 0
+        totalAmount = sessionSource and sessionSource.totalAmount or 0
+    end
     if #spells == 0 then
         self:Hide()
         return
@@ -474,9 +488,6 @@ function tooltip:ShowForSource(anchor, db, windowDB, source)
     local barHeight = tooltipDB.barHeight
     local spacing = 2
     local shown = 0
-
-    local maxAmount = sessionSource.maxAmount or 0
-    local totalAmount = sessionSource.totalAmount or 0
 
     for i, spell in ipairs(spells) do
         if shown >= MAX_SPELL_ROWS then

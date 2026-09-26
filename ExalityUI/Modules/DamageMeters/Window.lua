@@ -297,7 +297,21 @@ function windowMod:EnsurePinnedSelf(frame)
     return row
 end
 
+function windowMod:ApplyListBottomInset(frame, inset)
+    frame.listBottomInset = inset or 0
+    local scroll = frame.scroll
+    if not scroll or not frame.body then
+        return
+    end
+    scroll:ClearAllPoints()
+    EXUI:SetPoint(scroll, 'TOPLEFT', frame.body, 'TOPLEFT', 0, 0)
+    EXUI:SetPoint(scroll, 'BOTTOMRIGHT', frame.body, 'BOTTOMRIGHT', 0, frame.listBottomInset)
+end
+
 function windowMod:HidePinnedSelf(frame)
+    if frame.listBottomInset and frame.listBottomInset ~= 0 then
+        self:ApplyListBottomInset(frame, 0)
+    end
     if frame.pinnedSelf then
         frame.pinnedSelf:Hide()
         frame.pinnedSelf.source = nil
@@ -317,17 +331,16 @@ function windowMod:GetVisibleRankRange(frame, db, count)
     end
 
     local offset = 0
-    local viewport = 0
-    if frame.scroll then
-        if frame.scroll.GetVerticalScroll then
-            offset = frame.scroll:GetVerticalScroll() or 0
-        end
-        if frame.scroll.content then
-            viewport = frame.scroll.content:GetHeight() or 0
-        end
+    if frame.scroll and frame.scroll.GetVerticalScroll then
+        offset = frame.scroll:GetVerticalScroll() or 0
     end
-    if viewport <= 0 and frame.body then
+    -- Body height, not the scroll frame. The scroll shrinks while the self row is slotted in.
+    local viewport = 0
+    if frame.body then
         viewport = frame.body:GetHeight() or 0
+    end
+    if viewport <= 0 and frame.scroll and frame.scroll.content then
+        viewport = frame.scroll.content:GetHeight() or 0
     end
 
     local first = math.floor(offset / stride) + 1
@@ -367,6 +380,8 @@ function windowMod:UpdatePinnedSelf(frame)
     bars:UpdateRow(row, source, db, db.damageMeterType, index)
 
     local barHeight = db.barHeight or 18
+    local spacing = db.barSpacing or 1
+    self:ApplyListBottomInset(frame, barHeight + spacing)
     row:ClearAllPoints()
     EXUI:SetPoint(row, 'BOTTOMLEFT', frame.body, 'BOTTOMLEFT', 0, 0)
     EXUI:SetPoint(row, 'BOTTOMRIGHT', frame.body, 'BOTTOMRIGHT', 0, 0)
@@ -493,9 +508,7 @@ function windowMod:LayoutChrome(frame, db)
     end
 
     if frame.scroll then
-        frame.scroll:ClearAllPoints()
-        EXUI:SetPoint(frame.scroll, 'TOPLEFT', frame.body, 'TOPLEFT', 0, 0)
-        EXUI:SetPoint(frame.scroll, 'BOTTOMRIGHT', frame.body, 'BOTTOMRIGHT', 0, 0)
+        self:ApplyListBottomInset(frame, frame.listBottomInset or 0)
     end
 end
 
@@ -731,6 +744,19 @@ function windowMod:Refresh(frame)
             reversed[#reversed + 1] = sources[i]
         end
         sources = reversed
+        if isDummy then
+            local playerIndex
+            for i, source in ipairs(sources) do
+                if source.isLocalPlayer then
+                    playerIndex = i
+                    break
+                end
+            end
+            if playerIndex then
+                local player = table.remove(sources, playerIndex)
+                table.insert(sources, math.max(1, #sources - 2), player)
+            end
+        end
     end
     local maxAmount = session and session.maxAmount or 0
     local totalAmount = session and session.totalAmount or 0

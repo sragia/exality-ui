@@ -13,8 +13,8 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIDamageMetersGeneralOptions
 local generalOptions = EXUI:GetModule('damage-meters-general-options')
 
-function generalOptions:GetModuleOptions()
-    return {
+function generalOptions:GetModuleOptions(windowID)
+    local options = {
         {
             type = 'title',
             label = 'Damage Meters',
@@ -38,23 +38,25 @@ function generalOptions:GetModuleOptions()
                 optionsFields:RefreshOptions()
             end,
         },
-        {
-            type = 'toggle',
-            label = 'Hide Blizzard Meter',
-            name = 'hideBlizzard',
+    }
+
+    if windowID then
+        table.insert(options, {
+            type = 'button',
+            label = meters:IsShowingTestBars(windowID) and 'Hide Test Bars' or 'Show Test Bars',
+            name = 'showTestBars',
             width = 100,
             depends = function()
-                return meters:GetModuleValue('enable')
+                return meters:GetModuleValue('enable') and meters:GetValue(windowID, 'enable')
             end,
-            currentValue = function()
-                return meters:GetModuleValue('hideBlizzard')
+            onClick = function()
+                meters:SetShowTestBars(windowID, not meters:IsShowingTestBars(windowID))
+                optionsFields:RefreshOptions()
             end,
-            onChange = function(value)
-                meters:SetModuleValue('hideBlizzard', value)
-                EXUI:GetModule('damage-meters-data'):UpdateBlizzardVisibility()
-            end,
-        },
-    }
+        })
+    end
+
+    return options
 end
 
 function generalOptions:GetOptions(windowID)
@@ -62,7 +64,7 @@ function generalOptions:GetOptions(windowID)
         return meters:GetModuleValue('enable') and meters:GetValue(windowID, 'enable')
     end
 
-    local options = self:GetModuleOptions()
+    local options = self:GetModuleOptions(windowID)
     local windowOptions = {
         {
             type = 'title',
@@ -83,17 +85,6 @@ function generalOptions:GetOptions(windowID)
             onChange = function(value)
                 meters:UpdateValue(windowID, 'enable', value)
                 meters:UpdateById(windowID)
-                optionsFields:RefreshOptions()
-            end,
-        },
-        {
-            type = 'button',
-            label = meters:IsShowingTestBars(windowID) and 'Hide Test Bars' or 'Show Test Bars',
-            name = 'showTestBars',
-            width = 100,
-            depends = windowEnabled,
-            onClick = function()
-                meters:SetShowTestBars(windowID, not meters:IsShowingTestBars(windowID))
                 optionsFields:RefreshOptions()
             end,
         },
@@ -216,100 +207,119 @@ function generalOptions:GetOptions(windowID)
             end,
         },
         {
-            type = 'range',
-            label = 'Width',
-            name = 'width',
-            min = 140,
-            max = 500,
-            step = 1,
-            width = 50,
+            type = 'optionGroup',
+            label = 'Size & Position',
+            flex = 1,
+            collapsible = true,
+            expanded = true,
             depends = windowEnabled,
-            currentValue = function()
-                return meters:GetValue(windowID, 'width')
-            end,
-            onChange = function(value)
-                meters:UpdateValue(windowID, 'width', value)
-                meters:UpdateById(windowID)
-            end,
-        },
-        {
-            type = 'range',
-            label = 'Height',
-            name = 'height',
-            min = 80,
-            max = 600,
-            step = 1,
-            width = 50,
-            depends = windowEnabled,
-            currentValue = function()
-                return meters:GetValue(windowID, 'height')
-            end,
-            onChange = function(value)
-                meters:UpdateValue(windowID, 'height', value)
-                meters:UpdateById(windowID)
-            end,
-        },
-        {
-            type = 'anchor-point',
-            label = 'Anchor Point',
-            name = 'anchorPoint',
-            width = 50,
-            depends = windowEnabled,
-            currentValue = function()
-                return meters:GetValue(windowID, 'anchorPoint')
-            end,
-            onChange = function(value)
-                meters:UpdateValue(windowID, 'anchorPoint', value)
-                meters:UpdateById(windowID)
-            end,
-        },
-        {
-            type = 'anchor-point',
-            label = 'Relative Anchor Point',
-            name = 'relativePoint',
-            width = 50,
-            depends = windowEnabled,
-            currentValue = function()
-                return meters:GetValue(windowID, 'relativePoint')
-            end,
-            onChange = function(value)
-                meters:UpdateValue(windowID, 'relativePoint', value)
-                meters:UpdateById(windowID)
-            end,
-        },
-        {
-            type = 'range',
-            label = 'X Offset',
-            name = 'XOff',
-            min = -2000,
-            max = 2000,
-            step = 1,
-            width = 50,
-            depends = windowEnabled,
-            currentValue = function()
-                return meters:GetValue(windowID, 'XOff')
-            end,
-            onChange = function(value)
-                meters:UpdateValue(windowID, 'XOff', value)
-                meters:UpdateById(windowID)
-            end,
-        },
-        {
-            type = 'range',
-            label = 'Y Offset',
-            name = 'YOff',
-            min = -2000,
-            max = 2000,
-            step = 1,
-            width = 50,
-            depends = windowEnabled,
-            currentValue = function()
-                return meters:GetValue(windowID, 'YOff')
-            end,
-            onChange = function(value)
-                meters:UpdateValue(windowID, 'YOff', value)
-                meters:UpdateById(windowID)
-            end,
+            children = {
+                {
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'range',
+                            label = 'Width',
+                            name = 'width',
+                            min = 140,
+                            max = 500,
+                            step = 1,
+                            flex = 1,
+                            currentValue = function()
+                                return meters:GetValue(windowID, 'width')
+                            end,
+                            onChange = function(value)
+                                meters:UpdateValue(windowID, 'width', value)
+                                meters:UpdateById(windowID)
+                            end,
+                        },
+                        {
+                            type = 'range',
+                            label = 'Height',
+                            name = 'height',
+                            min = 80,
+                            max = 600,
+                            step = 1,
+                            flex = 1,
+                            currentValue = function()
+                                return meters:GetValue(windowID, 'height')
+                            end,
+                            onChange = function(value)
+                                meters:UpdateValue(windowID, 'height', value)
+                                meters:UpdateById(windowID)
+                            end,
+                        },
+                    },
+                },
+                {
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'anchor-point',
+                            label = 'Anchor Point',
+                            name = 'anchorPoint',
+                            flex = 1,
+                            currentValue = function()
+                                return meters:GetValue(windowID, 'anchorPoint')
+                            end,
+                            onChange = function(value)
+                                meters:UpdateValue(windowID, 'anchorPoint', value)
+                                meters:UpdateById(windowID)
+                            end,
+                        },
+                        {
+                            type = 'anchor-point',
+                            label = 'Relative Anchor Point',
+                            name = 'relativePoint',
+                            flex = 1,
+                            currentValue = function()
+                                return meters:GetValue(windowID, 'relativePoint')
+                            end,
+                            onChange = function(value)
+                                meters:UpdateValue(windowID, 'relativePoint', value)
+                                meters:UpdateById(windowID)
+                            end,
+                        },
+                    },
+                },
+                {
+                    type = 'row',
+                    children = {
+                        {
+                            type = 'range',
+                            label = 'X Offset',
+                            name = 'XOff',
+                            min = -2000,
+                            max = 2000,
+                            step = 1,
+                            flex = 1,
+                            currentValue = function()
+                                return meters:GetValue(windowID, 'XOff')
+                            end,
+                            onChange = function(value)
+                                meters:UpdateValue(windowID, 'XOff', value)
+                                meters:UpdateById(windowID)
+                            end,
+                        },
+                        {
+                            type = 'range',
+                            label = 'Y Offset',
+                            name = 'YOff',
+                            min = -2000,
+                            max = 2000,
+                            step = 1,
+                            flex = 1,
+                            currentValue = function()
+                                return meters:GetValue(windowID, 'YOff')
+                            end,
+                            onChange = function(value)
+                                meters:UpdateValue(windowID, 'YOff', value)
+                                meters:UpdateById(windowID)
+                            end,
+                        },
+                    },
+                },
+            },
         },
     }
 

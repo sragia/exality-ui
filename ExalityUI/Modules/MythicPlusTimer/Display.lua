@@ -665,7 +665,9 @@ function display:UpdateForcesSplits(snapshot, db)
         deltaText = self:FormatDelta(delta)
         color = self:GetSplitColor(db, delta)
     elseif currentSplit and (snapshot.forces and (snapshot.forces.percent or 0) > 0) then
-        deltaText = self:FormatClock(currentSplit)
+        local delta = (snapshot.elapsed or 0) - currentSplit
+        deltaText = self:FormatDelta(delta)
+        color = self:GetSplitColor(db, delta)
     end
 
     setTextIfChanged(frame.forcesDelta, deltaText)
