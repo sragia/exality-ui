@@ -46,41 +46,18 @@ EXUI.const = {
     textures = {
         frame = {
             bg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/window-bg]],
-            resizeBtn = [[Interface/Addons/ExalityUI/Assets/Images/Frames/expand-btn]],
-            resizeBtnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Frames/expand-highlight]],
-            closeBtn = [[Interface/Addons/ExalityUI/Assets/Images/Frames/close-btn]],
             closeIcon = [[Interface/Addons/ExalityUI/Assets/Images/Icons/x.png]],
-            copyIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/copy.png]],
             statusBar = [[Interface/Addons/ExalityUI/Assets/Images/Frames/statusBar]],
             iconMask = [[Interface/Addons/ExalityUI/Assets/Images/Frames/icon-mask]],
-            titleBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/title-bg.png]],
-            roundedSquare = [[Interface/Addons/ExalityUI/Assets/Images/Frames/rounded-square.png]],
             settingsIcon = [[Interface/Addons/ExalityUI/Assets/Images/Frames/settings-icon.png]],
             inputs = {
-                toggle = [[Interface/Addons/ExalityUI/Assets/Images/Frames/toggle]],
                 editboxBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/editbox-bg]],
-                editboxHover = [[Interface/Addons/ExalityUI/Assets/Images/Frames/editbox-hover]],
                 buttonBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/button-bg.png]],
-                buttonHover = [[Interface/Addons/ExalityUI/Assets/Images/Frames/button-hover.png]],
                 chevronDown = [[Interface/Addons/ExalityUI/Assets/Images/Frames/chevronDown]],
-            },
-            range = {
-                editbox = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/editbox.png]],
-                dot = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/dot.png]],
-                dotActive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/dot-active.png]],
-                leftArrow = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/left-arrow.png]],
-                rightArrow = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/right-arrow.png]],
-                leftArrowActive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/left-arrow-active.png]],
-                rightArrowActive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/right-arrow-active.png]],
-                track = [[Interface/Addons/ExalityUI/Assets/Images/Frames/range-input/track.png]],
             },
             editor = {
                 arrowActive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/editor/arrow-active.png]],
                 arrowInactive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/editor/arrow-inactive.png]],
-            },
-            tabs = {
-                active = [[Interface/Addons/ExalityUI/Assets/Images/Frames/tabs/active.png]],
-                inactive = [[Interface/Addons/ExalityUI/Assets/Images/Frames/tabs/inactive.png]],
             },
             solidBg = [[Interface/Addons/ExalityUI/Assets/Images/Frames/white.png]],
             whiteTextured = [[Interface/Addons/ExalityUI/ExalityFrames/Assets/white-textured.png]],
@@ -106,14 +83,11 @@ EXUI.const = {
             charBg = [[Interface/Addons/ExalityUI/Assets/Images/PaperDoll/charBg.png]],
         },
         raidTools = {
-            check = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/check.png]],
             skull = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/skull.png]],
-            clock = [[Interface/Addons/ExalityUI/Assets/Images/Frames/raid-tools/clock.png]],
         },
         characterFrame = {
             border = {
                 empty = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-empty.png]],
-                white = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-white.png]],
                 uncommon = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-uncommon.png]],
                 rare = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-rare.png]],
                 epic = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-epic.png]],
@@ -129,10 +103,6 @@ EXUI.const = {
             coins = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/coins.png]],
             users = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/users.png]],
             tabGlow = EXFrames.assets.textures.tabs.glow,
-            panel = {
-                bg = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/panel-bg.png]],
-                border = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/panel-border.png]],
-            },
             input = {
                 bg = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/input-bg.png]],
                 border = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/input-border.png]],
