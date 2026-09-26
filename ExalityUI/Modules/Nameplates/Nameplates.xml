@@ -28,6 +28,7 @@
     <Script file="Options/Helpers.lua"/>
     <Script file="Options/General.lua"/>
     <Script file="Options/Behavior.lua"/>
+    <Script file="Options/Friendly.lua"/>
     <Script file="Options/Health.lua"/>
     <Script file="Options/CastBar.lua"/>
     <Script file="Options/Texts.lua"/>

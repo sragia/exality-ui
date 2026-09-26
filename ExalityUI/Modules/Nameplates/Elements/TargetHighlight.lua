@@ -183,7 +183,7 @@ local function isHoverVisual(self, frame, unit)
 end
 
 local function highlightState(self, frame, db, unit)
-    if frame.isFriendly or not db then
+    if EXUI:GetModule('np-core'):IsFriendlyNameOnly(frame) or not db then
         return 'none'
     end
     local isCurrentTarget = frame.isPreview or isCurrentTargetUnit(unit)
@@ -431,7 +431,7 @@ end
 highlight.Update = function(self, frame, force)
     local db = frame.db
     local npCore = EXUI:GetModule('np-core')
-    if frame.isFriendly or not db then
+    if EXUI:GetModule('np-core'):IsFriendlyNameOnly(frame) or not db then
         if self.hoverFrame == frame then
             self.hoverFrame = nil
         end

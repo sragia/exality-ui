@@ -3,6 +3,9 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
+---@class EXUINameplatesCore
+local npCore = EXUI:GetModule('np-core')
+
 ---@class EXUINameplatesElementCastBar
 local castBar = EXUI:GetModule('np-element-cast-bar')
 
@@ -369,7 +372,7 @@ castBar.Update = function(self, frame)
     local bar = frame.Castbar
     local container = bar.container
 
-    if frame.isFriendly or not db.castbarEnable then
+    if npCore:IsFriendlyNameOnly(frame) or not db.castbarEnable then
         frame:DisableElement('Castbar')
         restoreCastVisuals(bar)
         container:Hide()

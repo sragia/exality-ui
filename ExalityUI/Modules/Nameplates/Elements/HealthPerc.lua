@@ -3,6 +3,9 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
+---@class EXUINameplatesCore
+local npCore = EXUI:GetModule('np-core')
+
 ---@class EXUINameplatesElementHealthPerc
 local healthPerc = EXUI:GetModule('np-element-health-perc')
 
@@ -15,7 +18,7 @@ end
 healthPerc.Update = function(self, frame)
     local db = frame.db
     local fontString = frame.HealthPerc
-    if frame.isFriendly or not db.healthpercEnable then
+    if npCore:IsFriendlyNameOnly(frame) or not db.healthpercEnable then
         fontString:Hide()
         frame:Tag(fontString, '')
         return

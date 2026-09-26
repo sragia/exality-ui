@@ -76,6 +76,47 @@ driver.ApplyFrameSize = function(self, frame)
     end
 end
 
+driver.ApplyFriendlyHitTest = function(self, frame)
+    if not frame or frame:IsForbidden() or not frame.isFriendly or IsInInstance() then
+        return
+    end
+    local plate = frame:GetParent()
+    if not plate or plate:IsForbidden() or not plate.SetHitTestPoints then
+        return
+    end
+    if plate.CanChangeHitTestPoints and not plate:CanChangeHitTestPoints() then
+        return
+    end
+    local db = frame.db or npCore:GetDB()
+    local width = db and db.friendlyHitWidth or 80
+    local height = db and db.friendlyHitHeight or 18
+    local anchor = frame.Name
+    if not npCore:IsFriendlyNameOnly(frame) then
+        anchor = frame.HealthHost or frame.Health or anchor
+    end
+    if not anchor then
+        return
+    end
+    local halfW = width / 2
+    local halfH = height / 2
+    pcall(plate.SetHitTestPoints, plate, {
+        {
+            point = 'TOPLEFT',
+            relativeTo = anchor,
+            relativePoint = 'CENTER',
+            offsetX = -halfW,
+            offsetY = halfH,
+        },
+        {
+            point = 'BOTTOMRIGHT',
+            relativeTo = anchor,
+            relativePoint = 'CENTER',
+            offsetX = halfW,
+            offsetY = -halfH,
+        },
+    })
+end
+
 local function hookBlizzardPlateSize()
     if driver.blizzardSizeHooked or not NamePlateDriverFrame then
         return
@@ -134,6 +175,7 @@ driver.OnPlateAdded = function(self, frame, event, unit)
     self:ApplyFrameSize(frame)
     frame.db = npCore:GetDB()
     npCore:BindPlateUnit(frame)
+    self:ApplyFriendlyHitTest(frame)
 end
 
 driver.OnPlateRemoved = function(self, frame)

@@ -10,6 +10,7 @@ local options = EXUI:GetModule('np-options')
 local TABS = {
     { id = 'general', name = 'General', module = 'np-options-general' },
     { id = 'behavior', name = 'Behavior', module = 'np-options-behavior' },
+    { id = 'friendly', name = 'Friendly', module = 'np-options-friendly' },
     { id = 'health', name = 'Health', module = 'np-options-health' },
     { id = 'castbar', name = 'Cast Bar', module = 'np-options-cast-bar' },
     { id = 'texts', name = 'Texts', module = 'np-options-texts' },

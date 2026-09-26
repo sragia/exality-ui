@@ -9,6 +9,7 @@ EXUI.changelog = [[
 - [Action Bars] Add our own keybind mode dialog instead of using Blizzard one.
 - [Options] Visul rework of options. Probably more to come to improve UX more.
 - [Misc] Bunch of small fixes and improvements.
+- [Nameplates] Add bunch of options for friendly nameplates.
 
 ## Damage Meter |cffeb7a34New|r
 For now fairly alpha version of them. Mostly mimicking default damage meters. With some added customization options of how you are displaying the values on bars.

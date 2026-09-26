@@ -135,6 +135,46 @@ core.IsFriendlyPlate = function(self, frame, unit)
     return UnitIsFriend('player', unit)
 end
 
+core.IsFriendlyNameOnly = function(self, frame)
+    if not frame or not frame.isFriendly then
+        return false
+    end
+    local db = frame.db or self:GetDB()
+    if not db then
+        return true
+    end
+    return db.friendlyNameOnly ~= false
+end
+
+core.GetFriendlyPlayerColor = function(self, unit)
+    if not unit or IsInInstance() then
+        return nil
+    end
+    local playerOk, isPlayer = pcall(UnitIsPlayer, unit)
+    if not playerOk or not isPlayer then
+        return nil
+    end
+    local db = self:GetDB()
+    if not db then
+        return nil
+    end
+    if db.friendlyGuildColorEnable then
+        local ok, inGuild = pcall(UnitIsInMyGuild, unit)
+        if ok and inGuild then
+            return db.friendlyGuildColor
+        end
+    end
+    if db.friendlyFriendColorEnable and C_FriendList and C_FriendList.IsFriend then
+        local guidOk, guid = pcall(UnitGUID, unit)
+        if guidOk and guid then
+            local friendOk, isFriend = pcall(C_FriendList.IsFriend, guid)
+            if friendOk and isFriend then
+                return db.friendlyFriendColor
+            end
+        end
+    end
+end
+
 core.UpdateHealthCurve = function(self)
     -- Nameplate curve is evaluated per-plate from DB; do not mutate oUF.colors.health
     -- (unit frames own that shared curve).
@@ -262,7 +302,7 @@ core.ApplyHealthChrome = function(self, frame, color)
     local db = frame.db or self:GetDB()
     local thickness = self:GetBorderThickness(db)
     local key
-    if frame.isFriendly or not thickness or thickness <= 0 then
+    if self:IsFriendlyNameOnly(frame) or not thickness or thickness <= 0 then
         key = 'off'
     else
         local c = color or self:GetBorderColor(db)
@@ -468,6 +508,7 @@ core.UpdateAllPlates = function(self)
         if frame.UpdateAllElements then
             frame:UpdateAllElements('RefreshUnit')
         end
+        EXUI:GetModule('np-driver'):ApplyFriendlyHitTest(frame)
     end)
     local preview = EXUI:GetModule('np-preview')
     if preview and preview.Refresh then

@@ -31,6 +31,9 @@ cvars.SPEC = {
     showFriendlyPlayers = { cvar = 'nameplateShowFriendlyPlayers', kind = 'bool' },
     showFriendlyPlayerMinions = { cvar = 'nameplateShowFriendlyPlayerMinions', kind = 'bool' },
     showFriendlyNpcs = { cvar = 'nameplateShowFriendlyNpcs', kind = 'bool' },
+    friendlyNameOnly = { cvar = 'nameplateShowOnlyNameForFriendlyPlayerUnits', kind = 'bool' },
+    friendlyNameClassColor = { cvar = 'nameplateUseClassColorForFriendlyPlayerUnitNames', kind = 'bool' },
+    friendlyShowRealm = { cvar = 'nameplateShowFriendlyRealmName', kind = 'bool' },
     showOffscreen = { cvar = 'nameplateShowOffscreen', kind = 'bool' },
     targetRadialPosition = { cvar = 'nameplateTargetRadialPosition', kind = 'number' },
     targetBehindMaxDistance = { cvar = 'nameplateTargetBehindMaxDistance', kind = 'number' },
@@ -141,6 +144,26 @@ end
 cvars.SeedMissing = function(self, db)
     if not db then
         return
+    end
+    if not db.__exuiFriendlyRealmSeeded then
+        local spec = self.SPEC.friendlyShowRealm
+        local current, default
+        if spec and cvarExists(spec.cvar) then
+            if C_CVar and C_CVar.GetCVar then
+                current = C_CVar.GetCVar(spec.cvar)
+            else
+                current = GetCVar(spec.cvar)
+            end
+            if GetCVarDefault then
+                default = GetCVarDefault(spec.cvar)
+            end
+        end
+        if current ~= nil and default ~= nil and tostring(current) ~= tostring(default) then
+            db.friendlyShowRealm = readBool(spec.cvar)
+        else
+            db.friendlyShowRealm = false
+        end
+        db.__exuiFriendlyRealmSeeded = true
     end
     for key in pairs(self.SPEC) do
         if db[key] == nil then

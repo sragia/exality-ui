@@ -6,6 +6,9 @@ local LSM = LibStub('LibSharedMedia-3.0')
 ---@class EXUINameplatesCustomTexts
 local ctCore = EXUI:GetModule('np-custom-texts')
 
+---@class EXUINameplatesCore
+local npCore = EXUI:GetModule('np-core')
+
 ---@class EXUINameplatesElementCustomTexts
 local customTexts = EXUI:GetModule('np-element-custom-texts')
 
@@ -39,7 +42,7 @@ end
 
 customTexts.Update = function(self, frame)
     local CustomTexts = frame.CustomTexts
-    if frame.isFriendly then
+    if npCore:IsFriendlyNameOnly(frame) then
         for ID, tagFrame in pairs(CustomTexts) do
             frame:Untag(tagFrame.Text)
             tagFrame:Hide()

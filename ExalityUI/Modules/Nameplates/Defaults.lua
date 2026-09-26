@@ -66,6 +66,15 @@ defaults.PLATE = {
     colorCaster = true,
     casterColor = color(0.25, 0.48, 0.86),
     friendlyNpcColor = color(0.3, 1, 0.3),
+    friendlyNameOnly = true,
+    friendlyNameClassColor = true,
+    friendlyShowRealm = false,
+    friendlyGuildColorEnable = false,
+    friendlyGuildColor = color(1, 0.82, 0.2),
+    friendlyFriendColorEnable = false,
+    friendlyFriendColor = color(0.25, 0.65, 1),
+    friendlyHitWidth = 80,
+    friendlyHitHeight = 18,
 
     -- Absorbs
     damageAbsorbEnable = true,

@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class EXUINameplatesCore
+local npCore = EXUI:GetModule('np-core')
+
 ---@class EXUINameplatesElementRaidTarget
 local raidTarget = EXUI:GetModule('np-element-raid-target')
 
@@ -24,7 +27,7 @@ raidTarget.Update = function(self, frame)
     local db = frame.db
     local indicator = frame.RaidTargetIndicator
     local host = frame.RaidTargetHost or indicator:GetParent()
-    if frame.isFriendly or not db.raidTargetIndicatorEnable then
+    if npCore:IsFriendlyNameOnly(frame) or not db.raidTargetIndicatorEnable then
         frame:DisableElement('RaidTargetIndicator')
         indicator:Hide()
         if host then

@@ -3,6 +3,9 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
+---@class EXUINameplatesCore
+local npCore = EXUI:GetModule('np-core')
+
 ---@class EXUINameplatesElementHealth
 local health = EXUI:GetModule('np-element-health')
 
@@ -317,7 +320,7 @@ end
 health.Update = function(self, frame)
     local db = frame.db
     local bar = frame.Health
-    if frame.isFriendly then
+    if npCore:IsFriendlyNameOnly(frame) then
         frame:DisableElement('Health')
         bar:Hide()
         bar._exuiBackdropR = nil

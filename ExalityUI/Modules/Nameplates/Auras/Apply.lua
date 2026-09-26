@@ -187,7 +187,7 @@ function apply:BindFrame(frame)
     if not frame then
         return
     end
-    if frame.isPreview or frame.isFriendly then
+    if frame.isPreview or npCore:IsFriendlyNameOnly(frame) then
         self:DetachFrame(frame)
         return
     end
@@ -457,7 +457,7 @@ function apply:UpdateFrame(frame)
     if not frame then
         return
     end
-    if frame.isPreview or frame.isFriendly then
+    if frame.isPreview or npCore:IsFriendlyNameOnly(frame) then
         self:ClearFrame(frame)
         return
     end

@@ -3,6 +3,9 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
+---@class EXUINameplatesCore
+local npCore = EXUI:GetModule('np-core')
+
 ---@class EXUINameplatesElementHealthPrediction
 local healthPrediction = EXUI:GetModule('np-element-health-prediction')
 
@@ -77,9 +80,9 @@ healthPrediction.Update = function(self, frame)
     end
 
     local dmgAbsorbShowAt = db.damageAbsorbShowAt or 'AS_EXTENSION'
-    local dmgAbsorbEnable = not frame.isFriendly and (db.damageAbsorbEnable ~= false)
+    local dmgAbsorbEnable = not npCore:IsFriendlyNameOnly(frame) and (db.damageAbsorbEnable ~= false)
     local dmgAbsorbShowOverIndicator = db.damageAbsorbShowOverIndicator ~= false
-    local healAbsorbEnable = not frame.isFriendly and (db.healAbsorbEnable ~= false)
+    local healAbsorbEnable = not npCore:IsFriendlyNameOnly(frame) and (db.healAbsorbEnable ~= false)
     local healAbsorbShowOverIndicator = db.healAbsorbShowOverIndicator ~= false
 
     setWidget(health, 'DamageAbsorb', originals.DamageAbsorbOriginal, dmgAbsorbEnable)
