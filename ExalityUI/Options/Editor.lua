@@ -1051,7 +1051,6 @@ editor.EnableEditor = function(self)
     self.pendingSelectionClick = nil
     self:EnsureKeyboardCapture()
     self.keyboardCapture:Show()
-    self.keyboardCapture:SetPropagateKeyboardInput(false)
     self:FocusKeyboardCapture()
 
     self:SyncUnitFrameEditVisibility(true)

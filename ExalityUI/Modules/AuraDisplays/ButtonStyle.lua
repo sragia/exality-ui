@@ -308,6 +308,13 @@ function buttonStyle:CreateFontString(button, key, visualKey, visual, defaults)
         visual[visualKey .. 'FontSize'] or defaults.size,
         visual[visualKey .. 'FontFlag'] or 'OUTLINE'
     )
+    EXUI.utils.applyFontShadow(
+        fontString,
+        visual[visualKey .. 'FontShadow'],
+        visual[visualKey .. 'FontShadowX'],
+        visual[visualKey .. 'FontShadowY'],
+        visual[visualKey .. 'FontShadowColor']
+    )
     local color = visual[visualKey .. 'Color'] or defaults.color
     fontString:SetTextColor(color.r, color.g, color.b, color.a or 1)
     fontString:ClearAllPoints()

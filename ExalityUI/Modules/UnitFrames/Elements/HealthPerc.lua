@@ -22,6 +22,8 @@ healthPerc.Update = function(self, frame)
     end
     healthPerc:Show()
     healthPerc:SetFont(LSM:Fetch('font', db.healthpercFont), db.healthpercFontSize, db.healthpercFontFlag)
+    EXUI.utils.applyFontShadow(healthPerc, db.healthpercFontShadow, db.healthpercFontShadowX, db.healthpercFontShadowY,
+        db.healthpercFontShadowColor)
     healthPerc:SetVertexColor(db.healthpercFontColor.r, db.healthpercFontColor.g, db.healthpercFontColor.b,
         db.healthpercFontColor.a)
     healthPerc:ClearAllPoints()

@@ -821,7 +821,6 @@ function windowMod:EnsureFavoriteOverlay(frame)
             overlay.scroll:HandleMouseWheel(delta)
         end
     end)
-    overlay:SetPropagateKeyboardInput(true)
     overlay:SetScript('OnKeyDown', function(selfOverlay, key)
         if key ~= 'ESCAPE' then
             if not InCombatLockdown() then

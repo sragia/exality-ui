@@ -22,6 +22,8 @@ offline.Update = function(self, frame)
     end
     Offline:Show()
     Offline:SetFont(LSM:Fetch('font', db.offlineFont), db.offlineFontSize, db.offlineFontFlag)
+    EXUI.utils.applyFontShadow(Offline, db.offlineFontShadow, db.offlineFontShadowX, db.offlineFontShadowY,
+        db.offlineFontShadowColor)
     Offline:SetVertexColor(db.offlineFontColor.r, db.offlineFontColor.g, db.offlineFontColor.b,
         db.offlineFontColor.a)
     Offline:ClearAllPoints()

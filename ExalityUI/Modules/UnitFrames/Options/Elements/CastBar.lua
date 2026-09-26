@@ -13,7 +13,7 @@ local LSM = LibStub('LibSharedMedia-3.0')
 local castBar = EXUI:GetModule('uf-options-cast-bar')
 
 castBar.GetOptions = function(self, unit)
-    return {
+    local fields = {
         {
             type = 'title',
             width = 100,
@@ -311,9 +311,26 @@ castBar.GetOptions = function(self, unit)
             end,
             width = 20
         },
+    }
 
+    for _, field in ipairs(EXUI.utils.fontShadowFields(
+        'castbarFont',
+        function(key)
+            return core:GetValueForUnit(unit, key)
+        end,
+        function(key, value)
+            core:UpdateValueForUnit(unit, key, value)
+            core:UpdateFrameForUnit(unit)
+        end,
+        20,
+        function()
+            optionsCore:RefreshCurrentView()
+        end
+    )) do
+        table.insert(fields, field)
+    end
 
-
+    for _, field in ipairs({
         {
             type = 'title',
             width = 100,
@@ -434,5 +451,12 @@ castBar.GetOptions = function(self, unit)
             end,
             width = 40
         },
-    }
+        {
+            type = 'spacer',
+            width = 20
+        },
+    }) do
+        table.insert(fields, field)
+    end
+    return fields
 end

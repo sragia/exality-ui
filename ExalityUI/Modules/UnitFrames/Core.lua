@@ -1090,60 +1090,63 @@ core.UnforceAll = function(self)
     self.forcedHeaders = {}
 end
 
-core.ToggleElementPreview = function(self, unit, element)
+local function eachElementPreviewFrame(unit, callback)
     if (unit == 'party') then
         for _, frame in ipairs(core.partyFrames) do
             if (frame and frame.isFake) then
-                frame.elementPreviews = frame.elementPreviews or {}
-                frame.elementPreviews[element] = not frame.elementPreviews[element]
-
-                if (frame.Update) then
-                    frame:Update()
-                end
+                callback(frame)
             end
         end
     elseif (unit == 'raid') then
         for _, frame in ipairs(core.raidFrames) do
             if (frame and frame.isFake) then
-                frame.elementPreviews = frame.elementPreviews or {}
-                frame.elementPreviews[element] = not frame.elementPreviews[element]
-
-                if (frame.Update) then
-                    frame:Update()
-                end
+                callback(frame)
             end
         end
-    elseif (self.forcedFrames[unit]) then
-        local frame = self.forcedFrames[unit]
+    elseif (core.forcedFrames[unit]) then
+        local frame = core.forcedFrames[unit]
         if (frame and frame.isFake) then
-            frame.elementPreviews = frame.elementPreviews or {}
-            frame.elementPreviews[element] = not frame.elementPreviews[element]
-
-            if (frame.Update) then
-                frame:Update()
-            end
+            callback(frame)
         end
     elseif (unit == 'player') then
         local frame = core.frames[unit]
         if (frame) then
-            frame.elementPreviews = frame.elementPreviews or {}
-            frame.elementPreviews[element] = not frame.elementPreviews[element]
-
-            if (frame.Update) then
-                frame:Update()
-            end
+            callback(frame)
         end
-    elseif (self.groupUnits[unit]) then
-        for i = 1, self.groupUnits[unit] do
-            local forcedFrame = self.forcedFrames[unit .. i]
+    elseif (core.groupUnits[unit]) then
+        for i = 1, core.groupUnits[unit] do
+            local forcedFrame = core.forcedFrames[unit .. i]
             if (forcedFrame and forcedFrame.isFake) then
-                forcedFrame.elementPreviews = forcedFrame.elementPreviews or {}
-                forcedFrame.elementPreviews[element] = not forcedFrame.elementPreviews[element]
-
-                if (forcedFrame.Update) then
-                    forcedFrame:Update()
-                end
+                callback(forcedFrame)
             end
         end
     end
+end
+
+core.IsElementPreviewOn = function(self, unit, element)
+    local enabled = false
+    eachElementPreviewFrame(unit, function(frame)
+        if (frame.elementPreviews and frame.elementPreviews[element]) then
+            enabled = true
+        end
+    end)
+    return enabled
+end
+
+core.SetElementPreview = function(self, unit, element, enabled)
+    enabled = enabled and true or false
+    eachElementPreviewFrame(unit, function(frame)
+        frame.elementPreviews = frame.elementPreviews or {}
+        if (frame.elementPreviews[element] == enabled) then
+            return
+        end
+        frame.elementPreviews[element] = enabled
+        if (frame.Update) then
+            frame:Update()
+        end
+    end)
+end
+
+core.ToggleElementPreview = function(self, unit, element)
+    self:SetElementPreview(unit, element, not self:IsElementPreviewOn(unit, element))
 end

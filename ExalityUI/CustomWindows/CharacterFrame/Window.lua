@@ -369,7 +369,6 @@ characterFrame.Create = function(self)
     local container = window.container
     local escapeHandler = CreateFrame('Button', nil, container)
     escapeHandler:EnableKeyboard(true)
-    escapeHandler:SetPropagateKeyboardInput(true)
     escapeHandler:SetScript('OnKeyDown', function(self, key)
         if (key == 'ESCAPE') then
             if (not InCombatLockdown()) then

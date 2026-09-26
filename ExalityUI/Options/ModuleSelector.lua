@@ -42,6 +42,8 @@ local CATEGORY_TOP_GAP = 14
 local CATEGORY_AFTER_GAP = 2
 local CATEGORY_HEADER_HEIGHT = 16
 local CATEGORY_TITLE_BLEND = 0.42
+-- Rows are flush to the sidebar. 19 was the old inset; 8 sat on the row padding. Split the difference.
+local LABEL_LEFT = 14
 local menuItemFrame = EXFrames:GetFrame('menu-item')
 local COMPACT_SIZE = menuItemFrame.COMPACT_SIZE or 26
 
@@ -64,7 +66,7 @@ local function CreateCategoryHeader(parent, name)
     local text = header:CreateFontString(nil, 'OVERLAY')
     text:SetFont(EXFrames.assets.font.default(), 11, '')
     text:SetTextColor(unpack(CategoryTitleColor()))
-    text:SetPoint('LEFT', 8, 0)
+    text:SetPoint('LEFT', LABEL_LEFT, 0)
     text:SetJustifyH('LEFT')
     text:SetText(name)
     header.label = text
@@ -174,7 +176,7 @@ optionsModuleSelector.Relayout = function(self)
         frame:ClearAllPoints()
         local topGap = GapBeforeNavEntry(entry, index, prevEntry)
         if (not prev) then
-            frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', gapX, -topGap)
+            frame:SetPoint('TOPLEFT', self.container, 'TOPLEFT', 0, -topGap)
             frame:SetPoint('TOPRIGHT', self.container, 'TOPRIGHT', -gapX, -topGap)
         else
             frame:SetPoint('TOPLEFT', prev, 'BOTTOMLEFT', 0, -topGap)
@@ -271,6 +273,7 @@ optionsModuleSelector.ConfigureItem = function(self, item, module)
     item._navModule = module
     item:SetIcon(navIcons:Get(module.name, module.data))
     item:SetText(module.name)
+    item:SetLabelInset(LABEL_LEFT)
     item:SetExpandable(false)
     item:SetOnClick(module.onClick)
     item:SetData(module.data)

@@ -131,6 +131,21 @@ function visualOptions:MakeTextFields(displayID, groupID, prefix, label, options
                     displayID)
             end,
         },
+    })
+
+    append(fields, EXUI.utils.fontShadowFields(
+        prefix .. 'Font',
+        function(key)
+            return auraDisplays:GetGroupVisual(displayID, groupID, key)
+        end,
+        function(key, value)
+            updateVisual(displayID, groupID, key, value)
+        end,
+        25,
+        refreshEditorOptions
+    ))
+
+    append(fields, {
         {
             type = 'anchor-point',
             label = 'Anchor',

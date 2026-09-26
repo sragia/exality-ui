@@ -10,7 +10,7 @@ local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 local genericText = EXUI:GetModule('uf-options-generic-text')
 
 genericText.GetOptions = function(self, unit, prefix)
-    return {
+    local fields = {
         {
             type = 'title',
             width = 100,
@@ -84,6 +84,26 @@ genericText.GetOptions = function(self, unit, prefix)
             end,
             width = 20
         },
+    }
+
+    for _, field in ipairs(EXUI.utils.fontShadowFields(
+        prefix .. 'Font',
+        function(key)
+            return core:GetValueForUnit(unit, key)
+        end,
+        function(key, value)
+            core:UpdateValueForUnit(unit, key, value)
+            core:UpdateFrameForUnit(unit)
+        end,
+        20,
+        function()
+            EXUI:GetModule('uf-options-core'):RefreshCurrentView()
+        end
+    )) do
+        table.insert(fields, field)
+    end
+
+    local positionFields = {
         {
             type = 'title',
             width = 100,
@@ -153,4 +173,8 @@ genericText.GetOptions = function(self, unit, prefix)
             end
         }
     }
+    for _, field in ipairs(positionFields) do
+        table.insert(fields, field)
+    end
+    return fields
 end

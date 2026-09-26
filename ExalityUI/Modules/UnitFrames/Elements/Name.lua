@@ -22,6 +22,7 @@ name.Update = function(self, frame)
     end
     name:Show()
     name:SetFont(LSM:Fetch('font', db.nameFont), db.nameFontSize, db.nameFontFlag)
+    EXUI.utils.applyFontShadow(name, db.nameFontShadow, db.nameFontShadowX, db.nameFontShadowY, db.nameFontShadowColor)
     if (db.nameMaxWidth) then
         local width = Round(db.sizeWidth * db.nameMaxWidth / 100)
         name:SetWidth(width)

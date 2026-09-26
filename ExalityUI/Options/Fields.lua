@@ -1102,6 +1102,9 @@ optionsFields.ReleaseField = function(self, field)
 end
 
 optionsFields.CreateOrUpdateTooltip = function(self, field, tooltipInfo)
+    if not field then
+        return
+    end
     if (not field.Tooltip and tooltipInfo) then
         local tooltip = tooltip:Create(field, {
             text = tooltipInfo.text,
@@ -1334,6 +1337,9 @@ optionsFields.GetField = function(self, field)
         ['anchor-point'] = function()
             local f = EXFrames:GetFrame('anchor-point'):Create()
             return f
+        end,
+        ['title'] = function()
+            return EXFrames:GetFrame('title'):Create()
         end,
         default = function()
             EXUI.utils.printOut('Unknown Field Type: ' .. field.type)

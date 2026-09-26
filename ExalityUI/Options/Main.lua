@@ -127,7 +127,8 @@ optionsMain.UpdateNavToggleLayout = function(self)
     self.navToggle:SetPoint('RIGHT', self.sidebar, 'LEFT', 0, 0)
 
     self.menuScroll:ClearAllPoints()
-    self.menuScroll:SetPoint('TOPLEFT', NAV_PANEL_INSET, -NAV_PANEL_INSET)
+    local leftInset = self.isNavCompact and NAV_PANEL_INSET or 0
+    self.menuScroll:SetPoint('TOPLEFT', leftInset, -NAV_PANEL_INSET)
     self.menuScroll:SetPoint('BOTTOMRIGHT', -NAV_PANEL_INSET, NAV_PANEL_INSET)
 
     self:UpdateNavToggleIcon()
@@ -194,6 +195,7 @@ optionsMain.SetNavCompact = function(self, compact, animate)
     end
 
     optionsModuleSelector:SetCompactMode(compact)
+    self:UpdateNavToggleLayout()
     if self.menuScroll then
         self.menuScroll:SetScrollbarSuppressed(true)
     end

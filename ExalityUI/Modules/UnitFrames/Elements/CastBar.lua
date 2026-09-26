@@ -212,9 +212,13 @@ castBar.Update = function(self, frame)
     EXUI:SetSize(Castbar.Icon, iconSize, iconSize)
     Castbar.layoutSize = math.max(1, EXUI:ScalePixel(containerWidth, container) - EXUI:ScalePixel(iconSize, Castbar.Icon))
     Castbar.Time:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
+    EXUI.utils.applyFontShadow(Castbar.Time, db.castbarFontShadow, db.castbarFontShadowX, db.castbarFontShadowY,
+        db.castbarFontShadowColor)
     Castbar.Time:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
         db.castbarFontColor.a)
     Castbar.Text:SetFont(LSM:Fetch('font', db.castbarFont), db.castbarFontSize, db.castbarFontFlag)
+    EXUI.utils.applyFontShadow(Castbar.Text, db.castbarFontShadow, db.castbarFontShadowX, db.castbarFontShadowY,
+        db.castbarFontShadowColor)
     Castbar.Text:SetVertexColor(db.castbarFontColor.r, db.castbarFontColor.g, db.castbarFontColor.b,
         db.castbarFontColor.a)
     Castbar.Text:SetWidth(container:GetWidth() - 50)

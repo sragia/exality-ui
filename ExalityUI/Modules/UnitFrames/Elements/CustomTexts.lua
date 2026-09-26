@@ -73,6 +73,7 @@ customTexts.Update = function(self, frame)
         local textContainer = CustomTexts[ID]
         local text = textContainer.Text
         text:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)
+        EXUI.utils.applyFontShadow(text, db.fontShadow, db.fontShadowX, db.fontShadowY, db.fontShadowColor)
         text:SetVertexColor(db.fontColor.r, db.fontColor.g, db.fontColor.b, db.fontColor.a)
         textContainer:ClearAllPoints()
         text:ClearAllPoints()

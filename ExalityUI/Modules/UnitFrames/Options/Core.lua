@@ -111,9 +111,21 @@ core.GetSplitViewItems = function(self)
     if not tab then
         return {}
     end
+    local icons = EXUI.const.textures.frame.icons
     local items = {}
     for _, item in ipairs(tab.menu) do
-        table.insert(items, { ID = item.id, label = item.name })
+        local entry = { ID = item.id, label = item.name }
+        if item.allowPreview then
+            entry.preview = {
+                enabled = ufCore:IsElementPreviewOn(tab.id, item.id),
+                iconOn = icons.eye,
+                iconOff = icons.eyeOff,
+                onToggle = function(itemID, enabled)
+                    ufCore:SetElementPreview(tab.id, itemID, enabled)
+                end,
+            }
+        end
+        table.insert(items, entry)
     end
     return items
 end
@@ -160,27 +172,11 @@ core.UpdateOptionsChrome = function(self, fields)
         fields.splitView:DisableExtraButton()
     end
 
-    local _, item = tab and FindInTableIf(tab.menu, function(menuItem) return menuItem.id == fields.currItemID end)
-    if item and item.allowPreview then
-        fields.splitView:SetContentActionButton({
-            text = 'Toggle Preview',
-            onClick = function()
-                core:ToggleOptionPreview()
-            end,
-        })
-    else
-        fields.splitView:SetContentActionButton(nil)
+    if fields.splitView.SyncPreviewToggles and tab then
+        fields.splitView:SyncPreviewToggles(function(elementId)
+            return ufCore:IsElementPreviewOn(tab.id, elementId)
+        end)
     end
-end
-
-core.ToggleOptionPreview = function(self)
-    local _, tab = FindInTableIf(self.options, function(tab) return tab.id == self.currTabId end)
-    local _, item = FindInTableIf(tab.menu, function(item) return item.id == self.currItemId end)
-
-    local unit = tab.id
-    local element = item.id
-
-    ufCore:ToggleElementPreview(unit, element)
 end
 
 core.TeardownOptions = function(self)
@@ -333,17 +329,6 @@ core.HandleOptions = function(self)
 
     if (self.tabOptions.scrollFrame) then
         self.tabOptions.scrollFrame:Show()
-    end
-
-    if menu.allowPreview and self.tabOptions.SetContentActionButton then
-        self.tabOptions:SetContentActionButton({
-            text = 'Toggle Preview',
-            onClick = function()
-                core:ToggleOptionPreview()
-            end,
-        })
-    elseif self.tabOptions.SetContentActionButton then
-        self.tabOptions:SetContentActionButton(nil)
     end
 
     self.tabOptions:UpdateScroll()

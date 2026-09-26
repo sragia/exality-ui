@@ -111,11 +111,15 @@ tags.TAGS = {
     {
         name = 'nsrt-name',
         method = function(unit)
-            local name = UnitName(unit)
-            if (not NSAPI) then
-                return name
+            local name, surnameF = UnitName(unit)
+            local nameFormatted = name
+            if (EXUI:IsForever()) then
+                nameFormatted = string.format('%s %s', name, surnameF)
             end
-            return NSAPI:GetName(name, 'GlobalNickNames')
+            if (not NSAPI) then
+                return nameFormatted
+            end
+            return NSAPI:GetName(nameFormatted, 'GlobalNickNames')
         end,
         events = 'UNIT_NAME_UPDATE'
     }

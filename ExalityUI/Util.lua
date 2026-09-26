@@ -242,6 +242,94 @@ local function requestGemData(itemLink)
 end
 
 EXUI.utils = {
+    applyFontShadow = function(fontString, enabled, x, y, color)
+        if not fontString then
+            return
+        end
+        if not enabled then
+            fontString:SetShadowOffset(0, 0)
+            return
+        end
+        color = color or {}
+        fontString:SetShadowColor(color.r or 0, color.g or 0, color.b or 0, color.a ~= nil and color.a or 1)
+        fontString:SetShadowOffset(x == nil and 1 or x, y == nil and -1 or y)
+    end,
+    fontShadowFields = function(namePrefix, getValue, setValue, width, onToggle)
+        local function shadowOn()
+            return getValue(namePrefix .. 'Shadow') and true or false
+        end
+        local fieldWidth = width or 20
+        return {
+            {
+                type = 'toggle',
+                label = 'Shadow',
+                name = namePrefix .. 'Shadow',
+                width = fieldWidth,
+                currentValue = function()
+                    return shadowOn()
+                end,
+                onChange = function(value)
+                    setValue(namePrefix .. 'Shadow', value and true or false)
+                    if onToggle then
+                        onToggle()
+                    end
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Shadow X',
+                name = namePrefix .. 'ShadowX',
+                min = -10,
+                max = 10,
+                step = 1,
+                width = fieldWidth,
+                depends = shadowOn,
+                currentValue = function()
+                    local value = getValue(namePrefix .. 'ShadowX')
+                    if value == nil then
+                        return 1
+                    end
+                    return value
+                end,
+                onChange = function(value)
+                    setValue(namePrefix .. 'ShadowX', value)
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Shadow Y',
+                name = namePrefix .. 'ShadowY',
+                min = -10,
+                max = 10,
+                step = 1,
+                width = fieldWidth,
+                depends = shadowOn,
+                currentValue = function()
+                    local value = getValue(namePrefix .. 'ShadowY')
+                    if value == nil then
+                        return -1
+                    end
+                    return value
+                end,
+                onChange = function(value)
+                    setValue(namePrefix .. 'ShadowY', value)
+                end,
+            },
+            {
+                type = 'color-picker',
+                label = 'Shadow Color',
+                name = namePrefix .. 'ShadowColor',
+                width = fieldWidth,
+                depends = shadowOn,
+                currentValue = function()
+                    return getValue(namePrefix .. 'ShadowColor') or { r = 0, g = 0, b = 0, a = 1 }
+                end,
+                onChange = function(value)
+                    setValue(namePrefix .. 'ShadowColor', value)
+                end,
+            },
+        }
+    end,
     GetItemEnchant = function(itemLink)
         if not itemLink then
             return

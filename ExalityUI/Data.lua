@@ -1,6 +1,9 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+---@class ExalityFrames
+local EXFrames = EXUI.EXFrames
+
 ---@class EXUIData
 local data = EXUI:GetModule('data')
 
@@ -34,6 +37,7 @@ data.Init = function(self)
     if type(ExalityUICharData.optionsWindowScale) ~= 'number' then
         ExalityUICharData.optionsWindowScale = 1
     end
+    EXFrames:SetPersistentStore(self.data)
     if self.data.mythicPlusHistory == nil then
         self.data.mythicPlusHistory = {}
     end

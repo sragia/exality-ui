@@ -23,6 +23,8 @@ healthText.Update = function(self, frame)
     end
     healthText:Show()
     healthText:SetFont(LSM:Fetch('font', db.healthFont), db.healthFontSize, db.healthFontFlag)
+    EXUI.utils.applyFontShadow(healthText, db.healthFontShadow, db.healthFontShadowX, db.healthFontShadowY,
+        db.healthFontShadowColor)
     healthText:ClearAllPoints()
     healthText:SetPoint(db.healthAnchorPoint, frame.ElementFrame, db.healthRelativeAnchorPoint, db.healthXOffset,
         db.healthYOffset)

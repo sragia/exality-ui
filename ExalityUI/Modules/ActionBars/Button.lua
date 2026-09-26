@@ -40,11 +40,27 @@ buttonMod.SetupActionStates = function(self, button, barId, buttonIndex, buttonO
     end
 end
 
+buttonMod.DetachFromBlizzardEventDispatch = function(_, button)
+    local eventsFrame = ActionBarButtonEventsFrame
+    if eventsFrame and eventsFrame.frames then
+        for i, frame in pairs(eventsFrame.frames) do
+            if frame == button then
+                eventsFrame.frames[i] = nil
+            end
+        end
+    end
+    if ActionBarActionEventsFrame then
+        ActionBarActionEventsFrame:UnregisterFrame(button)
+    end
+    button.eventsRegistered = true
+end
+
 buttonMod.CreateActionButton = function(self, barId, index, header, barConfig, assignActions)
     assignActions = assignActions ~= false
     local name = 'EXUIActionBar_' .. barId .. '_' .. index
     local commandName = definitions:GetCommandName(barId, index)
     local button = LAB:CreateButton(index, name, header, barStyle:BuildLABConfig(barConfig, commandName))
+    self:DetachFromBlizzardEventDispatch(button)
 
     button.commandName = commandName
     button.exuiBarId = barId
