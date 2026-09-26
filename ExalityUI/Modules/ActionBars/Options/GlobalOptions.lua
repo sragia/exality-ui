@@ -97,16 +97,14 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         mod.Data:SetDB(db)
     end
 
-    local fields = {
-        { type = 'optionGroup', label = label, flex = 1, collapsible = true, expanded = true, children = {} },
-    }
-
     local depends = not isGlobal and function()
         return getText().useGlobal == false
     end or nil
 
+    local children = {}
+
     if not isGlobal then
-        table.insert(fields, {
+        table.insert(children, {
             type = 'toggle',
             label = 'Use Global ' .. label,
             name = textKey .. '_useGlobal',
@@ -122,7 +120,7 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
         })
     end
 
-    table.insert(fields, {
+    table.insert(children, {
         type = 'toggle',
         label = 'Show',
         name = textKey .. '_enabled',
@@ -133,7 +131,7 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
             setText('enabled', v); mod:RefreshBars()
         end,
     })
-    table.insert(fields, {
+    table.insert(children, {
         type = 'dropdown',
         label = 'Font',
         name = textKey .. '_font',
@@ -146,7 +144,7 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
             setText('font', v); mod:RefreshBars()
         end,
     })
-    table.insert(fields, {
+    table.insert(children, {
         type = 'range',
         label = 'Font Size',
         name = textKey .. '_fontSize',
@@ -159,7 +157,7 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
             setText('fontSize', v); mod:RefreshBars()
         end,
     })
-    table.insert(fields, {
+    table.insert(children, {
         type = 'dropdown',
         label = 'Font Flag',
         name = textKey .. '_fontFlag',
@@ -171,70 +169,106 @@ globalOptions.BuildTextFields = function(self, mod, scope, textKey, label)
             setText('fontFlag', v); mod:RefreshBars()
         end,
     })
-    table.insert(fields, {
-        type = 'title',
+    local shadowPrefix = textKey .. '_font'
+    for _, field in ipairs(EXUI.utils.fontShadowFields(
+        shadowPrefix,
+        function(key)
+            return getText()['font' .. key:sub(#shadowPrefix + 1)]
+        end,
+        function(key, value)
+            setText('font' .. key:sub(#shadowPrefix + 1), value)
+            mod:RefreshBars()
+        end,
+        25,
+        function()
+            optionsFields:RefreshOptions()
+        end
+    )) do
+        field.width = field.name == shadowPrefix .. 'Shadow' and 50 or field.width
+        if depends then
+            local ownDepends = field.depends
+            field.depends = function()
+                if not depends() then
+                    return false
+                end
+                if ownDepends and not ownDepends() then
+                    return false
+                end
+                return true
+            end
+        end
+        table.insert(children, field)
+    end
+    table.insert(children, {
+        type = 'optionGroup',
         label = 'Position',
-        name = textKey .. '_positionTitle',
-        width = 100,
-        size = 14,
-        color = { 0.75, 0.75, 0.75 },
-        background = { 0.10, 0.10, 0.10, 1 },
-        accent = { 0.40, 0.40, 0.40, 1 },
+        name = textKey .. '_position',
+        flex = 1,
+        collapsible = true,
+        expanded = true,
         depends = depends,
-    })
-    table.insert(fields, {
-        type = 'anchor-point',
-        label = 'Anchor Point',
-        name = textKey .. '_anchorPoint',
-        width = 23,
-        depends = depends,
-        currentValue = function() return getText().anchorPoint end,
-        onChange = function(v)
-            setText('anchorPoint', v); mod:RefreshBars()
-        end,
-    })
-    table.insert(fields, {
-        type = 'anchor-point',
-        label = 'Relative Anchor Point',
-        name = textKey .. '_relativePoint',
-        width = 23,
-        depends = depends,
-        currentValue = function() return getText().relativePoint end,
-        onChange = function(v)
-            setText('relativePoint', v); mod:RefreshBars()
-        end,
-    })
-    table.insert(fields, { type = 'spacer', width = 54, depends = depends })
-    table.insert(fields, {
-        type = 'range',
-        label = 'X Offset',
-        name = textKey .. '_xOffset',
-        width = 23,
-        min = -100,
-        max = 100,
-        step = 1,
-        depends = depends,
-        currentValue = function() return getText().xOffset or 0 end,
-        onChange = function(v)
-            setText('xOffset', v); mod:RefreshBars()
-        end,
-    })
-    table.insert(fields, {
-        type = 'range',
-        label = 'Y Offset',
-        name = textKey .. '_yOffset',
-        width = 23,
-        min = -100,
-        max = 100,
-        step = 1,
-        depends = depends,
-        currentValue = function() return getText().yOffset or 0 end,
-        onChange = function(v)
-            setText('yOffset', v); mod:RefreshBars()
-        end,
+        children = {
+            {
+                type = 'anchor-point',
+                label = 'Anchor Point',
+                name = textKey .. '_anchorPoint',
+                width = 23,
+                currentValue = function() return getText().anchorPoint end,
+                onChange = function(v)
+                    setText('anchorPoint', v); mod:RefreshBars()
+                end,
+            },
+            {
+                type = 'anchor-point',
+                label = 'Relative Anchor Point',
+                name = textKey .. '_relativePoint',
+                width = 23,
+                currentValue = function() return getText().relativePoint end,
+                onChange = function(v)
+                    setText('relativePoint', v); mod:RefreshBars()
+                end,
+            },
+            { type = 'spacer', width = 54 },
+            {
+                type = 'range',
+                label = 'X Offset',
+                name = textKey .. '_xOffset',
+                width = 23,
+                min = -100,
+                max = 100,
+                step = 1,
+                currentValue = function() return getText().xOffset or 0 end,
+                onChange = function(v)
+                    setText('xOffset', v); mod:RefreshBars()
+                end,
+            },
+            {
+                type = 'range',
+                label = 'Y Offset',
+                name = textKey .. '_yOffset',
+                width = 23,
+                min = -100,
+                max = 100,
+                step = 1,
+                currentValue = function() return getText().yOffset or 0 end,
+                onChange = function(v)
+                    setText('yOffset', v); mod:RefreshBars()
+                end,
+            },
+        },
     })
 
-    return fields
+    return {
+        {
+            type = 'optionGroup',
+            label = label,
+            name = textKey,
+            flex = 1,
+            collapsible = true,
+            expanded = false,
+            children = children,
+        },
+    }
 end
 
 globalOptions.GetOptions = function(self, mod, section)
@@ -594,11 +628,8 @@ globalOptions.GetOptions = function(self, mod, section)
     if section == 'text' then
         local fields = {}
         appendFields(fields, self:BuildTextFields(mod, 'global', 'hotkey', 'Hotkey Text'))
-        table.insert(fields, { type = 'spacer', width = 100 })
         appendFields(fields, self:BuildTextFields(mod, 'global', 'count', 'Stack Text'))
-        table.insert(fields, { type = 'spacer', width = 100 })
         appendFields(fields, self:BuildTextFields(mod, 'global', 'macro', 'Macro Text'))
-        table.insert(fields, { type = 'spacer', width = 100 })
         appendFields(fields, self:BuildTextFields(mod, 'global', 'cooldown', 'Cooldown Text'))
         return fields
     end

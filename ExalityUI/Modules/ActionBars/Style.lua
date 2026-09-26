@@ -182,6 +182,13 @@ style.GetCooldownSignature = function(self, barConfig)
         tostring(color.g or 1),
         tostring(color.b or 1),
         tostring(color.a or 1),
+        cooldown.fontShadow and '1' or '0',
+        tostring(cooldown.fontShadowX or 1),
+        tostring(cooldown.fontShadowY or -1),
+        tostring((cooldown.fontShadowColor and cooldown.fontShadowColor.r) or 0),
+        tostring((cooldown.fontShadowColor and cooldown.fontShadowColor.g) or 0),
+        tostring((cooldown.fontShadowColor and cooldown.fontShadowColor.b) or 0),
+        tostring((cooldown.fontShadowColor and cooldown.fontShadowColor.a) or 1),
     }, ':')
 end
 
@@ -293,6 +300,7 @@ style.ApplyCooldownText = function(self, cooldown, button, barConfig, force)
     end
 
     fontString:SetFont(self:GetFontPath(textConfig.font), textConfig.fontSize, textConfig.fontFlag)
+    self:ApplyTextShadow(fontString, textConfig)
     local color = textConfig.color or { r = 1, g = 1, b = 1, a = 1 }
     fontString:SetTextColor(color.r, color.g, color.b, color.a or 1)
 
@@ -773,10 +781,12 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
     if styleChanged or emptyChanged then
         self:ApplyTextVisibility(button, barConfig)
     end
+    self:ApplyButtonTextShadows(button, barConfig)
 end
 
 style.OnButtonUpdated = function(self, button, barConfig)
     self:ApplyButtonStyle(button, barConfig)
+    self:ApplyButtonTextShadows(button, barConfig)
 end
 
 style.HookButtonUpdates = function(self, button, barId)
@@ -872,6 +882,28 @@ style.ReleaseMasqueGroups = function(self)
     end
 end
 
+style.ApplyTextShadow = function(self, fontString, textConfig)
+    if not fontString or not textConfig then
+        return
+    end
+    EXUI.utils.applyFontShadow(
+        fontString,
+        textConfig.fontShadow,
+        textConfig.fontShadowX,
+        textConfig.fontShadowY,
+        textConfig.fontShadowColor
+    )
+end
+
+style.ApplyButtonTextShadows = function(self, button, barConfig)
+    if not button or not barConfig then
+        return
+    end
+    self:ApplyTextShadow(button.HotKey, barConfig.hotkey)
+    self:ApplyTextShadow(button.Count, barConfig.count)
+    self:ApplyTextShadow(button.Name, barConfig.macro)
+end
+
 style.ApplyFontString = function(self, fontString, textConfig)
     if not fontString then
         return
@@ -882,6 +914,7 @@ style.ApplyFontString = function(self, fontString, textConfig)
     end
     fontString:Show()
     fontString:SetFont(self:GetFontPath(textConfig.font), textConfig.fontSize, textConfig.fontFlag)
+    self:ApplyTextShadow(fontString, textConfig)
     local color = textConfig.color or { r = 1, g = 1, b = 1, a = 1 }
     fontString:SetTextColor(color.r, color.g, color.b, color.a or 1)
 end

@@ -499,13 +499,10 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
     elseif section == 'text' then
         appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'hotkey', 'Hotkey Text'))
         if barId ~= 'vehicleLeave' then
-            appendFields(fields, { { type = 'spacer', width = 100 } })
             appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'count', 'Stack Text'))
             if barId ~= 'extra' then
-                appendFields(fields, { { type = 'spacer', width = 100 } })
                 appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'macro', 'Macro Text'))
             end
-            appendFields(fields, { { type = 'spacer', width = 100 } })
             appendFields(fields, globalOptions:BuildTextFields(mod, barId, 'cooldown', 'Cooldown Text'))
         end
     elseif section == 'visibility' then

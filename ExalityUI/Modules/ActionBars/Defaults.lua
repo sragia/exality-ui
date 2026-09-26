@@ -7,22 +7,32 @@ local definitions = EXUI:GetModule('action-bars-definitions')
 ---@class EXUIActionBarsDefaults
 local defaults = EXUI:GetModule('action-bars-defaults')
 
-defaults.SCHEMA_VERSION = 4
+defaults.SCHEMA_VERSION = 5
 defaults._barTemplates = {}
 
-local function textDefaults()
-    return {
+local function textDefaults(overrides)
+    local text = {
         useGlobal = true,
         enabled = true,
         font = 'DMSans',
         fontSize = 12,
         fontFlag = 'OUTLINE',
+        fontShadow = false,
+        fontShadowX = 1,
+        fontShadowY = -1,
+        fontShadowColor = { r = 0, g = 0, b = 0, a = 1 },
         anchorPoint = 'BOTTOMRIGHT',
         relativePoint = 'BOTTOMRIGHT',
         xOffset = -2,
         yOffset = 2,
         color = { r = 1, g = 1, b = 1, a = 1 },
     }
+    if overrides then
+        for key, value in pairs(overrides) do
+            text[key] = value
+        end
+    end
+    return text
 end
 
 defaults.GLOBAL = {
@@ -51,42 +61,26 @@ defaults.GLOBAL = {
     glowProcStartAnim = true,
     visibility = 'always',
     hotkey = textDefaults(),
-    count = {
-        useGlobal = true,
-        enabled = true,
-        font = 'DMSans',
+    count = textDefaults({
         fontSize = 14,
-        fontFlag = 'OUTLINE',
         anchorPoint = 'TOPRIGHT',
         relativePoint = 'TOPRIGHT',
-        xOffset = -2,
         yOffset = -2,
-        color = { r = 1, g = 1, b = 1, a = 1 },
-    },
-    macro = {
-        useGlobal = true,
+    }),
+    macro = textDefaults({
         enabled = false,
-        font = 'DMSans',
         fontSize = 10,
-        fontFlag = 'OUTLINE',
         anchorPoint = 'BOTTOM',
         relativePoint = 'BOTTOM',
         xOffset = 0,
-        yOffset = 2,
-        color = { r = 1, g = 1, b = 1, a = 1 },
-    },
-    cooldown = {
-        useGlobal = true,
-        enabled = true,
-        font = 'DMSans',
+    }),
+    cooldown = textDefaults({
         fontSize = 16,
-        fontFlag = 'OUTLINE',
         anchorPoint = 'CENTER',
         relativePoint = 'CENTER',
         xOffset = 0,
         yOffset = 0,
-        color = { r = 1, g = 1, b = 1, a = 1 },
-    },
+    }),
 }
 
 defaults.BAR1_STATES = {
@@ -208,10 +202,23 @@ defaults.GetBarTemplate = function(self, barId)
     return self._barTemplates[barId]
 end
 
+local TEXT_BLOCK_KEYS = { 'hotkey', 'count', 'macro', 'cooldown' }
+
 local function mergeMissingKeys(target, template)
     for key, value in pairs(template) do
         if target[key] == nil then
             target[key] = type(value) == 'table' and EXUI.utils.deepCloneTable(value) or value
+        end
+    end
+end
+
+local function mergeTextBlocks(target, template)
+    if type(target) ~= 'table' or type(template) ~= 'table' then
+        return
+    end
+    for _, key in ipairs(TEXT_BLOCK_KEYS) do
+        if type(target[key]) == 'table' and type(template[key]) == 'table' then
+            mergeMissingKeys(target[key], template[key])
         end
     end
 end
@@ -229,6 +236,7 @@ defaults.MergeIntoDB = function(self, db)
         db.global = EXUI.utils.deepCloneTable(self.GLOBAL)
     else
         mergeMissingKeys(db.global, self.GLOBAL)
+        mergeTextBlocks(db.global, self.GLOBAL)
     end
 
     db.bars = db.bars or {}
@@ -236,7 +244,9 @@ defaults.MergeIntoDB = function(self, db)
         if not db.bars[barId] then
             db.bars[barId] = self:BuildBarDefaults(barId)
         else
-            mergeMissingKeys(db.bars[barId], self:GetBarTemplate(barId))
+            local template = self:GetBarTemplate(barId)
+            mergeMissingKeys(db.bars[barId], template)
+            mergeTextBlocks(db.bars[barId], template)
             if barId == 'bar1' and not db.bars[barId].states then
                 db.bars[barId].states = EXUI.utils.deepCloneTable(self.BAR1_STATES)
             end

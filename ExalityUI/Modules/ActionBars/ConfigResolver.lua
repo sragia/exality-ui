@@ -47,6 +47,10 @@ local function resolveTextBlock(globalBlock, barBlock)
         xOffset = source.xOffset or 0,
         yOffset = source.yOffset or 0,
         color = source.color or { r = 1, g = 1, b = 1, a = 1 },
+        fontShadow = source.fontShadow and true or false,
+        fontShadowX = source.fontShadowX == nil and 1 or source.fontShadowX,
+        fontShadowY = source.fontShadowY == nil and -1 or source.fontShadowY,
+        fontShadowColor = source.fontShadowColor or { r = 0, g = 0, b = 0, a = 1 },
     }
 end
 
