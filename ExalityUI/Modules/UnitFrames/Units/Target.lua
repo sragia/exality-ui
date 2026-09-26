@@ -151,6 +151,13 @@ target.Init = function(self)
         ['summonXOff'] = 0,
         ['summonYOff'] = 0,
         ['summonScale'] = 1,
+        -- Resurrect Indicator
+        ['ressurectEnable'] = true,
+        ['ressurectAnchorPoint'] = 'CENTER',
+        ['ressurectRelativeAnchorPoint'] = 'TOP',
+        ['ressurectXOff'] = 0,
+        ['ressurectYOff'] = 0,
+        ['ressurectScale'] = 1,
         -- Dispel Overlay
         ['dispelOverlayEnable'] = false,
         ['dispelOverlayFilter'] = 'RAID',
@@ -181,6 +188,7 @@ target.Create = function(self, frame)
     frame.Offline = EXUI:GetModule('uf-element-offline'):Create(frame)
     frame.PhaseIndicator = EXUI:GetModule('uf-element-phase-indicator'):Create(frame)
     frame.SummonIndicator = EXUI:GetModule('uf-element-summon-indicator'):Create(frame)
+    frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
 

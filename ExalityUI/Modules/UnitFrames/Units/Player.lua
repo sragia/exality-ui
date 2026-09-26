@@ -137,7 +137,14 @@ player.Init = function(self)
         ['dispelOverlayAnchorPoint'] = 'CENTER',
         ['dispelOverlayRelativeAnchorPoint'] = 'CENTER',
         ['dispelOverlayXOff'] = 0,
-        ['dispelOverlayYOff'] = 0
+        ['dispelOverlayYOff'] = 0,
+        -- Resurrect Indicator
+        ['ressurectEnable'] = true,
+        ['ressurectAnchorPoint'] = 'CENTER',
+        ['ressurectRelativeAnchorPoint'] = 'TOP',
+        ['ressurectXOff'] = 0,
+        ['ressurectYOff'] = 0,
+        ['ressurectScale'] = 1,
     })
 end
 
@@ -156,6 +163,7 @@ player.Create = function(self, frame)
     frame.Power = EXUI:GetModule('uf-element-power'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('uf-element-custom-texts'):Create(frame)
     frame.DispelOverlay = EXUI:GetModule('uf-element-dispel-overlay'):Create(frame)
+    frame.ResurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator'):Create(frame)
 
     editor:RegisterFrameForEditor(frame, 'Player', function(frame)
         core:PersistEditorFramePosition(frame, self.unit)

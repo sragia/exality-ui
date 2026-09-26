@@ -251,6 +251,34 @@ core:AddOption({
             }
         },
         {
+            name = 'Resurrect Icon',
+            id = 'resurrectindicator',
+            allowPreview = true,
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('target', 'ressurect')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'ressurectScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('target', 'ressurectScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('target', 'ressurectScale', value)
+                        ufCore:UpdateFrameForUnit('target')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('target', 'ressurect')
+                end,
+            }
+        },
+        {
             name = 'Summon Icon',
             id = 'summonindicator',
             allowPreview = true,

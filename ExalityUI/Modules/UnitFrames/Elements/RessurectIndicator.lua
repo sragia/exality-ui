@@ -20,6 +20,7 @@ resurrectIndicator.Update = function(self, frame)
 
     if (not db.ressurectEnable) then
         core:DisableElementForFrame(frame, 'ResurrectIndicator')
+        return
     end
     core:EnableElementForFrame(frame, 'ResurrectIndicator')
 

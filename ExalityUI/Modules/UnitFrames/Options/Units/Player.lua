@@ -234,6 +234,34 @@ core:AddOption({
             }
         },
         {
+            name = 'Resurrect Icon',
+            id = 'resurrectindicator',
+            allowPreview = true,
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-generic-enable'):GetOptions('player', 'ressurect')
+                end,
+                {
+                    type = 'range',
+                    label = 'Scale',
+                    name = 'ressurectScale',
+                    min = 0.1,
+                    max = 3,
+                    step = 0.1,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('player', 'ressurectScale')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('player', 'ressurectScale', value)
+                        ufCore:UpdateFrameForUnit('player')
+                    end,
+                },
+                function()
+                    return EXUI:GetModule('uf-options-generic-position'):GetOptions('player', 'ressurect')
+                end,
+            }
+        },
+        {
             name = 'Dispel Overlay',
             id = 'dispeloverlay',
             allowPreview = true,
