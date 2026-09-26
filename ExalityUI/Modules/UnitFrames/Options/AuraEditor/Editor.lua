@@ -316,8 +316,7 @@ function editor:EnsureUnitSelector()
     end
     dropdown:ClearAllPoints()
     dropdown:SetSize(EXFrames:ScalePixel(130, self.window), EXFrames:ScalePixel(28, self.window))
-    dropdown:SetPoint('TOP', self.window.close, 'TOP', 0, 0)
-    dropdown:SetPoint('RIGHT', self.window.close, 'LEFT', EXFrames:ScalePixel(-6, self.window), 0)
+    dropdown:SetPoint('RIGHT', self.window.close, 'LEFT', EXFrames:ScalePixel(-14, self.window), 0)
     self.unitSelector = dropdown
 end
 

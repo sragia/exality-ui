@@ -165,6 +165,96 @@ function defaults:MergeIntoDB(db)
     db.__exuiDefaultsVersion = self.SCHEMA_VERSION
 end
 
+local ANKH_DISPLAY_ID = 'exuiAnkhReady'
+
+local function IsOriginalAnkhUnits(units)
+    if not units then
+        return false
+    end
+    local expected = {
+        player = true,
+        party = true,
+        raid = true,
+        target = true,
+        targettarget = true,
+    }
+    for key, value in pairs(expected) do
+        if units[key] ~= value then
+            return false
+        end
+    end
+    for key, value in pairs(units) do
+        if value and not expected[key] then
+            return false
+        end
+    end
+    return true
+end
+
+function defaults:SeedAnkhDisplay(db)
+    if not db then
+        return false
+    end
+    db.displays = db.displays or {}
+    local changed = false
+    if not db.__exuiAnkhDisplaySeeded then
+        if not db.displays[ANKH_DISPLAY_ID] then
+            local _, display = self:BuildNewDisplay()
+            display.name = 'Ankh'
+            display.anchorPoint = 'CENTER'
+            display.relativePoint = 'BOTTOM'
+            display.containerAnchorPoint = 'BOTTOM'
+            display.XOff = 0
+            display.YOff = 0
+            display.matchUnitFrameWidth = false
+            display.rowWidth = 24
+            display.units = {
+                party = true,
+                raid = true,
+            }
+            local group = display.groups[display.groupOrder[1]]
+            group.conditions.includeSpellIDs = '21169'
+            group.conditions.maxFrameCount = 1
+            group.conditions.filterTokens = {
+                { token = 'HELPFUL', negated = false },
+            }
+            group.visual.iconWidth = 24
+            group.visual.iconHeight = 24
+            group.visual.showStacks = false
+            group.visual.showDurationText = false
+            group.visual.showDurationCooldown = false
+            db.displays[ANKH_DISPLAY_ID] = display
+        end
+        db.__exuiAnkhDisplaySeeded = true
+        changed = true
+    end
+    if not db.__exuiAnkhUnitsCorrected then
+        local display = db.displays[ANKH_DISPLAY_ID]
+        if display and IsOriginalAnkhUnits(display.units) then
+            display.units = {
+                party = true,
+                raid = true,
+            }
+        end
+        db.__exuiAnkhUnitsCorrected = true
+        changed = true
+    end
+    if not db.__exuiAnkhAnchorCorrected then
+        local display = db.displays[ANKH_DISPLAY_ID]
+        if display
+            and display.anchorPoint == 'CENTER'
+            and display.relativePoint == 'CENTER'
+            and display.containerAnchorPoint == 'CENTER'
+        then
+            display.relativePoint = 'BOTTOM'
+            display.containerAnchorPoint = 'BOTTOM'
+        end
+        db.__exuiAnkhAnchorCorrected = true
+        changed = true
+    end
+    return changed
+end
+
 function defaults:GetGroupKey(displayID, groupID)
     return string.format('exui_uf_%s_%s', displayID, groupID)
 end

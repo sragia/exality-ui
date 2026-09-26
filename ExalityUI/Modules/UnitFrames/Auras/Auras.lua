@@ -59,6 +59,10 @@ function ufAuras:EnsureDB()
         defaults:MergeIntoDB(db)
         dirty = true
     end
+    if defaults:SeedAnkhDisplay(db) then
+        defaults:MergeIntoDB(db)
+        dirty = true
+    end
     if dirty then
         self:SaveDB(db)
     end
