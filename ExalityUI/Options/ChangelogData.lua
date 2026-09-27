@@ -2,6 +2,9 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.9.7|r
+- [Minimap] Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.
+
 # |cffdb49000.9.6|r
 - [Action Bars] Add our own keybind mode dialog instead of using Blizzard one.
 - [Options] Visul rework of options. Probably more to come to improve UX more.

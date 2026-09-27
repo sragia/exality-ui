@@ -735,6 +735,7 @@ minimap.GetDefaults = function(self)
     return {
         enable = false,
         size = 200,
+        poiScale = 1,
         borderSize = 1,
         borderColor = { r = 38 / 255, g = 41 / 255, b = 34 / 255, a = 1 },
         anchorPoint = 'TOPRIGHT',
@@ -1163,6 +1164,21 @@ minimap.GetOptions = function(self, currTabID, currItemID)
                 width = 20,
             },
             {
+                type = 'range',
+                label = 'POI Scale',
+                name = 'poiScale',
+                min = 0.5,
+                max = 2,
+                step = 0.05,
+                depends = function() return self.Data:GetValue('enable') end,
+                currentValue = function() return self.Data:GetValue('poiScale') or 1 end,
+                onChange = function(value)
+                    self.Data:SetValue('poiScale', value)
+                    self:ConfigureIfEnabled()
+                end,
+                width = 20,
+            },
+            {
                 type = 'color-picker',
                 label = 'Border Color',
                 name = 'borderColor',
@@ -1176,7 +1192,13 @@ minimap.GetOptions = function(self, currTabID, currItemID)
             },
             {
                 type = 'spacer',
-                width = 40,
+                width = 20,
+                depends = function() return self.Data:GetValue('enable') end,
+            },
+            {
+                type = 'description',
+                label = 'Scales quest, node, and point-of-interest icons drawn on the minimap. Addon buttons use Button Scale.',
+                width = 100,
                 depends = function() return self.Data:GetValue('enable') end,
             },
             {
@@ -1771,6 +1793,7 @@ minimap.SetupMinimapFrame = function(self)
     Minimap:SetQuestBlobRingAlpha(0)
 
     Minimap:EnableMouse(true)
+    self:SetupPoiScaleHook()
 
     self.borderContainer = CreateFrame('Frame', nil, Minimap)
     if (self.borderContainer.SetFixedFrameStrata) then
@@ -3323,6 +3346,32 @@ minimap.SuppressBlizzFrame = function(self, frame)
     end)
 end
 
+minimap.ApplyPoiScale = function(self)
+    if (not Minimap or not Minimap.SetIconScale or self.applyingPoiScale) then return end
+    self.applyingPoiScale = true
+    Minimap:SetIconScale(self.Data:GetValue('poiScale') or 1)
+    self.applyingPoiScale = false
+end
+
+minimap.SetupPoiScaleHook = function(self)
+    if (self.poiScaleHooked) then return end
+    local reapply = function()
+        if (minimap.enabled and not minimap.applyingPoiScale) then
+            minimap:ApplyPoiScale()
+        end
+    end
+    local clusterFn = MinimapCluster and MinimapCluster.SetIconScale
+    local mixinFn = MinimapClusterMixin and MinimapClusterMixin.SetIconScale
+    if (not clusterFn and not mixinFn) then return end
+    self.poiScaleHooked = true
+    if (clusterFn) then
+        hooksecurefunc(MinimapCluster, 'SetIconScale', reapply)
+    end
+    if (mixinFn and mixinFn ~= clusterFn) then
+        hooksecurefunc(MinimapClusterMixin, 'SetIconScale', reapply)
+    end
+end
+
 minimap.ConfigureMinimap = function(self)
     local db = self.Data:GetDB()
     local borderSize = db.borderSize or 1
@@ -3357,6 +3406,7 @@ minimap.ConfigureMinimap = function(self)
         end
     end
 
+    self:ApplyPoiScale()
     self:HideDefaultMinimapChrome()
     self:ApplySquareShape()
     self:SetupBlizzButtonFixes()
