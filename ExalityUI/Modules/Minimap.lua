@@ -36,6 +36,8 @@ minimap.ldbCallbackRegistered = false
 minimap.ldbDragHooked = {}
 minimap.repositioningMissions = false
 minimap.configuringAddonCompartment = false
+minimap.previewMail = false
+minimap.previewDifficulty = false
 
 local MASK_TEXTURE = [[Interface\BUTTONS\WHITE8X8]]
 local SQUARE_SHAPE = 'SQUARE'
@@ -2128,7 +2130,7 @@ minimap.UpdateHoverVisibility = function(self, isHovering)
             self.clockFrame:SetAlpha(isHovering and 1 or 0)
         end
     end
-    if (self.difficultyFrame and db.difficultyEnable) then
+    if (self.difficultyFrame and db.difficultyEnable and not self.previewDifficulty) then
         if (db.difficultyVisibility == 'hover') then
             self.difficultyFrame:SetAlpha(isHovering and 1 or 0)
         end
@@ -2451,7 +2453,12 @@ minimap.UpdateDifficultyText = function(self)
         return
     end
 
-    local prefix, suffix = self:GetInstanceDifficultyLabel()
+    local prefix, suffix
+    if (self.previewDifficulty) then
+        prefix, suffix = 'M', '20'
+    else
+        prefix, suffix = self:GetInstanceDifficultyLabel()
+    end
     if (not prefix) then
         self.difficultyFrame:Hide()
         return
@@ -2472,7 +2479,7 @@ minimap.UpdateDifficultyText = function(self)
     self:ApplyTextBackground(self.difficultyFrame, db.difficultyBgEnable, db.difficultyBgColor)
     self.difficultyFrame:Show()
 
-    if (db.difficultyVisibility == 'always') then
+    if (self.previewDifficulty or db.difficultyVisibility == 'always') then
         self.difficultyFrame:SetAlpha(1)
     elseif (db.difficultyVisibility == 'hover') then
         self.difficultyFrame:SetAlpha(Minimap:IsMouseOver() and 1 or 0)
@@ -3141,6 +3148,11 @@ minimap.ApplyBlizzButton = function(self, key)
         return
     end
 
+    if (key == 'mail' and not self.previewMail and not (HasNewMail and HasNewMail())) then
+        btn:Hide()
+        return
+    end
+
     local angle = angles[key] or DEFAULT_BLIZZ_ANGLES[key] or 180
     self.applyingBlizzButton = true
     if (key == 'missions') then
@@ -3153,6 +3165,47 @@ minimap.ApplyBlizzButton = function(self, key)
         self:StyleBlizzMailButton(btn)
     end
     self.applyingBlizzButton = false
+end
+
+minimap.HookOptionsWindow = function(self)
+    local optionsMain = EXUI:GetModule('options-main')
+    local window = optionsMain and optionsMain.window
+    if (not window or window.exuiMinimapPreviewHooked) then return end
+    window.exuiMinimapPreviewHooked = true
+    window:HookScript('OnHide', function()
+        minimap:TeardownOptionsChrome()
+    end)
+end
+
+minimap.UpdateOptionsChrome = function(self, fields)
+    if (not self.enabled) then return end
+    self:HookOptionsWindow()
+
+    self.previewMail = true
+    self:ApplyBlizzButton('mail')
+
+    local tabID = fields and fields.currTabID
+    local db = self.Data:GetDB()
+    self.previewDifficulty = tabID == 'difficulty'
+        and db.difficultyEnable
+        and db.difficultyVisibility ~= 'hidden'
+        and true
+        or false
+    self:UpdateDifficultyText()
+end
+
+minimap.TeardownOptionsChrome = function(self)
+    local hadMail = self.previewMail
+    local hadDifficulty = self.previewDifficulty
+    self.previewMail = false
+    self.previewDifficulty = false
+    if (not self.enabled) then return end
+    if (hadMail) then
+        self:ApplyBlizzButton('mail')
+    end
+    if (hadDifficulty) then
+        self:UpdateDifficultyText()
+    end
 end
 
 minimap.ApplyLdbButton = function(self, name, cfg)
