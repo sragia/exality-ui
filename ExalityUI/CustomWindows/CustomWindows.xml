@@ -1,4 +1,5 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="CustomWindows.lua"/>
     <Include file="CharacterFrame/CharacterFrame.xml"/>
+    <Include file="Talents/Talents.xml"/>
 </Ui>
