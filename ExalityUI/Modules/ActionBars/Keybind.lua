@@ -20,6 +20,9 @@ keybind.inHousing = false
 keybind.usingCustomModal = false
 keybind.reopenOptions = false
 keybind.engineHooked = false
+keybind.protectedBarUpdatesSuppressed = false
+
+local function noop() end
 
 local function getBindingKeys(commandName)
     local keys = {}
@@ -288,6 +291,59 @@ keybind.RestoreEngineVisuals = function(self)
     self:SetEngineMouseEnabled(true)
 end
 
+keybind.SuppressProtectedBarUpdates = function(self)
+    if self.protectedBarUpdatesSuppressed then
+        return
+    end
+    self.protectedBarUpdatesSuppressed = true
+
+    local saved = {}
+    self.protectedCallOriginals = saved
+
+    if ActionButtonUtil then
+        saved.showGrids = ActionButtonUtil.ShowAllActionButtonGrids
+        saved.hideGrids = ActionButtonUtil.HideAllActionButtonGrids
+        ActionButtonUtil.ShowAllActionButtonGrids = noop
+        ActionButtonUtil.HideAllActionButtonGrids = noop
+    end
+
+    saved.forceShow = ExtraActionBar_ForceShowIfNeeded
+    saved.cancelForce = ExtraActionBar_CancelForceShow
+    if saved.forceShow then
+        ExtraActionBar_ForceShowIfNeeded = noop
+    end
+    if saved.cancelForce then
+        ExtraActionBar_CancelForceShow = noop
+    end
+end
+
+keybind.RestoreProtectedBarUpdates = function(self)
+    if not self.protectedBarUpdatesSuppressed then
+        return
+    end
+    local saved = self.protectedCallOriginals
+    self.protectedBarUpdatesSuppressed = false
+    self.protectedCallOriginals = nil
+    if not saved then
+        return
+    end
+
+    if ActionButtonUtil then
+        if saved.showGrids then
+            ActionButtonUtil.ShowAllActionButtonGrids = saved.showGrids
+        end
+        if saved.hideGrids then
+            ActionButtonUtil.HideAllActionButtonGrids = saved.hideGrids
+        end
+    end
+    if saved.forceShow then
+        ExtraActionBar_ForceShowIfNeeded = saved.forceShow
+    end
+    if saved.cancelForce then
+        ExtraActionBar_CancelForceShow = saved.cancelForce
+    end
+end
+
 keybind.HideEngine = function(self)
     if not QuickKeybindFrame then
         return
@@ -305,16 +361,8 @@ keybind.OnEngineHide = function(self)
         EventRegistry:TriggerEvent('QuickKeybindFrame.QuickKeybindModeDisabled')
     end
 
-    if ActionButtonUtil then
-        if ActionButtonUtil.HideAllActionButtonGrids then
-            ActionButtonUtil.HideAllActionButtonGrids()
-        end
-        if ActionButtonUtil.HideAllQuickKeybindButtonHighlights then
-            ActionButtonUtil.HideAllQuickKeybindButtonHighlights()
-        end
-    end
-    if ExtraActionBar_CancelForceShow then
-        ExtraActionBar_CancelForceShow()
+    if ActionButtonUtil and ActionButtonUtil.HideAllQuickKeybindButtonHighlights then
+        ActionButtonUtil.HideAllQuickKeybindButtonHighlights()
     end
 
     self:RestoreEngineVisuals()
@@ -327,6 +375,8 @@ keybind.OnEngineHide = function(self)
     if reopen then
         EXUI:GetModule('options-main'):Show()
     end
+
+    self:RestoreProtectedBarUpdates()
 end
 
 keybind.HookEngineFrame = function(self)
@@ -400,6 +450,7 @@ keybind.EnterQuickKeybindMode = function(self)
     end
 
     self.usingCustomModal = true
+    self:SuppressProtectedBarUpdates()
     QuickKeybindFrame:Show()
     self:HideEngineVisuals()
     self:ShowModal()
@@ -426,4 +477,5 @@ keybind.Clear = function(self)
         EventRegistry:UnregisterCallback('HouseEditor.StateUpdated', keybind)
     end
     self.bindingEventsHooked = false
+    self:RestoreProtectedBarUpdates()
 end
