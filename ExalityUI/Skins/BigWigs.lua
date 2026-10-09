@@ -14,13 +14,23 @@ local function ApplyBarInsets(bar)
     local statusbar = bar.candyBarBar
     local icon = bar.candyBarIconFrame
 
+    local reApplyIcon, reApplyAtlas
+    if (icon:IsAnchoringSecret()) then
+        if (bar:IsIconAtlas()) then
+            reApplyAtlas = bar:GetIconAtlas()
+        else
+            reApplyIcon = bar:GetIcon()
+        end
+        icon:SetToDefaults()
+    end
+
     statusbar:ClearAllPoints()
     icon:ClearAllPoints()
 
-    if (icon.icon) then
+    if (bar:IsIconVisible()) then
         local iconSize = (bar.height or bar:GetHeight()) - inset
         icon:SetWidth(iconSize)
-        if (bar.iconPosition == 'RIGHT') then
+        if (bar:GetIconPosition() == 'RIGHT') then
             icon:SetPoint('TOPRIGHT', bar, 'TOPRIGHT', -inset, -inset)
             icon:SetPoint('BOTTOMRIGHT', bar, 'BOTTOMRIGHT', -inset, 0)
             statusbar:SetPoint('TOPRIGHT', icon, 'TOPLEFT', 0, 0)
@@ -35,10 +45,21 @@ local function ApplyBarInsets(bar)
             statusbar:SetPoint('TOPRIGHT', bar, 'TOPRIGHT', -inset, -inset)
             statusbar:SetPoint('BOTTOMRIGHT', bar, 'BOTTOMRIGHT', -inset, 0)
         end
-        icon:Show()
     else
         statusbar:SetPoint('TOPLEFT', bar, 'TOPLEFT', inset, -inset)
         statusbar:SetPoint('BOTTOMRIGHT', bar, 'BOTTOMRIGHT', -inset, 0)
+    end
+
+    if (reApplyAtlas) then
+        icon:SetAtlas(reApplyAtlas)
+    elseif (reApplyIcon) then
+        icon:SetTexture(reApplyIcon)
+        icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    end
+
+    if (bar:IsIconVisible()) then
+        icon:Show()
+    else
         icon:Hide()
     end
 end

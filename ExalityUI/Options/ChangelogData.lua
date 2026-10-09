@@ -5,6 +5,7 @@ EXUI.changelog = [[
 # |cffdb49000.9.7|r
 - [Minimap] Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.
 - [Minimap] Fix mail icon on minimap not being hidden after closing options. Add Difficulty preview while we are viewing it's options.
+- [BW Skin] Fix icon not showing after latest update.
 
 ## Talents Custom Window|cffeb7a34New|r
 New custom window added for talents. Fairly basic stuff here. Essentially just talents re-imagined.
