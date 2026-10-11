@@ -67,6 +67,10 @@ local BOTTOM_SLOTS = {
 }
 local SLOT_SIZE = 36
 local SLOT_GAP = 6
+local WINDOW_BG = [[Interface/Addons/ExalityUI/Options/Assets/main-bg_2.png]]
+local WINDOW_CORNER = 24
+local BG_CROP_TOP = 0.05
+local BG_CROP_BOTTOM = 0.04
 
 local function BottomSlotIds()
     if not EXUI.IsForever() then
@@ -218,7 +222,120 @@ characterFrame.UpdateHeader = function(self)
 
     self.window:SetTitle(UnitPVPName("player"))
     self.window.CharacterGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
+    self:UpdateBackground()
 end
+
+characterFrame.FitBackground = function(self)
+    local texture = self.background
+    local atlas = self.backgroundAtlas
+    if (not texture or not atlas) then
+        return
+    end
+    local info = C_Texture.GetAtlasInfo(atlas)
+    local file = info and (info.file or info.filename)
+    if (not info or not file) then
+        texture:SetAtlas(atlas, true)
+        texture:ClearAllPoints()
+        texture:SetAllPoints()
+        texture:SetVertexColor(1, 1, 1, 1)
+        return
+    end
+
+    local parent = texture:GetParent()
+    local frameWidth = parent:GetWidth()
+    local frameHeight = parent:GetHeight()
+    if (frameWidth <= 1 or frameHeight <= 1) then
+        return
+    end
+
+    local left, right = info.leftTexCoord, info.rightTexCoord
+    local top, bottom = info.topTexCoord, info.bottomTexCoord
+    local vSpan = bottom - top
+    top = top + vSpan * BG_CROP_TOP
+    bottom = bottom - vSpan * BG_CROP_BOTTOM
+
+    local artWidth = info.width
+    local artHeight = info.height * (1 - BG_CROP_TOP - BG_CROP_BOTTOM)
+    local frameAspect = frameWidth / frameHeight
+    local artAspect = artWidth / artHeight
+    if (artWidth > 0 and artHeight > 0) then
+        if (artAspect > frameAspect) then
+            local keep = frameAspect / artAspect
+            local trim = (1 - keep) / 2
+            local uSpan = right - left
+            left = left + uSpan * trim
+            right = right - uSpan * trim
+        else
+            local keep = artAspect / frameAspect
+            local trim = (1 - keep) / 2
+            vSpan = bottom - top
+            top = top + vSpan * trim
+            bottom = bottom - vSpan * trim
+        end
+    end
+
+    texture:ClearAllPoints()
+    texture:SetSize(frameWidth, frameHeight)
+    texture:SetPoint('CENTER')
+    texture:SetTexture(file)
+    texture:SetTexCoord(left, right, top, bottom)
+    texture:SetVertexColor(1, 1, 1, 1)
+end
+
+characterFrame.UpdateBackground = function(self)
+    local art = self.background
+    local window = self.window
+    if (not art or not window) then
+        return
+    end
+    if (EXUI.IsForever()) then
+        art:Hide()
+        if (self.backgroundBacking) then
+            self.backgroundBacking:Hide()
+        end
+        if (window.Texture) then
+            window.Texture:Show()
+        end
+        return
+    end
+    if (not ClassTalentUtil and not self.spellBookLoadTried and C_AddOns and C_AddOns.LoadAddOn) then
+        self.spellBookLoadTried = true
+        C_AddOns.LoadAddOn('Blizzard_PlayerSpells')
+    end
+    local specIndex = C_SpecializationInfo.GetSpecialization()
+    local specID = specIndex and select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
+    local visuals = specID and ClassTalentUtil and ClassTalentUtil.GetVisualsForSpecID and
+        ClassTalentUtil.GetVisualsForSpecID(specID)
+    local atlas = visuals and visuals.background
+    if (not atlas or not C_Texture.GetAtlasInfo(atlas)) then
+        art:Hide()
+        if (self.backgroundBacking) then
+            self.backgroundBacking:Hide()
+        end
+        if (window.Texture) then
+            window.Texture:Show()
+        end
+        return
+    end
+    if (window.Texture) then
+        window.Texture:Hide()
+    end
+    if (window.PPBorder) then
+        window.PPBorder:Hide()
+    end
+    if (self.backgroundBacking) then
+        self.backgroundBacking:Show()
+    end
+    art:Show()
+    self.backgroundAtlas = atlas
+    self:FitBackground()
+end
+
+EXUI:RegisterEventHandler('ACTIVE_PLAYER_SPECIALIZATION_CHANGED', 'character-frame-background', function()
+    if (characterFrame.window and characterFrame.window:IsShown()) then
+        characterFrame:UpdateBackground()
+    end
+end)
 
 EXUI:RegisterEventHandler({
     'PLAYER_EQUIPMENT_CHANGED',
@@ -426,6 +543,28 @@ characterFrame.Create = function(self)
         },
     });
     self.window = window
+
+    local cornerMask = window:CreateMaskTexture()
+    cornerMask:SetAllPoints()
+    cornerMask:SetTexture(WINDOW_BG, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    cornerMask:SetTextureSliceMargins(WINDOW_CORNER, WINDOW_CORNER, WINDOW_CORNER, WINDOW_CORNER)
+    cornerMask:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+
+    local backing = window:CreateTexture(nil, 'BACKGROUND', nil, 0)
+    backing:SetAllPoints()
+    backing:SetColorTexture(unpack(theme.backgroundDeep))
+    backing:AddMaskTexture(cornerMask)
+    backing:Hide()
+    self.backgroundBacking = backing
+
+    local background = window:CreateTexture(nil, 'BACKGROUND', nil, 1)
+    background:SetAllPoints()
+    background:Hide()
+    self.background = background
+    background:AddMaskTexture(cornerMask)
+    window:HookScript('OnSizeChanged', function()
+        characterFrame:FitBackground()
+    end)
 
     local container = window.container
     local escapeHandler = CreateFrame('Button', nil, container)

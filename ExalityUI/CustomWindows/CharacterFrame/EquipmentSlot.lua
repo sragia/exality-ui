@@ -87,6 +87,14 @@ if EXUI.IsForever() then
     table.insert(autoEquipSlotIds, INVSLOT_AMMO)
 end
 
+local function CursorCanGoInSlot(slotId)
+    local check = C_PaperDollInfo and C_PaperDollInfo.CursorCanGoInSlot
+    if (not check) then
+        return nil
+    end
+    return check(slotId)
+end
+
 local CD_Font = CreateFont('ExalityUI_EQUIPMENT_SLOT_CD_Font')
 CD_Font:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
 
@@ -381,10 +389,15 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
 
                     local canPickupInventoryItem = not hasItem
                     if (hasItem) then
-                        for _, slotId in ipairs(autoEquipSlotIds) do
-                            if (C_PaperDollInfo.CursorCanGoInSlot(slotId)) then
-                                canPickupInventoryItem = true
-                                break
+                        local canCheck = C_PaperDollInfo and C_PaperDollInfo.CursorCanGoInSlot
+                        if (not canCheck) then
+                            canPickupInventoryItem = true
+                        else
+                            for _, slotId in ipairs(autoEquipSlotIds) do
+                                if (CursorCanGoInSlot(slotId)) then
+                                    canPickupInventoryItem = true
+                                    break
+                                end
                             end
                         end
                     end
@@ -591,7 +604,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
         elseif (event == 'SOCKET_INFO_SUCCESS') then
             RefreshSlotAfterItemChange(self)
         elseif (event == 'CURSOR_CHANGED') then
-            if C_PaperDollInfo.CursorCanGoInSlot(self:GetID()) then
+            if (CursorCanGoInSlot(self:GetID())) then
                 self.Highlight:SetAlpha(1)
             else
                 self.Highlight:SetAlpha(0)
