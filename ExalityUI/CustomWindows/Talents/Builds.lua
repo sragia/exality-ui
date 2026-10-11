@@ -31,6 +31,7 @@ local TEX = {
     mask = [[Interface/Addons/ExalityUI/Assets/Images/Talents/talent-mask.png]],
     save = [[Interface/Addons/ExalityUI/Assets/Images/Talents/save-build.png]],
     load = [[Interface/Addons/ExalityUI/Assets/Images/Talents/load-build.png]],
+    delete = [[Interface/Addons/ExalityUI/Assets/Images/Talents/delete-icon.png]],
 }
 
 builds.rows = {}
@@ -330,6 +331,90 @@ builds.Delete = function(self, id)
     self:Refresh()
 end
 
+local function RaiseDialog(popup)
+    local level = 300
+    local talents = EXUI:GetModule('talents-window')
+    if (talents.window) then
+        level = math.max(level, talents.window:GetFrameLevel() + 30)
+    end
+    if (builds.editDialog) then
+        level = math.max(level, builds.editDialog:GetFrameLevel() + 20)
+    end
+    popup:SetFrameLevel(level)
+end
+
+local function SafeBuildName(name)
+    name = strtrim(name or ''):gsub('|', '||')
+    if (name == '') then
+        return nil
+    end
+    return name
+end
+
+builds.ShowConfirm = function(self, options)
+    local dialog = self.deleteDialog
+    if (not dialog) then
+        return
+    end
+    dialog.title:SetText(options.title)
+    dialog.icon:SetTexture(options.texture)
+    dialog.icon:SetSize(options.iconWidth, options.iconHeight)
+    dialog.message:SetText(options.message)
+    dialog.acceptButton.Text:SetText(options.accept)
+    dialog.onAccept = options.onAccept
+    RaiseDialog(dialog)
+    dialog:Show()
+end
+
+builds.ConfirmDelete = function(self, entry)
+    if (not entry or not entry.id) then
+        return
+    end
+    local name = SafeBuildName(entry.name)
+    local id = entry.id
+    local message = 'Are you sure you want to delete this build?'
+    if (name) then
+        message = 'Are you sure you want to delete "' .. name .. '"?'
+    end
+    self:ShowConfirm({
+        title = 'Delete build',
+        texture = TEX.delete,
+        iconWidth = 20,
+        iconHeight = 22,
+        message = message,
+        accept = 'Delete',
+        onAccept = function()
+            builds:Delete(id)
+            if (builds.editingId == id) then
+                builds:HideEdit()
+            end
+        end,
+    })
+end
+
+builds.ConfirmResave = function(self, entry)
+    if (not entry or not entry.id) then
+        return
+    end
+    local name = SafeBuildName(entry.name)
+    local id = entry.id
+    local message = 'Resave this build with your current talents?'
+    if (name) then
+        message = 'Resave "' .. name .. '" with your current talents?'
+    end
+    self:ShowConfirm({
+        title = 'Resave build',
+        texture = TEX.save,
+        iconWidth = 22,
+        iconHeight = 22,
+        message = message,
+        accept = 'Resave',
+        onAccept = function()
+            builds:Resave(id)
+        end,
+    })
+end
+
 builds.ConsumePendingConfig = function()
 end
 
@@ -572,6 +657,68 @@ local function SmallButton(parent, label)
     return button
 end
 
+builds.CreateDeleteDialog = function(self)
+    local theme = EXUI.const.theme
+    local popup = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
+    popup:SetSize(360, 118)
+    popup:SetPoint('CENTER')
+    popup:SetFrameStrata('DIALOG')
+    popup:SetFrameLevel(300)
+    popup:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
+    popup:SetBackdropColor(0.05, 0.05, 0.05, 0.96)
+    popup:SetBackdropBorderColor(0, 0, 0, 1)
+    popup:EnableMouse(true)
+    popup:Hide()
+    self.deleteDialog = popup
+
+    local icon = popup:CreateTexture(nil, 'ARTWORK')
+    icon:SetTexture(TEX.delete)
+    icon:SetSize(20, 22)
+    icon:SetPoint('TOPLEFT', 14, -14)
+    popup.icon = icon
+
+    local title = popup:CreateFontString(nil, 'OVERLAY')
+    title:SetFont(EXFrames.assets.font.default(), 14, 'OUTLINE')
+    title:SetPoint('LEFT', icon, 'RIGHT', 8, 0)
+    title:SetText('Delete build')
+    title:SetTextColor(unpack(theme.text))
+    popup.title = title
+
+    local message = popup:CreateFontString(nil, 'OVERLAY')
+    message:SetFont(EXFrames.assets.font.default(), 12, 'OUTLINE')
+    message:SetPoint('TOPLEFT', 14, -48)
+    message:SetPoint('TOPRIGHT', -14, -48)
+    message:SetJustifyH('LEFT')
+    message:SetJustifyV('TOP')
+    message:SetWordWrap(true)
+    message:SetTextColor(unpack(theme.text))
+    popup.message = message
+
+    local function Finish(accept)
+        local callback = popup.onAccept
+        popup.onAccept = nil
+        popup:Hide()
+        if (accept and callback) then
+            callback()
+        end
+    end
+
+    local deleteButton = SmallButton(popup, 'Delete')
+    deleteButton:SetSize(80, 24)
+    deleteButton:SetPoint('BOTTOMLEFT', 14, 12)
+    popup.acceptButton = deleteButton
+    deleteButton:SetScript('OnClick', function()
+        Finish(true)
+    end)
+
+    local cancelButton = SmallButton(popup, 'Cancel')
+    cancelButton:SetSize(80, 24)
+    cancelButton:SetPoint('BOTTOMRIGHT', -14, 12)
+    cancelButton:SetScript('OnClick', function()
+        Finish(false)
+    end)
+end
+
 local function StyleIcon(button, size)
     local icon = button:CreateTexture(nil, 'ARTWORK')
     icon:SetSize(ROW_ICON, ROW_ICON)
@@ -624,6 +771,14 @@ builds.AcquireRow = function(self, index)
     resaveButton:SetPoint('RIGHT', loadButton, 'LEFT', -8, 0)
     row.ResaveButton = resaveButton
 
+    local deleteButton = IconAction(row, TEX.delete, 'Delete', 22)
+    deleteButton.Icon:ClearAllPoints()
+    deleteButton.Icon:SetSize(20, 22)
+    deleteButton.Icon:SetPoint('CENTER')
+    deleteButton:SetPoint('RIGHT', resaveButton, 'LEFT', -8, 0)
+    deleteButton:Hide()
+    row.DeleteButton = deleteButton
+
     local nameButton = CreateFrame('Button', nil, row)
     nameButton:SetPoint('LEFT', iconButton, 'RIGHT', 6, 0)
     nameButton:SetPoint('RIGHT', resaveButton, 'LEFT', -6, 0)
@@ -655,6 +810,8 @@ builds.AcquireRow = function(self, index)
     loadButton:HookScript('OnLeave', HideRowHover)
     resaveButton:HookScript('OnEnter', ShowRowHover)
     resaveButton:HookScript('OnLeave', HideRowHover)
+    deleteButton:HookScript('OnEnter', ShowRowHover)
+    deleteButton:HookScript('OnLeave', HideRowHover)
     iconButton:SetScript('OnClick', function()
         if (row.entry and row.entry.id) then
             builds:ShowEdit(row.entry)
@@ -675,7 +832,12 @@ builds.AcquireRow = function(self, index)
     end)
     resaveButton:SetScript('OnClick', function()
         if (row.entry and row.entry.id) then
-            builds:Resave(row.entry.id)
+            builds:ConfirmResave(row.entry)
+        end
+    end)
+    deleteButton:SetScript('OnClick', function()
+        if (row.entry and row.entry.id) then
+            builds:ConfirmDelete(row.entry)
         end
     end)
 
@@ -834,7 +996,8 @@ builds.Refresh = function(self)
         row.NameButton.Text:SetText(entry.name or 'Build')
         ShowRowActivity(row, nil)
         row.ResaveButton:Show()
-        row.NameButton:SetPoint('RIGHT', row.ResaveButton, 'LEFT', -6, 0)
+        row.DeleteButton:Show()
+        row.NameButton:SetPoint('RIGHT', row.DeleteButton, 'LEFT', -6, 0)
         row:ClearAllPoints()
         row:SetPoint('TOPLEFT', 2, y)
         row:SetPoint('RIGHT', -2, 0)
@@ -865,6 +1028,7 @@ builds.Refresh = function(self)
         row.NameButton.Text:SetText(entry.name or 'Recent')
         ShowRowActivity(row, entry.activity)
         row.ResaveButton:Hide()
+        row.DeleteButton:Hide()
         row.NameButton:SetPoint('RIGHT', row.LoadButton, 'LEFT', -6, 0)
         row:ClearAllPoints()
         row:SetPoint('TOPLEFT', 2, y)
@@ -1138,10 +1302,14 @@ builds.CreateEditDialog = function(self)
     saveButton:SetPoint('BOTTOMLEFT', 14, 12)
 
     local deleteButton = DialogButton('Delete', function()
-        if (builds.editingId) then
-            builds:Delete(builds.editingId)
+        if (not builds.editingId) then
+            return
         end
-        builds:HideEdit()
+        local name = strtrim(popup.nameEdit:GetText() or '')
+        builds:ConfirmDelete({
+            id = builds.editingId,
+            name = name,
+        })
     end)
     deleteButton:SetPoint('LEFT', saveButton, 'RIGHT', 8, 0)
     popup.deleteButton = deleteButton
@@ -1233,6 +1401,90 @@ builds.CreateImportDialog = function(self)
     end)
 end
 
+builds.ShowExport = function(self)
+    if (not self.exportDialog) then
+        return
+    end
+    local popup = self.exportDialog
+    local importString = self:CurrentImportString()
+    if (IsSecret(importString)) then
+        importString = nil
+    end
+    if (not importString or importString == '') then
+        popup.editBox:SetText('')
+        popup.hint:SetText('Talents are not available to export yet.')
+        popup.hint:SetTextColor(1, 0.35, 0.35, 1)
+    else
+        popup.editBox:SetText(importString)
+        popup.hint:SetText('Select the string and press Ctrl+C to copy.')
+        popup.hint:SetTextColor(unpack(ThemeColor('textMuted')))
+    end
+    RaiseDialog(popup)
+    popup:Show()
+    popup.editBox:SetFocus()
+    popup.editBox:HighlightText()
+end
+
+builds.CreateExportDialog = function(self)
+    local theme = EXUI.const.theme
+    local popup = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
+    popup:SetSize(420, 240)
+    popup:SetPoint('CENTER')
+    popup:SetFrameStrata('DIALOG')
+    popup:SetFrameLevel(250)
+    popup:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
+    popup:SetBackdropColor(0.05, 0.05, 0.05, 0.96)
+    popup:SetBackdropBorderColor(0, 0, 0, 1)
+    popup:EnableMouse(true)
+    popup:Hide()
+    self.exportDialog = popup
+
+    local title = popup:CreateFontString(nil, 'OVERLAY')
+    title:SetFont(EXFrames.assets.font.default(), 14, 'OUTLINE')
+    title:SetPoint('TOPLEFT', 14, -14)
+    title:SetText('Export talents')
+
+    local editBox = CreateFrame('EditBox', nil, popup)
+    editBox:SetMultiLine(true)
+    editBox:SetAutoFocus(false)
+    editBox:SetFont(EXFrames.assets.font.default(), 12, 'OUTLINE')
+    editBox:SetPoint('TOPLEFT', 14, -44)
+    editBox:SetPoint('BOTTOMRIGHT', -14, 72)
+    editBox:SetTextInsets(8, 8, 8, 8)
+    editBox:SetMaxLetters(8000)
+    local editBg = editBox:CreateTexture(nil, 'BACKGROUND')
+    editBg:SetColorTexture(0.04, 0.04, 0.04, 1)
+    editBg:SetAllPoints()
+    local editBorder = EXUI:AddPixelPerfectBorder(editBox, 1, { register = false })
+    editBorder:SetBorderColor(unpack(theme.border))
+    editBox:SetScript('OnEscapePressed', function()
+        popup:Hide()
+    end)
+    editBox:SetScript('OnEditFocusGained', function(box)
+        editBorder:SetBorderColor(unpack(theme.accent))
+        box:HighlightText()
+    end)
+    editBox:SetScript('OnEditFocusLost', function()
+        editBorder:SetBorderColor(unpack(theme.border))
+    end)
+    popup.editBox = editBox
+
+    local hint = popup:CreateFontString(nil, 'OVERLAY')
+    hint:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
+    hint:SetPoint('BOTTOMLEFT', 14, 44)
+    hint:SetPoint('BOTTOMRIGHT', -14, 44)
+    hint:SetJustifyH('LEFT')
+    hint:SetTextColor(unpack(ThemeColor('textMuted')))
+    popup.hint = hint
+
+    local closeButton = SmallButton(popup, 'Close')
+    closeButton:SetSize(80, 24)
+    closeButton:SetPoint('BOTTOMRIGHT', -14, 12)
+    closeButton:SetScript('OnClick', function()
+        popup:Hide()
+    end)
+end
+
 builds.Toggle = function(self)
     if (not self.sidebar) then
         return
@@ -1250,10 +1502,38 @@ builds.Toggle = function(self)
     end
 end
 
+builds.HandleEscape = function(self)
+    if (self.deleteDialog and self.deleteDialog:IsShown()) then
+        self.deleteDialog.onAccept = nil
+        self.deleteDialog:Hide()
+        return true
+    end
+    if (self.exportDialog and self.exportDialog:IsShown()) then
+        self.exportDialog:Hide()
+        return true
+    end
+    if (self.importDialog and self.importDialog:IsShown()) then
+        self.importDialog:Hide()
+        return true
+    end
+    if (self.editDialog and self.editDialog:IsShown()) then
+        self:HideEdit()
+        return true
+    end
+    return false
+end
+
 builds.HideDialogs = function(self)
     self:HideEdit()
     if (self.importDialog) then
         self.importDialog:Hide()
+    end
+    if (self.exportDialog) then
+        self.exportDialog:Hide()
+    end
+    if (self.deleteDialog) then
+        self.deleteDialog.onAccept = nil
+        self.deleteDialog:Hide()
     end
 end
 
@@ -1361,6 +1641,8 @@ builds.Create = function(self, window)
 
     self:CreateEditDialog()
     self:CreateImportDialog()
+    self:CreateExportDialog()
+    self:CreateDeleteDialog()
 end
 
 EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'talents-builds-cleanup', function()

@@ -636,6 +636,9 @@ talents.Refresh = function(self)
         if (self.importButton) then
             self.importButton:Hide()
         end
+        if (self.exportButton) then
+            self.exportButton:Hide()
+        end
         if (self.sidebarButton) then
             self.sidebarButton:Hide()
         end
@@ -1164,13 +1167,13 @@ talents.Create = function(self)
     importText:SetTextColor(unpack(EXUI.const.theme.text))
     local importIcon = importButton:CreateTexture(nil, 'ARTWORK')
     importIcon:SetTexture([[Interface/Addons/ExalityUI/Assets/Images/Talents/import-icon.png]])
-    importIcon:SetSize(29, 25)
+    importIcon:SetSize(26, 22)
     importIcon:SetPoint('LEFT', importText, 'RIGHT', 6, 0)
     local textWidth = importText:GetStringWidth()
     if (textWidth < 20) then
         textWidth = 42
     end
-    importButton:SetWidth(textWidth + 35)
+    importButton:SetWidth(textWidth + 32)
     importButton:SetScript('OnClick', function()
         builds:ShowImport()
     end)
@@ -1185,9 +1188,40 @@ talents.Create = function(self)
     importIcon:SetAlpha(0.85)
     self.importButton = importButton
 
+    local exportButton = CreateFrame('Button', nil, bottomBar)
+    exportButton:SetHeight(25)
+    exportButton:SetPoint('RIGHT', importButton, 'LEFT', -16, 0)
+    local exportText = exportButton:CreateFontString(nil, 'OVERLAY')
+    exportText:SetFont(EXFrames.assets.font.default(), 12, 'OUTLINE')
+    exportText:SetPoint('LEFT', 0, 0)
+    exportText:SetText('Export')
+    exportText:SetTextColor(unpack(EXUI.const.theme.text))
+    local exportIcon = exportButton:CreateTexture(nil, 'ARTWORK')
+    exportIcon:SetTexture([[Interface/Addons/ExalityUI/Assets/Images/Talents/export-icon.png]])
+    exportIcon:SetSize(22, 22)
+    exportIcon:SetPoint('LEFT', exportText, 'RIGHT', 6, 0)
+    local exportWidth = exportText:GetStringWidth()
+    if (exportWidth < 20) then
+        exportWidth = 46
+    end
+    exportButton:SetWidth(exportWidth + 28)
+    exportButton:SetScript('OnClick', function()
+        builds:ShowExport()
+    end)
+    exportButton:SetScript('OnEnter', function()
+        exportText:SetTextColor(1, 1, 1, 1)
+        exportIcon:SetAlpha(1)
+    end)
+    exportButton:SetScript('OnLeave', function()
+        exportText:SetTextColor(unpack(EXUI.const.theme.text))
+        exportIcon:SetAlpha(0.85)
+    end)
+    exportIcon:SetAlpha(0.85)
+    self.exportButton = exportButton
+
     local pvpButton = CreateFrame('Button', nil, bottomBar)
     pvpButton:SetHeight(25)
-    pvpButton:SetPoint('RIGHT', importButton, 'LEFT', -16, 0)
+    pvpButton:SetPoint('RIGHT', exportButton, 'LEFT', -16, 0)
     local pvpText = pvpButton:CreateFontString(nil, 'OVERLAY')
     pvpText:SetFont(EXFrames.assets.font.default(), 12, 'OUTLINE')
     pvpText:SetPoint('LEFT', 0, 0)
@@ -1223,7 +1257,7 @@ talents.Create = function(self)
     pvpIcon:SetAlpha(0.85)
     self.pvpButton = pvpButton
     pvp.button = pvpButton
-    pvp.importButton = importButton
+    pvp.importButton = exportButton
 
     local status = bottomBar:CreateFontString(nil, 'OVERLAY')
     status:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
@@ -1234,6 +1268,7 @@ talents.Create = function(self)
     self.statusText = status
     if (EXUI.IsForever()) then
         importButton:Hide()
+        exportButton:Hide()
         sidebarButton:Hide()
         pvpButton:Hide()
         status:ClearAllPoints()
@@ -1254,6 +1289,9 @@ talents.Create = function(self)
         if (key == 'ESCAPE') then
             if (not InCombatLockdown()) then
                 handler:SetPropagateKeyboardInput(false)
+            end
+            if (builds:HandleEscape()) then
+                return
             end
             window:HideWindow()
             return

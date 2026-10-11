@@ -14,6 +14,7 @@ Basic support for things to work mostly. Some small adjustments for Forever diff
 ## Talents Custom Window|cffeb7a34New|r
 New custom window added for talents. Fairly basic stuff here. Essentially just talents re-imagined.
 PvP talents and War Mode are available from the PvP button next to Import.
+Current talents can be exported from the Export button. Saved builds can be deleted from the Builds list after confirmation.
 
 # |cffdb49000.9.6|r
 - [Action Bars] Add our own keybind mode dialog instead of using Blizzard one.
