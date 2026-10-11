@@ -559,13 +559,19 @@ local function InstallSpecFrameHooks()
     if (playerSpellsSkin.specFrameHooksInstalled) then return end
     playerSpellsSkin.specFrameHooksInstalled = true
 
+    if (not ClassSpecFrameMixin or not ClassSpecFrameMixin.UpdateSpecContents) then
+        return
+    end
+
     hooksecurefunc(ClassSpecFrameMixin, 'UpdateSpecContents', function(frame)
         SkinSpecContentFrames(frame)
     end)
 
-    hooksecurefunc(ClassSpecFrameMixin, 'OnShow', function(frame)
-        SkinSpecContentFrames(frame)
-    end)
+    if (ClassSpecFrameMixin.OnShow) then
+        hooksecurefunc(ClassSpecFrameMixin, 'OnShow', function(frame)
+            SkinSpecContentFrames(frame)
+        end)
+    end
 end
 
 local function SkinSpecFrame(frame)

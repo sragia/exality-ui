@@ -8,6 +8,9 @@ EXUI.changelog = [[
 - [BW Skin] Fix icon not showing after latest update.
 - [Action Bars] Fix taint issue after going into keybind mode.
 
+## Support for Forever |cffeb7a34New|r
+Basic support for things to work mostly. Some small adjustments for Forever differences from Retail.
+
 ## Talents Custom Window|cffeb7a34New|r
 New custom window added for talents. Fairly basic stuff here. Essentially just talents re-imagined.
 PvP talents and War Mode are available from the PvP button next to Import.

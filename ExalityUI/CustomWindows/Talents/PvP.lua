@@ -291,6 +291,11 @@ pvp.UpdateButton = function(self)
     if (not button) then
         return
     end
+    if (EXUI.IsForever()) then
+        button:Hide()
+        self:Hide()
+        return
+    end
     local canUse = true
     if (C_SpecializationInfo.CanPlayerUsePVPTalentUI) then
         canUse = C_SpecializationInfo.CanPlayerUsePVPTalentUI() and true or false

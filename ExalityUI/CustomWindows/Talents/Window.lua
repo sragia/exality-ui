@@ -159,7 +159,145 @@ talents.SetTab = function(self, tab)
     self:Refresh()
 end
 
+talents.SpecGroupUnlocked = function(self, group)
+    if (group == 1) then
+        return true
+    end
+    local count = GetNumSpecGroups and GetNumSpecGroups() or 1
+    return count > 1
+end
+
+talents.ActiveSpecGroup = function(self)
+    if (C_SpecializationInfo.GetActiveSpecGroup) then
+        return C_SpecializationInfo.GetActiveSpecGroup() or 1
+    end
+    return 1
+end
+
+talents.ForeverConfig = function(self)
+    local active = self:ActiveSpecGroup()
+    local group = self.viewGroup or active
+    if (not self:SpecGroupUnlocked(group)) then
+        group = active
+        self.viewGroup = group
+    end
+    local configID
+    if (C_SpecializationInfo.GetCombatConfigIDForSpecGroup) then
+        configID = C_SpecializationInfo.GetCombatConfigIDForSpecGroup(group)
+    end
+    if (not configID) then
+        configID = C_ClassTalents.GetActiveConfigID()
+        self.viewGroup = active
+        return configID, false
+    end
+    return configID, group ~= active
+end
+
+talents.DominantTreeIcon = function(self, configID)
+    if (not configID or not C_Traits.GetGroupDisplayInfoByTreeID or not C_ClassTalents.GetTraitTreeForSpec) then
+        return nil
+    end
+    local specIndex = C_SpecializationInfo.GetSpecialization()
+    local specID = specIndex and select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
+    local treeID = specID and C_ClassTalents.GetTraitTreeForSpec(specID)
+    if (not treeID) then
+        return nil
+    end
+    local displayInfos = C_Traits.GetGroupDisplayInfoByTreeID(treeID)
+    if (not displayInfos or #displayInfos == 0) then
+        return nil
+    end
+    local currencyByGroup = {}
+    if (C_Traits.GetGroupCurrencyInfo) then
+        local groupIDs = {}
+        for _, info in ipairs(displayInfos) do
+            groupIDs[#groupIDs + 1] = info.groupID
+        end
+        local groupInfos = C_Traits.GetGroupCurrencyInfo(configID, groupIDs)
+        if (groupInfos) then
+            for _, groupInfo in ipairs(groupInfos) do
+                currencyByGroup[groupInfo.traitNodeGroupID] = groupInfo
+            end
+        end
+    end
+    local bestSpent = -1
+    local bestIcon
+    for _, info in ipairs(displayInfos) do
+        local groupInfo = currencyByGroup[info.groupID]
+        local currency = groupInfo and groupInfo.currencyInfos and groupInfo.currencyInfos[1]
+        local spent = currency and currency.spent or 0
+        if (spent > bestSpent) then
+            bestSpent = spent
+            bestIcon = info.icon
+        end
+    end
+    return bestIcon or displayInfos[1].icon
+end
+
+talents.RefreshDualSpecs = function(self)
+    if (not self.dualSpecButtons) then
+        return
+    end
+    for _, button in ipairs(self.specButtons) do
+        button:Hide()
+    end
+    local active = self:ActiveSpecGroup()
+    if (not self.viewGroup or not self:SpecGroupUnlocked(self.viewGroup)) then
+        self.viewGroup = active
+    end
+    local x = 0
+    local fallbackConfig = C_ClassTalents.GetActiveConfigID()
+    for _, button in ipairs(self.dualSpecButtons) do
+        local unlocked = self:SpecGroupUnlocked(button.group)
+        button.unlocked = unlocked
+        local configID
+        if (unlocked and C_SpecializationInfo.GetCombatConfigIDForSpecGroup) then
+            configID = C_SpecializationInfo.GetCombatConfigIDForSpecGroup(button.group)
+        end
+        local icon = self:DominantTreeIcon(configID) or self:DominantTreeIcon(fallbackConfig)
+        button.Icon:SetTexture(icon or 134400)
+        local selected = unlocked and button.group == self.viewGroup
+        button.Border:SetTexture(selected and TEX.selected or TEX.unselected)
+        if (not unlocked) then
+            button.Icon:SetDesaturated(true)
+            button.Icon:SetVertexColor(UNPICKED_COLOR, UNPICKED_COLOR, UNPICKED_COLOR)
+        elseif (selected) then
+            button.Icon:SetDesaturated(false)
+            button.Icon:SetVertexColor(1, 1, 1)
+        else
+            button.Icon:SetDesaturated(false)
+            button.Icon:SetVertexColor(UNPICKED_COLOR, UNPICKED_COLOR, UNPICKED_COLOR)
+        end
+        if (button.Lock) then
+            button.Lock:SetShown(not unlocked)
+        end
+        button:SetAlpha(1)
+        button:ClearAllPoints()
+        button:SetPoint('LEFT', x, 0)
+        button:Show()
+        x = x + BORDER_SIZE + SPEC_GAP
+    end
+    self.specRow:SetWidth(math.max(x - SPEC_GAP, 1))
+    local showActivate = self.viewGroup ~= active and self:SpecGroupUnlocked(self.viewGroup)
+    if (self.activateButton) then
+        self.activateButton:SetShown(showActivate)
+        if (showActivate) then
+            self.activateButton:ClearAllPoints()
+            self.activateButton:SetPoint('LEFT', self.specRow, 'RIGHT', 12, 0)
+            EXUI:SetSize(self.activateButton, self.activateButton.text:GetStringWidth() + 20, 24)
+        end
+    end
+end
+
 talents.RefreshSpecs = function(self, specIndex)
+    if (self.dualSpecButtons) then
+        for _, button in ipairs(self.dualSpecButtons) do
+            button:Hide()
+        end
+    end
+    if (self.activateButton) then
+        self.activateButton:Hide()
+    end
     local classID = select(3, UnitClass('player'))
     local numSpecs = classID and C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
     local shown = {}
@@ -195,6 +333,16 @@ talents.RefreshSpecs = function(self, specIndex)
 end
 
 talents.RefreshHero = function(self, configID, specID)
+    if (EXUI.IsForever()) then
+        for _, button in ipairs(self.heroButtons or {}) do
+            button:Hide()
+        end
+        if (self.heroRow) then
+            self.heroRow:Hide()
+        end
+        self:PlaceSearch(nil)
+        return
+    end
     local options = tree:GetHeroOptions(configID, specID)
     local shown = {}
 
@@ -237,6 +385,10 @@ talents.PlaceSearch = function(self, shown)
         return
     end
     search:ClearAllPoints()
+    if (EXUI.IsForever() and self.activateButton and self.activateButton:IsShown()) then
+        search:SetPoint('LEFT', self.activateButton, 'RIGHT', 16, 0)
+        return
+    end
     local anchor = shown and shown[#shown]
     if (anchor) then
         search:SetPoint('LEFT', anchor, 'RIGHT', 10, 0)
@@ -350,13 +502,13 @@ local function UnspentPoints(configID, treeID, specID)
     return unspent
 end
 
-talents.RefreshActions = function(self, configID, treeID, specID)
+talents.RefreshActions = function(self, configID, treeID, specID, viewOnly)
     local unspent = 0
-    if (configID and treeID) then
+    if (configID and treeID and not EXUI.IsForever()) then
         unspent = UnspentPoints(configID, treeID, specID)
     end
     self.pointsText:SetText('Unspent ' .. unspent)
-    self.pointsText:SetShown(unspent > 0)
+    self.pointsText:SetShown(not EXUI.IsForever() and unspent > 0)
 
     local canEdit, editError = C_ClassTalents.CanEditTalents()
     local canChange, _, changeError = C_ClassTalents.CanChangeTalents()
@@ -366,8 +518,13 @@ talents.RefreshActions = function(self, configID, treeID, specID)
     end
     local hasStaged = (purchases and #purchases > 0) or (refunds and #refunds > 0) or (swaps and #swaps > 0)
 
-    SetActionEnabled(self.applyButton, hasStaged and canChange and true or false)
-    self.resetButton:SetShown(hasStaged and true or false)
+    if (EXUI.IsForever()) then
+        self.applyButton:Hide()
+    else
+        self.applyButton:Show()
+        SetActionEnabled(self.applyButton, not viewOnly and hasStaged and canChange and true or false)
+    end
+    self.resetButton:SetShown(not EXUI.IsForever() and not viewOnly and hasStaged and true or false)
 
     if (not configID) then
         self.statusText:SetText('Talents are not available yet.')
@@ -404,12 +561,14 @@ talents.FitBackground = function(self)
 
     local left, right = info.leftTexCoord, info.rightTexCoord
     local top, bottom = info.topTexCoord, info.bottomTexCoord
+    local cropTop = EXUI.IsForever() and 0 or BG_CROP_TOP
+    local cropBottom = EXUI.IsForever() and 0 or BG_CROP_BOTTOM
     local vSpan = bottom - top
-    top = top + vSpan * BG_CROP_TOP
-    bottom = bottom - vSpan * BG_CROP_BOTTOM
+    top = top + vSpan * cropTop
+    bottom = bottom - vSpan * cropBottom
 
     local artWidth = info.width
-    local artHeight = info.height * (1 - BG_CROP_TOP - BG_CROP_BOTTOM)
+    local artHeight = info.height * (1 - cropTop - cropBottom)
     local frameAspect = frameWidth / frameHeight
     local artAspect = artWidth / artHeight
     if (artWidth > 0 and artHeight > 0) then
@@ -444,10 +603,17 @@ talents.UpdateBackground = function(self, specID)
         ClassTalentUtil.GetVisualsForSpecID(specID)
     local atlas = visuals and visuals.background
     if (not atlas or not C_Texture.GetAtlasInfo(atlas)) then
+        if (EXUI.IsForever() and self.activeTab == 'spellbook') then
+            self.talentArt:Hide()
+        end
         return
     end
+    self.talentArt:Show()
     self.backgroundAtlas = atlas
     self:FitBackground()
+    if (EXUI.IsForever() and self.activeTab == 'spellbook') then
+        self.talentArt:Hide()
+    end
 end
 
 talents.Refresh = function(self)
@@ -460,6 +626,24 @@ talents.Refresh = function(self)
         pvp:Refresh()
     end
 
+    if (EXUI.IsForever()) then
+        if (builds.sidebar and builds.sidebar:IsShown()) then
+            builds.sidebar:Hide()
+        end
+        if (pvp.Hide) then
+            pvp:Hide()
+        end
+        if (self.importButton) then
+            self.importButton:Hide()
+        end
+        if (self.sidebarButton) then
+            self.sidebarButton:Hide()
+        end
+        if (self.pvpButton) then
+            self.pvpButton:Hide()
+        end
+    end
+
     local specIndex = C_SpecializationInfo.GetSpecialization()
     local specID = specIndex and select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex)) or nil
     self:UpdateBackground(specID)
@@ -469,13 +653,22 @@ talents.Refresh = function(self)
         return
     end
 
-    local configID = C_ClassTalents.GetActiveConfigID()
+    local configID
+    local viewOnly = false
+    if (EXUI.IsForever()) then
+        self:RefreshDualSpecs()
+        configID, viewOnly = self:ForeverConfig()
+    else
+        configID = C_ClassTalents.GetActiveConfigID()
+        self:RefreshSpecs(specIndex)
+    end
+    self.talentConfigID = configID
+    tree:SetViewOnly(viewOnly)
     local treeID = specID and C_ClassTalents.GetTraitTreeForSpec(specID) or nil
 
-    self:RefreshSpecs(specIndex)
     tree:Refresh(configID, treeID, specID)
     self:RefreshHero(configID, specID)
-    self:RefreshActions(configID, treeID, specID)
+    self:RefreshActions(configID, treeID, specID, viewOnly)
 end
 
 talents.QueueRefresh = function(self)
@@ -655,7 +848,7 @@ talents.Create = function(self)
     end
     builds:Create(window)
     pvp:Create(window)
-    window.Texture:Hide()
+    window.Texture:SetShown(EXUI.IsForever())
     window.title:Hide()
     window.headerContentGap = 0
     window:SetHeaderInset(0)
@@ -731,7 +924,7 @@ talents.Create = function(self)
     end)
 
     local talentsPanel = CreateFrame('Frame', nil, container)
-    talentsPanel:SetPoint('TOPLEFT', 0, -86)
+    talentsPanel:SetPoint('TOPLEFT', 0, EXUI.IsForever() and -8 or -86)
     talentsPanel:SetPoint('BOTTOMRIGHT')
     self.talentsPanel = talentsPanel
 
@@ -756,6 +949,59 @@ talents.Create = function(self)
         button:SetPoint('LEFT', (index - 1) * (BORDER_SIZE + SPEC_GAP), 0)
         self.specButtons[index] = button
     end
+
+    self.dualSpecButtons = {}
+    local dualLabels = { DUAL_SPEC_PRIMARY or 'Primary', DUAL_SPEC_SECONDARY or 'Secondary' }
+    for index = 1, 2 do
+        local button = CreateSpecButton(specRow)
+        button.group = index
+        button.baseLabel = dualLabels[index]
+        button:Hide()
+        local lock = button:CreateTexture(nil, 'OVERLAY', nil, 2)
+        lock:SetSize(12, 14)
+        lock:SetPoint('BOTTOMRIGHT', button.Icon, 'BOTTOMRIGHT', 2, -2)
+        if (C_Texture.GetAtlasInfo('Talents-lock-c60')) then
+            lock:SetAtlas('Talents-lock-c60')
+        end
+        lock:Hide()
+        button.Lock = lock
+        button:SetScript('OnClick', function(self)
+            if (not self.unlocked) then
+                return
+            end
+            talents.viewGroup = self.group
+            talents:Refresh()
+        end)
+        button:SetScript('OnEnter', function(self)
+            SetHover(self.Highlight, true)
+            GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
+            GameTooltip:SetText(self.baseLabel or '')
+            if (not self.unlocked) then
+                GameTooltip:AddLine(TALENT_SPEC_LOCKED or 'Locked', 1, 0.2, 0.2, true)
+            end
+            GameTooltip:Show()
+        end)
+        button:SetScript('OnLeave', function(self)
+            SetHover(self.Highlight, false)
+            GameTooltip:Hide()
+        end)
+        self.dualSpecButtons[index] = button
+    end
+
+    local activateButton = EXFrames:GetFrame('simple-button'):Create(bottomBar)
+    activateButton:SetText('Activate')
+    activateButton:Hide()
+    EXUI:SetSize(activateButton, activateButton.text:GetStringWidth() + 20, 24)
+    if (activateButton.PPBorder) then
+        activateButton.PPBorder:SetBorderThickness(1)
+    end
+    activateButton:SetOnClick(function()
+        local group = talents.viewGroup
+        if (group and C_SpecializationInfo.SetActiveSpecGroup) then
+            C_SpecializationInfo.SetActiveSpecGroup(group)
+        end
+    end)
+    self.activateButton = activateButton
 
     local heroRow = CreateFrame('Frame', nil, bottomBar)
     heroRow:SetPoint('LEFT', specRow, 'RIGHT', 16, 0)
@@ -849,6 +1095,9 @@ talents.Create = function(self)
             builds:ConsumePendingConfig()
         end
     end)
+    if (EXUI.IsForever()) then
+        applyButton:Hide()
+    end
     self.applyButton = applyButton
 
     local resetButton = CreateFrame('Button', nil, bottomBar)
@@ -859,7 +1108,7 @@ talents.Create = function(self)
     resetIcon:SetAllPoints()
     resetIcon:SetTexture([[Interface/Addons/ExalityUI/Assets/Images/Talents/reset-icon.png]])
     resetButton:SetScript('OnClick', function()
-        local configID = C_ClassTalents.GetActiveConfigID()
+        local configID = talents.talentConfigID or C_ClassTalents.GetActiveConfigID()
         if (configID) then
             C_Traits.RollbackConfig(configID)
         end
@@ -903,6 +1152,7 @@ talents.Create = function(self)
         self.Tooltip:HideTooltip()
     end)
     sidebarIcon:SetAlpha(0.85)
+    self.sidebarButton = sidebarButton
 
     local importButton = CreateFrame('Button', nil, bottomBar)
     importButton:SetHeight(25)
@@ -982,6 +1232,14 @@ talents.Create = function(self)
     status:SetJustifyH('LEFT')
     status:SetTextColor(EXUI.const.theme.textMuted[1], EXUI.const.theme.textMuted[2], EXUI.const.theme.textMuted[3], 1)
     self.statusText = status
+    if (EXUI.IsForever()) then
+        importButton:Hide()
+        sidebarButton:Hide()
+        pvpButton:Hide()
+        status:ClearAllPoints()
+        status:SetPoint('LEFT', resetButton, 'RIGHT', 16, 0)
+        status:SetPoint('RIGHT', bottomBar, 'RIGHT', -8, 0)
+    end
     pvp:UpdateButton()
 
     local clip = tree:Create(talentsPanel)

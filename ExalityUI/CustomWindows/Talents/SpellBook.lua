@@ -345,6 +345,17 @@ local function CreateRow(parent)
     name:SetMaxLines(1)
     row.Name = name
 
+    local rank = row:CreateFontString(nil, 'OVERLAY')
+    rank:SetFont(EXUI.const.fonts.DEFAULT, 11, 'OUTLINE')
+    rank:SetPoint('TOPLEFT', name, 'BOTTOMLEFT', 0, -1)
+    rank:SetJustifyH('LEFT')
+    rank:SetJustifyV('TOP')
+    rank:SetWordWrap(false)
+    rank:SetMaxLines(1)
+    rank:SetTextColor(1, 0.82, 0, 1)
+    rank:Hide()
+    row.Rank = rank
+
     local description = row:CreateFontString(nil, 'OVERLAY')
     description:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
     description:SetPoint('TOPLEFT', name, 'BOTTOMLEFT', 0, -2)
@@ -505,6 +516,76 @@ local function SetDescription(row, spellID)
     row.Description:SetText(C_Spell.GetSpellDescription(spellID) or '')
 end
 
+local function LayoutSpellText(row, showRank)
+    row.Description:ClearAllPoints()
+    if (showRank) then
+        row.Rank:Show()
+        row.Description:SetPoint('TOPLEFT', row.Rank, 'BOTTOMLEFT', 0, -1)
+        row.Description:SetMaxLines(1)
+    else
+        row.Rank:Hide()
+        row.Description:SetPoint('TOPLEFT', row.Name, 'BOTTOMLEFT', 0, -2)
+        row.Description:SetMaxLines(2)
+    end
+end
+
+local function SetRank(row, spellID, show)
+    row.rankSpellID = show and spellID or nil
+    if (not show or not spellID) then
+        row.Rank:SetText('')
+        LayoutSpellText(row, false)
+        return
+    end
+    local function Apply(text)
+        if (row.rankSpellID ~= spellID) then
+            return
+        end
+        if (not text or text == '') then
+            row.Rank:SetText('')
+            LayoutSpellText(row, false)
+            return
+        end
+        row.Rank:SetText(text)
+        LayoutSpellText(row, true)
+    end
+    local spell = Spell:CreateFromSpellID(spellID)
+    if (spell:IsSpellEmpty()) then
+        Apply(nil)
+        return
+    end
+    if (not spell:IsSpellDataCached()) then
+        row.Rank:SetText('')
+        LayoutSpellText(row, false)
+        spell:ContinueOnSpellLoad(function()
+            Apply(spell:GetSpellSubtext())
+        end)
+        return
+    end
+    Apply(spell:GetSpellSubtext())
+end
+
+local function RanksOptionAvailable()
+    if (not EXUI.IsForever()) then
+        return false
+    end
+    local _, classFile = UnitClass('player')
+    return classFile ~= 'ROGUE' and classFile ~= 'WARRIOR'
+end
+
+local function ShowAllRanks()
+    return GetCVarBool and GetCVarBool('ShowAllSpellRanks') and true or false
+end
+
+local function IncludeSpell(slot, bank, info)
+    if (not info or info.isOffSpec or info.itemType == Enum.SpellBookItemType.FutureSpell or not info.name or info.name == '') then
+        return false
+    end
+    if (RanksOptionAvailable() and not ShowAllRanks() and C_SpellBook.IsSpellBookItemLowRank and C_SpellBook.IsSpellBookItemLowRank(slot, bank)) then
+        return false
+    end
+    return true
+end
+
 local function CollectSpells(line, bank)
     local spells = {}
     if (not line or line.shouldHide or line.isGuild or line.numSpellBookItems <= 0) then
@@ -514,7 +595,7 @@ local function CollectSpells(line, bank)
     local lastSlot = line.itemIndexOffset + line.numSpellBookItems
     for slot = firstSlot, lastSlot do
         local info = C_SpellBook.GetSpellBookItemInfo(slot, bank)
-        if (info and not info.isOffSpec and info.itemType ~= Enum.SpellBookItemType.FutureSpell and info.name and info.name ~= '') then
+        if (IncludeSpell(slot, bank, info)) then
             spells[#spells + 1] = {
                 slot = slot,
                 info = info,
@@ -573,7 +654,7 @@ local function BuildSections(tab)
         local spells = {}
         for slot = 1, count do
             local info = C_SpellBook.GetSpellBookItemInfo(slot, bank)
-            if (info and info.itemType ~= Enum.SpellBookItemType.FutureSpell and info.name and info.name ~= '') then
+            if (IncludeSpell(slot, bank, info)) then
                 spells[#spells + 1] = {
                     slot = slot,
                     info = info,
@@ -762,8 +843,10 @@ local function ApplySpell(row, entry, bank, textWidth)
     row.Name:SetPoint('TOPLEFT', row.IconFrame, 'TOPRIGHT', nameGap, -2)
     SetArrowOpen(row, false)
     row.Name:SetWidth(textWidth)
+    row.Rank:SetWidth(textWidth)
     row.Description:SetWidth(textWidth)
     row.Name:SetText(info.name)
+    SetRank(row, info.spellID, RanksOptionAvailable() and ShowAllRanks())
     if (unusable) then
         row.Name:SetTextColor(theme.textMuted[1], theme.textMuted[2], theme.textMuted[3], 1)
     elseif (info.isPassive) then
@@ -985,6 +1068,34 @@ spellBook.Create = function(self, parent)
         self.tabButtons[id] = CreateTabButton(tabBar, id)
     end
 
+    if (RanksOptionAvailable()) then
+        local checkbox = EXFrames:GetFrame('checkbox'):Create()
+        checkbox:SetParent(parent)
+        checkbox:SetPoint('TOPRIGHT', parent, 'TOPRIGHT', -88, -2)
+        checkbox:SetHeight(TAB_HEIGHT)
+        local label = SHOW_ALL_SPELL_RANKS or 'Show All Spell Ranks'
+        checkbox:SetLabel(label)
+        if (checkbox.Label) then
+            checkbox.Label:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
+            checkbox.Label:SetTextColor(unpack(EXUI.const.theme.text))
+        end
+        local textWidth = checkbox.Label and checkbox.Label:GetStringWidth() or 0
+        if (textWidth < 40) then
+            textWidth = 140
+        end
+        checkbox:SetFrameWidth(textWidth + 36)
+        checkbox:SetValue('value', ShowAllRanks())
+        checkbox.onChange = function(value)
+            local enabled = value and true or false
+            if (enabled == ShowAllRanks()) then
+                return
+            end
+            SetCVar('ShowAllSpellRanks', enabled and '1' or '0')
+            spellBook:Refresh()
+        end
+        self.ranksCheck = checkbox
+    end
+
     local scroll = EXFrames:GetFrame('smooth-scroll-frame'):Create()
     scroll:SetParent(parent)
     scroll:SetPoint('TOPLEFT', tabBar, 'BOTTOMLEFT', 0, -6)
@@ -1078,6 +1189,9 @@ spellBook.Refresh = function(self)
     end
 
     self.refreshing = true
+    if (self.ranksCheck) then
+        self.ranksCheck:SetValue('value', ShowAllRanks())
+    end
     HideFlyout()
     UpdateTabs(self)
     local tabChanged = self.laidOutTab ~= self.activeTab

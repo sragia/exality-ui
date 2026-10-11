@@ -24,10 +24,29 @@ suppress.FRAMES_TO_HIDE = {
 
 suppress.hiddenParent = nil
 suppress.savedParents = {}
+suppress.active = false
 
 suppress.Init = function(self)
     self.hiddenParent = CreateFrame('Frame')
     self.hiddenParent:Hide()
+end
+
+-- Status tracking bars resolve their manager with GetParent().
+-- Reparenting them makes UpdateShownState call CheckForLayoutChange on the hidden frame.
+suppress.KeepsRealParent = function(self, frame)
+    return frame.GetStatusTrackingManager ~= nil
+end
+
+suppress.WatchShow = function(self, frame)
+    if frame.exuiSuppressShowHooked then
+        return
+    end
+    frame.exuiSuppressShowHooked = true
+    hooksecurefunc(frame, 'Show', function(shownFrame)
+        if suppress.active and suppress.savedParents[shownFrame] then
+            shownFrame:Hide()
+        end
+    end)
 end
 
 suppress.HideFrame = function(self, frame, removeEvents)
@@ -44,12 +63,17 @@ suppress.HideFrame = function(self, frame, removeEvents)
     if frame.system then
         frame.isShownExternal = nil
     end
+    if self:KeepsRealParent(frame) then
+        self:WatchShow(frame)
+    end
     if frame.HideBase then
         frame:HideBase()
     else
         frame:Hide()
     end
-    frame:SetParent(self.hiddenParent)
+    if not self:KeepsRealParent(frame) then
+        frame:SetParent(self.hiddenParent)
+    end
 end
 
 suppress.ShowFrame = function(self, frame)
@@ -68,6 +92,7 @@ suppress.Enable = function(self)
     if not self.hiddenParent then
         self:Init()
     end
+    self.active = true
     for _, entry in ipairs(self.FRAMES_TO_HIDE) do
         self:HideFrame(_G[entry.frame], entry.removeEvents)
     end
@@ -79,6 +104,7 @@ suppress.Enable = function(self)
 end
 
 suppress.Disable = function(self)
+    self.active = false
     for _, entry in ipairs(self.FRAMES_TO_HIDE) do
         self:ShowFrame(_G[entry.frame])
     end

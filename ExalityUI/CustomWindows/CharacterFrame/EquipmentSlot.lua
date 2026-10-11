@@ -27,8 +27,32 @@ local SLOTNAME_BY_ID = {
     [15] = 'BACKSLOT',
     [16] = 'MAINHANDSLOT',
     [17] = 'SECONDARYHANDSLOT',
-    [19] = 'TABARDSLOT'
+    [18] = 'RANGEDSLOT',
+    [19] = 'TABARDSLOT',
+    [0] = 'AMMOSLOT',
 }
+
+local BLIZZARD_SLOT_INFO_NAME = {
+    [18] = 'RangedSlot',
+    [0] = 'AmmoSlot',
+}
+
+local function LookupEmptyTexture(slotId)
+    local token = SLOTNAME_BY_ID[slotId]
+    if token then
+        local ok, _, textureName = pcall(GetInventorySlotInfo, token)
+        if ok and textureName then
+            return textureName
+        end
+    end
+    local infoName = BLIZZARD_SLOT_INFO_NAME[slotId]
+    if infoName and C_PaperDollInfo and C_PaperDollInfo.GetInventorySlotInfo then
+        local ok, _, textureName = pcall(C_PaperDollInfo.GetInventorySlotInfo, infoName)
+        if ok and textureName then
+            return textureName
+        end
+    end
+end
 
 -- Blizzard paper doll buttons (trusted PickupInventoryItem for oils/enchants)
 local BLIZZARD_SLOT_BUTTONS = {
@@ -49,12 +73,19 @@ local BLIZZARD_SLOT_BUTTONS = {
     [15] = 'CharacterBackSlot',
     [16] = 'CharacterMainHandSlot',
     [17] = 'CharacterSecondaryHandSlot',
+    [18] = 'CharacterRangedSlot',
     [19] = 'CharacterTabardSlot',
+    [0] = 'CharacterAmmoSlot',
 }
 
 local autoEquipSlotIds = {
     1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19
 }
+
+if EXUI.IsForever() then
+    table.insert(autoEquipSlotIds, INVSLOT_RANGED)
+    table.insert(autoEquipSlotIds, INVSLOT_AMMO)
+end
 
 local CD_Font = CreateFont('ExalityUI_EQUIPMENT_SLOT_CD_Font')
 CD_Font:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
@@ -161,7 +192,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot.Index = index
     slot.slotId = slotId
 
-    local _, textureName = GetInventorySlotInfo(SLOTNAME_BY_ID[slotId])
+    local textureName = LookupEmptyTexture(slotId)
     slot.emptyTexture = textureName
 
     -- Icon Texture
@@ -351,7 +382,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
                     local canPickupInventoryItem = not hasItem
                     if (hasItem) then
                         for _, slotId in ipairs(autoEquipSlotIds) do
-                            if (C_PaperDollInfo.CanCursorCanGoInSlot(slotId)) then
+                            if (C_PaperDollInfo.CursorCanGoInSlot(slotId)) then
                                 canPickupInventoryItem = true
                                 break
                             end
@@ -414,6 +445,9 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
 
     slot:SetScript('OnShow', function(self)
         FrameUtil.RegisterFrameForEvents(self, EVENTS)
+        if self:GetID() == INVSLOT_AMMO then
+            self:RegisterUnitEvent('UNIT_INVENTORY_CHANGED', 'player')
+        end
         self:Update()
         self:UpdateItemContextMatching()
         ItemButtonUtil.RegisterCallback(ItemButtonUtil.Event.ItemContextChanged, self.OnItemContextChanged, self)
@@ -484,23 +518,30 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             local itemLocation = ItemLocation:CreateFromEquipmentSlot(self:GetID());
             local itemLink = GetInventoryItemLink("player", self:GetID())
             self.Icon:SetTexture(textureName)
-            local ilvl = C_Item.GetCurrentItemLevel(itemLocation)
-            local color, border = equipmentSlot:GetItemColorAndBorder(ilvl)
-            self.ItemLevel:SetText(WrapTextInColorCode(ilvl, color))
-            self.Border:SetTexture(border)
+            local isAmmo = self:GetID() == INVSLOT_AMMO
+            if isAmmo then
+                local count = GetInventoryItemCount('player', self:GetID()) or 0
+                self.ItemLevel:SetText(count > 0 and count or '')
+                self.Border:SetTexture(EXUI.const.textures.characterFrame.border.empty)
+            else
+                local ilvl = C_Item.GetCurrentItemLevel(itemLocation)
+                local color, border = equipmentSlot:GetItemColorAndBorder(ilvl)
+                self.ItemLevel:SetText(WrapTextInColorCode(ilvl, color))
+                self.Border:SetTexture(border)
+            end
             local start, duration = GetInventoryItemCooldown("player", self:GetID());
             self.Cooldown:SetCooldown(start, duration)
             self:AnchorCooldownText()
 
             -- Enchant
-            local enchant = EXUI.utils.GetItemEnchant(itemLink)
+            local enchant = not isAmmo and EXUI.utils.GetItemEnchant(itemLink)
             if (enchant) then
                 for pattern, replacement in pairs(equipmentSlot.replacements) do
                     enchant = string.gsub(enchant, pattern, replacement)
                 end
             end
-            self.EnchantText:SetText(enchant and string.gsub(string.gsub(enchant, '|A.-|a', ''), '^.-%-%s*', ''))
-            self:AddGems(itemLink)
+            self.EnchantText:SetText(enchant and string.gsub(string.gsub(enchant, '|A.-|a', ''), '^.-%-%s*', '') or '')
+            self:AddGems(isAmmo and nil or itemLink)
 
             local currDurability, maxDurability = GetInventoryItemDurability(self:GetID())
             if (currDurability == 0) then
@@ -534,6 +575,8 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             if (slot == self:GetID()) then
                 self:Update()
             end
+        elseif (event == 'UNIT_INVENTORY_CHANGED') then
+            self:Update()
         elseif (event == 'BAG_UPDATE_COOLDOWN') then
             self:UpdateCooldown()
         elseif (event == 'UPDATE_INVENTORY_ALERTS') then
@@ -548,7 +591,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
         elseif (event == 'SOCKET_INFO_SUCCESS') then
             RefreshSlotAfterItemChange(self)
         elseif (event == 'CURSOR_CHANGED') then
-            if C_PaperDollInfo.CanCursorCanGoInSlot(self:GetID()) then
+            if C_PaperDollInfo.CursorCanGoInSlot(self:GetID()) then
                 self.Highlight:SetAlpha(1)
             else
                 self.Highlight:SetAlpha(0)

@@ -65,6 +65,25 @@ local RIGHT_SLOTS = {
 local BOTTOM_SLOTS = {
     16, 17
 }
+local SLOT_SIZE = 36
+local SLOT_GAP = 6
+
+local function BottomSlotIds()
+    if not EXUI.IsForever() then
+        return BOTTOM_SLOTS
+    end
+    return { 16, 17, INVSLOT_RANGED, INVSLOT_AMMO }
+end
+
+local function ShouldShowBottomSlot(slotId)
+    if slotId == INVSLOT_RANGED then
+        return C_PaperDollInfo.IsRangedSlotShown()
+    end
+    if slotId == INVSLOT_AMMO then
+        return C_PaperDollInfo.AmmoNeeded() and UnitUsesAmmo('player')
+    end
+    return true
+end
 
 local function MoveFrameNextToWindow(frame)
     if (characterFrame.window and characterFrame.window:IsShown()) then
@@ -116,12 +135,13 @@ characterFrame.Init = function(self)
 end
 
 characterFrame.AddSlots = function(self, slots, parent, side)
+    local created = {}
     local prev = nil
     for index, slotId in ipairs(slots) do
         local slot = equipmentSlot:Create(slotId, side, index, parent)
         if (side == 'BOTTOM') then
             if (prev) then
-                slot:SetPoint('LEFT', prev, 'RIGHT', 6, 0)
+                slot:SetPoint('LEFT', prev, 'RIGHT', SLOT_GAP, 0)
             else
                 slot:SetPoint('LEFT', parent, 'LEFT', 0, 0)
             end
@@ -133,19 +153,59 @@ characterFrame.AddSlots = function(self, slots, parent, side)
             end
         end
         prev = slot
+        table.insert(created, slot)
     end
+    return created
+end
+
+characterFrame.UpdateBottomSlots = function(self)
+    if not self.bottomSlotButtons or not self.bottomSlots then
+        return
+    end
+    if InCombatLockdown() then
+        self.bottomSlotsDirty = true
+        return
+    end
+    self.bottomSlotsDirty = false
+    local prev = nil
+    local count = 0
+    for _, slot in ipairs(self.bottomSlotButtons) do
+        slot:ClearAllPoints()
+        if ShouldShowBottomSlot(slot:GetID()) then
+            slot:Show()
+            if prev then
+                slot:SetPoint('LEFT', prev, 'RIGHT', SLOT_GAP, 0)
+            else
+                slot:SetPoint('LEFT', self.bottomSlots, 'LEFT', 0, 0)
+            end
+            prev = slot
+            count = count + 1
+        else
+            slot:Hide()
+        end
+    end
+    local width = count > 0 and (count * SLOT_SIZE + (count - 1) * SLOT_GAP) or SLOT_SIZE
+    self.bottomSlots:SetSize(width, SLOT_SIZE)
 end
 
 characterFrame.UpdateHeader = function(self)
     local level = UnitLevel('player')
     local class, englishClass = UnitClass('player')
-    local _, specName = C_SpecializationInfo.GetSpecializationInfo(C_SpecializationInfo.GetSpecialization())
+    local specName
+    if not EXUI.IsForever() then
+        local specIndex = C_SpecializationInfo.GetSpecialization()
+        specName = specIndex and select(2, C_SpecializationInfo.GetSpecializationInfo(specIndex))
+    end
     local avgIlvl, avgEquipped = GetAverageItemLevel()
 
     self.window.Header.LevelText:SetText(level)
     local classColor = C_ClassColor.GetClassColor(englishClass)
-    self.window.Header.ClassSpecText:SetText(string.format('%s %s', specName,
-        classColor:WrapTextInColorCode(class)))
+    local classText = classColor:WrapTextInColorCode(class)
+    if not EXUI.IsForever() and specName and specName ~= '' then
+        self.window.Header.ClassSpecText:SetText(string.format('%s %s', specName, classText))
+    else
+        self.window.Header.ClassSpecText:SetText(classText)
+    end
 
     local avgIlvlString = WrapTextInColorCode(string.format('%.2f', avgIlvl), EXUI.utils.getIlvlColor(avgIlvl))
     local avgEquippedString = WrapTextInColorCode(string.format('%.2f', avgEquipped),
@@ -166,6 +226,7 @@ EXUI:RegisterEventHandler({
 }, 'char-frame-update-header', function()
     if (characterFrame.window and characterFrame.window:IsShown()) then
         characterFrame:UpdateHeader()
+        characterFrame:UpdateBottomSlots()
     end
 end)
 
@@ -513,12 +574,14 @@ characterFrame.Create = function(self)
     rightSlots:SetPoint('TOPLEFT', modelFrame, 'TOPRIGHT', 10, 0)
 
     local bottomSlots = CreateFrame('Frame', nil, container)
-    bottomSlots:SetSize(82, 38)
+    bottomSlots:SetSize(82, SLOT_SIZE)
     bottomSlots:SetPoint('TOP', modelFrame, 'BOTTOM', 0, 0)
+    self.bottomSlots = bottomSlots
 
     self:AddSlots(LEFT_SLOTS, leftSlots, 'LEFT')
     self:AddSlots(RIGHT_SLOTS, rightSlots, 'RIGHT')
-    self:AddSlots(BOTTOM_SLOTS, bottomSlots, 'BOTTOM')
+    self.bottomSlotButtons = self:AddSlots(BottomSlotIds(), bottomSlots, 'BOTTOM')
+    self:UpdateBottomSlots()
 
     self.window:Configure({
         staticAnchor = {
@@ -588,6 +651,7 @@ characterFrame.OnShow = function(self)
         characterFrame.isCreated = true
     end
     self:UpdateHeader()
+    self:UpdateBottomSlots()
     if (not self.window:IsShown()) then
         self.window:ShowWindow()
         if (ItemUpgradeFrame and ItemUpgradeFrame:IsShown()) then
@@ -618,6 +682,12 @@ end
 characterFrame.Disable = function(self)
     self.enabled = false
 end
+
+EXUI:RegisterEventHandler('PLAYER_REGEN_ENABLED', 'character-frame-bottom-slots', function()
+    if characterFrame.bottomSlotsDirty then
+        characterFrame:UpdateBottomSlots()
+    end
+end)
 
 EXUI:RegisterEventHandler('PLAYER_REGEN_DISABLED', 'character-frame-hide', function()
     if (characterFrame.window and characterFrame.window:IsShown()) then

@@ -20,13 +20,28 @@ local function ensureNameTag()
         return
     end
     oUF.Tags.Methods['np:name'] = function(unit)
-        local unitName, realm = UnitName(unit)
-        local db = npCore:GetDB()
-        if db and db.friendlyShowRealm and realm and unitName
-            and not (issecretvalue and (issecretvalue(realm) or issecretvalue(unitName)))
-            and realm ~= ''
+        local unitName, extraName = UnitName(unit)
+        local secret = issecretvalue and (issecretvalue(unitName) or issecretvalue(extraName))
+        if not unitName or secret then
+            return unitName
+        end
+        if EXUI.IsForever() and extraName and extraName ~= '' and UnitIsPlayer(unit)
+            and (UnitIsUnit(unit, 'player') or UnitIsFriend('player', unit))
         then
-            return unitName .. '-' .. realm
+            if NameUtil and NameUtil.FormatUnitNameForDisplay then
+                return NameUtil.FormatUnitNameForDisplay(unit)
+            end
+            local separator = ' '
+            if Constants and Constants.CharacterNameSeparatorConsts
+                and Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
+            then
+                separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
+            end
+            return unitName .. separator .. extraName
+        end
+        local db = npCore:GetDB()
+        if db and db.friendlyShowRealm and extraName and extraName ~= '' then
+            return unitName .. '-' .. extraName
         end
         return unitName
     end
@@ -66,7 +81,12 @@ local function applyFriendlyName(frame, fontString, db)
     local unit = frame.unit or frame.__unit
     fontString:Show()
     fontString:SetFont(LSM:Fetch('font', db.nameFont), db.nameFontSize, db.nameFontFlag)
-    fontString:SetWidth(db.sizeWidth or 140)
+    fontString:SetWordWrap(false)
+    if EXUI.IsForever() and unit and UnitIsPlayer(unit) then
+        fontString:SetWidth(0)
+    else
+        fontString:SetWidth(db.sizeWidth or 140)
+    end
     fontString:SetHeight(db.nameFontSize + db.nameFontSize / 2)
     fontString:SetJustifyH('CENTER')
     fontString:ClearAllPoints()
@@ -110,8 +130,12 @@ local function applyFriendlyBarName(frame, fontString, db)
         applyClassColor(fontString, unit)
     end
     local tag = db.nameTag or '[name]'
-    if db.friendlyShowRealm and UnitIsPlayer(unit) then
+    if UnitIsPlayer(unit) and (db.friendlyShowRealm or EXUI.IsForever()) then
         tag = tag:gsub('%[name%]', '[np:name]')
+    end
+    if EXUI.IsForever() and UnitIsPlayer(unit) then
+        fontString:SetWordWrap(false)
+        fontString:SetWidth(0)
     end
     if override or useClass then
         tag = tag:gsub('%[classcolor%]', '')
