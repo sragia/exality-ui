@@ -17,7 +17,25 @@ core:AddOption({
             id = 'general',
             options = {
                 function()
-                    return EXUI:GetModule('uf-options-general-frame'):GetOptions('boss')
+                    local options = EXUI:GetModule('uf-options-general-frame'):GetOptions('boss')
+                    table.insert(options, 2, {
+                        type = 'toggle',
+                        label = 'Fade Out of Range',
+                        name = 'fadeOutOfRange',
+                        tooltip = {
+                            text =
+                            'Fades the boss frame the same way party and raid frames fade when you are too far away.',
+                        },
+                        currentValue = function()
+                            return ufCore:GetValueForUnit('boss', 'fadeOutOfRange')
+                        end,
+                        onChange = function(value)
+                            ufCore:UpdateValueForUnit('boss', 'fadeOutOfRange', value)
+                            ufCore:UpdateFrameForUnit('boss')
+                        end,
+                        width = 100,
+                    })
+                    return options
                 end
             }
         },

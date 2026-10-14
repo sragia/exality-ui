@@ -23,6 +23,7 @@ boss.Init = function(self)
     core:SetDefaultsForUnit(self.unit, {
         -- General
         ['enable'] = true,
+        ['fadeOutOfRange'] = false,
         ['showBlizzardFrame'] = false,
         ['overrideStatusBarTexture'] = '',
         ['overrideDamageAbsorbTexture'] = '',
@@ -183,6 +184,7 @@ boss.Update = function(self, frame)
     core:SnapUnitFrame(frame)
 
     core:UpdateFrame(frame)
+    EXUI:GetModule('uf-element-range'):UpdateBoss(self)
 end
 
 EXUI:GetModule('uf-core'):RegisterUnit('boss', true, 5)

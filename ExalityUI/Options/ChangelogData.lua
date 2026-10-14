@@ -12,14 +12,13 @@ EXUI.changelog = [[
 - [Minimap] Add coordinates display. And hide default one by default.
 - [Damage Meters] Move overall enable/disable out of window options
 - [Unit Frames] Hide filtered auras when unit is not visible to you.
+- [Unit Frames] Add an option to fade boss frames when they are out of range.
 
 ## Support for Forever |cffeb7a34New|r
 Basic support for things to work mostly. Some small adjustments for Forever differences from Retail.
 
-## Talents Custom Window|cffeb7a34New|r
+## Talents Custom Window |cffeb7a34New|r
 New custom window added for talents. Fairly basic stuff here. Essentially just talents re-imagined.
-PvP talents and War Mode are available from the PvP button next to Import.
-Current talents can be exported from the Export button. Saved builds can be deleted from the Builds list after confirmation.
 
 # |cffdb49000.9.6|r
 - [Action Bars] Add our own keybind mode dialog instead of using Blizzard one.
