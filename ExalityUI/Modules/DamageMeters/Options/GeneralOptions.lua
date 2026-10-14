@@ -13,8 +13,8 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIDamageMetersGeneralOptions
 local generalOptions = EXUI:GetModule('damage-meters-general-options')
 
-function generalOptions:GetModuleOptions(windowID)
-    local options = {
+function generalOptions:GetModuleOptions()
+    return {
         {
             type = 'title',
             label = 'Damage Meters',
@@ -39,24 +39,6 @@ function generalOptions:GetModuleOptions(windowID)
             end,
         },
     }
-
-    if windowID then
-        table.insert(options, {
-            type = 'button',
-            label = meters:IsShowingTestBars(windowID) and 'Hide Test Bars' or 'Show Test Bars',
-            name = 'showTestBars',
-            width = 100,
-            depends = function()
-                return meters:GetModuleValue('enable') and meters:GetValue(windowID, 'enable')
-            end,
-            onClick = function()
-                meters:SetShowTestBars(windowID, not meters:IsShowingTestBars(windowID))
-                optionsFields:RefreshOptions()
-            end,
-        })
-    end
-
-    return options
 end
 
 function generalOptions:GetOptions(windowID)
@@ -64,8 +46,7 @@ function generalOptions:GetOptions(windowID)
         return meters:GetModuleValue('enable') and meters:GetValue(windowID, 'enable')
     end
 
-    local options = self:GetModuleOptions(windowID)
-    local windowOptions = {
+    return {
         {
             type = 'title',
             label = 'Window',
@@ -75,7 +56,7 @@ function generalOptions:GetOptions(windowID)
             type = 'toggle',
             label = 'Enable Window',
             name = 'enable',
-            width = 100,
+            width = 50,
             depends = function()
                 return meters:GetModuleValue('enable')
             end,
@@ -85,6 +66,17 @@ function generalOptions:GetOptions(windowID)
             onChange = function(value)
                 meters:UpdateValue(windowID, 'enable', value)
                 meters:UpdateById(windowID)
+                optionsFields:RefreshOptions()
+            end,
+        },
+        {
+            type = 'button',
+            label = meters:IsShowingTestBars(windowID) and 'Hide Test Bars' or 'Show Test Bars',
+            name = 'showTestBars',
+            width = 50,
+            depends = windowEnabled,
+            onClick = function()
+                meters:SetShowTestBars(windowID, not meters:IsShowingTestBars(windowID))
                 optionsFields:RefreshOptions()
             end,
         },
@@ -322,9 +314,4 @@ function generalOptions:GetOptions(windowID)
             },
         },
     }
-
-    for _, option in ipairs(windowOptions) do
-        table.insert(options, option)
-    end
-    return options
 end

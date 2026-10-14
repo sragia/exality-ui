@@ -133,9 +133,13 @@ function meters:IsWindowEntry(ID, entry)
     return type(entry) == 'table'
 end
 
+meters.GENERAL_ITEM_ID = '__general__'
+
 function meters:GetSplitViewItems()
     local db = self:EnsureDB()
-    local items = {}
+    local items = {
+        { ID = self.GENERAL_ITEM_ID, label = 'General' },
+    }
 
     for ID, windowDB in EXUI.utils.spairs(db, function(t, a, b)
         local windowA = t[a]
@@ -178,7 +182,7 @@ function meters:GetSplitViewItems()
 end
 
 function meters:GetSectionTabs(itemId)
-    if not itemId then
+    if not itemId or itemId == self.GENERAL_ITEM_ID then
         return {}
     end
     return {
@@ -190,7 +194,7 @@ end
 
 function meters:GetOptions(currTabID, currItemID)
     self.optionsItemID = currItemID
-    if not currItemID then
+    if not currItemID or currItemID == self.GENERAL_ITEM_ID then
         return generalOptions:GetModuleOptions()
     end
 
