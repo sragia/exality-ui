@@ -7,6 +7,9 @@ EXUI.changelog = [[
 - [Minimap] Fix mail icon on minimap not being hidden after closing options. Add Difficulty preview while we are viewing it's options.
 - [BW Skin] Fix icon not showing after latest update.
 - [Action Bars] Fix taint issue after going into keybind mode.
+- [Pixel Perfect] Updates using new 12.1.5 API for better support for native rounding.
+- [Auras] Add support for pandemic glows.
+- [Minimap] Add coordinates display. And hide default one by default.
 
 ## Support for Forever |cffeb7a34New|r
 Basic support for things to work mostly. Some small adjustments for Forever differences from Retail.

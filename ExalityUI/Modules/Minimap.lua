@@ -766,6 +766,18 @@ minimap.GetDefaults = function(self)
         clockFontFlag = 'OUTLINE',
         clockBgEnable = true,
         clockBgColor = { r = 0, g = 0, b = 0, a = 0.65 },
+        coordsEnable = false,
+        coordsVisibility = 'always',
+        coordsAnchor = 'TOPRIGHT',
+        coordsRelativeAnchor = 'BOTTOMRIGHT',
+        coordsXOff = 0,
+        coordsYOff = -4,
+        coordsFont = 'DMSans',
+        coordsFontSize = 12,
+        coordsFontFlag = 'OUTLINE',
+        coordsDecimals = 1,
+        coordsBgEnable = true,
+        coordsBgColor = { r = 0, g = 0, b = 0, a = 0.65 },
         difficultyEnable = true,
         difficultyVisibility = 'always',
         difficultyAnchor = 'BOTTOMRIGHT',
@@ -868,13 +880,17 @@ minimap.GetProfileExportSpec = function(self)
 end
 
 minimap.GetTabs = function(self)
-    return {
+    local tabs = {
         { ID = 'general',    label = 'General' },
         { ID = 'zone',       label = 'Zone Text' },
         { ID = 'clock',      label = 'Clock' },
-        { ID = 'difficulty', label = 'Difficulty' },
-        { ID = 'buttons',    label = 'Buttons' },
     }
+    if (EXUI.IsRetail()) then
+        table.insert(tabs, { ID = 'coords', label = 'Coordinates' })
+    end
+    table.insert(tabs, { ID = 'difficulty', label = 'Difficulty' })
+    table.insert(tabs, { ID = 'buttons', label = 'Buttons' })
+    return tabs
 end
 
 minimap.GetSplitViewItems = function(self)
@@ -1410,6 +1426,96 @@ minimap.GetOptions = function(self, currTabID, currItemID)
         return fields
     end
 
+    if (currTabID == 'coords') then
+        local coordsDepends = function()
+            return self.Data:GetValue('enable') and self.Data:GetValue('coordsEnable')
+        end
+        local fields = {
+            {
+                type = 'toggle',
+                label = 'Enable Coordinates',
+                name = 'coordsEnable',
+                depends = function() return self.Data:GetValue('enable') end,
+                currentValue = function() return self.Data:GetValue('coordsEnable') end,
+                onChange = function(value)
+                    self:HandleToggleChange('coordsEnable', value)
+                end,
+                width = 100,
+            },
+            {
+                type = 'dropdown',
+                label = 'Visibility',
+                name = 'coordsVisibility',
+                getOptions = function() return VISIBILITY_OPTIONS end,
+                depends = coordsDepends,
+                currentValue = function() return self.Data:GetValue('coordsVisibility') end,
+                onChange = function(value)
+                    self.Data:SetValue('coordsVisibility', value)
+                    self:ConfigureIfEnabled()
+                end,
+                width = 33,
+            },
+            {
+                type = 'range',
+                label = 'Decimals',
+                name = 'coordsDecimals',
+                min = 0,
+                max = 2,
+                step = 1,
+                depends = coordsDepends,
+                currentValue = function() return self.Data:GetValue('coordsDecimals') end,
+                onChange = function(value)
+                    self.Data:SetValue('coordsDecimals', value)
+                    self:ConfigureIfEnabled()
+                end,
+                width = 20,
+            },
+            {
+                type = 'title',
+                label = 'Position',
+                width = 100,
+                depends = coordsDepends,
+            },
+        }
+        for _, field in ipairs(self:GetPositionFields('coords', function() self:ConfigureIfEnabled() end, true)) do
+            field.depends = coordsDepends
+            table.insert(fields, field)
+        end
+        for _, field in ipairs(self:GetFontFields('coords', function() self:ConfigureIfEnabled() end)) do
+            field.depends = coordsDepends
+            table.insert(fields, field)
+        end
+        table.insert(fields, {
+            type = 'spacer',
+            width = 31,
+            depends = coordsDepends,
+        })
+        table.insert(fields, {
+            type = 'toggle',
+            label = 'Text Background',
+            name = 'coordsBgEnable',
+            depends = coordsDepends,
+            currentValue = function() return self.Data:GetValue('coordsBgEnable') end,
+            onChange = function(value)
+                self:HandleToggleChange('coordsBgEnable', value)
+            end,
+            width = 100,
+        })
+        table.insert(fields, {
+            type = 'color-picker',
+            label = 'Background Color',
+            name = 'coordsBgColor',
+            depends = coordsDepends,
+            currentValue = function() return self.Data:GetValue('coordsBgColor') end,
+            onChange = function(value)
+                self.Data:SetValue('coordsBgColor', PackColor(value))
+                self:ConfigureIfEnabled()
+            end,
+            width = 20,
+        })
+        return fields
+    end
+
     if (currTabID == 'difficulty') then
         local difficultyDepends = function()
             return self.Data:GetValue('enable') and self.Data:GetValue('difficultyEnable')
@@ -1857,6 +1963,7 @@ minimap.SetupMinimapFrame = function(self)
 
     self:CreateZoneText()
     self:CreateClock()
+    self:CreateCoords()
     self:CreateDifficultyText()
     self:CreateDrawer()
     self:CreateAddonCompartment()
@@ -2128,6 +2235,11 @@ minimap.UpdateHoverVisibility = function(self, isHovering)
     if (self.clockFrame and db.clockEnable) then
         if (db.clockVisibility == 'hover') then
             self.clockFrame:SetAlpha(isHovering and 1 or 0)
+        end
+    end
+    if (self.coordsFrame and db.coordsEnable) then
+        if (db.coordsVisibility == 'hover') then
+            self.coordsFrame:SetAlpha(isHovering and 1 or 0)
         end
     end
     if (self.difficultyFrame and db.difficultyEnable and not self.previewDifficulty) then
@@ -2405,6 +2517,116 @@ minimap.ConfigureClock = function(self)
             minimap:UpdateClockText()
         end
     end)
+end
+
+minimap.COORDS_TEXT_PADDING = { x = 8, y = 4 }
+minimap.COORDS_UPDATE_INTERVAL = 0.1
+
+minimap.GetCoordsFormat = function(self)
+    local decimals = self.Data:GetValue('coordsDecimals') or 1
+    return string.format('%%.%df, %%.%df', decimals, decimals)
+end
+
+minimap.LayoutCoordsFrame = function(self)
+    if (not self.coordsFrame or not self.coordsFrame.text) then return end
+    local db = self.Data:GetDB()
+    local text = self.coordsFrame.text
+    local padX = EXUI:ScalePixel(self.COORDS_TEXT_PADDING.x)
+    local padY = EXUI:ScalePixel(self.COORDS_TEXT_PADDING.y)
+    local fontSize = db.coordsFontSize or 12
+
+    local savedText = text:GetText()
+    text:SetFormattedText(self:GetCoordsFormat(), 99.99, 99.99)
+    local textWidth = text:GetUnboundedStringWidth()
+    if (textWidth <= 0) then
+        textWidth = text:GetStringWidth()
+    end
+    text:SetText(savedText or '')
+
+    EXUI:SetWidth(self.coordsFrame, textWidth + padX * 2)
+    EXUI:SetHeight(self.coordsFrame, fontSize + padY * 2)
+
+    text:ClearAllPoints()
+    text:SetPoint('CENTER', self.coordsFrame, 'CENTER', 0, 0)
+    text:SetJustifyH('CENTER')
+    text:SetJustifyV('MIDDLE')
+end
+
+minimap.CreateCoords = function(self)
+    if (self.coordsFrame or not EXUI.IsRetail()) then return end
+
+    local coordsFrame = CreateFrame('Frame', nil, UIParent)
+    PrepareMinimapOverlayFrame(coordsFrame)
+    coordsFrame:EnableMouse(false)
+    coordsFrame.text = coordsFrame:CreateFontString(nil, 'OVERLAY')
+    coordsFrame.elapsed = 0
+    coordsFrame:SetScript('OnUpdate', function(frame, elapsed)
+        frame.elapsed = frame.elapsed - elapsed
+        if (frame.elapsed > 0) then return end
+        frame.elapsed = minimap.COORDS_UPDATE_INTERVAL
+        minimap:UpdateCoordsText()
+    end)
+
+    self.coordsFrame = coordsFrame
+end
+
+minimap.UpdateCoordsText = function(self)
+    local frame = self.coordsFrame
+    if (not frame or not frame.text:GetFont()) then return end
+
+    local position
+    local mapID = C_Map.GetBestMapForUnit('player')
+    if (mapID) then
+        position = C_Map.GetPlayerMapPosition(mapID, 'player')
+    end
+
+    if (position) then
+        local x, y = position:GetXY()
+        frame.text:SetFormattedText(self:GetCoordsFormat(), x * 100, y * 100)
+        if (frame.bg) then
+            frame.bg:SetShown(self.Data:GetValue('coordsBgEnable'))
+        end
+    else
+        frame.text:SetText('')
+        if (frame.bg) then
+            frame.bg:Hide()
+        end
+    end
+end
+
+minimap.ConfigureCoords = function(self)
+    if (not self.coordsFrame) then return end
+    local db = self.Data:GetDB()
+
+    if (not db.coordsEnable or db.coordsVisibility == 'hidden') then
+        self.coordsFrame:Hide()
+        return
+    end
+
+    PrepareMinimapOverlayFrame(self.coordsFrame)
+    self.coordsFrame:Show()
+    self.coordsFrame:ClearAllPoints()
+    EXUI:SetPoint(self.coordsFrame, db.coordsAnchor, Minimap, db.coordsRelativeAnchor, db.coordsXOff, db.coordsYOff)
+
+    self:ApplyFontString(self.coordsFrame.text, 'coordsFont', 'coordsFontSize', 'coordsFontFlag')
+    self:LayoutCoordsFrame()
+    self:ApplyTextBackground(self.coordsFrame, db.coordsBgEnable, db.coordsBgColor)
+
+    if (db.coordsVisibility == 'always') then
+        self.coordsFrame:SetAlpha(1)
+    elseif (db.coordsVisibility == 'hover') then
+        self.coordsFrame:SetAlpha(Minimap:IsMouseOver() and 1 or 0)
+    end
+
+    self.coordsFrame.elapsed = 0
+    self:UpdateCoordsText()
+end
+
+minimap.SuppressBlizzCoords = function(self)
+    local container = MinimapCluster and MinimapCluster.MinimapContainer
+    if (container and container.PlayerCoords) then
+        self:SuppressBlizzFrame(container.PlayerCoords)
+    end
 end
 
 minimap.DIFFICULTY_TEXT_PADDING = { x = 4, y = 2 }
@@ -3332,6 +3554,7 @@ minimap.HideDefaultMinimapChrome = function(self)
     self:SuppressMinimapCraftingOrder()
     self:SuppressTrackingButton()
     self:SuppressBlizzDifficulty()
+    self:SuppressBlizzCoords()
 end
 
 minimap.SuppressMinimapCraftingOrder = function(self)
@@ -3492,6 +3715,7 @@ minimap.RefreshRuntime = function(self)
     self:SuppressMinimapCraftingOrder()
     self:SuppressTrackingButton()
     self:SuppressBlizzDifficulty()
+    self:SuppressBlizzCoords()
     self:SyncLdbButtons()
     self:ApplyButtons()
     self:ConfigureAddonCompartment()
@@ -3504,6 +3728,7 @@ minimap.Configure = function(self)
     self:ConfigureMinimap()
     self:ConfigureZoneText()
     self:ConfigureClock()
+    self:ConfigureCoords()
     self:ConfigureDifficultyText()
     self:ApplyButtons()
 end
@@ -3544,6 +3769,7 @@ minimap.Disable = function(self)
     if (self.borderContainer) then self.borderContainer:Hide() end
     if (self.zoneFrame) then self.zoneFrame:Hide() end
     if (self.clockFrame) then self.clockFrame:Hide() end
+    if (self.coordsFrame) then self.coordsFrame:Hide() end
     if (self.difficultyFrame) then self.difficultyFrame:Hide() end
     self:ClearMinimapMouseHandler()
 
