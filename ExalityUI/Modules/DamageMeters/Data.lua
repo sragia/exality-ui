@@ -10,7 +10,7 @@ local meterData = EXUI:GetModule('damage-meters-data')
 meterData.blizzardHooked = false
 
 function meterData:IsSecret(value)
-    return issecretvalue and issecretvalue(value) and true or false
+    return issecretvalue(value) and true or false
 end
 
 function meterData:HasSecretRestrictions()
@@ -240,17 +240,63 @@ function meterData:IsAvailable()
     return C_DamageMeter.IsDamageMeterAvailable()
 end
 
+local missingSession = {}
+
+function meterData:BeginSessionCache()
+    local now = GetTime()
+    if self.sessionCacheAt ~= now or not self.sessionCache then
+        self.sessionCacheAt = now
+        self.sessionCache = {}
+        self.sessionCacheDepth = 1
+        return
+    end
+    self.sessionCacheDepth = (self.sessionCacheDepth or 0) + 1
+end
+
+function meterData:EndSessionCache()
+    local depth = (self.sessionCacheDepth or 1) - 1
+    if depth > 0 then
+        self.sessionCacheDepth = depth
+        return
+    end
+    self.sessionCacheDepth = 0
+    self.sessionCache = nil
+end
+
 function meterData:GetSession(sessionType, sessionID, meterType)
     if not C_DamageMeter then
         return nil
     end
+
+    local cache = self.sessionCache
+    local key
+    if cache then
+        if self.sessionCacheAt ~= GetTime() then
+            cache = nil
+            self.sessionCache = nil
+            self.sessionCacheDepth = 0
+        else
+            key = string.format('%s\0%s\0%s', tostring(sessionType), tostring(sessionID), tostring(meterType))
+            local hit = cache[key]
+            if hit ~= nil then
+                if hit == missingSession then
+                    return nil
+                end
+                return hit
+            end
+        end
+    end
+
+    local session
     if sessionType ~= nil and C_DamageMeter.GetCombatSessionFromType then
-        return C_DamageMeter.GetCombatSessionFromType(sessionType, meterType)
+        session = C_DamageMeter.GetCombatSessionFromType(sessionType, meterType)
+    elseif sessionID ~= nil and C_DamageMeter.GetCombatSessionFromID then
+        session = C_DamageMeter.GetCombatSessionFromID(sessionID, meterType)
     end
-    if sessionID ~= nil and C_DamageMeter.GetCombatSessionFromID then
-        return C_DamageMeter.GetCombatSessionFromID(sessionID, meterType)
+    if cache and key then
+        cache[key] = session or missingSession
     end
-    return nil
+    return session
 end
 
 function meterData:GetSessionSource(sessionType, sessionID, meterType, sourceGUID, sourceCreatureID)
@@ -327,11 +373,28 @@ function meterData:SessionsMatch(a, b)
     return left == right
 end
 
+function meterData:InvalidateOverallFingerprint()
+    self.overallFingerprint = nil
+    self.overallFingerprintType = nil
+end
+
 function meterData:IsOverallLike(session, meterType)
     if not session or meterType == nil then
         return false
     end
-    return self:SessionsMatch(session, self:GetSession(views.Session.Overall, nil, meterType))
+    local sessionFP = self:SessionFingerprint(session)
+    if not sessionFP then
+        return false
+    end
+    if self.overallFingerprintType ~= meterType or not self.overallFingerprint then
+        local overallFP = self:SessionFingerprint(self:GetSession(views.Session.Overall, nil, meterType))
+        if not overallFP then
+            return false
+        end
+        self.overallFingerprint = overallFP
+        self.overallFingerprintType = meterType
+    end
+    return sessionFP == self.overallFingerprint
 end
 
 function meterData:GetAvailableSessions()

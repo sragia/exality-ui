@@ -237,6 +237,64 @@ function bars:IsIconShown(db, meterType)
     return true
 end
 
+local function stylePart(value)
+    if value == nil then
+        return '-'
+    end
+    if type(value) == 'table' then
+        return string.format(
+            '%.3f,%.3f,%.3f,%.3f',
+            value.r or value[1] or 0,
+            value.g or value[2] or 0,
+            value.b or value[3] or 0,
+            value.a or value[4] or 1
+        )
+    end
+    return tostring(value)
+end
+
+function bars:BuildStyleKey(db)
+    local icon = (db and db.icon) or defaults.WINDOW.icon
+    local chunks = {
+        db and db.barHeight or 18,
+        (db and db.barTexture) or defaults.BAR_TEXTURE,
+        (db and db.font) or 'DMSans',
+        (db and db.fontSize) or 11,
+        (db and db.fontFlag) or 'OUTLINE',
+        db and db.showRank ~= false,
+        db and db.showIcon ~= false,
+        not icon or icon.show ~= false,
+        icon and icon.width or 16,
+        icon and icon.height or 16,
+        icon and icon.zoom or 8,
+        icon and icon.anchorPoint or 'LEFT',
+        icon and icon.relativePoint or 'LEFT',
+        icon and icon.XOff or 1,
+        icon and icon.YOff or 0,
+    }
+    for _, textKey in ipairs({ 'name', 'value', 'secondary', 'percent' }) do
+        local settings = self:GetTextSettings(db, textKey)
+        chunks[#chunks + 1] = textKey
+        if settings then
+            chunks[#chunks + 1] = settings.show ~= false
+            chunks[#chunks + 1] = settings.useDefaultFont ~= false
+            chunks[#chunks + 1] = settings.font
+            chunks[#chunks + 1] = settings.fontSize
+            chunks[#chunks + 1] = settings.fontFlag
+            chunks[#chunks + 1] = settings.anchorPoint
+            chunks[#chunks + 1] = settings.relativePoint
+            chunks[#chunks + 1] = settings.XOff
+            chunks[#chunks + 1] = settings.YOff
+            chunks[#chunks + 1] = settings.width
+            chunks[#chunks + 1] = settings.color
+        end
+    end
+    for i = 1, #chunks do
+        chunks[i] = stylePart(chunks[i])
+    end
+    return table.concat(chunks, '|')
+end
+
 function bars:ApplyStyle(row, db)
     local barHeight = db.barHeight or 18
     local icon = db.icon or defaults.WINDOW.icon
@@ -412,8 +470,12 @@ function bars:UpdateValues(row, source, db, meterType)
     end
 end
 
-function bars:UpdateRow(row, source, db, meterType, index)
-    self:ApplyStyle(row, db)
+function bars:UpdateRow(row, source, db, meterType, index, styleKey)
+    styleKey = styleKey or self:BuildStyleKey(db)
+    if row._styleKey ~= styleKey then
+        self:ApplyStyle(row, db)
+        row._styleKey = styleKey
+    end
 
     if db.showRank and self:IsTextShown(db, 'name') then
         row.rank:SetText(index .. '.')

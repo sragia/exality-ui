@@ -13,7 +13,7 @@ local function fmtBool(v)
     if v == nil then
         return 'nil'
     end
-    if issecretvalue and issecretvalue(v) then
+    if issecretvalue(v) then
         return 'secret'
     end
     return v and 'true' or 'false'
@@ -23,7 +23,7 @@ local function safeBool(v)
     if v == nil then
         return nil
     end
-    if issecretvalue and issecretvalue(v) then
+    if issecretvalue(v) then
         return nil
     end
     return v and true or false
@@ -216,7 +216,7 @@ debugMod.DumpButton = function(self, button, label, slot, activeSlots)
             table.insert(lines, '  GetActionCooldown isActive=' .. fmtBool(cdInfo.isActive)
                 .. ' isEnabled=' .. fmtBool(cdInfo.isEnabled)
                 .. ' isOnGCD=' .. fmtBool(cdInfo.isOnGCD))
-            if cdInfo.duration and not (issecretvalue and issecretvalue(cdInfo.duration)) then
+            if cdInfo.duration and not issecretvalue(cdInfo.duration) then
                 table.insert(lines, '  cdInfo.duration=' .. tostring(cdInfo.duration))
             end
         else

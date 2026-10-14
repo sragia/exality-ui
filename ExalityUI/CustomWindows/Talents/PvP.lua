@@ -39,7 +39,7 @@ pvp.selectedSlot = nil
 pvp.expectWarMode = nil
 
 local function IsSecret(value)
-    return issecretvalue and issecretvalue(value)
+    return issecretvalue(value)
 end
 
 local function SafeText(value, fallback)

@@ -350,9 +350,22 @@ function meters:IsKeyOverallMode()
     return self.displayMode == MODE_KEY_OVERALL
 end
 
+function meters:InvalidateLiveSessionState()
+    self.liveCurrentHasSources = false
+    self.adoptLiveCurrent = false
+    meterData:InvalidateOverallFingerprint()
+end
+
 function meters:HasLiveCurrentSources()
+    if self.liveCurrentHasSources then
+        return true
+    end
     local current = meterData:GetSession(views.Session.Current, nil, views.Type.DamageDone)
-    return not meterData:IsSessionEmpty(current)
+    if meterData:IsSessionEmpty(current) then
+        return false
+    end
+    self.liveCurrentHasSources = true
+    return true
 end
 
 function meters:TryLeaveKeyOverall()
@@ -386,7 +399,11 @@ function meters:ShouldAdoptLiveCurrent(meterType)
     end
     if not self:IsLiveCombat() then
         self.holdLiveDisplay = false
+        self.adoptLiveCurrent = false
         return false
+    end
+    if self.adoptLiveCurrent then
+        return true
     end
 
     local checkType = views.Type.DamageDone
@@ -395,6 +412,7 @@ function meters:ShouldAdoptLiveCurrent(meterType)
         return false
     end
 
+    self.adoptLiveCurrent = true
     if self.holdLiveDisplay then
         self.holdLiveDisplay = false
     end
@@ -402,7 +420,7 @@ function meters:ShouldAdoptLiveCurrent(meterType)
 end
 
 function meters:RememberLiveSession(sessionID)
-    if not sessionID or sessionID <= 0 then
+    if not sessionID or sessionID <= 0 or sessionID == self.liveSessionID then
         return
     end
     local session = meterData:GetSession(nil, sessionID, views.Type.DamageDone)
@@ -435,11 +453,13 @@ function meters:ClearSessionTracking()
     self.committedSessionID = nil
     self.holdLiveDisplay = false
     self.ignoreNewCombatUntil = 0
+    self:InvalidateLiveSessionState()
     self:SetDisplayMode(MODE_PULL)
     self:CancelLeaveCombatTimer()
 end
 
 function meters:OnCombatEnded(clearEncounter)
+    self:InvalidateLiveSessionState()
     if clearEncounter then
         self.encounterActive = false
         if self.displayMode == MODE_ENCOUNTER then
@@ -476,6 +496,12 @@ function meters:MarkDirty(ID)
     end
 end
 
+function meters:MarkAllDirty()
+    for ID in pairs(self.frames) do
+        self:MarkDirty(ID)
+    end
+end
+
 function meters:EnsureUpdateTicker()
     if self.updateTicker or not C_Timer then
         return
@@ -493,6 +519,7 @@ function meters:StopUpdateTicker()
 end
 
 function meters:ProcessPendingUpdates()
+    meterData:BeginSessionCache()
     local now = GetTime()
     for ID, frame in pairs(self.frames) do
         if self.dirtyByID[ID] then
@@ -506,9 +533,11 @@ function meters:ProcessPendingUpdates()
             windowMod:UpdateHeader(frame, frame.db, nil, false)
         end
     end
+    meterData:EndSessionCache()
 end
 
 function meters:UpdateById(ID)
+    meterData:BeginSessionCache()
     local frame = self.frames[ID]
     if not frame then
         frame = self:Create(ID)
@@ -527,13 +556,16 @@ function meters:UpdateById(ID)
             self:RegisterEditor(frame)
         end
     end
+    meterData:EndSessionCache()
 end
 
 function meters:UpdateAll()
+    meterData:BeginSessionCache()
     for ID in pairs(self.frames) do
         self:UpdateById(ID)
     end
     meterData:UpdateBlizzardVisibility()
+    meterData:EndSessionCache()
 end
 
 function meters:ClearFrame(frame)
@@ -549,6 +581,9 @@ function meters:ClearFrame(frame)
     frame:ClearAllPoints()
     frame.db = nil
     frame._posKey = nil
+    frame._layoutKey = nil
+    frame._rowLayoutKey = nil
+    frame.heldDuration = nil
     frame:Destroy()
 end
 
@@ -606,6 +641,7 @@ function meters:OnEvent(event, ...)
         self.encounterActive = true
         self.holdLiveDisplay = false
         self.ignoreNewCombatUntil = 0
+        self:InvalidateLiveSessionState()
         self:SetDisplayMode(MODE_ENCOUNTER)
         self:CancelLeaveCombatTimer()
         self:UpdateAll()
@@ -627,6 +663,7 @@ function meters:OnEvent(event, ...)
     if event == 'CHALLENGE_MODE_COMPLETED' then
         self.encounterActive = false
         self.holdLiveDisplay = false
+        self:InvalidateLiveSessionState()
         self:CancelLeaveCombatTimer()
         self:IgnoreNewCombat(COMBAT_GRACE_SECONDS)
         self:SetDisplayMode(MODE_KEY_OVERALL)
@@ -663,9 +700,19 @@ function meters:OnEvent(event, ...)
         return
     end
 
+    if event == 'GROUP_ROSTER_UPDATE' then
+        self:MarkAllDirty()
+        return
+    end
+
     if event == 'DAMAGE_METER_COMBAT_SESSION_UPDATED' then
         local meterType, sessionID = ...
-        if not self:IsInCombatGrace() and self:IsLiveCombat() and sessionID and sessionID > 0 then
+        if meterType == views.Type.DamageDone
+            and not self:IsInCombatGrace()
+            and self:IsLiveCombat()
+            and sessionID
+            and sessionID > 0
+        then
             self:RememberLiveSession(sessionID)
         end
         local current = views.Session.Current

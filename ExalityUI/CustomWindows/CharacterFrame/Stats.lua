@@ -16,7 +16,7 @@ local function AreUnitStatsSecret()
 end
 
 local function IsInaccessibleValue(value)
-    return (issecretvalue and issecretvalue(value))
+    return issecretvalue(value)
         or (canaccessvalue and not canaccessvalue(value))
 end
 

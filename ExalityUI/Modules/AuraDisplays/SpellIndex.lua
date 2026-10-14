@@ -15,7 +15,7 @@ local function trim(text)
 end
 
 local function isSecret(value)
-    return issecretvalue and issecretvalue(value)
+    return issecretvalue(value)
 end
 
 function spellIndex:Init()

@@ -39,6 +39,32 @@ local function colorRGBA(color, fallback)
     return color.r or 0, color.g or 0, color.b or 0, color.a or 1
 end
 
+local function colorKey(color)
+    local r, g, b, a = colorRGBA(color)
+    return string.format('%.3f,%.3f,%.3f,%.3f', r, g, b, a)
+end
+
+local function layoutKey(frame, db)
+    return table.concat({
+        db.width or 240,
+        db.height or 180,
+        colorKey(db.backdropColor or defaults.WINDOW.backdropColor),
+        colorKey(db.borderColor or defaults.WINDOW.borderColor),
+        db.anchorPoint or 'TOPLEFT',
+        db.relativePoint or 'TOPLEFT',
+        db.XOff or 200,
+        db.YOff or -240,
+        db.headerHeight or HEADER_HEIGHT,
+        db.showTimer ~= false and 1 or 0,
+        db.showTitle ~= false and 1 or 0,
+        db.font or '',
+        db.fontSize or '',
+        db.fontFlag or '',
+        db.clickThrough and 1 or 0,
+        string.format('%.4f', frame:GetEffectiveScale()),
+    }, '|')
+end
+
 local function applyButtonTexture(button, color)
     button.bg = button.bg or button:CreateTexture(nil, 'BACKGROUND')
     button.bg:SetAllPoints()
@@ -396,6 +422,10 @@ function windowMod:EnsureRows(frame, count)
         row:SetFrameLevel(frame.scrollChild:GetFrameLevel() + 2)
         frame.rows[index] = row
         self:BindRow(frame, row)
+        if frame.db and frame.db.clickThrough then
+            row:EnableMouse(false)
+            row:EnableMouseWheel(false)
+        end
     end
 end
 
@@ -513,6 +543,12 @@ function windowMod:LayoutChrome(frame, db)
 end
 
 function windowMod:Layout(frame, db)
+    local key = layoutKey(frame, db)
+    if frame._layoutKey == key then
+        return
+    end
+    frame._layoutKey = key
+
     local width = db.width or 240
     local height = db.height or 180
 
@@ -562,6 +598,12 @@ end
 function windowMod:LayoutRows(frame, db, count)
     local barHeight = db.barHeight or 18
     local spacing = db.barSpacing or 1
+    local key = string.format('%s:%s:%s', tostring(count), tostring(barHeight), tostring(spacing))
+    if frame._rowLayoutKey == key then
+        return
+    end
+    frame._rowLayoutKey = key
+
     local previous
     for i = 1, count do
         local row = frame.rows[i]
@@ -615,6 +657,7 @@ function windowMod:GetHeldSession(frame, db)
 end
 
 function windowMod:GetCombatSession(frame, db)
+    frame.heldDuration = nil
     if meters:IsShowingTestBars(frame.ID) then
         frame.lookupSessionType = db.sessionType
         frame.lookupSessionID = db.sessionID
@@ -631,12 +674,16 @@ function windowMod:GetCombatSession(frame, db)
         if meters:IsEncounterMode() then
             local current = meterData:GetSession(views.Session.Current, nil, db.damageMeterType)
             if current and not meterData:IsSessionEmpty(current) then
+                if db.damageMeterType == views.Type.DamageDone then
+                    meters.liveCurrentHasSources = true
+                end
                 frame.lookupSessionType = views.Session.Current
                 frame.lookupSessionID = nil
                 return current, false
             end
             local held, heldID = self:GetHeldSession(frame, db)
             if held then
+                frame.heldDuration = held.durationSeconds
                 frame.lookupSessionType = nil
                 frame.lookupSessionID = heldID
                 return held, false
@@ -654,6 +701,7 @@ function windowMod:GetCombatSession(frame, db)
 
         local held, heldID = self:GetHeldSession(frame, db)
         if held then
+            frame.heldDuration = held.durationSeconds
             frame.lookupSessionType = nil
             frame.lookupSessionID = heldID
             return held, false
@@ -687,20 +735,16 @@ function windowMod:UpdateHeader(frame, db, session, isDummy)
             duration = session.durationSeconds
         end
         if duration == nil and frame.lookupSessionID then
-            local held = meterData:GetSession(nil, frame.lookupSessionID, db.damageMeterType)
-            if held then
-                duration = held.durationSeconds
-            end
+            duration = frame.heldDuration
         end
     elseif session then
         duration = session.durationSeconds
     end
 
-    local clock = meterData:FormatDuration(duration)
-    if clock and clock ~= '' then
+    local clock = meterData:FormatDuration(duration) or ''
+    if frame._clockText ~= clock then
+        frame._clockText = clock
         frame.timer:SetText(clock)
-    else
-        frame.timer:SetText('')
     end
 end
 
@@ -773,6 +817,7 @@ function windowMod:Refresh(frame)
     frame.localPlayerSource = nil
 
     self:EnsureRows(frame, shown)
+    local styleKey = bars:BuildStyleKey(db)
     for i, source in ipairs(sources) do
         source.maxAmount = maxAmount
         source.sessionTotalAmount = totalAmount
@@ -780,7 +825,7 @@ function windowMod:Refresh(frame)
             frame.localPlayerIndex = i
             frame.localPlayerSource = source
         end
-        bars:UpdateRow(frame.rows[i], source, db, meterType, i)
+        bars:UpdateRow(frame.rows[i], source, db, meterType, i, styleKey)
     end
 
     for i = shown + 1, #frame.rows do

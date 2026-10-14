@@ -289,7 +289,7 @@ function helpers:ApplyResourceBarColor(bar, db, current, max, normalColor, power
         end
     end
 
-    if current ~= nil and max > 0 and (not issecretvalue or not issecretvalue(current)) then
+    if current ~= nil and max > 0 and not issecretvalue(current) then
         local color = curve:Evaluate(current / max)
         if color and color.GetRGB then
             bar:SetStatusBarColor(color:GetRGB())

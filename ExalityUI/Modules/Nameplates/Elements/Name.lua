@@ -21,7 +21,7 @@ local function ensureNameTag()
     end
     oUF.Tags.Methods['np:name'] = function(unit)
         local unitName, extraName = UnitName(unit)
-        local secret = issecretvalue and (issecretvalue(unitName) or issecretvalue(extraName))
+        local secret = issecretvalue(unitName) or issecretvalue(extraName)
         if not unitName or secret then
             return unitName
         end

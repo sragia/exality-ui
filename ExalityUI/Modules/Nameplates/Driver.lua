@@ -88,7 +88,7 @@ driver.ApplyEnginePlateSize = function(self)
     end
     local width = math.max(self.blizzardPlateWidth or visW, visW, hitW)
     local height = math.max(self.blizzardPlateHeight or visH, visH, hitH)
-    if issecretvalue and (issecretvalue(width) or issecretvalue(height)) then
+    if issecretvalue(width) or issecretvalue(height) then
         self.engineSizeDirty = true
         return
     end

@@ -82,7 +82,7 @@ local function CellSize()
 end
 
 local function IsSecret(value)
-    return issecretvalue and issecretvalue(value)
+    return issecretvalue(value)
 end
 
 local function IsSavedImport(bucket, importString)

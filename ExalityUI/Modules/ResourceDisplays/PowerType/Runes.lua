@@ -65,10 +65,27 @@ runes.CreateSingleRune = function(self, parent)
         local remaining = self.DurationObject:GetRemainingDuration()
         local threshold = db.runeCDTextThreshold or 0
         if threshold > 0 and remaining > threshold then
-            self.Text:SetText('')
+            self._cdTenth = nil
+            if self._cdText ~= '' then
+                self._cdText = ''
+                self.Text:SetText('')
+            end
             return
         end
-        self.Text:SetText(helpers:FormatCooldownText(db.runeCDTextFormat, remaining))
+        local formatName = db.runeCDTextFormat
+        if not issecretvalue(remaining) then
+            local tenth = math.floor(remaining * 10 + 0.5)
+            if self._cdTenth == tenth and self._cdFormat == formatName then
+                return
+            end
+            self._cdTenth = tenth
+            self._cdFormat = formatName
+        end
+        local text = helpers:FormatCooldownText(formatName, remaining)
+        if self._cdText ~= text then
+            self._cdText = text
+            self.Text:SetText(text)
+        end
     end
 
     frame.StatusBar = statusBar
@@ -107,6 +124,8 @@ runes.ApplyPreview = function(self, frame)
             local mockStart = now - (2 + (runeIndex - readyCount))
             durationObject:SetTimeFromStart(mockStart, mockDuration)
             runeFrame.DurationObject = durationObject
+            runeFrame._cdTenth = nil
+            runeFrame._cdText = nil
             if frame.db.runeShowText and not runeFrame:GetScript('OnUpdate') then
                 runeFrame:SetScript('OnUpdate', runeFrame.OnUpdate)
             elseif not frame.db.runeShowText and runeFrame:GetScript('OnUpdate') then
@@ -172,6 +191,8 @@ runes.Create = function(self, frame)
                         local durationObject = C_DurationUtil.CreateDuration()
                         durationObject:SetTimeFromStart(startTime, duration)
                         runeFrame.DurationObject = durationObject
+                        runeFrame._cdTenth = nil
+                        runeFrame._cdText = nil
                         if self.db.runeShowText and not runeFrame:GetScript('OnUpdate') then
                             runeFrame:SetScript('OnUpdate', runeFrame.OnUpdate)
                         elseif not self.db.runeShowText and runeFrame:GetScript('OnUpdate') then

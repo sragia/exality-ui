@@ -73,7 +73,7 @@ local function isMiniboss(unit, frame)
         else
             local unitLevel = UnitEffectiveLevel(unit)
             local playerLevel = UnitEffectiveLevel('player')
-            if not (issecretvalue and (issecretvalue(unitLevel) or issecretvalue(playerLevel))) then
+            if not (issecretvalue(unitLevel) or issecretvalue(playerLevel)) then
                 result = unitLevel > 0 and unitLevel == playerLevel + 1
             end
         end
