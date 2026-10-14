@@ -766,6 +766,43 @@ function preview:ApplySpellName(btn, scenario, visual)
     end
 end
 
+function preview:ApplyCasterName(btn, visual)
+    local casterName = btn.CasterNameText
+    if not casterName then
+        return
+    end
+
+    if visual.showCasterName then
+        casterName:SetText(UnitName('player') or '')
+        if visual.casterNameClassColor ~= false then
+            local _, classFile = UnitClass('player')
+            local classColor = classFile and C_ClassColor.GetClassColor(classFile)
+            if classColor then
+                casterName:SetTextColor(classColor:GetRGB())
+            end
+        end
+        casterName:Show()
+    else
+        casterName:Hide()
+    end
+end
+
+function preview:ApplyPandemicGlow(btn, scenario, visual)
+    local glow = btn.PandemicGlow
+    if not glow then
+        return
+    end
+
+    local inPandemic = scenario.total > 0 and scenario.remaining > 0 and scenario.remaining <= scenario.total * 0.3
+    local shown = visual.showPandemicGlow and inPandemic
+    glow:SetShown(shown)
+    if shown and glow.usePulse then
+        glow.Pulse:Play()
+    else
+        glow.Pulse:Stop()
+    end
+end
+
 function preview:ApplyScenario(button, scenario, visual, state, index)
     local btn = resolveButton(button)
 
@@ -783,6 +820,8 @@ function preview:ApplyScenario(button, scenario, visual, state, index)
         preview:ApplyDurationBar(btn, scenario, visual)
         preview:ApplyDispelBorder(btn, scenario, visual)
         preview:ApplySpellName(btn, scenario, visual)
+        preview:ApplyCasterName(btn, visual)
+        preview:ApplyPandemicGlow(btn, scenario, visual)
     end
 
     if securecallfunction then

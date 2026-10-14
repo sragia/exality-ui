@@ -215,6 +215,7 @@ function bars:CreateRow(parent)
     row.value:SetJustifyH('RIGHT')
     row.value:SetWordWrap(false)
 
+    EXUI:EnableNativeRounding(row, true)
     return row
 end
 

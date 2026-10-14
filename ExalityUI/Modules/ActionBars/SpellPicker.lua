@@ -628,11 +628,7 @@ spellPicker.SelectEntry = function(self, entryType, spellID, itemID)
             self:Hide()
             return
         end
-        if C_Item and C_Item.PickupItem then
-            C_Item.PickupItem(itemID)
-        else
-            PickupItem(itemID)
-        end
+        C_Item.PickupItem(itemID)
     else
         if not spellID then
             self:Hide()

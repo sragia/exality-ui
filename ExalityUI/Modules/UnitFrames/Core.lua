@@ -88,6 +88,7 @@ core.SharedStyle = function(frame, unit)
     if (frameFactory and frameFactory.Create) then
         frameFactory:Create(frame, unit)
     end
+    EXUI:EnableNativeRounding(frame, true)
 
 
     if (unit == 'party') then

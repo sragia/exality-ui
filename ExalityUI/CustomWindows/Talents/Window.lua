@@ -825,6 +825,7 @@ end
 
 talents.Create = function(self)
     local window = EXFrames:GetFrame('window-frame'):Create({
+        name = 'ExalityUITalentsFrame',
         size = { 1580, 900 },
         title = '',
         disableResize = true,

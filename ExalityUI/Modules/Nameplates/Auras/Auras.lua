@@ -46,8 +46,10 @@ end
 function npAuras:EnsureDB()
     local db = self:GetDB()
     local dirty = false
-    if db.__exuiDefaultsVersion ~= defaults.SCHEMA_VERSION then
+    -- Merge every session so keys added after the last schema bump still get defaults.
+    if db.__exuiDefaultsVersion ~= defaults.SCHEMA_VERSION or self.mergedDB ~= db then
         defaults:MergeIntoDB(db)
+        self.mergedDB = db
         dirty = true
     end
     if defaults:SeedStarterDisplays(db) then

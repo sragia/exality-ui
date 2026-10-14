@@ -414,7 +414,7 @@ bankWindow.LayoutHeaderButtons = function(self, bagSize)
                 lines[#lines + 1] = tabData.purchasePromptBody
             end
             if tabData.tabCost then
-                lines[#lines + 1] = GetCoinTextureString(tabData.tabCost)
+                lines[#lines + 1] = C_CurrencyInfo.GetCoinTextureString(tabData.tabCost)
             end
             self.buyTabButton.tooltipLines = lines
         end

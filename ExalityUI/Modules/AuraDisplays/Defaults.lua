@@ -210,6 +210,21 @@ defaults.GROUP_VISUAL = {
     spellNameRelativePoint = 'TOP',
     spellNameXOff = 0,
     spellNameYOff = -2,
+    showCasterName = false,
+    casterNameClassColor = true,
+    casterNameShowRealm = false,
+    casterNameFont = 'DMSans',
+    casterNameFontSize = 10,
+    casterNameFontFlag = 'OUTLINE',
+    casterNameColor = { r = 1, g = 1, b = 1, a = 1 },
+    casterNameAnchorPoint = 'TOP',
+    casterNameRelativePoint = 'BOTTOM',
+    casterNameXOff = 0,
+    casterNameYOff = -2,
+    showPandemicGlow = false,
+    pandemicGlowPulse = true,
+    pandemicGlowColor = { r = 1, g = 0.82, b = 0, a = 1 },
+    pandemicGlowThickness = 2,
     showDispelBorder = true,
     showDispelIcon = false,
     dispelBorderStyle = 'Default',
@@ -356,13 +371,13 @@ function defaults:MergeGroupDefaults(group)
     end
 
     for key, value in pairs(self.GROUP_VISUAL) do
-        if group.visual[key] == nil then group.visual[key] = value end
+        if group.visual[key] == nil then group.visual[key] = EXUI.utils.deepCloneTable(value) end
     end
     for key, value in pairs(self.GROUP_CONDITIONS) do
-        if group.conditions[key] == nil then group.conditions[key] = value end
+        if group.conditions[key] == nil then group.conditions[key] = EXUI.utils.deepCloneTable(value) end
     end
     for key, value in pairs(self.GROUP_LOAD) do
-        if group.load[key] == nil then group.load[key] = value end
+        if group.load[key] == nil then group.load[key] = EXUI.utils.deepCloneTable(value) end
     end
 end
 

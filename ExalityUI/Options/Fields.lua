@@ -329,19 +329,47 @@ optionsFields.AddTabs = function(self, module)
     end
 end
 
+optionsFields.GetActiveScrollFrame = function(self)
+    local container = self.container
+    if not container then
+        return nil
+    end
+    if self.innerTabs and self.innerTabs.scrollFrame and container == self.innerTabs.container then
+        return self.innerTabs.scrollFrame
+    end
+    if self.tabs and self.tabs.scrollFrame and container == self.tabs.container then
+        return self.tabs.scrollFrame
+    end
+    if self.splitView and self.splitView.scrollFrame and container == self.splitView.container then
+        return self.splitView.scrollFrame
+    end
+    if self.pageScroll and container == self.pageScroll.child then
+        return self.pageScroll
+    end
+end
+
 optionsFields.GetContentWidth = function(self)
     local function usable(width)
         return type(width) == 'number' and width >= 64
     end
 
-    if self.splitView and self.splitView.rightPanel then
-        local width = self.splitView.rightPanel:GetWidth()
+    local scroll = self:GetActiveScrollFrame()
+    if scroll then
+        local width = scroll:GetWidth()
+        if usable(width) then
+            local gutter = (scroll.scrollbarWidth or 0) + (scroll.scrollbarPadding or 0) * 2
+            return math.max(1, width - gutter - EXFrames:ScalePixel(4, scroll))
+        end
+    end
+
+    if self.innerTabs and self.innerTabs.panel then
+        local width = self.innerTabs.panel:GetWidth()
         if usable(width) then
             return math.max(1, width - 20)
         end
     end
-    if self.innerTabs and self.innerTabs.panel then
-        local width = self.innerTabs.panel:GetWidth()
+    if self.splitView and self.splitView.rightPanel then
+        local width = self.splitView.rightPanel:GetWidth()
         if usable(width) then
             return math.max(1, width - 20)
         end

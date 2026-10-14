@@ -141,8 +141,12 @@ end
 characterFrame.AddSlots = function(self, slots, parent, side)
     local created = {}
     local prev = nil
+    if (not self.equipmentSlots) then
+        self.equipmentSlots = {}
+    end
     for index, slotId in ipairs(slots) do
         local slot = equipmentSlot:Create(slotId, side, index, parent)
+        table.insert(self.equipmentSlots, slot)
         if (side == 'BOTTOM') then
             if (prev) then
                 slot:SetPoint('LEFT', prev, 'RIGHT', SLOT_GAP, 0)
@@ -160,6 +164,15 @@ characterFrame.AddSlots = function(self, slots, parent, side)
         table.insert(created, slot)
     end
     return created
+end
+
+characterFrame.RefreshEquipment = function(self)
+    if (not self.equipmentSlots) then
+        return
+    end
+    for _, slot in ipairs(self.equipmentSlots) do
+        slot:Update()
+    end
 end
 
 characterFrame.UpdateBottomSlots = function(self)
@@ -523,6 +536,7 @@ end
 characterFrame.Create = function(self)
     local theme = EXUI.const.theme
     local window = windowConstruct:Create({
+        name = 'ExalityUICharacterFrame',
         size = {
             800,
             470
@@ -782,6 +796,7 @@ characterFrame.Create = function(self)
 
     local toBlizzIcon = self:CreateToBlizzIcon(window)
     toBlizzIcon:SetPoint('TOPRIGHT', window.close, 'TOPLEFT', -5, 0)
+    window:Hide()
 end
 
 characterFrame.OnShow = function(self)
@@ -791,6 +806,7 @@ characterFrame.OnShow = function(self)
     end
     self:UpdateHeader()
     self:UpdateBottomSlots()
+    self:RefreshEquipment()
     if (not self.window:IsShown()) then
         self.window:ShowWindow()
         if (ItemUpgradeFrame and ItemUpgradeFrame:IsShown()) then

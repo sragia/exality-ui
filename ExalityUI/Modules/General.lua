@@ -296,17 +296,24 @@ generalModule.GetOptions = function(self)
     }
 end
 
-generalModule.UpdateUIScale = function(self, applyScale)
+generalModule.ApplyStoredUIScale = function(self)
     local stored = data:GetData().uiScale
-    if applyScale and type(stored) == 'number' then
-        if InCombatLockdown() then
-            self.pendingUIScale = true
-        else
-            self.pendingUIScale = false
-            if math.abs(UIParent:GetScale() - stored) > 0.0001 then
-                UIParent:SetScale(stored)
-            end
-        end
+    if type(stored) ~= 'number' then
+        return
+    end
+    if InCombatLockdown() then
+        self.pendingUIScale = true
+        return
+    end
+    self.pendingUIScale = false
+    if math.abs(UIParent:GetScale() - stored) > 0.0001 then
+        UIParent:SetScale(stored)
+    end
+end
+
+generalModule.UpdateUIScale = function(self, applyScale)
+    if applyScale then
+        self:ApplyStoredUIScale()
     end
 
     EXUI:GetModule('pixel-perfect'):Initialize()
@@ -333,7 +340,12 @@ generalModule.SetupUIScale = function(self)
         data:SetDataByKey('uiScale', UIParent:GetScale())
     end
 
+    -- Protected changes are still allowed while loading after an in-combat /reload,
+    -- so apply the scale synchronously before lockdown starts.
+    self:ApplyStoredUIScale()
+
     local function ScheduleScaleUpdate()
+        generalModule:ApplyStoredUIScale()
         C_Timer.After(0.05, function()
             generalModule:UpdateUIScale(true)
         end)

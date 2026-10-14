@@ -2,7 +2,6 @@
 local EXUI = select(2, ...)
 
 local LSM = LibStub:GetLibrary('LibSharedMedia-3.0', true)
-
 ---@class EXUIAuraDisplaysButtonStyle
 local buttonStyle = EXUI:GetModule('aura-displays-button-style')
 
@@ -260,6 +259,9 @@ function buttonStyle:ApplyLayering(button)
         if button.BarStatusBar and button.BarStatusBar.SetFrameLevel then
             button.BarStatusBar:SetFrameLevel(base + 2)
         end
+        if button.PandemicGlow then
+            button.PandemicGlow:SetFrameLevel(base + 4)
+        end
         if button.TextOverlay then
             button.TextOverlay:SetFrameLevel(base + 5)
         end
@@ -287,8 +289,93 @@ function buttonStyle:ApplyLayering(button)
     if button.DispelBorderOverlay then
         button.DispelBorderOverlay:SetFrameLevel(base + 3)
     end
+    if button.PandemicGlow then
+        button.PandemicGlow:SetFrameLevel(base + 4)
+    end
     if button.TextOverlay then
         button.TextOverlay:SetFrameLevel(base + 5)
+    end
+end
+
+function buttonStyle:ApplyCasterName(button, visual)
+    if not button.SetCasterName then
+        return
+    end
+    if visual.showCasterName then
+        local casterName = self:CreateFontString(button, 'CasterNameText', 'casterName', visual, {
+            font = 'DMSans', size = 10, color = { r = 1, g = 1, b = 1, a = 1 }, anchor = 'TOP', relative = 'BOTTOM',
+        })
+        button:SetCasterName(casterName, {
+            useClassColors = visual.casterNameClassColor ~= false,
+            showRealmName = visual.casterNameShowRealm == true,
+        })
+    else
+        button:ClearCasterName()
+        if button.CasterNameText then
+            button.CasterNameText:Hide()
+        end
+    end
+end
+
+-- Parented to the button: Blizzard locks ChangeParent once the glow is adopted.
+function buttonStyle:EnsurePandemicGlow(button, visual)
+    local glow = button.PandemicGlow
+    if not glow then
+        glow = CreateFrame('Frame', nil, button)
+        glow:EnableMouse(false)
+        glow.PPBorder = EXUI:AddPixelPerfectBorder(glow, visual.pandemicGlowThickness or 2, {
+            register = false,
+            layer = 'OVERLAY',
+            outwardBottom = false,
+        })
+
+        local pulse = glow:CreateAnimationGroup()
+        pulse:SetLooping('BOUNCE')
+        local fade = pulse:CreateAnimation('Alpha')
+        fade:SetFromAlpha(1)
+        fade:SetToAlpha(0.25)
+        fade:SetDuration(0.5)
+        glow.Pulse = pulse
+
+        button.PandemicGlow = glow
+    end
+
+    glow:ClearAllPoints()
+    glow:SetAllPoints(self:GetAuraButtonFrame(button))
+    glow.PPBorder:SetBorderThickness(visual.pandemicGlowThickness or 2)
+    local color = visual.pandemicGlowColor or { r = 1, g = 0.82, b = 0, a = 1 }
+    glow.PPBorder:SetBorderColor(color.r, color.g, color.b, color.a or 1)
+    return glow
+end
+
+function buttonStyle:ApplyPandemicGlow(button, visual)
+    local isPreview = self:UsesSafeBarChrome(button)
+    if not isPreview and not button.AddPandemicRegion then
+        return
+    end
+
+    local glow = button.PandemicGlow
+    if glow then
+        if not isPreview then
+            button:RemovePandemicRegion(glow)
+            button:RemovePandemicActiveAnimation(glow.Pulse)
+        end
+        glow.Pulse:Stop()
+        glow:Hide()
+    end
+
+    if not visual.showPandemicGlow then
+        return
+    end
+
+    glow = self:EnsurePandemicGlow(button, visual)
+    glow.usePulse = visual.pandemicGlowPulse ~= false
+    if isPreview then
+        return
+    end
+    button:AddPandemicRegion(glow)
+    if glow.usePulse then
+        button:AddPandemicActiveAnimation(glow.Pulse)
     end
 end
 
@@ -951,11 +1038,14 @@ function buttonStyle:ApplyBarStyle(button, visual)
     end
 
     if not useSafeChrome then
+        self:ApplyCasterName(button, visual)
         self:ApplyAuraBorderBinding(button, visual)
     end
+    self:ApplyPandemicGlow(button, visual)
 
     self:ApplyMouseInteraction(button, visual)
     self:ApplyLayering(button)
+    EXUI:EnableNativeRounding(button, true)
 end
 
 function buttonStyle:Apply(button, visual)
@@ -1028,7 +1118,9 @@ function buttonStyle:Apply(button, visual)
         button:ClearSpellName()
     end
 
+    self:ApplyCasterName(button, visual)
     self:ApplyAuraBorderBinding(button, visual)
+    self:ApplyPandemicGlow(button, visual)
 
     if button.ClearDispelTypeText then
         button:ClearDispelTypeText()
@@ -1038,6 +1130,7 @@ function buttonStyle:Apply(button, visual)
 
     self:ApplyMouseInteraction(button, visual)
     self:ApplyLayering(button)
+    EXUI:EnableNativeRounding(button, true)
 end
 
 function buttonStyle:Clear(button)

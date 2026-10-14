@@ -7,6 +7,74 @@ pixelPerfect.UIScale = 1
 pixelPerfect.borders = {}
 pixelPerfect.snapFrames = {}
 pixelPerfect.cachedUIParentScale = nil
+pixelPerfect.pendingRounding = {}
+
+local function isBlockedInCombat(region)
+    if not InCombatLockdown() then
+        return false
+    end
+    local isProtected = region:IsProtected()
+    if issecretvalue(isProtected) then
+        return true
+    end
+    return isProtected
+end
+
+local flushPendingRounding
+
+local function roundTree(region, recursive)
+    if isBlockedInCombat(region) then
+        local pending = pixelPerfect.pendingRounding
+        pending[region] = pending[region] or recursive or false
+        EXUI:RegisterEventHandler('PLAYER_REGEN_ENABLED', 'pixel-perfect-rounding', flushPendingRounding)
+        return
+    end
+
+    if not region.__exuiSnapRoot and not region.__exuiNativeRound
+        and pcall(region.SetRoundLayoutToNearestPixel, region, true) then
+        region.__exuiNativeRound = true
+    end
+
+    if not recursive or not region.GetChildren then
+        return
+    end
+    for _, child in ipairs({ region:GetRegions() }) do
+        if not child.__exuiNativeRound and pcall(child.SetRoundLayoutToNearestPixel, child, true) then
+            child.__exuiNativeRound = true
+        end
+    end
+    for _, child in ipairs({ region:GetChildren() }) do
+        roundTree(child, true)
+    end
+end
+
+flushPendingRounding = function()
+    EXUI:UnregisterEventHandler('PLAYER_REGEN_ENABLED', 'pixel-perfect-rounding')
+    local pending = pixelPerfect.pendingRounding
+    pixelPerfect.pendingRounding = {}
+    for region, recursive in pairs(pending) do
+        roundTree(region, recursive)
+    end
+end
+
+---Let the engine round this region's layout to the physical pixel grid.
+---Protected regions are deferred until combat ends.
+---@param region? ScriptRegion
+---@param recursive? boolean also apply to existing child regions and frames
+---@return boolean enabled
+function EXUI:EnableNativeRounding(region, recursive)
+    if not region then
+        return false
+    end
+    if region.__exuiSnapRoot and not recursive then
+        return false
+    end
+    if region.__exuiNativeRound and not recursive then
+        return true
+    end
+    roundTree(region, recursive)
+    return region.__exuiNativeRound == true
+end
 
 function pixelPerfect:InvalidateScaleCache()
     self.cachedUIParentScale = nil
@@ -116,15 +184,32 @@ local function getRelativeAnchorCoord(relativeTo, relativePoint)
     return getAnchorCoord(left, bottom, width, height, relativePoint)
 end
 
+-- Native rounding rounds anchor offsets, not edges, so a CENTER-anchored odd-pixel
+-- root lands on half pixels. Roots keep Lua snapping; descendants use native rounding.
+local function markSnapRoot(frame)
+    frame.__exuiSnapRoot = true
+    if frame.__exuiNativeRound and not isBlockedInCombat(frame)
+        and pcall(frame.SetRoundLayoutToNearestPixel, frame, false) then
+        frame.__exuiNativeRound = nil
+    end
+end
+
 ---Register a root frame for pixel snapping on UI scale refresh.
 ---@param frame Frame
 function EXUI:RegisterSnapFrame(frame)
+    markSnapRoot(frame)
+    self:EnableNativeRounding(frame, true)
     table.insert(pixelPerfect.snapFrames, frame)
 end
 
 ---Align a frame's screen rect to the physical pixel grid.
 ---@param frame Frame
 function EXUI:SnapFrameToPixels(frame)
+    markSnapRoot(frame)
+    if isBlockedInCombat(frame) then
+        return
+    end
+
     local editorModule = EXUI:GetModule('editor')
     if editorModule and editorModule.enabled and frame.editor then
         return
@@ -176,22 +261,43 @@ function EXUI:SnapFrameToPixels(frame)
 end
 
 function EXUI:SetSize(frame, width, height)
+    if self:EnableNativeRounding(frame) then
+        frame:SetSize(width, height)
+        return
+    end
     frame:SetSize(self:ScalePixel(width, frame), self:ScalePixel(height, frame))
 end
 
 function EXUI:SetHeight(frame, height)
+    if self:EnableNativeRounding(frame) then
+        frame:SetHeight(height)
+        return
+    end
     frame:SetHeight(self:ScalePixel(height, frame))
 end
 
 function EXUI:SetWidth(frame, width)
+    if self:EnableNativeRounding(frame) then
+        frame:SetWidth(width)
+        return
+    end
     frame:SetWidth(self:ScalePixel(width, frame))
 end
 
 function EXUI:SetPoint(frame, point, arg2, arg3, arg4, arg5)
-    self:SetPointWithScale(frame, self:GetLayoutScale(frame), point, arg2, arg3, arg4, arg5)
+    self:SetPointWithScale(frame, nil, point, arg2, arg3, arg4, arg5)
 end
 
 function EXUI:SetPointWithScale(frame, scale, point, arg2, arg3, arg4, arg5)
+    if self:EnableNativeRounding(frame) then
+        if (type(arg2) == 'number') then
+            frame:SetPoint(point, arg2 or 0, arg3 or 0)
+        else
+            frame:SetPoint(point, arg2, arg3, arg4 or 0, arg5 or 0)
+        end
+        return
+    end
+    scale = scale or self:GetLayoutScale(frame)
     if (type(arg2) == 'number') then
         frame:SetPoint(point, self:ScalePixelWithScale(arg2 or 0, scale), self:ScalePixelWithScale(arg3 or 0, scale))
     else
@@ -202,6 +308,7 @@ end
 local function configureBorderTexture(texture)
     texture:SetSnapToPixelGrid(true)
     texture:SetTexelSnappingBias(0)
+    EXUI:EnableNativeRounding(texture)
 end
 
 local function applyBorderThickness(border, thickness, region)
@@ -231,14 +338,15 @@ local function applyBorderThickness(border, thickness, region)
     border.Left:ClearAllPoints()
     border.Left:SetWidth(size)
     border.Left:SetSnapToPixelGrid(false)
-    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', -sideOut, 0)
-    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', -sideOut, bottomOffset)
+    -- Sides stop at the top/bottom edges so translucent borders don't double up in the corners.
+    border.Left:SetPoint('TOPLEFT', frame, 'TOPLEFT', -sideOut, -size)
+    border.Left:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', -sideOut, bottomOffset + size)
 
     border.Right:ClearAllPoints()
     border.Right:SetWidth(size)
     border.Right:SetSnapToPixelGrid(false)
-    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', sideOut, 0)
-    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', sideOut, bottomOffset)
+    border.Right:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', sideOut, -size)
+    border.Right:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', sideOut, bottomOffset + size)
 end
 
 function EXUI:ApplySolidBorder(frame, borderSize, borderColor, bgColor, options)
@@ -268,6 +376,7 @@ function EXUI:AddPixelPerfectBorder(frame, thickness, options)
     options = options or {}
     local layer = options.layer or 'BORDER'
     local register = options.register ~= false
+    EXUI:EnableNativeRounding(frame)
 
     local border = {
         anchor = frame,
@@ -356,6 +465,7 @@ pixelPerfect.Refresh = function(self)
         local frame = self.snapFrames[i]
         if frame and frame.IsShown and frame:IsShown() then
             EXUI:SnapFrameToPixels(frame)
+            EXUI:EnableNativeRounding(frame, true)
             refreshUnitFrameBorder(frame)
             if frame.ApplyContentInsets then
                 frame:ApplyContentInsets()

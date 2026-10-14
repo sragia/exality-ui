@@ -723,6 +723,91 @@ function visualOptions:GetOptions(displayID, groupID)
     end
 
     append(fields, {
+        { type = 'title', label = 'Caster Name', width = 100 },
+        {
+            type = 'toggle',
+            label = 'Show Caster Name',
+            name = 'showCasterName',
+            width = 100,
+            currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showCasterName') end,
+            onChange = function(v) updateVisual(displayID, groupID, 'showCasterName', v, true) end,
+        },
+    })
+
+    if auraDisplays:GetGroupVisual(displayID, groupID, 'showCasterName') then
+        append(fields, {
+            {
+                type = 'toggle',
+                label = 'Class Colors',
+                name = 'casterNameClassColor',
+                width = 50,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'casterNameClassColor') ~= false
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'casterNameClassColor', v) end,
+            },
+            {
+                type = 'toggle',
+                label = 'Show Realm',
+                name = 'casterNameShowRealm',
+                width = 50,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'casterNameShowRealm') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'casterNameShowRealm', v) end,
+            },
+        })
+        append(fields, self:MakeTextFields(displayID, groupID, 'casterName', 'Caster Name', { skipTitle = true }))
+    end
+
+    append(fields, {
+        { type = 'title', label = 'Pandemic', width = 100 },
+        {
+            type = 'toggle',
+            label = 'Show Pandemic Glow',
+            name = 'showPandemicGlow',
+            width = 100,
+            tooltip = {
+                text = 'Highlights the aura while refreshing it keeps the remaining duration (pandemic window).',
+            },
+            currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'showPandemicGlow') end,
+            onChange = function(v) updateVisual(displayID, groupID, 'showPandemicGlow', v, true) end,
+        },
+    })
+
+    if auraDisplays:GetGroupVisual(displayID, groupID, 'showPandemicGlow') then
+        append(fields, {
+            {
+                type = 'color-picker',
+                label = 'Color',
+                name = 'pandemicGlowColor',
+                width = 33,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'pandemicGlowColor') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'pandemicGlowColor', v) end,
+            },
+            {
+                type = 'range',
+                label = 'Thickness',
+                name = 'pandemicGlowThickness',
+                min = 1,
+                max = 6,
+                step = 1,
+                width = 33,
+                currentValue = function() return auraDisplays:GetGroupVisual(displayID, groupID, 'pandemicGlowThickness') end,
+                onChange = function(v) updateVisual(displayID, groupID, 'pandemicGlowThickness', v) end,
+            },
+            {
+                type = 'toggle',
+                label = 'Pulse',
+                name = 'pandemicGlowPulse',
+                width = 33,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'pandemicGlowPulse') ~= false
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'pandemicGlowPulse', v) end,
+            },
+        })
+    end
+
+    append(fields, {
         { type = 'title', label = 'Interaction', width = 100 },
         {
             type = 'toggle',
