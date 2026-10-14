@@ -232,6 +232,22 @@ function containerOptions:GetOptions(displayID)
         },
         {
             type = 'toggle',
+            label = 'Hide When Unit Not Visible',
+            name = 'hideWhenUnitNotVisible',
+            width = 100,
+            tooltip = {
+                text = 'Hide this display while the unit is in a different instance or zone. Blizzard ignores most aura filters for such units and shows every buff/debuff.',
+            },
+            currentValue = function()
+                return ufAuras:GetDisplayValue(displayID, 'hideWhenUnitNotVisible') ~= false
+            end,
+            onChange = function(v)
+                ufAuras:UpdateDisplayValue(displayID, 'hideWhenUnitNotVisible', v and true or false)
+                ufAuras:RefreshDisplay(displayID)
+            end,
+        },
+        {
+            type = 'toggle',
             label = 'Match Unit Frame Width',
             name = 'matchUnitFrameWidth',
             width = 100,

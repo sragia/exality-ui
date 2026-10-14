@@ -56,6 +56,7 @@ function defaults:BuildNewDisplay(contextUnit)
     display.frameLevel = 10
     display.rowWidth = 200
     display.matchUnitFrameWidth = true
+    display.hideWhenUnitNotVisible = true
     display.units = {}
     if contextUnit then
         display.units[contextUnit] = true
@@ -134,6 +135,9 @@ function defaults:MergeIntoDB(db)
         end
         if display.matchUnitFrameWidth == nil then
             display.matchUnitFrameWidth = true
+        end
+        if display.hideWhenUnitNotVisible == nil then
+            display.hideWhenUnitNotVisible = true
         end
         if not display.container then
             display.container = self:CopyTable(adDefaults.CONTAINER)

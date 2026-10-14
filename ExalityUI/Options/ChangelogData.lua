@@ -10,6 +10,8 @@ EXUI.changelog = [[
 - [Pixel Perfect] Updates using new 12.1.5 API for better support for native rounding.
 - [Auras] Add support for pandemic glows.
 - [Minimap] Add coordinates display. And hide default one by default.
+- [Damage Meters] Move overall enable/disable out of window options
+- [Unit Frames] Hide filtered auras when unit is not visible to you.
 
 ## Support for Forever |cffeb7a34New|r
 Basic support for things to work mostly. Some small adjustments for Forever differences from Retail.

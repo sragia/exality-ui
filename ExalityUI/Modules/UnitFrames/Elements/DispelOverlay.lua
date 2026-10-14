@@ -432,7 +432,18 @@ dispelOverlay.Update = function(self, frame)
             SafeCall(container, 'SetUnit', frame.__unit)
         end
         SafeCall(container, 'SetEnabled', true)
-        SafeCall(container, 'Show')
+        SafeCall(container, 'SetShown', apply:IsUnitAuraVisible(frame))
+        SafeCall(container, 'UpdateAllAuras')
+    end
+end
+
+function dispelOverlay:SetUnitVisible(frame, visible)
+    local container = frame.DispelOverlayContainer
+    if not container then
+        return
+    end
+    SafeCall(container, 'SetShown', visible)
+    if visible then
         SafeCall(container, 'UpdateAllAuras')
     end
 end

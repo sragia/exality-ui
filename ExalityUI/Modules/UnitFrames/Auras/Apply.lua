@@ -31,6 +31,23 @@ local ITEM_ENCHANT_SLOT = {
     Ranged = 2,
 }
 
+-- Units outside the player's instance/zone only get group-feed auras, which Blizzard's
+-- filter strings can't classify, so every aura passes. These fire on both transitions.
+local VISIBILITY_UNIT_EVENTS = {
+    'PARTY_MEMBER_ENABLE',
+    'PARTY_MEMBER_DISABLE',
+    'UNIT_PHASE',
+    'UNIT_AREA_CHANGED',
+    'UNIT_CONNECTION',
+}
+
+local function OnVisibilityEvent(frame)
+    apply:ApplyVisibilityGate(frame)
+    C_Timer.After(0, function()
+        apply:ApplyVisibilityGate(frame)
+    end)
+end
+
 apply.pendingFrames = {}
 apply.pendingLiveRefresh = {}
 apply.sigCache = {}
@@ -60,7 +77,15 @@ function apply:Init()
     self.eventHandler:RegisterUnitEvent('UNIT_TARGETABLE_CHANGED', 'boss1', 'boss2', 'boss3', 'boss4', 'boss5')
     self.eventHandler:RegisterUnitEvent('UNIT_TARGET', 'target')
     self.eventHandler:RegisterUnitEvent('UNIT_PET', 'player')
+    self.eventHandler:RegisterEvent('GROUP_ROSTER_UPDATE')
+    self.eventHandler:RegisterEvent('ZONE_CHANGED_NEW_AREA')
     self.eventHandler:SetScript('OnEvent', function(_, event)
+        if event == 'GROUP_ROSTER_UPDATE' or event == 'ZONE_CHANGED_NEW_AREA' or event == 'PLAYER_ENTERING_WORLD' then
+            self:QueueVisibilityGateAll()
+            if event ~= 'PLAYER_ENTERING_WORLD' then
+                return
+            end
+        end
         if event == 'PLAYER_TARGET_CHANGED' then
             self:QueueLiveAuraRefresh('target')
             self:QueueLiveAuraRefresh('targettarget')
@@ -130,6 +155,80 @@ function apply:RefreshLiveAurasOnFrame(frame)
             container:UpdateAllAuras()
         end
     end
+    self:ApplyVisibilityGate(frame)
+end
+
+function apply:IsUnitAuraVisible(frame)
+    local unit = frame and frame.__unit
+    if not unit or frame.isFake or unit == 'player' or not UnitExists(unit) then
+        return true
+    end
+    return UnitIsVisible(unit) and true or false
+end
+
+function apply:IsDisplayGated(displayID)
+    local display = ufAuras:GetDisplay(displayID)
+    return not display or display.hideWhenUnitNotVisible ~= false
+end
+
+function apply:ShouldShowContainer(frame, displayID)
+    return not self:IsDisplayGated(displayID) or self:IsUnitAuraVisible(frame)
+end
+
+function apply:ApplyVisibilityGate(frame)
+    if not frame then
+        return
+    end
+    local visible = self:IsUnitAuraVisible(frame)
+    if frame._exuiAuraVisible == visible then
+        return
+    end
+    frame._exuiAuraVisible = visible
+
+    if frame.UFAuraContainers then
+        for displayID, container in pairs(frame.UFAuraContainers) do
+            if self:IsDisplayGated(displayID) then
+                container:SetShown(visible)
+                if visible and container.UpdateAllAuras then
+                    container:UpdateAllAuras()
+                end
+            end
+        end
+    end
+    EXUI:GetModule('uf-element-dispel-overlay'):SetUnitVisible(frame, visible)
+end
+
+function apply:RegisterVisibilityEvents(frame)
+    if frame._exuiVisibilityEvents or frame.__unit == 'player' then
+        return
+    end
+    frame._exuiVisibilityEvents = true
+    for _, event in ipairs(VISIBILITY_UNIT_EVENTS) do
+        frame:RegisterEvent(event, OnVisibilityEvent)
+    end
+end
+
+function apply:ApplyVisibilityGateAll()
+    for _, frame in pairs(ufCore.frames) do
+        self:ApplyVisibilityGate(frame)
+    end
+    for _, frame in ipairs(ufCore.partyFrames) do
+        self:ApplyVisibilityGate(frame)
+    end
+    for _, frame in ipairs(ufCore.raidFrames) do
+        self:ApplyVisibilityGate(frame)
+    end
+end
+
+function apply:QueueVisibilityGateAll()
+    if self.visibilityGateQueued then
+        return
+    end
+    self.visibilityGateQueued = true
+    C_Timer.After(0, function()
+        self.visibilityGateQueued = false
+        self:ApplyVisibilityGateAll()
+    end)
 end
 
 function apply:RefreshLiveAurasForUnit(unitType)
@@ -484,7 +583,7 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
     if not self:UpdateGroupsInPlace(container, displayID, display) then
         self:RebuildGroups(container, displayID, display, frame)
     end
-    container:Show()
+    container:SetShown(self:ShouldShowContainer(frame, displayID))
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
     end
@@ -547,7 +646,7 @@ function apply:ConfigureContainer(frame, displayID, display, container)
     end
 
     self:ApplyProcessingPolicy(container, display)
-    container:Show()
+    container:SetShown(self:ShouldShowContainer(frame, displayID))
     self:RebuildGroups(container, displayID, display, frame)
     self:ApplyItemEnchantments(container, display.container, display)
 
@@ -590,6 +689,8 @@ function apply:UpdateFrame(frame)
         return
     end
 
+    self:RegisterVisibilityEvents(frame)
+
     local displays = ufAuras:GetDisplaysForUnitType(unitType)
     local keep = {}
 
@@ -615,7 +716,7 @@ function apply:UpdateFrame(frame)
                 end
                 self:ApplyProcessingPolicy(container, display)
                 layout:ApplyItemEnchantmentLayout(container, display.container, display)
-                container:Show()
+                container:SetShown(self:ShouldShowContainer(frame, displayID))
             else
                 if container then
                     frame.UFAuraContainers[displayID] = nil
@@ -653,6 +754,8 @@ function apply:UpdateFrame(frame)
             self:DiscardContainer(frame, displayID)
         end
     end
+
+    self:ApplyVisibilityGate(frame)
 end
 
 function apply:RefreshDisplay(displayID)
