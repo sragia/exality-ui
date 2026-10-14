@@ -22,6 +22,40 @@ end
 
 local flushPendingRounding
 
+-- False when the object denies tainted access (secret auras in delves). A missing
+-- probe, a secret result, or an error all count as inaccessible.
+local function isAccessible(region)
+    if not region then
+        return false
+    end
+    local ok, canAccess = pcall(function()
+        local probe = region.CanBeAccessedInContext
+        if type(probe) ~= 'function' then
+            return false
+        end
+        local allowed = probe(region)
+        if allowed == nil or issecretvalue(allowed) then
+            return false
+        end
+        return allowed and true or false
+    end)
+    return ok and canAccess == true
+end
+
+local function collectDescendants(region, methodName)
+    local ok, list = pcall(function()
+        local method = region[methodName]
+        if type(method) ~= 'function' then
+            return nil
+        end
+        return { method(region) }
+    end)
+    if not ok or not list then
+        return nil
+    end
+    return list
+end
+
 local function roundTree(region, recursive)
     if isBlockedInCombat(region) then
         local pending = pixelPerfect.pendingRounding
@@ -35,16 +69,34 @@ local function roundTree(region, recursive)
         region.__exuiNativeRound = true
     end
 
-    if not recursive or not region.GetChildren then
+    if not recursive then
         return
     end
-    for _, child in ipairs({ region:GetRegions() }) do
-        if not child.__exuiNativeRound and pcall(child.SetRoundLayoutToNearestPixel, child, true) then
-            child.__exuiNativeRound = true
+
+    local regions = collectDescendants(region, 'GetRegions')
+    if regions then
+        for _, child in ipairs(regions) do
+            pcall(function()
+                if not isAccessible(child) or child.__exuiNativeRound then
+                    return
+                end
+                if pcall(child.SetRoundLayoutToNearestPixel, child, true) then
+                    child.__exuiNativeRound = true
+                end
+            end)
         end
     end
-    for _, child in ipairs({ region:GetChildren() }) do
-        roundTree(child, true)
+
+    local children = collectDescendants(region, 'GetChildren')
+    if children then
+        for _, child in ipairs(children) do
+            pcall(function()
+                if not isAccessible(child) then
+                    return
+                end
+                roundTree(child, true)
+            end)
+        end
     end
 end
 
