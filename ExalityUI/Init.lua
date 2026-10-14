@@ -95,6 +95,7 @@ EXUI.const = {
                 max = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-max.png]],
                 supermax = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/border-supermax.png]],
             },
+            slotMask = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/slot-mask.png]],
             highlight = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/highlight.png]],
             dot = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/dot.png]],
             toBlizzIcon = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/to-blizz-icon.png]],

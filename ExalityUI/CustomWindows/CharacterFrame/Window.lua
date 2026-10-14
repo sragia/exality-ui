@@ -234,7 +234,7 @@ characterFrame.UpdateHeader = function(self)
     end
 
     self.window:SetTitle(UnitPVPName("player"))
-    self.window.CharacterGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
+    self.window.CharacterGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 0.5)
     self:UpdateBackground()
 end
 
@@ -637,7 +637,7 @@ characterFrame.Create = function(self)
     glow:SetTexture(EXUI.const.textures.characterFrame.characterGlow)
     glow:SetSize(250, 350)
     glow:SetPoint('CENTER')
-    glow:SetVertexColor(1, 1, 1, 1)
+    glow:SetVertexColor(1, 1, 1, 0.5)
     glow:SetAlpha(0.5)
     self.window.CharacterGlow = glow
 

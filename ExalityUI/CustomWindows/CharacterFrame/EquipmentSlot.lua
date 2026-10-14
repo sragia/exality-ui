@@ -209,6 +209,13 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     icon:SetAllPoints()
     icon:SetTexture(textureName)
 
+    -- Border is a rounded frame drawn 1px outside the slot. Clip the square icon to that inner shape.
+    local iconMask = slot:CreateMaskTexture()
+    iconMask:SetPoint('TOPLEFT', -1, 1)
+    iconMask:SetPoint('BOTTOMRIGHT', 1, -1)
+    iconMask:SetTexture(EXUI.const.textures.characterFrame.slotMask, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    icon:AddMaskTexture(iconMask)
+
 
     local overlayFrame = CreateFrame('Frame', nil, slot)
     overlayFrame:SetAllPoints()
@@ -263,6 +270,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot.ItemContextOverlay = itemContextOverlay
     itemContextOverlay:SetAllPoints(slot)
     itemContextOverlay:SetColorTexture(0, 0, 0, 0.8)
+    itemContextOverlay:AddMaskTexture(iconMask)
     itemContextOverlay:Hide()
 
     -- Enchant Text
