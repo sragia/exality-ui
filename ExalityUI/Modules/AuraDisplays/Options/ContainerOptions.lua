@@ -26,7 +26,11 @@ function containerOptions:GetOptions(displayID)
         {
             type = 'toggle', label = 'Enable', name = 'enable', width = 100,
             currentValue = function() return auraDisplays:GetDisplayValue(displayID, 'enable') end,
-            onChange = function(v) auraDisplays:UpdateDisplayValue(displayID, 'enable', v); auraDisplays:RefreshDisplay(displayID) end,
+            onChange = function(v)
+                auraDisplays:UpdateDisplayValue(displayID, 'enable', v)
+                auraDisplays:RefreshDisplay(displayID)
+                optionsFields:RefreshItemList()
+            end,
         },
         {
             type = 'edit-box', label = 'Name', name = 'name', width = 100,
@@ -34,6 +38,19 @@ function containerOptions:GetOptions(displayID)
             onChange = function(v)
                 auraDisplays:UpdateDisplayValue(displayID, 'name', v)
                 auraDisplays:RefreshDisplay(displayID)
+                optionsFields:RefreshItemList()
+            end,
+        },
+        {
+            type = 'icon-input',
+            label = 'Icon',
+            name = 'icon',
+            width = 100,
+            currentValue = function()
+                return auraDisplays:GetDisplayValue(displayID, 'icon')
+            end,
+            onChange = function(v)
+                auraDisplays:UpdateDisplayValue(displayID, 'icon', v)
                 optionsFields:RefreshItemList()
             end,
         },
@@ -54,6 +71,7 @@ function containerOptions:GetOptions(displayID)
                     auraDisplays:UpdateContainerValue(displayID, 'unitCustom', '')
                 end
                 auraDisplays:RefreshDisplay(displayID)
+                optionsFields:RefreshItemList()
                 optionsFields:RefreshOptions()
             end,
         },

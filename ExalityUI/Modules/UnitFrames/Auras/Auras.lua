@@ -16,6 +16,9 @@ local loadConditions = EXUI:GetModule('aura-displays-load-conditions')
 ---@class EXUIUnitFramesCore
 local ufCore = EXUI:GetModule('uf-core')
 
+---@class EXUIOptionsFields
+local optionsFields = EXUI:GetModule('options-fields')
+
 ---@class EXUIUnitFramesAuras
 local ufAuras = EXUI:GetModule('uf-auras')
 
@@ -154,6 +157,8 @@ end
 function ufAuras:CreateNewDisplay(contextUnit)
     local db = self:EnsureDB()
     local displayID, display = defaults:BuildNewDisplay(contextUnit or self.contextUnit)
+    display.listGroupID = nil
+    display.order = self:NextListOrder(nil)
     db.displays[displayID] = display
     self:SaveDB(db)
     self.currGroupID = display.groupOrder[1]
@@ -187,6 +192,9 @@ function ufAuras:DuplicateDisplay(displayID)
     end
     copy.groups = newGroups
     copy.groupOrder = newOrder
+    local parentID = self:DisplayListParent(source)
+    copy.listGroupID = parentID
+    copy.order = self:NextListOrder(parentID)
     db.displays[newID] = copy
     self:SaveDB(db)
     self.currGroupID = newOrder[1]
@@ -253,12 +261,16 @@ function ufAuras:DisplayHasLoadableGroup(display)
     return false
 end
 
-function ufAuras:IsDisplayActiveForUnit(displayID, unitType)
-    local display = self:GetDisplay(displayID)
-    if not display then
+function ufAuras:IsDisplayEnabled(display)
+    if not display or display.enable == false then
         return false
     end
-    if display.enable == false then
+    return self:IsListGroupEnabled(display.listGroupID)
+end
+
+function ufAuras:IsDisplayActiveForUnit(displayID, unitType)
+    local display = self:GetDisplay(displayID)
+    if not self:IsDisplayEnabled(display) then
         return false
     end
     if not self:DisplayAppliesToUnit(display, unitType) then
@@ -307,78 +319,400 @@ function ufAuras:GetOrderedDisplays()
     return list
 end
 
+local LIST_ICON = 134400
+
+local function ListParentMatches(parentID, nodeParent)
+    if not parentID then
+        return not nodeParent
+    end
+    return nodeParent == parentID
+end
+
+local function CompareListOrder(a, b)
+    local aInactive = a.inactive and true or false
+    local bInactive = b.inactive and true or false
+    if aInactive ~= bInactive then
+        return not aInactive
+    end
+    local aOrder = a.order or math.huge
+    local bOrder = b.order or math.huge
+    if aOrder ~= bOrder then
+        return aOrder < bOrder
+    end
+    local aTime = a.createdAt or 0
+    local bTime = b.createdAt or 0
+    if aTime ~= bTime then
+        return aTime < bTime
+    end
+    return (a.name or '') < (b.name or '')
+end
+
+function ufAuras:GetListGroups()
+    local db = self:EnsureDB()
+    return db.__groups or {}
+end
+
+function ufAuras:GetListGroup(groupID)
+    if not groupID then
+        return nil
+    end
+    return self:GetListGroups()[groupID]
+end
+
+function ufAuras:ListGroupParent(group)
+    if not group then
+        return nil
+    end
+    local parentID = group.parentID
+    if parentID and self:GetListGroup(parentID) then
+        return parentID
+    end
+    return nil
+end
+
+function ufAuras:DisplayListParent(display)
+    if type(display) ~= 'table' then
+        return nil
+    end
+    local groupID = display.listGroupID
+    if groupID and self:GetListGroup(groupID) then
+        return groupID
+    end
+    return nil
+end
+
+function ufAuras:IsListGroupEnabled(groupID)
+    if not groupID then
+        return true
+    end
+    local seen = {}
+    while groupID do
+        if seen[groupID] then
+            return true
+        end
+        seen[groupID] = true
+        local group = self:GetListGroup(groupID)
+        if not group then
+            return true
+        end
+        if group.enable == false then
+            return false
+        end
+        groupID = group.parentID
+    end
+    return true
+end
+
+function ufAuras:ListGroupContains(ancestorID, nodeID)
+    if not ancestorID or not nodeID then
+        return false
+    end
+    local seen = {}
+    local current = nodeID
+    while current do
+        if current == ancestorID then
+            return true
+        end
+        if seen[current] then
+            return false
+        end
+        seen[current] = true
+        local group = self:GetListGroup(current)
+        if not group then
+            return false
+        end
+        current = group.parentID
+    end
+    return false
+end
+
+function ufAuras:CollectListSiblings(parentID, skipID, skipIsGroup)
+    local nodes = {}
+    for groupID, group in pairs(self:GetListGroups()) do
+        if not (skipIsGroup and groupID == skipID) and ListParentMatches(parentID, self:ListGroupParent(group)) then
+            nodes[#nodes + 1] = {
+                ref = group,
+                isGroup = true,
+                id = groupID,
+                order = group.order,
+                createdAt = group.createdAt,
+                name = group.name,
+            }
+        end
+    end
+    local db = self:EnsureDB()
+    for id, display in pairs(db.displays or {}) do
+        if type(display) == 'table' and not (skipIsGroup == false and id == skipID) and ListParentMatches(parentID, self:DisplayListParent(display)) then
+            nodes[#nodes + 1] = {
+                ref = display,
+                isGroup = false,
+                id = id,
+                order = display.order,
+                createdAt = display.createdAt,
+                name = display.name,
+                inactive = not self:IsDisplayActiveForUnit(id, self.contextUnit),
+            }
+        end
+    end
+    table.sort(nodes, CompareListOrder)
+    return nodes
+end
+
+function ufAuras:WriteListSiblingOrder(nodes)
+    for index, node in ipairs(nodes) do
+        node.ref.order = index
+    end
+end
+
+function ufAuras:NextListOrder(parentID)
+    local nodes = self:CollectListSiblings(parentID)
+    local needsWrite = false
+    local maxOrder = 0
+    for _, node in ipairs(nodes) do
+        if not node.ref.order then
+            needsWrite = true
+        elseif node.ref.order > maxOrder then
+            maxOrder = node.ref.order
+        end
+    end
+    if needsWrite then
+        self:WriteListSiblingOrder(nodes)
+        return #nodes + 1
+    end
+    return maxOrder + 1
+end
+
+function ufAuras:CreateListGroup()
+    local db = self:EnsureDB()
+    db.__groups = db.__groups or {}
+    local groupID = EXUI.utils.generateRandomString(12)
+    db.__groups[groupID] = {
+        name = 'New Group',
+        icon = LIST_ICON,
+        enable = true,
+        createdAt = time(),
+        parentID = nil,
+        order = self:NextListOrder(nil),
+    }
+    self:SaveDB(db)
+    return groupID
+end
+
+function ufAuras:UpdateListGroupValue(groupID, key, value)
+    local db = self:EnsureDB()
+    local group = db.__groups and db.__groups[groupID]
+    if not group then
+        return
+    end
+    group[key] = value
+    self:SaveDB(db)
+end
+
+function ufAuras:DeleteListGroup(groupID)
+    local db = self:EnsureDB()
+    local group = db.__groups and db.__groups[groupID]
+    if not group then
+        return
+    end
+    local parentID = self:ListGroupParent(group)
+    local moved = {}
+    for id, child in pairs(db.__groups) do
+        if id ~= groupID and child.parentID == groupID then
+            moved[#moved + 1] = {
+                ref = child,
+                order = child.order,
+                createdAt = child.createdAt,
+                name = child.name,
+                isGroup = true,
+            }
+        end
+    end
+    for _, display in pairs(db.displays or {}) do
+        if type(display) == 'table' and display.listGroupID == groupID then
+            moved[#moved + 1] = {
+                ref = display,
+                order = display.order,
+                createdAt = display.createdAt,
+                name = display.name,
+                isGroup = false,
+            }
+        end
+    end
+    table.sort(moved, CompareListOrder)
+    local nextOrder = self:NextListOrder(parentID)
+    for _, node in ipairs(moved) do
+        if node.isGroup then
+            node.ref.parentID = parentID
+        else
+            node.ref.listGroupID = parentID
+        end
+        node.ref.order = nextOrder
+        nextOrder = nextOrder + 1
+    end
+    db.__groups[groupID] = nil
+    self:SaveDB(db)
+    self:RefreshAll()
+end
+
+function ufAuras:Reorder(id, isGroup, parentID, index)
+    local db = self:EnsureDB()
+    if parentID and not self:GetListGroup(parentID) then
+        parentID = nil
+    end
+    local ref
+    local oldParent
+    if isGroup then
+        ref = db.__groups and db.__groups[id]
+        if not ref then
+            return
+        end
+        if id == parentID or self:ListGroupContains(id, parentID) then
+            return
+        end
+        oldParent = self:ListGroupParent(ref)
+        ref.parentID = parentID
+    else
+        ref = db.displays and db.displays[id]
+        if type(ref) ~= 'table' then
+            return
+        end
+        oldParent = self:DisplayListParent(ref)
+        ref.listGroupID = parentID
+    end
+    local siblings = self:CollectListSiblings(parentID, id, isGroup and true or false)
+    index = math.floor(tonumber(index) or (#siblings + 1))
+    if index < 1 then
+        index = 1
+    end
+    if index > #siblings + 1 then
+        index = #siblings + 1
+    end
+    table.insert(siblings, index, { ref = ref })
+    self:WriteListSiblingOrder(siblings)
+    if not ListParentMatches(oldParent, parentID) then
+        self:WriteListSiblingOrder(self:CollectListSiblings(oldParent))
+    end
+    self:SaveDB(db)
+    self:RefreshEditorList()
+    self:RefreshAll()
+end
+
+function ufAuras:GetListGroupOptions(groupID)
+    return optionsFields:GetGroupFields({
+        get = function(key)
+            local group = ufAuras:GetListGroup(groupID)
+            return group and group[key]
+        end,
+        set = function(key, value)
+            ufAuras:UpdateListGroupValue(groupID, key, value)
+        end,
+        onChange = function(key)
+            if key == 'enable' then
+                ufAuras:RefreshAll()
+            end
+            ufAuras:RefreshEditorList()
+        end,
+    })
+end
+
+function ufAuras:DisplayContextMenu()
+    return {
+        {
+            label = 'Duplicate',
+            onClick = function(id)
+                local newID = self:DuplicateDisplay(id)
+                self:RefreshDisplay(newID)
+                local editor = EXUI:GetModule('uf-aura-editor')
+                if editor and editor.Refresh then
+                    editor:Refresh(newID)
+                end
+            end,
+        },
+        {
+            label = 'Delete',
+            color = EXUI.EXFrames and EXUI.EXFrames.Theme.danger,
+            onClick = function(id)
+                self:DeleteDisplay(id)
+                local editor = EXUI:GetModule('uf-aura-editor')
+                if editor and editor.Refresh then
+                    editor:Refresh()
+                end
+            end,
+        },
+    }
+end
+
+function ufAuras:ListGroupContextMenu()
+    return {
+        {
+            label = 'Delete',
+            color = EXUI.EXFrames and EXUI.EXFrames.Theme.danger,
+            onClick = function(itemID)
+                local editor = EXUI:GetModule('uf-aura-editor')
+                local selected = editor and editor.currItemID == itemID
+                self:DeleteListGroup(itemID)
+                if editor and editor.Refresh then
+                    if selected then
+                        editor.currItemID = nil
+                    end
+                    editor:Refresh()
+                end
+            end,
+        },
+    }
+end
+
 function ufAuras:GetSplitViewItems(contextUnit)
     contextUnit = contextUnit or self.contextUnit
-    local active = {}
-    local inactive = {}
-
-    for _, entry in ipairs(self:GetOrderedDisplays()) do
-        local displayID = entry.ID
-        local display = entry.display
-        local item = {
-            ID = displayID,
-            label = display.name or 'Aura Display',
-            sublabel = defaults:FormatUnitsSubtitle(display.units),
-            contextMenuItems = {
-                {
-                    label = 'Duplicate',
-                    onClick = function(id)
-                        local newID = self:DuplicateDisplay(id)
-                        self:RefreshDisplay(newID)
-                        local editor = EXUI:GetModule('uf-aura-editor')
-                        if editor and editor.Refresh then
-                            editor:Refresh(newID)
-                        end
-                    end,
-                },
-                {
-                    label = 'Delete',
-                    color = EXUI.EXFrames and EXUI.EXFrames.Theme.danger,
-                    onClick = function(id)
-                        self:DeleteDisplay(id)
-                        local editor = EXUI:GetModule('uf-aura-editor')
-                        if editor and editor.Refresh then
-                            editor:Refresh()
-                        end
-                    end,
-                },
-            },
-        }
-        if self:IsDisplayActiveForUnit(displayID, contextUnit) then
-            table.insert(active, item)
-        else
-            table.insert(inactive, item)
-        end
-    end
-
-    local theme = EXUI.const.theme
-    local success = theme.success
-    local danger = theme.danger
-
     local items = {}
-    table.insert(items, {
-        type = 'category',
-        label = 'Active',
-        bgColor = { success[1], success[2], success[3], 0.28 },
-        textColor = { success[1], success[2], success[3], 1 },
-    })
-    if #active == 0 then
-        -- keep category visible even when empty
-    else
-        for _, item in ipairs(active) do
-            table.insert(items, item)
+    local seen = {}
+
+    local function emit(parentID, depth)
+        if parentID and seen[parentID] then
+            return
+        end
+        if parentID then
+            seen[parentID] = true
+        end
+        for _, node in ipairs(self:CollectListSiblings(parentID)) do
+            if node.isGroup then
+                if not seen[node.id] then
+                    local group = node.ref
+                    local row = {
+                        type = 'group',
+                        selectable = true,
+                        ID = node.id,
+                        label = group.name or 'Group',
+                        icon = group.icon or LIST_ICON,
+                        depth = depth,
+                        parentID = parentID,
+                        contextMenuItems = self:ListGroupContextMenu(),
+                    }
+                    if not self:IsListGroupEnabled(node.id) then
+                        row.statusIcon = 'inactive'
+                    end
+                    items[#items + 1] = row
+                    emit(node.id, depth + 1)
+                end
+            else
+                local item = {
+                    ID = node.id,
+                    label = node.ref.name or 'Aura Display',
+                    sublabel = defaults:FormatUnitsSubtitle(node.ref.units),
+                    icon = node.ref.icon or LIST_ICON,
+                    depth = depth,
+                    parentID = parentID,
+                    contextMenuItems = self:DisplayContextMenu(),
+                }
+                if not self:IsDisplayActiveForUnit(node.id, contextUnit) then
+                    item.statusIcon = 'inactive'
+                end
+                items[#items + 1] = item
+            end
         end
     end
-    table.insert(items, {
-        type = 'category',
-        label = 'Inactive',
-        spacingAbove = 10,
-        bgColor = { danger[1], danger[2], danger[3], 0.28 },
-        textColor = { danger[1], danger[2], danger[3], 1 },
-    })
-    for _, item in ipairs(inactive) do
-        table.insert(items, item)
-    end
+
+    emit(nil, 0)
     return items
 end
 

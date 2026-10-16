@@ -325,8 +325,7 @@ function defaults:ShouldExpandSpellIdSection(getValue)
     if conditionTextHasContent(getValue('excludeSpellIDs')) then
         return true
     end
-    local maxDuration = getValue('maxDuration') or 0
-    return maxDuration > 0
+    return false
 end
 
 function defaults:ShouldExpandAuraFlagsSection(getValue)

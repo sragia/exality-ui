@@ -52,6 +52,8 @@ function generalOptions:GetOptions(displayID)
 
                 core:RefreshDisplayByID(displayID)
 
+                optionsFields:RefreshItemList()
+
             end,
 
             currentValue = function()
@@ -102,6 +104,32 @@ function generalOptions:GetOptions(displayID)
 
         {
 
+            type = 'icon-input',
+
+            label = 'Icon',
+
+            name = 'icon',
+
+            width = 100,
+
+            currentValue = function()
+
+                return core:GetValueForDisplay(displayID, 'icon')
+
+            end,
+
+            onChange = function(value)
+
+                core:UpdateValueForDisplay(displayID, 'icon', value)
+
+                optionsFields:RefreshItemList()
+
+            end,
+
+        },
+
+        {
+
             type = 'dropdown',
 
             label = 'Resource Type',
@@ -133,6 +161,8 @@ function generalOptions:GetOptions(displayID)
                 core:UpdateValueForDisplay(displayID, 'resourceType', value)
 
                 core:RecreateFrame(displayID)
+
+                optionsFields:RefreshItemList()
 
                 optionsFields:RefreshFields()
 

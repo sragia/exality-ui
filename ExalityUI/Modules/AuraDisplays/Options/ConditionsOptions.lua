@@ -24,17 +24,9 @@ local unitResolver = EXUI:GetModule('aura-displays-unit-resolver')
 
 local append = EXUI.utils.append
 
-local function EscapeFontString(text)
-    return (text or ''):gsub('|', '||')
-end
-
 function conditionsOptions:GetFilterPreview(displayID, groupID)
     local tokens = auraDisplays:GetGroupConditions(displayID, groupID, 'filterTokens') or {}
     return resolver:BuildFilterString(tokens)
-end
-
-function conditionsOptions:GetFilterPreviewText(displayID, groupID)
-    return EscapeFontString(self:GetFilterPreview(displayID, groupID))
 end
 
 function conditionsOptions:ShouldShowSpellIdNotice(displayID, groupID)
@@ -128,12 +120,6 @@ function conditionsOptions:GetFilterFields(displayID, groupID)
             end,
         }
     end)
-    table.insert(fields, {
-        type = 'description',
-        label = 'Filter Preview: ' .. self:GetFilterPreviewText(displayID, groupID),
-        name = 'filterPreview',
-        width = 100,
-    })
     return fields
 end
 
@@ -193,6 +179,20 @@ function conditionsOptions:GetOptions(displayID, groupID)
             currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'sortDirection') end,
             onChange = function(v)
                 auraDisplays:UpdateGroupConditions(displayID, groupID, 'sortDirection', v); auraDisplays:RefreshDisplay(
+                    displayID)
+            end,
+        },
+        {
+            type = 'range',
+            label = 'Max Duration (0=off)',
+            name = 'maxDuration',
+            min = 0,
+            max = 600,
+            step = 1,
+            width = 50,
+            currentValue = function() return auraDisplays:GetGroupConditions(displayID, groupID, 'maxDuration') end,
+            onChange = function(v)
+                auraDisplays:UpdateGroupConditions(displayID, groupID, 'maxDuration', v); auraDisplays:RefreshDisplay(
                     displayID)
             end,
         },
@@ -264,8 +264,9 @@ function conditionsOptions:GetOptions(displayID, groupID)
                     getFilterString = function() return conditionsOptions:GetFilterPreview(displayID, groupID) end,
                     currentValue = function() return getCondition('includeSpellIDs') end,
                     onChange = function(v)
-                        auraDisplays:UpdateGroupConditions(displayID, groupID, 'includeSpellIDs', v); auraDisplays
-                            :RefreshDisplay(displayID)
+                        auraDisplays:UpdateGroupConditions(displayID, groupID, 'includeSpellIDs', v)
+                        auraDisplays:RefreshDisplay(displayID)
+                        optionsFields:RefreshItemList()
                     end,
                 },
                 {
@@ -303,20 +304,6 @@ function conditionsOptions:GetOptions(displayID, groupID)
                             SetCVar('tooltipShowAuraSpellIDs', value)
                         end
                         optionsFields:RefreshOptions()
-                    end,
-                },
-                {
-                    type = 'range',
-                    label = 'Max Duration (0=off)',
-                    name = 'maxDuration',
-                    min = 0,
-                    max = 600,
-                    step = 1,
-                    width = 50,
-                    currentValue = function() return getCondition('maxDuration') end,
-                    onChange = function(v)
-                        auraDisplays:UpdateGroupConditions(displayID, groupID, 'maxDuration', v); auraDisplays
-                            :RefreshDisplay(displayID)
                     end,
                 },
             },

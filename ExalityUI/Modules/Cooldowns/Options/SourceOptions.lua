@@ -38,6 +38,7 @@ function sourceOptions:GetOptions(cdID)
                 setCooldownSource(cdID, value)
                 cooldowns:UpdateById(cdID)
                 optionsFields:RefreshOptions()
+                optionsFields:RefreshItemList()
             end,
             width = 50,
         },
@@ -58,6 +59,7 @@ function sourceOptions:GetOptions(cdID)
             onChange = function(value)
                 cooldowns:UpdateValueForCD(cdID, 'spellID', value)
                 cooldowns:UpdateById(cdID)
+                optionsFields:RefreshItemList()
             end,
             width = 50,
         },
@@ -74,6 +76,7 @@ function sourceOptions:GetOptions(cdID)
             onChange = function(value)
                 cooldowns:UpdateValueForCD(cdID, 'itemID', value)
                 cooldowns:UpdateById(cdID)
+                optionsFields:RefreshItemList()
             end,
             width = 50,
         },
@@ -93,6 +96,7 @@ function sourceOptions:GetOptions(cdID)
             onChange = function(value)
                 cooldowns:UpdateValueForCD(cdID, 'equipmentSlot', value)
                 cooldowns:UpdateById(cdID)
+                optionsFields:RefreshItemList()
             end,
             width = 50,
         },

@@ -110,10 +110,6 @@ bags.GetOrder = function()
     return 55
 end
 
-bags.GetIcon = function()
-    return [[Interface/Addons/ExalityUI/Assets/Images/Menu/bags.png]]
-end
-
 bags.GetProfileExportSpec = function()
     return { id = 'bags', keys = { 'bags' } }
 end

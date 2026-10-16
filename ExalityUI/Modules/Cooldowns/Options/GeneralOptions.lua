@@ -19,6 +19,7 @@ function generalOptions:GetOptions(cdID)
             onChange = function(value)
                 cooldowns:UpdateValueForCD(cdID, 'enable', value)
                 cooldowns:UpdateById(cdID)
+                optionsFields:RefreshItemList()
             end,
             currentValue = function()
                 return cooldowns:GetValueForCD(cdID, 'enable')

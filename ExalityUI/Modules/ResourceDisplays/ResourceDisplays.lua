@@ -122,6 +122,8 @@ core.GENERIC_RESOURCE_TYPES = {
 
 core.splitViewExtraButton = {
 
+    icon = 'plus',
+
     text = 'Create New Display',
 
     color = { 249 / 255, 95 / 255, 9 / 255, 1 },

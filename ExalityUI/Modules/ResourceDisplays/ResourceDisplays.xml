@@ -9,6 +9,7 @@
 	<Script file="PowerType/SegmentBase.lua"/>
 	<Script file="ResourceDisplays.lua"/>
 	<Script file="Preview.lua"/>
+	<Script file="List.lua"/>
 
 	<Script file="PowerType/GenericPower.lua"/>
 	<Script file="PowerType/Stagger.lua"/>

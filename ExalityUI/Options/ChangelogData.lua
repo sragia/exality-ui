@@ -2,6 +2,10 @@
 local EXUI = select(2, ...)
 
 EXUI.changelog = [[
+# |cffdb49000.9.8|r
+- [Options] Bunch of changes visually and functionality wise for tabs and side option items.
+  - Now you can group up and adjust ordering of Resource Displays, Cooldowns, Aura Displays, Aura Editors for UF/NP. Also add icons to them.
+
 # |cffdb49000.9.7|r
 - [Minimap] Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.
 - [Minimap] Fix mail icon on minimap not being hidden after closing options. Add Difficulty preview while we are viewing it's options.

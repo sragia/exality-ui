@@ -156,16 +156,18 @@ core.UpdateOptionsChrome = function(self, fields)
         local onClick = {}
         onClick.show = function(_, button)
             ufCore:ForceShow(tab.id)
-            button:SetText('Hide Preview')
+            button:SetIcon('eye')
             button:SetOnClick(onClick.hide)
         end
         onClick.hide = function(_, button)
             ufCore:Unforce(tab.id)
-            button:SetText('Show Preview')
+            button:SetIcon('eyeOff')
             button:SetOnClick(onClick.show)
         end
         fields.splitView:AddExtraButton({
-            text = 'Show Preview',
+            icon = 'eyeOff',
+            text = 'Preview',
+            textColor = EXFrames.Theme.textMuted,
             onClick = onClick.show,
         })
     else
@@ -273,17 +275,19 @@ core.OnTabChange = function(self, id)
 
             onClick.show = function(self, button)
                 ufCore:ForceShow(option.id)
-                button:SetText('Hide Preview')
+                button:SetIcon('eye')
                 button:SetOnClick(onClick.hide)
             end
             onClick.hide = function(self, button)
                 ufCore:Unforce(option.id)
-                button:SetText('Show Preview')
+                button:SetIcon('eyeOff')
                 button:SetOnClick(onClick.show)
             end
 
             self.tabOptions:AddExtraButton({
-                text = 'Show Preview',
+                icon = 'eyeOff',
+                text = 'Preview',
+                textColor = EXFrames.Theme.textMuted,
                 onClick = onClick.show,
             })
         else

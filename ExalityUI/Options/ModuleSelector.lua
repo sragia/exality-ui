@@ -226,7 +226,6 @@ optionsModuleSelector.ToggleFlyout = function(self, anchorItem)
     flyout:SetParent(self.containerParent)
     flyout:SetFrameStrata('FULLSCREEN_DIALOG')
     flyout:SetFrameLevel(anchorItem:GetFrameLevel() + 20)
-    flyout:SetBackgroundColor(unpack(EXFrames.Theme.backgroundDeep))
     flyout:SetWidth(COMPACT_SIZE + 8)
     flyout:SetPoint('BOTTOMLEFT', anchorItem, 'TOPRIGHT', 5, 5)
 

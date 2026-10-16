@@ -11,6 +11,19 @@ local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 local ZERO_DURATION_OBJECT = C_DurationUtil.CreateDuration()
 ZERO_DURATION_OBJECT:SetTimeSpan(0, 0)
 
+local function isEntryEnabled(db)
+    if not db or db.enable == false then
+        return false
+    end
+    if db.groupID then
+        local cooldowns = EXUI:GetModule('cooldowns')
+        if cooldowns and not cooldowns:IsGroupEnabled(db.groupID) then
+            return false
+        end
+    end
+    return true
+end
+
 local function getCooldownSource(db)
     local source = db.cooldownSource
     if source == 'spell' or source == 'item' or source == 'equipment' then
@@ -416,7 +429,7 @@ function cooldownDisplay:Create(frame)
 
     frame.OnChange = function(selfRef, event, ...)
         local db = selfRef.db
-        if not db or not db.enable then
+        if not isEntryEnabled(db) then
             return
         end
 
@@ -450,7 +463,7 @@ end
 
 function cooldownDisplay:Update(frame)
     local db = frame.db
-    if not db or not db.enable then
+    if not isEntryEnabled(db) then
         frame:Hide()
         return
     end

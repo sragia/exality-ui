@@ -49,10 +49,6 @@ nameplates.GetOrder = function()
     return 25
 end
 
-nameplates.GetIcon = function()
-    return [[Interface/Addons/ExalityUI/Assets/Images/Menu/nameplates.png]]
-end
-
 nameplates.GetProfileExportSpec = function()
     return { id = 'nameplates', keys = { 'nameplates' } }
 end

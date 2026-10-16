@@ -85,6 +85,7 @@ local function getMeterEvents()
 end
 
 meters.splitViewExtraButton = {
+    icon = 'plus',
     text = 'Create New',
     color = { 249 / 255, 95 / 255, 9 / 255, 1 },
     onClick = function()
@@ -116,10 +117,6 @@ end
 
 function meters:GetOrder()
     return 48
-end
-
-function meters:GetIcon()
-    return [[Interface/Addons/ExalityUI/Assets/Images/Menu/damage-meters.png]]
 end
 
 function meters:GetProfileExportSpec()

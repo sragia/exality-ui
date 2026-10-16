@@ -326,7 +326,7 @@ function preview:Sync()
     local itemID = optionsFields.currItemID
     self:ClearAutoPreviews(itemID)
 
-    if itemID and auraDisplays:GetDisplay(itemID) and not self.userDisabled[itemID] then
+    if itemID and auraDisplays:IsDisplayShown(auraDisplays:GetDisplay(itemID)) and not self.userDisabled[itemID] then
         if not self.toggled[itemID] then
             self:SetToggled(itemID, true)
         end
@@ -369,7 +369,7 @@ end
 
 function preview:EnsureDisplayFrame(displayID)
     local display = auraDisplays:GetDisplay(displayID)
-    if not display or not display.enable then
+    if not auraDisplays:IsDisplayShown(display) then
         return
     end
 
@@ -433,7 +433,7 @@ end
 
 function preview:RestoreAuras(displayID)
     local display = auraDisplays:GetDisplay(displayID)
-    if not display or not display.enable then
+    if not auraDisplays:IsDisplayShown(display) then
         return
     end
 
@@ -956,7 +956,7 @@ function preview:Refresh(displayID)
     end
 
     local display = auraDisplays:GetDisplay(displayID)
-    if not display or not display.enable then
+    if not auraDisplays:IsDisplayShown(display) then
         self:HidePreview(displayID)
         return
     end

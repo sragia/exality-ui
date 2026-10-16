@@ -6,34 +6,59 @@ local navIcons = EXUI:GetModule('options-nav-icons')
 
 local DEFAULT_ICON = 'Interface/Icons/INV_Misc_QuestionMark'
 
+local SPRITE = [[Interface/Addons/ExalityUI/Assets/Images/Menu/menu-icons-sprite.png]]
+local SHEET_W = 261
+local SHEET_H = 1171
+local CELL = 64
+local ORIGIN = 1
+local STRIDE = 65
+
+local function CellCoords(col, row)
+    local left = (ORIGIN + col * STRIDE) / SHEET_W
+    local top = (ORIGIN + row * STRIDE) / SHEET_H
+    return { left, left + CELL / SHEET_W, top, top + CELL / SHEET_H }
+end
+
+local function SpriteIcon(row)
+    return {
+        texture = SPRITE,
+        inactive = CellCoords(0, row),
+        active = CellCoords(1, row),
+    }
+end
+
+-- Row order matches the collapsed options menu.
 local icons = {
-    ['General'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/general.png]],
-    ['Unit Frames'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/unit-frames.png]],
-    ['Action Bars'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/action-bars.png]],
-    ['Resource Displays'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/resource-displays.png]],
-    ['Cooldowns'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/cooldowns.png]],
-    ['Minimap'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/minimap.png]],
-    ['Data Brokers'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/data-brokers.png]],
-    ['Quality of Life'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/quality-of-life.png]],
-    ['Raid Tools'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/raid-tools.png]],
-    ['XP Bar'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/xp-bar.png]],
-    ['Objective Tracker'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/objective-tracker.png]],
-    ['M+ Timer'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/mythic-plus-timer.png]],
-    ['Notifications'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/notifications.png]],
-    ['Tweaks/Bugfixes'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/tweaks-bugfixes.png]],
-    ['Custom Windows'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/custom-windows.png]],
-    ['Bags'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/custom-windows.png]],
-    ['Aura Displays'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/aura-displays.png]],
-    ['Damage Meters'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/raid-tools.png]],
-    ['Nameplates'] = [[Interface/Addons/ExalityUI/Assets/Images/Menu/nameplates.png]],
+    ['General'] = SpriteIcon(0),
+    ['Unit Frames'] = SpriteIcon(1),
+    ['Nameplates'] = SpriteIcon(2),
+    ['Action Bars'] = SpriteIcon(3),
+    ['Resource Displays'] = SpriteIcon(4),
+    ['Aura Displays'] = SpriteIcon(5),
+    ['Damage Meters'] = SpriteIcon(6),
+    ['Cooldowns'] = SpriteIcon(7),
+    ['Bags'] = SpriteIcon(8),
+    ['Minimap'] = SpriteIcon(9),
+    ['Data Brokers'] = SpriteIcon(10),
+    ['Raid Tools'] = SpriteIcon(11),
+    ['XP Bar'] = SpriteIcon(12),
+    ['Objective Tracker'] = SpriteIcon(13),
+    ['M+ Timer'] = SpriteIcon(14),
+    ['Notifications'] = SpriteIcon(15),
+    ['Tweaks/Bugfixes'] = SpriteIcon(16),
+    ['Custom Windows'] = SpriteIcon(17),
 }
 
 navIcons.Get = function(self, name, module)
+    local icon = icons[name]
+    if (icon) then
+        return icon
+    end
     if (module and module.GetIcon) then
-        local icon = module:GetIcon()
-        if (icon) then
-            return icon
+        local moduleIcon = module:GetIcon()
+        if (moduleIcon) then
+            return moduleIcon
         end
     end
-    return icons[name] or DEFAULT_ICON
+    return DEFAULT_ICON
 end

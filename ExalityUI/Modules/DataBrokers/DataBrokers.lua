@@ -28,6 +28,7 @@ local dataBrokers = EXUI:GetModule('data-brokers')
 dataBrokers.useTabs = false
 dataBrokers.useSplitView = true
 dataBrokers.splitViewExtraButton = {
+    icon = 'plus',
     text = 'New',
     color = { 249 / 255, 95 / 255, 9 / 255, 1 },
     onClick = function()

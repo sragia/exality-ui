@@ -44,6 +44,7 @@ end
 function defaults:BuildNewDisplay(contextUnit)
     local displayID, display = adDefaults:BuildNewDisplay()
     display.name = 'New Unit Frame Aura'
+    display.icon = 134400
     display.anchorPoint = 'BOTTOMLEFT'
     display.relativePoint = 'TOPLEFT'
     display.XOff = 0
@@ -84,6 +85,9 @@ function defaults:MergeIntoDB(db)
         end
         if not display.name then
             display.name = 'Unit Frame Aura'
+        end
+        if display.icon == nil then
+            display.icon = 134400
         end
         if not display.units then
             display.units = {}

@@ -184,16 +184,17 @@ function preview:Sync()
     local itemID = optionsFields.currItemID
     self:ClearAutoPreviews(itemID)
 
-    local currentDisplay = itemID and core:GetDBByDisplayID(itemID)
-    if itemID and currentDisplay and currentDisplay.resourceType and not self.userDisabled[itemID] then
+    local db = core:GetDB() or {}
+    local currentDisplay = itemID and db[itemID]
+    if itemID and core:IsDisplayEntry(itemID, currentDisplay) and core:IsDisplayShown(currentDisplay) and currentDisplay.resourceType and not self.userDisabled[itemID] then
         if not self.toggled[itemID] then
             self:SetToggled(itemID, true)
         end
     end
 
     for displayID in pairs(self.toggled) do
-        local display = core:GetDBByDisplayID(displayID)
-        if not display or not display.resourceType then
+        local display = db[displayID]
+        if not core:IsDisplayEntry(displayID, display) or not core:IsDisplayShown(display) or not display.resourceType then
             self.toggled[displayID] = nil
             self.manual[displayID] = nil
             self:Deactivate(displayID)

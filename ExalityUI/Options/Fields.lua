@@ -45,6 +45,7 @@ local BOTTOM_ALIGN_FIELD_TYPES = {
     ['color-picker'] = true,
     button = true,
     ['edit-box'] = true,
+    ['icon-input'] = true,
     editbox = true,
     ['anchor-point'] = true,
 }
@@ -116,11 +117,19 @@ end
 optionsFields.AddSplitView = function(self, module)
     self.splitView = EXFrames:GetFrame('split-options-frame'):Create()
     self:AttachSplitView()
+    if self.splitView.SetItemStyle then
+        self.splitView:SetItemStyle(module.splitViewItemStyle or 'simple')
+    end
 
     if (module.splitViewExtraButton) then
         self.splitView:AddExtraButton(module.splitViewExtraButton)
     else
         self.splitView:DisableExtraButton()
+    end
+    if module.Reorder and self.splitView.SetOnReorder then
+        self.splitView:SetOnReorder(function(id, isGroup, parentID, index)
+            module:Reorder(id, isGroup, parentID, index)
+        end)
     end
     local items = module:GetSplitViewItems()
     self.splitView:AddItems(items)
@@ -149,7 +158,24 @@ optionsFields.AddSplitView = function(self, module)
             end
         end
         if (not found) then
-            self.splitView:onItemClick(items[1].ID)
+            local fallbackID
+            for _, item in ipairs(items) do
+                if item.ID and item.type ~= 'category' and item.type ~= 'group' then
+                    fallbackID = item.ID
+                    break
+                end
+            end
+            if not fallbackID then
+                for _, item in ipairs(items) do
+                    if item.ID and item.type == 'group' and item.selectable then
+                        fallbackID = item.ID
+                        break
+                    end
+                end
+            end
+            if fallbackID then
+                self.splitView:onItemClick(fallbackID)
+            end
         end
     end
 
@@ -447,9 +473,14 @@ optionsFields.ResolveOptionIDs = function(self, module)
         local items = module:GetSplitViewItems()
         if items then
             for _, item in ipairs(items) do
-                if item.ID and item.type ~= 'category' then
-                    self.currItemID = item.ID
-                    break
+                if item.ID and item.type ~= 'category' and (item.type ~= 'group' or item.selectable) then
+                    if item.type ~= 'group' then
+                        self.currItemID = item.ID
+                        break
+                    end
+                    if not self.currItemID then
+                        self.currItemID = item.ID
+                    end
                 end
             end
         end
@@ -1338,6 +1369,9 @@ optionsFields.GetField = function(self, field)
             local f = EXFrames:GetFrame('spell-id-input'):Create({})
             return f
         end,
+        ['icon-input'] = function()
+            return EXFrames:GetFrame('icon-input'):Create({})
+        end,
         ['cooldowns-spell-id-input'] = function()
             local f = EXUI:GetModule('cooldowns-spell-id-input'):Create({})
             return f
@@ -1373,4 +1407,85 @@ optionsFields.GetField = function(self, field)
             EXUI.utils.printOut('Unknown Field Type: ' .. field.type)
         end
     })
+end
+
+local DEFAULT_GROUP_ICON = 134400
+
+--- Shared option panel for a selectable list group.
+--- config.get(key) / config.set(key, value) read and write name, icon, enable.
+--- config.onChange(key, value) runs after set (list refresh, disable children).
+--- config.onDelete() adds a delete button when provided.
+function optionsFields:GetGroupFields(config)
+    config = config or {}
+    local defaultIcon = config.defaultIcon or DEFAULT_GROUP_ICON
+
+    local function read(key, fallback)
+        if config.get then
+            local value = config.get(key)
+            if value ~= nil then
+                return value
+            end
+        end
+        return fallback
+    end
+
+    local function write(key, value)
+        if config.set then
+            config.set(key, value)
+        end
+        if config.onChange then
+            config.onChange(key, value)
+        end
+    end
+
+    local fields = {
+        {
+            type = 'toggle',
+            label = 'Enable',
+            name = 'enable',
+            width = 100,
+            currentValue = function()
+                return read('enable', true) ~= false
+            end,
+            onChange = function(value)
+                write('enable', value and true or false)
+            end,
+        },
+        {
+            type = 'edit-box',
+            label = 'Name',
+            name = 'name',
+            width = 50,
+            currentValue = function()
+                return read('name', '')
+            end,
+            onChange = function(value)
+                write('name', value)
+            end,
+        },
+        {
+            type = 'icon-input',
+            label = 'Icon',
+            name = 'icon',
+            width = 50,
+            currentValue = function()
+                return read('icon', defaultIcon)
+            end,
+            onChange = function(value)
+                write('icon', value)
+            end,
+        },
+    }
+
+    if config.onDelete then
+        table.insert(fields, {
+            type = 'button',
+            label = config.deleteLabel or 'Delete Group',
+            name = 'deleteGroup',
+            width = 50,
+            onClick = config.onDelete,
+        })
+    end
+
+    return fields
 end

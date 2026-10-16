@@ -52,6 +52,8 @@ local LAYOUT = {
 
 local NAV_ANIM_DURATION = 0.2
 local NAV_PANEL_INSET = 8
+-- Compact rail is 36. The icon button is 30, so 3px each side. The old 8px inset left a 20px clip.
+local COMPACT_SCROLL_INSET = 3
 local NAV_TOGGLE_WIDTH = 17
 local NAV_TOGGLE_HEIGHT = 71
 local NAV_TOGGLE_ICON_SIZE = 14
@@ -127,9 +129,14 @@ optionsMain.UpdateNavToggleLayout = function(self)
     self.navToggle:SetPoint('RIGHT', self.sidebar, 'LEFT', 0, 0)
 
     self.menuScroll:ClearAllPoints()
-    local leftInset = self.isNavCompact and NAV_PANEL_INSET or 0
-    self.menuScroll:SetPoint('TOPLEFT', leftInset, -NAV_PANEL_INSET)
-    self.menuScroll:SetPoint('BOTTOMRIGHT', -NAV_PANEL_INSET, NAV_PANEL_INSET)
+    local sideInset = self.isNavCompact and COMPACT_SCROLL_INSET or 0
+    local rightInset = self.isNavCompact and COMPACT_SCROLL_INSET or NAV_PANEL_INSET
+    self.menuScroll:SetPoint('TOPLEFT', sideInset, -NAV_PANEL_INSET)
+    self.menuScroll:SetPoint('BOTTOMRIGHT', -rightInset, NAV_PANEL_INSET)
+    self.menuScroll.hideScrollbar = self.isNavCompact and true or false
+    if self.menuScroll.UpdateScrollbar then
+        self.menuScroll:UpdateScrollbar()
+    end
 
     self:UpdateNavToggleIcon()
 end

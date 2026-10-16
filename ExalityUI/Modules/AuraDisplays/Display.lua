@@ -111,7 +111,7 @@ function displayModule:SyncUnitsForKeys(unitKeys)
     local db = auraDisplays:GetDB()
     for displayID, frame in pairs(self.frames) do
         local display = db.displays and db.displays[displayID]
-        if display and display.enable and display.container then
+        if display and auraDisplays:IsDisplayShown(display) and display.container then
             local containerUnit = display.container.unit or 'player'
             if self:ShouldSyncDisplayUnit(containerUnit, unitKeys) then
                 containerModule:SyncUnit(frame, display)
@@ -126,7 +126,7 @@ end
 
 function displayModule:Refresh(displayID, display)
     buttonStyle:InvalidateStyleSignatures()
-    if not display or not display.enable then
+    if not auraDisplays:IsDisplayShown(display) then
         self:DestroyFrame(displayID)
         return
     end

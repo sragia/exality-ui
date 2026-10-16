@@ -30,6 +30,7 @@ options.fields = {}
 options.useSplitView = true
 options.useInnerTabs = true
 options.splitViewExtraButton = {
+    icon = 'plus',
     text = 'Create New',
     color = { 249 / 255, 95 / 255, 9 / 255, 1 },
     onClick = function()
@@ -73,6 +74,7 @@ options.CreateLayout = function(self, container)
 
         self.splitFrame:SetOnItemChange(function(id) self:OnItemChange(id) end)
         self.splitFrame:AddExtraButton({
+            icon = 'plus',
             text = 'Create New',
             color = { 249 / 255, 95 / 255, 9 / 255, 1 },
             onClick = function()

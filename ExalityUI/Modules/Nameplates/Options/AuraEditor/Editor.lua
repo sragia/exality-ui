@@ -54,7 +54,7 @@ local SECTION_TABS = {
 
 function editor:CreateWindow()
     local window = EXFrames:GetFrame('window-frame'):Create({
-        size = { 920, 650 },
+        size = { 1080, 740 },
         title = 'Nameplate Aura Editor',
     })
     window:HookScript('OnHide', function()
@@ -66,6 +66,9 @@ end
 function editor:GetOptions(tabID, displayID)
     if not displayID then
         return {}
+    end
+    if ufAuras:GetListGroup(displayID) then
+        return ufAuras:GetListGroupOptions(displayID)
     end
     if tabID == 'container' then
         return containerOptions:GetOptions(displayID)
@@ -188,6 +191,9 @@ function editor:ClearInnerTabs()
         self.innerTabs:Destroy()
         self.innerTabs = nil
     end
+    if self.splitView and self.splitView.scrollFrame then
+        self.splitView.scrollFrame:Show()
+    end
 end
 
 function editor:AddInnerTabs()
@@ -277,18 +283,55 @@ function editor:EnsureSplitView()
     self.splitView = EXFrames:GetFrame('split-options-frame'):Create()
     self.splitView:SetParent(self.window.container)
     self.splitView:SetAllPoints()
+    if self.splitView.SetItemStyle then
+        self.splitView:SetItemStyle('advanced')
+    end
     if self.splitView.SetLeftWidth then
-        self.splitView:SetLeftWidth(170)
+        self.splitView:SetLeftWidth(240)
     end
 
     self.splitView:AddExtraButton({
-        text = 'Create Display',
-        onClick = function()
-            local displayID = ufAuras:CreateNewDisplay()
-            ufAuras:RefreshDisplay(displayID)
-            self:Refresh(displayID)
-        end,
+        actions = {
+            {
+                icon = 'plus',
+                text = 'Create',
+                onClick = function()
+                    local displayID = ufAuras:CreateNewDisplay()
+                    ufAuras:RefreshDisplay(displayID)
+                    self:Refresh(displayID)
+                end,
+            },
+            {
+                icon = 'folderPlus',
+                align = 'right',
+                tooltip = 'Create Group',
+                onClick = function()
+                    local groupID = ufAuras:CreateListGroup()
+                    self:Refresh(groupID)
+                end,
+            },
+            {
+                icon = 'lock',
+                align = 'right',
+                tooltip = 'Unlock',
+                onClick = function(button)
+                    local splitView = self.splitView
+                    if not splitView or not splitView.SetReorderEnabled then
+                        return
+                    end
+                    local enabled = not splitView:IsReorderEnabled()
+                    splitView:SetReorderEnabled(enabled)
+                    button:SetIcon(enabled and 'unlock' or 'lock')
+                    button:SetTooltip(enabled and 'Lock' or 'Unlock')
+                end,
+            },
+        },
     })
+    if self.splitView.SetOnReorder then
+        self.splitView:SetOnReorder(function(id, isGroup, parentID, index)
+            ufAuras:Reorder(id, isGroup, parentID, index)
+        end)
+    end
 
     self.splitView:SetOnItemChange(function(id)
         if self._suppressItemChange then
@@ -296,16 +339,29 @@ function editor:EnsureSplitView()
             return
         end
         self.currItemID = id
-        groupNav:EnsureGroupSelected(id)
-        self.currTabID = self.currTabID or 'container'
-        -- Keep the selected section tab; only rebuild fields for the new display.
-        if not self.innerTabs then
-            self:AddInnerTabs()
-        else
-            self:PopulateFields()
-        end
-        ufPreview:Sync(id)
+        self:ShowSelection(id)
     end)
+end
+
+function editor:ShowSelection(id)
+    if ufAuras:GetListGroup(id) then
+        self:ClearInnerTabs()
+        self.currTabID = 'group'
+        self:PopulateFields()
+        ufPreview:Sync(nil)
+        return
+    end
+    if self.currTabID == 'group' then
+        self.currTabID = 'container'
+    end
+    groupNav:EnsureGroupSelected(id)
+    self.currTabID = self.currTabID or 'container'
+    if not self.innerTabs then
+        self:AddInnerTabs()
+    else
+        self:PopulateFields()
+    end
+    ufPreview:Sync(id)
 end
 
 function editor:SetActiveItemSilent(id)
@@ -315,8 +371,13 @@ function editor:SetActiveItemSilent(id)
     self._suppressItemChange = true
     self.splitView.activeID = id
     for _, item in ipairs(self.splitView.items or {}) do
-        if not item.isCategory then
+        if not item.isCategory and not item.isGroup then
             item:SetActive(item.ID == id)
+        end
+    end
+    for _, header in ipairs(self.splitView.groupHeaders or {}) do
+        if header:IsShown() then
+            header:SetActive(header.selectable and header.ID == id)
         end
     end
     self.currItemID = id
@@ -329,12 +390,25 @@ function editor:RefreshItemList()
     end
     local items = ufAuras:GetSplitViewItems()
     local keepID = self.currItemID
+    if keepID then
+        self.splitView.activeID = keepID
+    end
     self.splitView:AddItems(items)
+
+    local function canKeep(item, id)
+        if not item.ID or item.ID ~= id or item.type == 'category' then
+            return false
+        end
+        if item.type == 'group' then
+            return item.selectable and true or false
+        end
+        return true
+    end
 
     local selectID = nil
     if keepID then
         for _, item in ipairs(items) do
-            if item.type ~= 'category' and item.ID == keepID then
+            if canKeep(item, keepID) then
                 selectID = keepID
                 break
             end
@@ -342,7 +416,7 @@ function editor:RefreshItemList()
     end
     if not selectID and self.splitView.activeID then
         for _, item in ipairs(items) do
-            if item.type ~= 'category' and item.ID == self.splitView.activeID then
+            if canKeep(item, self.splitView.activeID) then
                 selectID = self.splitView.activeID
                 break
             end
@@ -350,9 +424,17 @@ function editor:RefreshItemList()
     end
     if not selectID then
         for _, item in ipairs(items) do
-            if item.type ~= 'category' then
+            if item.ID and item.type ~= 'category' and item.type ~= 'group' then
                 selectID = item.ID
                 break
+            end
+        end
+        if not selectID then
+            for _, item in ipairs(items) do
+                if item.ID and item.type == 'group' and item.selectable then
+                    selectID = item.ID
+                    break
+                end
             end
         end
     end
@@ -390,17 +472,12 @@ function editor:Refresh(selectID)
     end
     self:RefreshItemList()
     if self.currItemID then
-        groupNav:EnsureGroupSelected(self.currItemID)
-        if not self.innerTabs then
-            self:AddInnerTabs()
-        else
-            self:PopulateFields()
-        end
+        self:ShowSelection(self.currItemID)
     else
         self:ClearInnerTabs()
         self:ClearFields()
+        ufPreview:Sync(nil)
     end
-    ufPreview:Sync(self.currItemID)
 end
 
 function editor:Show(contextUnit)

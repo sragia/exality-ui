@@ -556,7 +556,7 @@ function apply:PrepareContainer(container, displayID, display, hardSig, frame)
         container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
     end
     if container.SetEnabled then
-        container:SetEnabled(display.enable ~= false)
+        container:SetEnabled(ufAuras:IsDisplayEnabled(display))
     end
     self:ApplyProcessingPolicy(container, display)
     self:RebuildGroups(container, displayID, display, frame)
@@ -576,7 +576,7 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
         container:SetUnit(frame.__unit)
     end
     if container.SetEnabled then
-        container:SetEnabled(display.enable ~= false)
+        container:SetEnabled(ufAuras:IsDisplayEnabled(display))
     end
     self:ApplyProcessingPolicy(container, display)
     layout:ApplyItemEnchantmentLayout(container, display.container, display)
@@ -604,7 +604,7 @@ function apply:PrewarmPool()
     for _, unitType in ipairs(defaults.UNIT_ORDER) do
         local displays = ufAuras:GetDisplaysForUnitType(unitType)
         for displayID, display in pairs(displays) do
-            if display.enable ~= false and ufAuras:DisplayHasLoadableGroup(display) then
+            if ufAuras:IsDisplayEnabled(display) and ufAuras:DisplayHasLoadableGroup(display) then
                 local hardSig = self:GetHardSignature(displayID, display)
                 while self:CountPooledContainers(hardSig) < perDisplay do
                     local container = self:CreateContainer(self.prewarmFrame, display)
@@ -642,7 +642,7 @@ function apply:ConfigureContainer(frame, displayID, display, container)
         container:SetUnit(frame.__unit)
     end
     if container.SetEnabled then
-        container:SetEnabled(display.enable ~= false)
+        container:SetEnabled(ufAuras:IsDisplayEnabled(display))
     end
 
     self:ApplyProcessingPolicy(container, display)
@@ -695,7 +695,7 @@ function apply:UpdateFrame(frame)
     local keep = {}
 
     for displayID, display in pairs(displays) do
-        local shouldShow = display.enable ~= false and ufAuras:DisplayHasLoadableGroup(display)
+        local shouldShow = ufAuras:IsDisplayEnabled(display) and ufAuras:DisplayHasLoadableGroup(display)
 
         if shouldShow then
             keep[displayID] = true
@@ -712,7 +712,7 @@ function apply:UpdateFrame(frame)
                     container:SetUnit(frame.__unit)
                 end
                 if container.SetEnabled then
-                    container:SetEnabled(display.enable ~= false)
+                    container:SetEnabled(ufAuras:IsDisplayEnabled(display))
                 end
                 self:ApplyProcessingPolicy(container, display)
                 layout:ApplyItemEnchantmentLayout(container, display.container, display)

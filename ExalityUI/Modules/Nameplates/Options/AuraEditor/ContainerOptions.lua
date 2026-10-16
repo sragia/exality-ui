@@ -67,6 +67,19 @@ function containerOptions:GetOptions(displayID)
                 refreshDisplayAndList(displayID)
             end,
         },
+        {
+            type = 'icon-input',
+            label = 'Icon',
+            name = 'icon',
+            width = 50,
+            currentValue = function()
+                return ufAuras:GetDisplayValue(displayID, 'icon')
+            end,
+            onChange = function(v)
+                ufAuras:UpdateDisplayValue(displayID, 'icon', v)
+                refreshEditorList()
+            end,
+        },
     })
 
     append(fields, {

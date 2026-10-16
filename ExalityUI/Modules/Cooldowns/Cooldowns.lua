@@ -63,6 +63,82 @@ local SLOTNAME_BY_ID = {
 cooldowns.useTabs = false
 cooldowns.useSplitView = true
 cooldowns.useInnerTabs = true
+cooldowns.splitViewItemStyle = 'advanced'
+
+local QUESTION_MARK_ICON = 134400
+
+local function CooldownSource(cdDB)
+    local source = cdDB.cooldownSource
+    if source == 'spell' or source == 'item' or source == 'equipment' then
+        return source
+    end
+    return cdDB.isItem and 'item' or 'spell'
+end
+
+local function EmptySlotTexture(slotID)
+    local token = SLOTNAME_BY_ID[tonumber(slotID)]
+    if not token or not GetInventorySlotInfo then
+        return nil
+    end
+    local _, texture = GetInventorySlotInfo(token)
+    return texture
+end
+
+local function SlotLabel(slotID)
+    slotID = tonumber(slotID)
+    if slotID == 11 then
+        return 'Finger 1'
+    end
+    if slotID == 12 then
+        return 'Finger 2'
+    end
+    if slotID == 13 then
+        return 'Trinket 1'
+    end
+    if slotID == 14 then
+        return 'Trinket 2'
+    end
+    local token = SLOTNAME_BY_ID[slotID]
+    local label = token and _G[token] or nil
+    if label and label ~= '' then
+        return label
+    end
+    return slotID and string.format('Slot %d', slotID) or 'Equipment'
+end
+
+function cooldowns:GetListIcon(cdDB)
+    local source = CooldownSource(cdDB)
+    if source == 'spell' then
+        local spellID = tonumber(cdDB.spellID)
+        if spellID then
+            local texture
+            if C_Spell and C_Spell.GetSpellTexture then
+                texture = C_Spell.GetSpellTexture(spellID)
+            elseif GetSpellTexture then
+                texture = GetSpellTexture(spellID)
+            end
+            if texture then
+                return texture, 'Spell'
+            end
+        end
+        return QUESTION_MARK_ICON, 'Spell'
+    end
+    if source == 'item' then
+        local itemID = tonumber(cdDB.itemID)
+        if itemID and C_Item and C_Item.GetItemInfoInstant then
+            local _, _, _, _, texture = C_Item.GetItemInfoInstant(itemID)
+            if texture then
+                return texture, 'Item'
+            end
+        end
+        return QUESTION_MARK_ICON, 'Item'
+    end
+    if source == 'equipment' then
+        local texture = EmptySlotTexture(cdDB.equipmentSlot or defaults.DISPLAY.equipmentSlot)
+        return texture or QUESTION_MARK_ICON, SlotLabel(cdDB.equipmentSlot or defaults.DISPLAY.equipmentSlot)
+    end
+    return QUESTION_MARK_ICON, 'Spell'
+end
 
 cooldowns.eventHandler = CreateFrame('Frame')
 cooldowns.eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
@@ -73,14 +149,43 @@ cooldowns.eventHandler:SetScript('OnEvent', function(_, event)
 end)
 
 cooldowns.splitViewExtraButton = {
-    text = 'Create New',
-    color = { 249 / 255, 95 / 255, 9 / 255, 1 },
-    onClick = function()
-        local frame = cooldowns:CreateNew()
-        cooldowns:UpdateAll()
-        optionsFields:Refresh()
-        optionsFields:SetItemID(frame.ID)
-    end,
+    actions = {
+        {
+            icon = 'plus',
+            text = 'Create',
+            onClick = function()
+                local frame = cooldowns:CreateNew()
+                cooldowns:UpdateAll()
+                optionsFields:Refresh()
+                optionsFields:SetItemID(frame.ID)
+            end,
+        },
+        {
+            icon = 'folderPlus',
+            align = 'right',
+            tooltip = 'Create Group',
+            onClick = function()
+                local groupID = cooldowns:CreateGroup()
+                optionsFields:Refresh()
+                optionsFields:SetItemID(groupID)
+            end,
+        },
+        {
+            icon = 'lock',
+            align = 'right',
+            tooltip = 'Unlock',
+            onClick = function(button)
+                local splitView = optionsFields.splitView
+                if not splitView or not splitView.SetReorderEnabled then
+                    return
+                end
+                local enabled = not splitView:IsReorderEnabled()
+                splitView:SetReorderEnabled(enabled)
+                button:SetIcon(enabled and 'unlock' or 'lock')
+                button:SetTooltip(enabled and 'Lock' or 'Unlock')
+            end,
+        },
+    },
 }
 
 function cooldowns:Init()
@@ -109,52 +214,396 @@ function cooldowns:IsCooldownEntry(ID, cdDB)
     return type(cdDB) == 'table'
 end
 
-function cooldowns:GetSplitViewItems()
+function cooldowns:GetGroups()
     local db = self:EnsureDB()
-    local items = {}
+    return db.__groups or {}
+end
 
-    for ID, cdDB in EXUI.utils.spairs(db, function(t, a, b)
-        local cdA = t[a]
-        local cdB = t[b]
-        if type(cdA) ~= 'table' or type(cdB) ~= 'table' then
-            return tostring(a) < tostring(b)
+function cooldowns:GetGroup(groupID)
+    if not groupID then
+        return nil
+    end
+    return self:GetGroups()[groupID]
+end
+
+function cooldowns:IsGroupEnabled(groupID)
+    local seen = {}
+    while groupID do
+        if seen[groupID] then
+            return true
         end
-        return (cdA.createdAt or 0) < (cdB.createdAt or 0)
-    end) do
-        if self:IsCooldownEntry(ID, cdDB) then
-            table.insert(items, {
-                label = cdDB.name or ID,
-                ID = ID,
-                contextMenuItems = {
-                    {
-                        label = 'Duplicate',
-                        color = { 2 / 255, 145 / 255, 227 / 255, 1 },
-                        onClick = function(itemID)
-                            local newID = self:DuplicateCD(itemID)
-                            if newID then
-                                optionsFields:Refresh()
-                                optionsFields:SetItemID(newID)
-                            end
-                        end,
-                    },
-                    {
-                        label = 'Delete',
-                        color = EXUI.EXFrames.Theme.danger,
-                        onClick = function(itemID)
-                            self:DeleteById(itemID)
-                            optionsFields:Refresh()
-                        end,
-                    },
-                },
-            })
+        seen[groupID] = true
+        local group = self:GetGroup(groupID)
+        if not group then
+            return true
+        end
+        if group.enable == false then
+            return false
+        end
+        groupID = group.parentID
+    end
+    return true
+end
+
+local function ParentMatches(parentID, nodeParent)
+    if not parentID then
+        return not nodeParent
+    end
+    return nodeParent == parentID
+end
+
+local function CompareOrder(a, b)
+    local aOrder = a.order or math.huge
+    local bOrder = b.order or math.huge
+    if aOrder ~= bOrder then
+        return aOrder < bOrder
+    end
+    local aTime = a.createdAt or 0
+    local bTime = b.createdAt or 0
+    if aTime ~= bTime then
+        return aTime < bTime
+    end
+    return (a.name or '') < (b.name or '')
+end
+
+function cooldowns:GroupParent(group)
+    if not group then
+        return nil
+    end
+    local parentID = group.parentID
+    if parentID and self:GetGroup(parentID) then
+        return parentID
+    end
+    return nil
+end
+
+function cooldowns:CooldownParent(cdDB)
+    if not cdDB then
+        return nil
+    end
+    local groupID = cdDB.groupID
+    if groupID and self:GetGroup(groupID) then
+        return groupID
+    end
+    return nil
+end
+
+function cooldowns:GroupContains(ancestorID, nodeID)
+    if not ancestorID or not nodeID then
+        return false
+    end
+    local seen = {}
+    local current = nodeID
+    while current do
+        if current == ancestorID then
+            return true
+        end
+        if seen[current] then
+            return false
+        end
+        seen[current] = true
+        local group = self:GetGroup(current)
+        if not group then
+            return false
+        end
+        current = group.parentID
+    end
+    return false
+end
+
+function cooldowns:CollectSiblings(parentID, skipID, skipIsGroup)
+    local nodes = {}
+    for groupID, group in pairs(self:GetGroups()) do
+        if not (skipIsGroup and groupID == skipID) and ParentMatches(parentID, self:GroupParent(group)) then
+            nodes[#nodes + 1] = {
+                ref = group,
+                isGroup = true,
+                id = groupID,
+                order = group.order,
+                createdAt = group.createdAt,
+                name = group.name,
+            }
+        end
+    end
+    local db = self:EnsureDB()
+    for id, entry in pairs(db) do
+        if self:IsCooldownEntry(id, entry) and not (skipIsGroup == false and id == skipID) and ParentMatches(parentID, self:CooldownParent(entry)) then
+            nodes[#nodes + 1] = {
+                ref = entry,
+                isGroup = false,
+                id = id,
+                order = entry.order,
+                createdAt = entry.createdAt,
+                name = entry.name,
+            }
+        end
+    end
+    table.sort(nodes, CompareOrder)
+    return nodes
+end
+
+function cooldowns:WriteSiblingOrder(nodes)
+    for index, node in ipairs(nodes) do
+        node.ref.order = index
+    end
+end
+
+function cooldowns:NextOrder(parentID)
+    local nodes = self:CollectSiblings(parentID)
+    local needsWrite = false
+    local maxOrder = 0
+    for _, node in ipairs(nodes) do
+        if not node.ref.order then
+            needsWrite = true
+        elseif node.ref.order > maxOrder then
+            maxOrder = node.ref.order
+        end
+    end
+    if needsWrite then
+        self:WriteSiblingOrder(nodes)
+        return #nodes + 1
+    end
+    return maxOrder + 1
+end
+
+function cooldowns:CreateGroup()
+    local db = self:EnsureDB()
+    db.__groups = db.__groups or {}
+    local groupID = EXUI.utils.generateRandomString(10)
+    db.__groups[groupID] = {
+        name = 'New Group',
+        icon = QUESTION_MARK_ICON,
+        enable = true,
+        createdAt = time(),
+        parentID = nil,
+        order = self:NextOrder(nil),
+    }
+    self:SaveBaseDB(db)
+    return groupID
+end
+
+function cooldowns:UpdateGroupValue(groupID, key, value)
+    local db = self:EnsureDB()
+    local group = db.__groups and db.__groups[groupID]
+    if not group then
+        return
+    end
+    group[key] = value
+    self:SaveBaseDB(db)
+end
+
+function cooldowns:DeleteGroup(groupID)
+    local db = self:EnsureDB()
+    local group = db.__groups and db.__groups[groupID]
+    if not group then
+        return
+    end
+    local parentID = self:GroupParent(group)
+    local moved = {}
+    for id, child in pairs(db.__groups) do
+        if id ~= groupID and child.parentID == groupID then
+            moved[#moved + 1] = {
+                ref = child,
+                order = child.order,
+                createdAt = child.createdAt,
+                name = child.name,
+                isGroup = true,
+            }
+        end
+    end
+    for id, entry in pairs(db) do
+        if self:IsCooldownEntry(id, entry) and entry.groupID == groupID then
+            moved[#moved + 1] = {
+                ref = entry,
+                order = entry.order,
+                createdAt = entry.createdAt,
+                name = entry.name,
+                isGroup = false,
+            }
+        end
+    end
+    table.sort(moved, CompareOrder)
+    local nextOrder = self:NextOrder(parentID)
+    for _, node in ipairs(moved) do
+        if node.isGroup then
+            node.ref.parentID = parentID
+        else
+            node.ref.groupID = parentID
+        end
+        node.ref.order = nextOrder
+        nextOrder = nextOrder + 1
+    end
+    db.__groups[groupID] = nil
+    self:SaveBaseDB(db)
+    self:UpdateAll()
+end
+
+function cooldowns:Reorder(id, isGroup, parentID, index)
+    local db = self:EnsureDB()
+    if parentID and not self:GetGroup(parentID) then
+        parentID = nil
+    end
+    local ref
+    local oldParent
+    if isGroup then
+        ref = db.__groups and db.__groups[id]
+        if not ref then
+            return
+        end
+        if id == parentID or self:GroupContains(id, parentID) then
+            return
+        end
+        oldParent = self:GroupParent(ref)
+        ref.parentID = parentID
+    else
+        ref = db[id]
+        if not self:IsCooldownEntry(id, ref) then
+            return
+        end
+        oldParent = self:CooldownParent(ref)
+        ref.groupID = parentID
+    end
+    local siblings = self:CollectSiblings(parentID, id, isGroup and true or false)
+    index = math.floor(tonumber(index) or (#siblings + 1))
+    if index < 1 then
+        index = 1
+    end
+    if index > #siblings + 1 then
+        index = #siblings + 1
+    end
+    table.insert(siblings, index, {
+        ref = ref,
+        order = ref.order,
+        createdAt = ref.createdAt,
+        name = ref.name,
+    })
+    self:WriteSiblingOrder(siblings)
+    if not ParentMatches(oldParent, parentID) then
+        self:WriteSiblingOrder(self:CollectSiblings(oldParent))
+    end
+    self:SaveBaseDB(db)
+    optionsFields:RefreshItemList()
+end
+
+function cooldowns:GetGroupOptions(groupID)
+    return optionsFields:GetGroupFields({
+        get = function(key)
+            local group = cooldowns:GetGroup(groupID)
+            return group and group[key]
+        end,
+        set = function(key, value)
+            cooldowns:UpdateGroupValue(groupID, key, value)
+        end,
+        onChange = function(key)
+            if key == 'enable' then
+                cooldowns:UpdateAll()
+                optionsFields:RefreshItemList()
+            else
+                optionsFields:RefreshItemList()
+            end
+        end,
+    })
+end
+
+function cooldowns:CooldownContextMenu()
+    return {
+        {
+            label = 'Duplicate',
+            color = { 2 / 255, 145 / 255, 227 / 255, 1 },
+            onClick = function(itemID)
+                local newID = self:DuplicateCD(itemID)
+                if newID then
+                    optionsFields:Refresh()
+                    optionsFields:SetItemID(newID)
+                end
+            end,
+        },
+        {
+            label = 'Delete',
+            color = EXUI.EXFrames.Theme.danger,
+            onClick = function(itemID)
+                self:DeleteById(itemID)
+                optionsFields:Refresh()
+            end,
+        },
+    }
+end
+
+function cooldowns:GroupContextMenu()
+    return {
+        {
+            label = 'Delete',
+            color = EXUI.EXFrames.Theme.danger,
+            onClick = function(itemID)
+                local selected = optionsFields.currItemID == itemID
+                self:DeleteGroup(itemID)
+                if selected then
+                    optionsFields.currItemID = nil
+                    optionsFields:Refresh()
+                else
+                    optionsFields:RefreshItemList()
+                end
+            end,
+        },
+    }
+end
+
+function cooldowns:GetSplitViewItems()
+    local items = {}
+    local seen = {}
+
+    local function emit(parentID, depth)
+        if parentID and seen[parentID] then
+            return
+        end
+        if parentID then
+            seen[parentID] = true
+        end
+        for _, node in ipairs(self:CollectSiblings(parentID)) do
+            if node.isGroup then
+                if not seen[node.id] then
+                    local group = node.ref
+                    local row = {
+                        type = 'group',
+                        selectable = true,
+                        ID = node.id,
+                        label = group.name or 'Group',
+                        icon = group.icon or QUESTION_MARK_ICON,
+                        depth = depth,
+                        parentID = parentID,
+                        contextMenuItems = self:GroupContextMenu(),
+                    }
+                    if not self:IsGroupEnabled(node.id) then
+                        row.statusIcon = 'inactive'
+                    end
+                    items[#items + 1] = row
+                    emit(node.id, depth + 1)
+                end
+            else
+                local icon, sublabel = self:GetListIcon(node.ref)
+                local row = {
+                    label = node.ref.name or node.id,
+                    sublabel = sublabel,
+                    icon = icon,
+                    ID = node.id,
+                    depth = depth,
+                    parentID = parentID,
+                    contextMenuItems = self:CooldownContextMenu(),
+                }
+                if node.ref.enable == false or not self:IsGroupEnabled(node.ref.groupID) then
+                    row.statusIcon = 'inactive'
+                end
+                items[#items + 1] = row
+            end
         end
     end
 
+    emit(nil, 0)
     return items
 end
 
 function cooldowns:GetSectionTabs(itemId)
-    if not itemId then
+    if not itemId or self:GetGroup(itemId) then
         return {}
     end
 
@@ -168,11 +617,24 @@ end
 
 function cooldowns:GetOptions(currTabID, currItemID)
     if not currItemID then
-        local items = self:GetSplitViewItems()
-        currItemID = items[1] and items[1].ID
+        local groupID
+        for _, item in ipairs(self:GetSplitViewItems()) do
+            if item.ID and item.type ~= 'category' then
+                if item.type ~= 'group' then
+                    currItemID = item.ID
+                    break
+                elseif item.selectable and not groupID then
+                    groupID = item.ID
+                end
+            end
+        end
+        currItemID = currItemID or groupID
     end
     if not currItemID then
         return {}
+    end
+    if self:GetGroup(currItemID) then
+        return self:GetGroupOptions(currItemID)
     end
 
     local db = self:GetCDDBByID(currItemID)
@@ -238,7 +700,9 @@ end
 
 function cooldowns:CreateNew()
     local newDisplay = defaults:BuildNewDisplay()
-    local db = self:GetBaseDB()
+    local db = self:EnsureDB()
+    newDisplay.groupID = nil
+    newDisplay.order = self:NextOrder(nil)
     db[newDisplay.ID] = newDisplay
     self:SaveBaseDB(db)
     return self:Create(newDisplay.ID)
@@ -404,10 +868,13 @@ function cooldowns:DuplicateCD(cdID)
     end
 
     local newID = EXUI.utils.generateRandomString(10)
+    local parentID = self:CooldownParent(db[cdID])
     db[newID] = EXUI.utils.deepCloneTable(db[cdID])
     db[newID].name = (db[newID].name or 'Cooldown') .. ' (Copy)'
     db[newID].createdAt = time()
     db[newID].ID = newID
+    db[newID].groupID = parentID
+    db[newID].order = self:NextOrder(parentID)
     self:SaveBaseDB(db)
 
     self:Create(newID)

@@ -49,6 +49,13 @@ end
 customWindows.GetOptions = function(self)
     return {
         {
+            type = 'disclaimer',
+            label =
+            'These replace Blizzard windows, so other addons cannot customize them unless they add support specifically for ExalityUI.',
+            name = 'customWindowsNotice',
+            width = 100,
+        },
+        {
             label = 'Character Frame',
             name = 'paperDollEnabled',
             type = 'toggle',

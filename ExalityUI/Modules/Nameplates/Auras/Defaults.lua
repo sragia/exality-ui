@@ -22,6 +22,7 @@ end
 function defaults:BuildNewDisplay()
     local displayID, display = adDefaults:BuildNewDisplay()
     display.name = 'New Nameplate Aura'
+    display.icon = 134400
     display.anchorPoint = 'BOTTOMLEFT'
     display.relativePoint = 'TOPLEFT'
     display.XOff = 0
@@ -54,6 +55,9 @@ function defaults:MergeIntoDB(db)
         end
         if not display.name then
             display.name = 'Nameplate Aura'
+        end
+        if display.icon == nil then
+            display.icon = 134400
         end
         if display.anchorPoint == nil then
             display.anchorPoint = 'BOTTOMLEFT'

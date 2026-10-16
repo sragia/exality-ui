@@ -359,7 +359,7 @@ function apply:PrepareContainer(container, displayID, display, hardSig, frame)
         container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
     end
     if container.SetEnabled then
-        container:SetEnabled(display.enable ~= false)
+        container:SetEnabled(npAuras:IsDisplayEnabled(display))
     end
     self:ApplyProcessingPolicy(container, display)
     self:RebuildGroups(container, displayID, display, frame)
@@ -376,7 +376,7 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
     end
     self:SetContainerUnit(container, frame.unit or frame.__unit)
     if container.SetEnabled then
-        container:SetEnabled(display.enable ~= false)
+        container:SetEnabled(npAuras:IsDisplayEnabled(display))
     end
     self:ApplyProcessingPolicy(container, display)
     if not self:UpdateGroupsInPlace(container, displayID, display) then
@@ -401,7 +401,7 @@ function apply:PrewarmPool()
     local displays = npAuras:GetDisplays()
     local displayCount = 0
     for _, display in pairs(displays) do
-        if display.enable ~= false and npAuras:DisplayHasLoadableGroup(display) then
+        if npAuras:IsDisplayEnabled(display) and npAuras:DisplayHasLoadableGroup(display) then
             displayCount = displayCount + 1
         end
     end
@@ -419,7 +419,7 @@ function apply:PrewarmPool()
     end
 
     for displayID, display in pairs(displays) do
-        if display.enable ~= false and npAuras:DisplayHasLoadableGroup(display) then
+        if npAuras:IsDisplayEnabled(display) and npAuras:DisplayHasLoadableGroup(display) then
             local hardSig = self:GetHardSignature(displayID, display)
             while self:CountPooledContainers(hardSig) < perDisplay do
                 local container = self:CreateContainer(templateFrame, display, poolHolder)
@@ -443,7 +443,7 @@ function apply:ConfigureContainer(frame, displayID, display, container)
     end
     self:SetContainerUnit(container, frame.unit or frame.__unit)
     if container.SetEnabled then
-        container:SetEnabled(display.enable ~= false)
+        container:SetEnabled(npAuras:IsDisplayEnabled(display))
     end
     self:ApplyProcessingPolicy(container, display)
     container:Show()
@@ -467,7 +467,7 @@ function apply:UpdateFrame(frame)
     local keep = {}
 
     for displayID, display in pairs(displays) do
-        local shouldShow = display.enable ~= false and npAuras:DisplayHasLoadableGroup(display)
+        local shouldShow = npAuras:IsDisplayEnabled(display) and npAuras:DisplayHasLoadableGroup(display)
         if shouldShow then
             keep[displayID] = true
             local hardSig = self:GetHardSignature(displayID, display)
@@ -481,7 +481,7 @@ function apply:UpdateFrame(frame)
                 end
                 self:SetContainerUnit(container, frame.unit or frame.__unit)
                 if container.SetEnabled then
-                    container:SetEnabled(display.enable ~= false)
+                    container:SetEnabled(npAuras:IsDisplayEnabled(display))
                 end
                 self:ApplyProcessingPolicy(container, display)
                 container:Show()
