@@ -546,7 +546,6 @@ function editor:Show(contextUnit)
         end
         self.contextUnit = contextUnit
         ufAuras.contextUnit = contextUnit
-        ufPreview:SetContext(contextUnit)
         self.currItemID = nil
         if self.splitView then
             self.splitView.activeID = nil
@@ -554,7 +553,12 @@ function editor:Show(contextUnit)
     elseif not self.contextUnit then
         self.contextUnit = contextUnit
         ufAuras.contextUnit = contextUnit
-        ufPreview:SetContext(contextUnit)
+    end
+
+    -- Close clears the preview unit. Reopening the same unit must set it
+    -- again, or Sync returns before any preview is built.
+    if self.contextUnit then
+        ufPreview:SetContext(self.contextUnit)
     end
 
     self.currTabID = self.currTabID or 'container'

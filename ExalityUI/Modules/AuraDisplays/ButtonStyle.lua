@@ -5,6 +5,9 @@ local LSM = LibStub:GetLibrary('LibSharedMedia-3.0', true)
 ---@class EXUIAuraDisplaysButtonStyle
 local buttonStyle = EXUI:GetModule('aura-displays-button-style')
 
+---@class EXUITextureGlow
+local textureGlow = EXUI:GetModule('texture-glow')
+
 ---@class EXUIAuraDisplaysDurationFormat
 local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 
@@ -12,6 +15,7 @@ local durationFormat = EXUI:GetModule('aura-displays-duration-format')
 local configResolver = EXUI:GetModule('aura-displays-config-resolver')
 
 local styledButtons = {}
+local pendingFrameGlows = setmetatable({}, { __mode = 'k' })
 local visualStyleSigCache = setmetatable({}, { __mode = 'k' })
 local styleSigGeneration = 0
 
@@ -379,6 +383,585 @@ function buttonStyle:ApplyPandemicGlow(button, visual)
     end
 end
 
+function buttonStyle:GetGlowUnitFrame(button)
+    local container = button.GetParent and button:GetParent()
+    local host = container and container.GetParent and container:GetParent()
+    if not host then
+        return nil
+    end
+    if host.ElementFrame and host.Health then
+        return host
+    end
+    if not host.GetParent then
+        return nil
+    end
+    local unitFrame = host:GetParent()
+    if unitFrame and unitFrame.ElementFrame == host then
+        return unitFrame
+    end
+    if host._exuiAuraPreviewHost and unitFrame and unitFrame.ElementFrame and unitFrame.Health then
+        return unitFrame
+    end
+    return nil
+end
+
+function buttonStyle:HideNamedRegion(button, key)
+    local region = button[key]
+    if region and region.Hide then
+        region:Hide()
+    end
+end
+
+function buttonStyle:ClearPandemicGlow(button)
+    local glow = button.PandemicGlow
+    if not glow then
+        return
+    end
+    if button.RemovePandemicRegion then
+        button:RemovePandemicRegion(glow)
+    end
+    if glow.Pulse then
+        if button.RemovePandemicActiveAnimation then
+            button:RemovePandemicActiveAnimation(glow.Pulse)
+        end
+        glow.Pulse:Stop()
+    end
+    glow:Hide()
+end
+
+function buttonStyle:GetGlowTrigger(visual)
+    if visual and (visual.glowTrigger == 'assign' or visual.glowTrigger == 'shown') then
+        return visual.glowTrigger
+    end
+    if visual and visual.glowOnAssign and visual.glowWhileShown == false then
+        return 'assign'
+    end
+    return 'shown'
+end
+
+function buttonStyle:GetGlowKind(visual)
+    if visual and (visual.glowKind == 'proc' or visual.glowKind == 'border' or visual.glowKind == 'bottom' or visual.glowKind == 'edge') then
+        return visual.glowKind
+    end
+    if visual and visual.glowKind == 'lines' then
+        return 'edge'
+    end
+    if visual and visual.glowProc then
+        return 'proc'
+    end
+    return 'border'
+end
+
+function buttonStyle:ClearLegacyProcFlag(visual)
+    if visual and visual.glowProc and self:GetGlowKind(visual) ~= 'proc' then
+        visual.glowProc = nil
+    end
+end
+
+function buttonStyle:UnregisterGlowGroup(button, group)
+    if not button or not group then
+        return
+    end
+    if button.RemoveAuraShownAnimation then
+        button:RemoveAuraShownAnimation(group)
+    end
+    if button.RemoveAuraAssignedAnimation then
+        button:RemoveAuraAssignedAnimation(group)
+    end
+    group:Stop()
+end
+
+function buttonStyle:RegisterGlowGroup(button, group, trigger)
+    self:UnregisterGlowGroup(button, group)
+    if not group then
+        return
+    end
+    if trigger == 'assign' then
+        button:AddAuraAssignedAnimation(group)
+    else
+        button:AddAuraShownAnimation(group)
+    end
+end
+
+function buttonStyle:ClearFrameGlow(button)
+    button._ProcGlowExalityUFGlow = nil
+    local glow = button.FrameGlow
+    if glow then
+        self:UnregisterGlowGroup(button, glow.ShownPulse)
+        self:UnregisterGlowGroup(button, glow.AssignedFlash)
+        glow:Hide()
+    end
+    local proc = button.ProcFrameGlow
+    if proc then
+        self:UnregisterGlowGroup(button, proc.ProcLoop)
+        self:UnregisterGlowGroup(button, proc.ProcStartAnim)
+        proc:Hide()
+    end
+    local textured = button.TextureGlow
+    if textured then
+        self:UnregisterGlowGroup(button, textured.ShownPulse)
+        self:UnregisterGlowGroup(button, textured.AssignedFlash)
+        textureGlow:Hide(textured)
+    end
+end
+
+function buttonStyle:ClearGlowExcludedChrome(button)
+    self:ClearPandemicGlow(button)
+    if button.BarBorderFrame then
+        button.BarBorderFrame:Hide()
+    end
+    if button.BarContainer then
+        button.BarContainer:Hide()
+    end
+    if button.ClearIcon then
+        button:ClearIcon()
+    end
+    self:HideNamedRegion(button, 'Icon')
+    self:SetIconBorderVisibility(button.IconPPBorder, false)
+    self:SetAuraTypeBorderVisibility(button, false)
+    self:HideNamedRegion(button, 'IconBorderOverlay')
+    if button.ClearApplicationCount then
+        button:ClearApplicationCount()
+    end
+    self:HideNamedRegion(button, 'ApplicationCount')
+    if button.ClearDurationCooldown then
+        button:ClearDurationCooldown()
+    end
+    self:HideNamedRegion(button, 'DurationCooldownFrame')
+    if button.ClearDurationText then
+        button:ClearDurationText()
+    end
+    self:HideNamedRegion(button, 'DurationText')
+    if button.ClearSpellName then
+        button:ClearSpellName()
+    end
+    self:HideNamedRegion(button, 'SpellNameText')
+    if button.ClearCasterName then
+        button:ClearCasterName()
+    end
+    self:HideNamedRegion(button, 'CasterNameText')
+    self:ClearDispelTextures(button)
+    if button.ClearDispelTypeText then
+        button:ClearDispelTypeText()
+    elseif button.ClearAuraSymbol then
+        button:ClearAuraSymbol()
+    end
+    if button.EnableMouse then
+        button:EnableMouse(false)
+    end
+    if button.SetMouseMotionEnabled then
+        button:SetMouseMotionEnabled(false)
+    end
+end
+
+-- Parented to the button: shown/assigned animations only accept the button or a child.
+function buttonStyle:EnsureFrameGlow(button, visual)
+    local glow = button.FrameGlow
+    if glow then
+        return glow
+    end
+
+    glow = CreateFrame('Frame', nil, button)
+    glow:EnableMouse(false)
+    glow.PPBorder = EXUI:AddPixelPerfectBorder(glow, visual.glowThickness or 2, {
+        register = false,
+        layer = 'OVERLAY',
+        outwardBottom = false,
+    })
+
+    local shown = glow:CreateAnimationGroup()
+    shown:SetLooping('BOUNCE')
+    local shownFade = shown:CreateAnimation('Alpha')
+    shownFade:SetTarget(glow)
+    shownFade:SetFromAlpha(1)
+    shownFade:SetToAlpha(0.25)
+    shownFade:SetDuration(0.5)
+    glow.ShownPulse = shown
+    glow.ShownFade = shownFade
+
+    local assigned = glow:CreateAnimationGroup()
+    assigned:SetLooping('NONE')
+    local assignedHold = assigned:CreateAnimation('Alpha')
+    assignedHold:SetTarget(glow)
+    assignedHold:SetOrder(1)
+    assignedHold:SetFromAlpha(1)
+    assignedHold:SetToAlpha(1)
+    assignedHold:SetDuration(1)
+    local assignedFade = assigned:CreateAnimation('Alpha')
+    assignedFade:SetTarget(glow)
+    assignedFade:SetOrder(2)
+    assignedFade:SetFromAlpha(1)
+    assignedFade:SetToAlpha(0)
+    assignedFade:SetDuration(0.25)
+    glow.AssignedFlash = assigned
+    glow.AssignedHold = assignedHold
+    glow.AssignedFade = assignedFade
+
+    button.FrameGlow = glow
+    return glow
+end
+
+function buttonStyle:GetGlowAnimValues(visual)
+    visual = visual or {}
+    local maxAlpha = visual.glowMaxAlpha or 1
+    local minAlpha = visual.glowMinAlpha
+    if minAlpha == nil then
+        minAlpha = 0.25
+    end
+    if maxAlpha < 0 then
+        maxAlpha = 0
+    end
+    if minAlpha < 0 then
+        minAlpha = 0
+    end
+    if minAlpha > maxAlpha then
+        minAlpha = maxAlpha
+    end
+    local interval = visual.glowPulseInterval or 0.5
+    if interval < 0.05 then
+        interval = 0.05
+    end
+    local assignDuration = visual.glowAssignDuration or 1
+    if assignDuration < 0.05 then
+        assignDuration = 0.05
+    end
+    return maxAlpha, minAlpha, interval, assignDuration
+end
+
+function buttonStyle:ConfigureFrameGlowAnimations(glow, visual)
+    local maxAlpha, minAlpha, interval, assignDuration = self:GetGlowAnimValues(visual)
+    glow.ShownFade:SetFromAlpha(maxAlpha)
+    glow.ShownFade:SetToAlpha(minAlpha)
+    glow.ShownFade:SetDuration(interval)
+    glow.AssignedHold:SetFromAlpha(maxAlpha)
+    glow.AssignedHold:SetToAlpha(maxAlpha)
+    glow.AssignedHold:SetDuration(assignDuration)
+    glow.AssignedFade:SetFromAlpha(maxAlpha)
+    glow.AssignedFade:SetToAlpha(0)
+end
+
+local function addFlipBook(group, target, order, duration)
+    local flip = group:CreateAnimation('FlipBook')
+    flip:SetTarget(target)
+    flip:SetOrder(order)
+    flip:SetDuration(duration)
+    flip:SetFlipBookRows(6)
+    flip:SetFlipBookColumns(5)
+    flip:SetFlipBookFrames(30)
+    flip:SetFlipBookFrameWidth(0)
+    flip:SetFlipBookFrameHeight(0)
+    return flip
+end
+
+function buttonStyle:EnsureProcGlow(button)
+    local proc = button.ProcFrameGlow
+    if proc then
+        return proc
+    end
+
+    proc = CreateFrame('Frame', nil, button)
+    proc:EnableMouse(false)
+    proc:Hide()
+
+    local start = proc:CreateTexture(nil, 'ARTWORK')
+    start:SetAtlas('UI-HUD-ActionBar-Proc-Start-Flipbook')
+    start:SetPoint('CENTER')
+    proc.ProcStartFlipbook = start
+
+    local loop = proc:CreateTexture(nil, 'ARTWORK')
+    loop:SetAtlas('UI-HUD-ActionBar-Proc-Loop-Flipbook')
+    loop:SetAllPoints()
+    loop:SetAlpha(0)
+    proc.ProcLoopFlipbook = loop
+
+    local loopGroup = proc:CreateAnimationGroup()
+    loopGroup:SetLooping('REPEAT')
+    local hideStart = loopGroup:CreateAnimation('Alpha')
+    hideStart:SetTarget(start)
+    hideStart:SetOrder(0)
+    hideStart:SetDuration(0.001)
+    hideStart:SetFromAlpha(0)
+    hideStart:SetToAlpha(0)
+    local showLoop = loopGroup:CreateAnimation('Alpha')
+    showLoop:SetTarget(loop)
+    showLoop:SetOrder(1)
+    showLoop:SetDuration(0.001)
+    showLoop:SetFromAlpha(1)
+    showLoop:SetToAlpha(1)
+    proc.ProcLoopFlip = addFlipBook(loopGroup, loop, 2, 1)
+    proc.ProcLoop = loopGroup
+
+    local startGroup = proc:CreateAnimationGroup()
+    startGroup:SetLooping('NONE')
+    startGroup:SetToFinalAlpha(true)
+    local showStart = startGroup:CreateAnimation('Alpha')
+    showStart:SetTarget(start)
+    showStart:SetOrder(0)
+    showStart:SetDuration(0.001)
+    showStart:SetFromAlpha(1)
+    showStart:SetToAlpha(1)
+    proc.ProcStartFlip = addFlipBook(startGroup, start, 1, 0.7)
+    local hideAfter = startGroup:CreateAnimation('Alpha')
+    hideAfter:SetTarget(start)
+    hideAfter:SetOrder(2)
+    hideAfter:SetDuration(0.001)
+    hideAfter:SetFromAlpha(1)
+    hideAfter:SetToAlpha(0)
+    proc.ProcStartAnim = startGroup
+
+    button.ProcFrameGlow = proc
+    return proc
+end
+
+function buttonStyle:LayoutProcGlow(proc, unitFrame, visual)
+    local width, height = unitFrame:GetSize()
+    if not width or width <= 0 then
+        width = 40
+    end
+    if not height or height <= 0 then
+        height = 40
+    end
+    proc:ClearAllPoints()
+    proc:SetSize(width * 1.4, height * 1.4)
+    proc:SetPoint('CENTER', unitFrame, 'CENTER', 0, 0)
+    local burst = math.max(width, height) * 1.8
+    proc.ProcStartFlipbook:SetSize(burst, burst)
+
+    local color = visual.glowColor or { r = 1, g = 0.82, b = 0, a = 1 }
+    proc.ProcStartFlipbook:SetDesaturated(true)
+    proc.ProcStartFlipbook:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+    proc.ProcLoopFlipbook:SetDesaturated(true)
+    proc.ProcLoopFlipbook:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+end
+
+function buttonStyle:ApplyFrameGlowChrome(glow, visual)
+    local thickness = visual.glowThickness or 2
+    glow.PPBorder:SetBorderThickness(thickness)
+    local color = visual.glowColor or { r = 1, g = 0.82, b = 0, a = 1 }
+    glow.PPBorder:SetBorderColor(color.r, color.g, color.b, color.a or 1)
+end
+
+function buttonStyle:ActiveGlowGroup(button, visual)
+    local kind = self:GetGlowKind(visual)
+    local trigger = self:GetGlowTrigger(visual)
+    if kind == 'proc' then
+        local proc = button.ProcFrameGlow
+        if not proc then
+            return nil, trigger
+        end
+        if trigger == 'assign' then
+            return proc.ProcStartAnim, trigger
+        end
+        return proc.ProcLoop, trigger
+    end
+    if kind == 'bottom' or kind == 'edge' then
+        local textured = button.TextureGlow
+        if not textured then
+            return nil, trigger
+        end
+        if trigger == 'assign' then
+            return textured.AssignedFlash, trigger
+        end
+        return textured.ShownPulse, trigger
+    end
+    local glow = button.FrameGlow
+    if not glow then
+        return nil, trigger
+    end
+    if trigger == 'assign' then
+        return glow.AssignedFlash, trigger
+    end
+    return glow.ShownPulse, trigger
+end
+
+function buttonStyle:ReleaseInactiveGlowGroups(button, visual)
+    local kind = self:GetGlowKind(visual)
+    local glow = button.FrameGlow
+    local proc = button.ProcFrameGlow
+    local textured = button.TextureGlow
+    if kind ~= 'border' and glow then
+        self:UnregisterGlowGroup(button, glow.ShownPulse)
+        self:UnregisterGlowGroup(button, glow.AssignedFlash)
+        glow:Hide()
+    end
+    if kind ~= 'proc' and proc then
+        self:UnregisterGlowGroup(button, proc.ProcLoop)
+        self:UnregisterGlowGroup(button, proc.ProcStartAnim)
+        proc:Hide()
+    end
+    if kind ~= 'bottom' and kind ~= 'edge' and textured then
+        self:UnregisterGlowGroup(button, textured.ShownPulse)
+        self:UnregisterGlowGroup(button, textured.AssignedFlash)
+        textureGlow:Hide(textured)
+    end
+end
+
+function buttonStyle:PresentGlow(button, visual, unitFrame)
+    local kind = self:GetGlowKind(visual)
+    local trigger = self:GetGlowTrigger(visual)
+    local whileShown = trigger ~= 'assign'
+    local maxAlpha = visual.glowMaxAlpha or 1
+
+    if button.FrameGlow and kind ~= 'border' then
+        button.FrameGlow:Hide()
+    end
+    if button.ProcFrameGlow and kind ~= 'proc' then
+        button.ProcFrameGlow:Hide()
+    end
+    if button.TextureGlow and kind ~= 'bottom' and kind ~= 'edge' then
+        textureGlow:Hide(button.TextureGlow)
+    end
+
+    if kind == 'proc' then
+        local proc = self:EnsureProcGlow(button)
+        self:LayoutProcGlow(proc, unitFrame, visual)
+        local _, _, interval, assignDuration = self:GetGlowAnimValues(visual)
+        proc.ProcLoopFlip:SetDuration(interval)
+        proc.ProcStartFlip:SetDuration(assignDuration)
+        proc:SetFrameLevel(button:GetFrameLevel() + 2)
+        if whileShown then
+            proc.ProcStartFlipbook:Hide()
+            proc.ProcLoopFlipbook:Show()
+        else
+            proc.ProcLoopFlipbook:Hide()
+            proc.ProcStartFlipbook:Show()
+        end
+        proc:Show()
+        return
+    end
+
+    if kind == 'bottom' or kind == 'edge' then
+        local textured = textureGlow:Ensure(button)
+        local maxAlpha, minAlpha, interval, assignDuration = self:GetGlowAnimValues(visual)
+        textureGlow:Apply(textured, unitFrame, {
+            kind = kind,
+            color = visual.glowColor,
+            size = visual.glowEdgeSize or 18,
+            blendMode = visual.glowBlendMode,
+        })
+        textureGlow:ConfigureAnimations(textured, maxAlpha, minAlpha, interval, assignDuration)
+        if not whileShown and textured.ShownFade then
+            textured.ShownFade:SetFromAlpha(0)
+            textured.ShownFade:SetToAlpha(0)
+        end
+        if self:UsesSafeBarChrome(button) or not textured.exuiAnimationsAdopted then
+            textured:SetAlpha(whileShown and maxAlpha or 0)
+        end
+        textured:Show()
+        return
+    end
+
+    local glow = self:EnsureFrameGlow(button, visual)
+    glow:ClearAllPoints()
+    glow:SetAllPoints(unitFrame)
+    glow:SetFrameLevel(button:GetFrameLevel() + 1)
+    self:ApplyFrameGlowChrome(glow, visual)
+    self:ConfigureFrameGlowAnimations(glow, visual)
+    if not whileShown and glow.ShownFade then
+        glow.ShownFade:SetFromAlpha(0)
+        glow.ShownFade:SetToAlpha(0)
+    end
+    if self:UsesSafeBarChrome(button) or not glow.exuiAnimationsAdopted then
+        glow:SetAlpha(whileShown and maxAlpha or 0)
+    end
+    glow:Show()
+end
+
+function buttonStyle:PlayGlowPreview(button, visual)
+    local kind = self:GetGlowKind(visual)
+    local trigger = self:GetGlowTrigger(visual)
+    local group = self:ActiveGlowGroup(button, visual)
+    if kind == 'border' and button.FrameGlow then
+        button.FrameGlow.ShownPulse:Stop()
+        button.FrameGlow.AssignedFlash:Stop()
+    end
+    if kind == 'proc' and button.ProcFrameGlow then
+        button.ProcFrameGlow.ProcLoop:Stop()
+        button.ProcFrameGlow.ProcStartAnim:Stop()
+    end
+    if (kind == 'bottom' or kind == 'edge') and button.TextureGlow then
+        button.TextureGlow.ShownPulse:Stop()
+        button.TextureGlow.AssignedFlash:Stop()
+        if trigger == 'assign' and (self:UsesSafeBarChrome(button) or not button.TextureGlow.exuiAnimationsAdopted) then
+            button.TextureGlow:SetAlpha(0)
+        end
+    end
+    if not group then
+        return
+    end
+    if (kind == 'border' or kind == 'bottom' or kind == 'edge') and trigger == 'assign' then
+        local glow = kind == 'border' and button.FrameGlow or button.TextureGlow
+        if glow and (self:UsesSafeBarChrome(button) or not glow.exuiAnimationsAdopted) then
+            glow:SetAlpha(0)
+        end
+    end
+    group:Play()
+end
+
+function buttonStyle:FinishPendingFrameGlows()
+    for auraButton, visual in pairs(pendingFrameGlows) do
+        self:ApplyGlowStyle(auraButton, visual)
+    end
+end
+
+function buttonStyle:ApplyGlowStyle(button, visual)
+    self:ClearLegacyProcFlag(visual)
+    button._ProcGlowExalityUFGlow = nil
+    self:ClearGlowExcludedChrome(button)
+    EXUI:SetSize(button, 1, 1)
+
+    if not button.AddAuraShownAnimation or not button.AddAuraAssignedAnimation then
+        pendingFrameGlows[button] = nil
+        self:ClearFrameGlow(button)
+        return
+    end
+
+    local unitFrame = self:GetGlowUnitFrame(button)
+    if not unitFrame then
+        pendingFrameGlows[button] = visual
+        self:ClearFrameGlow(button)
+        return
+    end
+    pendingFrameGlows[button] = nil
+
+    self:PresentGlow(button, visual, unitFrame)
+
+    if self:UsesSafeBarChrome(button) then
+        self:PlayGlowPreview(button, visual)
+        return
+    end
+
+    if not self:ShouldRestyleButton(button, visual) then
+        return
+    end
+
+    styledButtons[button] = visual
+    self:ReleaseInactiveGlowGroups(button, visual)
+    local border = button.FrameGlow
+    if border then
+        self:UnregisterGlowGroup(button, border.ShownPulse)
+        self:UnregisterGlowGroup(button, border.AssignedFlash)
+    end
+    local proc = button.ProcFrameGlow
+    if proc then
+        self:UnregisterGlowGroup(button, proc.ProcLoop)
+        self:UnregisterGlowGroup(button, proc.ProcStartAnim)
+    end
+    local textured = button.TextureGlow
+    if textured then
+        self:UnregisterGlowGroup(button, textured.ShownPulse)
+        self:UnregisterGlowGroup(button, textured.AssignedFlash)
+    end
+    local group, trigger = self:ActiveGlowGroup(button, visual)
+    self:RegisterGlowGroup(button, group, trigger)
+    local kind = self:GetGlowKind(visual)
+    if kind == 'border' and button.FrameGlow then
+        button.FrameGlow.exuiAnimationsAdopted = true
+    elseif (kind == 'bottom' or kind == 'edge') and button.TextureGlow then
+        button.TextureGlow.exuiAnimationsAdopted = true
+    end
+end
+
 -- Create under TextOverlay before Blizzard Set* APIs (ChangeParent is locked after configure).
 function buttonStyle:CreateFontString(button, key, visualKey, visual, defaults)
     visual = visual or {}
@@ -452,6 +1035,9 @@ function buttonStyle:UsesAuraTypeIconBorder(visual)
     if not visual or visual.showIconBorder == false or not visual.iconBorderColorByAuraType then
         return false
     end
+    if visual.displayStyle == 'glow' then
+        return false
+    end
     if visual.displayStyle == 'bar' and visual.showBarIcon == false then
         return false
     end
@@ -503,7 +1089,7 @@ end
 
 -- Independent Border / Icon toggles; migrate old exclusive dispelMode.
 function buttonStyle:ShouldShowDispelBorder(visual)
-    if not visual or visual.displayStyle == 'bar' then
+    if not visual or visual.displayStyle == 'bar' or visual.displayStyle == 'glow' then
         return false
     end
     if visual.showDispelBorder == false then
@@ -516,7 +1102,7 @@ function buttonStyle:ShouldShowDispelBorder(visual)
 end
 
 function buttonStyle:ShouldShowDispelIcon(visual)
-    if not visual or visual.displayStyle == 'bar' then
+    if not visual or visual.displayStyle == 'bar' or visual.displayStyle == 'glow' then
         return false
     end
     if visual.showDispelIcon ~= nil then
@@ -686,7 +1272,7 @@ function buttonStyle:ApplyAuraBorderBinding(button, visual)
         showBorder = false
     end
 
-    if visual.displayStyle == 'bar' then
+    if visual.displayStyle == 'bar' or visual.displayStyle == 'glow' then
         showBorder = false
         showIcon = false
     end
@@ -1053,6 +1639,14 @@ function buttonStyle:Apply(button, visual)
         return
     end
 
+    if visual.displayStyle == 'glow' then
+        self:ApplyGlowStyle(button, visual)
+        return
+    end
+
+    pendingFrameGlows[button] = nil
+    self:ClearFrameGlow(button)
+
     if visual.displayStyle == 'bar' then
         self:ApplyBarStyle(button, visual)
         return
@@ -1136,6 +1730,9 @@ end
 function buttonStyle:Clear(button)
     styledButtons[button] = nil
     button._exuiStyleSig = nil
+    if button.TextureGlow then
+        textureGlow:Hide(button.TextureGlow)
+    end
 end
 
 local function invalidateHardSignatures()

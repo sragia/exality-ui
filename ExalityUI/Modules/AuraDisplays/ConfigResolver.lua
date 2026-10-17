@@ -170,6 +170,9 @@ function resolver:GetGroupLayout(visual, layoutIndex, display)
         local iconGap = iconSize > 0 and (visual.barIconGap or 0) or 0
         elementWidth = barWidth + iconSize + iconGap
         elementHeight = barHeight
+    elseif visual.displayStyle == 'glow' then
+        elementWidth = 1
+        elementHeight = 1
     else
         elementWidth = visual.elementWidth and visual.elementWidth > 0 and visual.elementWidth or nil
         elementHeight = visual.elementHeight and visual.elementHeight > 0 and visual.elementHeight or nil
@@ -334,7 +337,23 @@ function resolver:AddOrUpdateAuraGroup(container, options)
     end
 end
 
-function resolver:RebuildGroups(container, displayID, display, buttonStyle, getGroupKey, shouldLoadGroup)
+function resolver:ApplyCombatEnabled(container, displayID, display, getGroupKey, shouldIncludeGroup, matchesCombat)
+    if not container or not container.SetAuraGroupEnabled or not container.HasAuraGroup or not display then
+        return
+    end
+    for _, entry in ipairs(self:IterActiveGroups(display, shouldIncludeGroup)) do
+        local groupKey = getGroupKey and getGroupKey(displayID, entry.groupID) or defaults:GetGroupKey(displayID, entry.groupID)
+        if container:HasAuraGroup(groupKey) then
+            local enabled = true
+            if matchesCombat then
+                enabled = matchesCombat(entry.group.load) and true or false
+            end
+            container:SetAuraGroupEnabled(groupKey, enabled)
+        end
+    end
+end
+
+function resolver:RebuildGroups(container, displayID, display, buttonStyle, getGroupKey, shouldLoadGroup, matchesCombat)
     if not container then
         return
     end
@@ -343,6 +362,9 @@ function resolver:RebuildGroups(container, displayID, display, buttonStyle, getG
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
         )
         self:AddOrUpdateAuraGroup(container, options)
+    end
+    if matchesCombat then
+        self:ApplyCombatEnabled(container, displayID, display, getGroupKey, shouldLoadGroup, matchesCombat)
     end
 end
 
@@ -361,6 +383,21 @@ function resolver:IterActiveGroups(display, shouldLoadGroup)
         end
     end
     return active
+end
+
+-- Glow color, speed, and size are applied on the existing button. They must not
+-- change the signature or every color pick discards the container.
+local function visualForHardSignature(visual)
+    if type(visual) ~= 'table' then
+        return visual
+    end
+    local copy = {}
+    for key, value in pairs(visual) do
+        if type(key) ~= 'string' or key:sub(1, 4) ~= 'glow' then
+            copy[key] = value
+        end
+    end
+    return copy
 end
 
 -- Signature of config that requires discarding/recreating the container
@@ -388,7 +425,7 @@ function resolver:BuildHardSignature(displayID, display, groupKeyBuilder, should
         parts[#parts + 1] = '|'
         parts[#parts + 1] = groupKeyBuilder(displayID, entry.groupID)
         parts[#parts + 1] = ':'
-        AppendSerialized(parts, entry.group.visual)
+        AppendSerialized(parts, visualForHardSignature(entry.group.visual))
         parts[#parts + 1] = '#'
         AppendSerialized(parts, entry.group.conditions)
     end

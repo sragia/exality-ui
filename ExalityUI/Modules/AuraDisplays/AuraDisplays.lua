@@ -95,6 +95,7 @@ end)
 
 function auraDisplays:Init()
     self:EnsureDB()
+    EXUI:GetModule('aura-displays-load-conditions'):Init()
     EXUI:GetModule('aura-displays-unit-resolver'):Init()
     EXUI:GetModule('aura-displays-spell-index'):Init()
     preview:Init()

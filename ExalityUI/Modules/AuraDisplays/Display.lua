@@ -38,6 +38,7 @@ function displayModule:DestroyFrame(displayID)
         editor:UnregisterFrameForEditor(frame)
     end
     containerModule:ClearContainer(frame)
+    containerModule:ReleaseFrameEncounterContainers(frame)
     frame:Hide()
     frame:SetParent(nil)
     self.frames[displayID] = nil

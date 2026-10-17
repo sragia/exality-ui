@@ -41,6 +41,10 @@ local function isBarStyle(displayID, groupID)
     return auraDisplays:GetGroupVisual(displayID, groupID, 'displayStyle') == 'bar'
 end
 
+local function isGlowStyle(displayID, groupID)
+    return auraDisplays:GetGroupVisual(displayID, groupID, 'displayStyle') == 'glow'
+end
+
 local function updateVisual(displayID, groupID, key, value, refreshOptions)
     auraDisplays:UpdateGroupVisual(displayID, groupID, key, value)
     auraDisplays:RefreshDisplay(displayID)
@@ -216,7 +220,7 @@ function visualOptions:GetOptions(displayID, groupID)
             name = 'displayStyle',
             width = 100,
             getOptions = function()
-                return { icon = 'Icon', bar = 'Bar' }
+                return { icon = 'Icon', bar = 'Bar', glow = 'Glow' }
             end,
             currentValue = function()
                 return auraDisplays:GetGroupVisual(displayID, groupID, 'displayStyle') or 'icon'
@@ -500,7 +504,7 @@ function visualOptions:GetOptions(displayID, groupID)
                 })
             end
         end
-    else
+    elseif not isGlowStyle(displayID, groupID) then
         append(fields, {
             { type = 'title', label = 'Icon',        width = 100 },
             {
@@ -619,6 +623,221 @@ function visualOptions:GetOptions(displayID, groupID)
         end
     end
 
+    if isGlowStyle(displayID, groupID) then
+        local function currentTrigger()
+            return buttonStyle:GetGlowTrigger({
+                glowTrigger = auraDisplays:GetGroupVisual(displayID, groupID, 'glowTrigger'),
+                glowWhileShown = auraDisplays:GetGroupVisual(displayID, groupID, 'glowWhileShown'),
+                glowOnAssign = auraDisplays:GetGroupVisual(displayID, groupID, 'glowOnAssign'),
+            })
+        end
+        local function currentKind()
+            return buttonStyle:GetGlowKind({
+                glowKind = auraDisplays:GetGroupVisual(displayID, groupID, 'glowKind'),
+                glowProc = auraDisplays:GetGroupVisual(displayID, groupID, 'glowProc'),
+            })
+        end
+
+        append(fields, {
+            { type = 'title', label = 'Glow', width = 100 },
+            {
+                type = 'dropdown',
+                label = 'When',
+                name = 'glowTrigger',
+                width = 50,
+                getOptions = function()
+                    return {
+                        shown = { label = 'While Shown', order = 1 },
+                        assign = { label = 'On Assign', order = 2 },
+                    }
+                end,
+                currentValue = function()
+                    return currentTrigger()
+                end,
+                onChange = function(v)
+                    updateVisual(displayID, groupID, 'glowTrigger', v, true)
+                end,
+            },
+            {
+                type = 'dropdown',
+                label = 'Glow Type',
+                name = 'glowKind',
+                width = 50,
+                getOptions = function()
+                    return {
+                        border = { label = 'Border', order = 1 },
+                        edge = { label = 'Border Glow', order = 2 },
+                        bottom = { label = 'Bottom Glow', order = 3 },
+                        proc = { label = 'Proc', order = 4 },
+                    }
+                end,
+                currentValue = function()
+                    return currentKind()
+                end,
+                onChange = function(v)
+                    if v ~= 'proc' then
+                        auraDisplays:UpdateGroupVisual(displayID, groupID, 'glowProc', nil)
+                    end
+                    updateVisual(displayID, groupID, 'glowKind', v, true)
+                end,
+            },
+            {
+                type = 'color-picker',
+                label = 'Color',
+                name = 'glowColor',
+                width = 33,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'glowColor')
+                        or { r = 1, g = 0.82, b = 0, a = 1 }
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowColor', v) end,
+            },
+            {
+                type = 'dropdown',
+                label = 'Blend',
+                name = 'glowBlendMode',
+                width = 50,
+                tooltip = {
+                    text = 'Additive brightens what is behind the texture. Alpha uses the texture transparency. Modulate darkens. Alpha Key cuts off faint pixels. Opaque ignores transparency.',
+                },
+                depends = function()
+                    local kind = currentKind()
+                    return kind == 'edge' or kind == 'bottom'
+                end,
+                getOptions = function()
+                    return {
+                        ADD = { label = 'Additive', order = 1 },
+                        BLEND = { label = 'Alpha', order = 2 },
+                        MOD = { label = 'Modulate', order = 3 },
+                        ALPHAKEY = { label = 'Alpha Key', order = 4 },
+                        DISABLE = { label = 'Opaque', order = 5 },
+                    }
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'glowBlendMode') or 'ADD'
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowBlendMode', v) end,
+            },
+            {
+                type = 'range',
+                label = 'Show For',
+                name = 'glowAssignDuration',
+                min = 0.2,
+                max = 5,
+                step = 0.1,
+                width = 33,
+                tooltip = {
+                    text = 'How long the glow stays up after an aura is assigned, in seconds.',
+                },
+                depends = function()
+                    return currentTrigger() == 'assign'
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'glowAssignDuration') or 1
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowAssignDuration', v) end,
+            },
+            {
+                type = 'range',
+                label = 'Thickness',
+                name = 'glowThickness',
+                min = 1,
+                max = 8,
+                step = 1,
+                width = 33,
+                depends = function()
+                    local kind = currentKind()
+                    return kind == 'border'
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'glowThickness') or 2
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowThickness', v) end,
+            },
+            {
+                type = 'range',
+                label = 'Size',
+                name = 'glowEdgeSize',
+                min = 8,
+                max = 48,
+                step = 1,
+                width = 33,
+                tooltip = {
+                    text = 'Thickness of the edge and corner textures, in pixels.',
+                },
+                depends = function()
+                    return currentKind() == 'edge'
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'glowEdgeSize') or 18
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowEdgeSize', v) end,
+            },
+            {
+                type = 'range',
+                label = 'Min Alpha',
+                name = 'glowMinAlpha',
+                min = 0,
+                max = 1,
+                step = 0.05,
+                width = 33,
+                tooltip = {
+                    text = 'Dim end of the border pulse.',
+                },
+                depends = function()
+                    local kind = currentKind()
+                    return currentTrigger() == 'shown' and (kind == 'border' or kind == 'edge' or kind == 'bottom')
+                end,
+                currentValue = function()
+                    local value = auraDisplays:GetGroupVisual(displayID, groupID, 'glowMinAlpha')
+                    if value == nil then
+                        return 0.25
+                    end
+                    return value
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowMinAlpha', v) end,
+            },
+            {
+                type = 'range',
+                label = 'Max Alpha',
+                name = 'glowMaxAlpha',
+                min = 0,
+                max = 1,
+                step = 0.05,
+                width = 33,
+                tooltip = {
+                    text = 'Bright end of the border pulse.',
+                },
+                depends = function()
+                    local kind = currentKind()
+                    return kind == 'border' or kind == 'edge' or kind == 'bottom'
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'glowMaxAlpha') or 1
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowMaxAlpha', v) end,
+            },
+            {
+                type = 'range',
+                label = 'Pulse Interval',
+                name = 'glowPulseInterval',
+                min = 0.1,
+                max = 3,
+                step = 0.1,
+                width = 33,
+                tooltip = {
+                    text = 'Border, Border Glow, and Bottom Glow: seconds to fade from Max Alpha to Min Alpha. Proc: length of one flipbook cycle.',
+                },
+                depends = function()
+                    return currentTrigger() == 'shown'
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'glowPulseInterval') or 0.5
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'glowPulseInterval', v) end,
+            },
+        })
+    else
     append(fields, {
         { type = 'title', label = 'Stacks', width = 100 },
         {
@@ -1021,6 +1240,7 @@ function visualOptions:GetOptions(displayID, groupID)
                 },
             })
         end
+    end
     end
 
     return fields

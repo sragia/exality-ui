@@ -13,6 +13,9 @@ local ufAuras = EXUI:GetModule('uf-auras')
 ---@class EXUIUnitFramesAurasApply
 local apply = EXUI:GetModule('uf-auras-apply')
 
+---@class EXUIAuraDisplaysButtonStyle
+local buttonStyle = EXUI:GetModule('aura-displays-button-style')
+
 ---@class EXUIUnitFramesAurasPreview
 local preview = EXUI:GetModule('uf-auras-preview')
 
@@ -29,9 +32,79 @@ local function frameStateKey(frame)
     return ('uf:%s'):format(name or tostring(frame))
 end
 
+local function previewGrave()
+    if not preview._grave then
+        local grave = CreateFrame('Frame', nil, UIParent)
+        grave:Hide()
+        preview._grave = grave
+    end
+    return preview._grave
+end
+
+local function ensurePreviewHost(frame)
+    local host = frame._exuiAuraPreviewHost
+    if host then
+        return host
+    end
+    host = CreateFrame('Frame', nil, frame)
+    host:EnableMouse(false)
+    if host.SetMouseMotionEnabled then
+        host:SetMouseMotionEnabled(false)
+    end
+    if host.SetMouseClickEnabled then
+        host:SetMouseClickEnabled(false)
+    end
+    host._exuiAuraPreviewHost = true
+    host:Hide()
+    frame._exuiAuraPreviewHost = host
+    return host
+end
+
+-- The aura container stays on a plain host. Live aura updates only manage
+-- AuraContainer children of the unit frame, so parking this host off the
+-- unit frame while testing leaves the editor preview intact.
 local function positionPreviewContainer(container, frame, display)
-    apply:AnchorContainer(container, frame, display)
-    apply:ApplyFrameLayer(container, frame, display)
+    local host = ensurePreviewHost(frame)
+    if host:GetParent() ~= frame then
+        host:SetParent(frame)
+    end
+
+    local anchorParent = frame
+    if not apply:IsGlowOnlyDisplay(display) then
+        anchorParent = frame.ElementFrame or frame
+    end
+    host:ClearAllPoints()
+    host:SetPoint(
+        display.anchorPoint or 'BOTTOMLEFT',
+        anchorParent,
+        display.relativePoint or 'TOPLEFT',
+        display.XOff or 0,
+        display.YOff or 0
+    )
+    host:SetSize(1, 1)
+    apply:ApplyFrameLayer(host, frame, display)
+
+    local anchor = display.anchorPoint or 'BOTTOMLEFT'
+    if not container._exuiPreviewHosted or container._exuiPreviewAnchor ~= anchor then
+        container:SetParent(host)
+        container:ClearAllPoints()
+        container:SetPoint(anchor, host, anchor, 0, 0)
+        container._exuiPreviewHosted = true
+        container._exuiPreviewAnchor = anchor
+    end
+    host:Show()
+    buttonStyle:FinishPendingFrameGlows()
+end
+
+function preview:ParkHosts(unitType)
+    local grave = previewGrave()
+    for _, frame in ipairs(self:GetFramesForUnit(unitType)) do
+        local host = frame._exuiAuraPreviewHost
+        if host then
+            host:Hide()
+            host:SetParent(grave)
+        end
+    end
 end
 
 local function layoutDisplayForFrame(display, frame)
@@ -51,6 +124,7 @@ local function layoutDisplayForFrame(display, frame)
         matchUnitFrameWidth = display.matchUnitFrameWidth,
         frameStrata = display.frameStrata,
         frameLevel = display.frameLevel,
+        groups = display.groups,
     }
 end
 
@@ -181,6 +255,7 @@ function preview:Clear()
     local forcedUnit = self.forcedUnit
 
     self:ClearPreviewStates()
+    self:ParkHosts(forcedUnit or unitType)
     self.activeDisplayID = nil
     self.forcedUnit = nil
     self.contextUnit = nil
@@ -233,8 +308,11 @@ function preview:Refresh(displayID)
     local frames = self:GetFramesForUnit(unitType)
     local visual = group.visual
 
-    -- Reset first so previous display anchors/sizes cannot linger on the frame.
-    self:ClearPreviewStates()
+    -- Same display keeps its preview buttons. Clearing here used to abandon
+    -- them on every color change.
+    if self.activeDisplayID ~= displayID then
+        self:ClearPreviewStates()
+    end
 
     for _, frame in ipairs(frames) do
         if frame:IsShown() or frame.isFake then

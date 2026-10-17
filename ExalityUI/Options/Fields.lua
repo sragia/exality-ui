@@ -758,7 +758,7 @@ local function titleFieldToOptionGroup(field)
         type = 'optionGroup',
         label = field.label,
         collapsible = true,
-        expanded = field.expanded ~= nil and field.expanded or true,
+        expanded = field.expanded ~= false,
         children = {},
     }
     if field.depends then
@@ -794,14 +794,24 @@ optionsFields.ConvertTitleFieldsToGroups = function(self, fields)
     for _, field in ipairs(fields or {}) do
         if type(field) == 'table' and field.type == 'title' then
             local group = titleFieldToOptionGroup(field)
-            if isSubTitleField(field) and #stack > 0 then
-                table.insert(stack[#stack].children, group)
+            local subTitle = isSubTitleField(field)
+            -- Consecutive subtitles are siblings under the nearest real title.
+            -- Leaving the previous subtitle on the stack nests each class inside the last one.
+            if subTitle then
+                while #stack > 0 and stack[#stack].isSubTitle do
+                    table.remove(stack)
+                end
             else
                 while #stack > 0 do
                     table.remove(stack)
                 end
+            end
+            if #stack > 0 then
+                table.insert(stack[#stack].children, group)
+            else
                 table.insert(out, group)
             end
+            group.isSubTitle = subTitle or nil
             table.insert(stack, group)
         elseif type(field) == 'table' and self:IsLayoutNode(field) then
             if field.children then
@@ -872,13 +882,20 @@ local function wouldReparentCycle(groupFrame, parentLayout)
     end
     local body = groupFrame:GetBody()
     local p = parentLayout
-    while p do
+    local seen = {}
+    local depth = 0
+    while p and depth < 64 do
+        if seen[p] then
+            return true
+        end
+        seen[p] = true
         if p == groupFrame or p == body then
             return true
         end
         p = p:GetParent()
+        depth = depth + 1
     end
-    return false
+    return depth >= 64
 end
 
 local function cachedFieldMatchesNode(frame, node, parentLayout, mountPath)

@@ -19,18 +19,36 @@ local CLASS_OPTIONS = {
 }
 
 local INSTANCE_OPTIONS = {
-    ['Open World'] = 'Open World',
-    Dungeon = 'Dungeon',
-    Raid = 'Raid',
-    Battleground = 'Battleground',
-    Arena = 'Arena',
-    ['Mythic+'] = 'Mythic+',
-    Scenario = 'Scenario',
+    { key = 'Open World', label = 'Open World' },
+    { key = 'Dungeon', label = 'Dungeon' },
+    { key = 'Raid', label = 'Raid' },
+    { key = 'Battleground', label = 'Battleground' },
+    { key = 'Arena', label = 'Arena' },
+    { key = 'Mythic+', label = 'Mythic+' },
+    { key = 'Scenario', label = 'Scenario' },
 }
 
-local ROLE_OPTIONS = { Tank = 'Tank', Healer = 'Healer', DPS = 'DPS' }
+local ROLE_OPTIONS = {
+    { key = 'Tank', label = 'Tank' },
+    { key = 'Healer', label = 'Healer' },
+    { key = 'DPS', label = 'DPS' },
+}
 
 local append = EXUI.utils.append
+
+local function classAccent(classFile)
+    if not classFile then
+        return nil
+    end
+    local color = C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(classFile)
+    if not color and RAID_CLASS_COLORS then
+        color = RAID_CLASS_COLORS[classFile]
+    end
+    if not color then
+        return nil
+    end
+    return { color.r, color.g, color.b, 1 }
+end
 
 function loadOptions:SetListValue(displayID, groupID, key, value, enabled)
     local list = auraDisplays:GetGroupLoad(displayID, groupID, key) or {}
@@ -49,18 +67,29 @@ function loadOptions:HasListValue(displayID, groupID, key, value)
     return tContains(list, value)
 end
 
+function loadOptions:HasAnyListValue(displayID, groupID, key)
+    local list = auraDisplays:GetGroupLoad(displayID, groupID, key)
+    return type(list) == 'table' and #list > 0
+end
+
 function loadOptions:GetClassFields(displayID, groupID)
-    local fields = { { type = 'title', label = 'Class', width = 100 } }
+    local fields = { {
+        type = 'title',
+        label = 'Class',
+        width = 100,
+        expanded = self:HasAnyListValue(displayID, groupID, 'loadClasses'),
+    } }
     for _, className in ipairs(CLASS_OPTIONS) do
+        local selectedClass = className
         table.insert(fields, {
             type = 'checkbox',
-            label = className,
-            name = 'class_' .. className,
+            label = selectedClass,
+            name = 'class_' .. selectedClass,
             width = 33,
             depends = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions') end,
-            currentValue = function() return self:HasListValue(displayID, groupID, 'loadClasses', className) end,
+            currentValue = function() return self:HasListValue(displayID, groupID, 'loadClasses', selectedClass) end,
             onChange = function(value)
-                self:SetListValue(displayID, groupID, 'loadClasses', className, value)
+                self:SetListValue(displayID, groupID, 'loadClasses', selectedClass, value)
                 auraDisplays:RefreshDisplay(displayID)
             end,
         })
@@ -69,8 +98,14 @@ function loadOptions:GetClassFields(displayID, groupID)
 end
 
 function loadOptions:GetInstanceFields(displayID, groupID)
-    local fields = { { type = 'title', label = 'Instance', width = 100 } }
-    for key, label in pairs(INSTANCE_OPTIONS) do
+    local fields = { {
+        type = 'title',
+        label = 'Instance',
+        width = 100,
+        expanded = self:HasAnyListValue(displayID, groupID, 'loadInstances'),
+    } }
+    for _, entry in ipairs(INSTANCE_OPTIONS) do
+        local key, label = entry.key, entry.label
         table.insert(fields, {
             type = 'checkbox',
             label = label,
@@ -88,8 +123,14 @@ function loadOptions:GetInstanceFields(displayID, groupID)
 end
 
 function loadOptions:GetRoleFields(displayID, groupID)
-    local fields = { { type = 'title', label = 'Role', width = 100 } }
-    for key, label in pairs(ROLE_OPTIONS) do
+    local fields = { {
+        type = 'title',
+        label = 'Role',
+        width = 100,
+        expanded = self:HasAnyListValue(displayID, groupID, 'loadRoles'),
+    } }
+    for _, entry in ipairs(ROLE_OPTIONS) do
+        local key, label = entry.key, entry.label
         table.insert(fields, {
             type = 'checkbox',
             label = label,
@@ -102,6 +143,63 @@ function loadOptions:GetRoleFields(displayID, groupID)
                 auraDisplays:RefreshDisplay(displayID)
             end,
         })
+    end
+    return fields
+end
+
+function loadOptions:GetSpecFields(displayID, groupID)
+    local fields = { {
+        type = 'title',
+        label = 'Spec',
+        width = 100,
+        expanded = self:HasAnyListValue(displayID, groupID, 'loadSpecs'),
+    } }
+    local sex = UnitSex('player')
+    for classIndex = 1, GetNumClasses() do
+        local className, classFile, classID = GetClassInfo(classIndex)
+        if className and classID then
+            local classExpanded = false
+            local numSpecs = C_SpecializationInfo.GetNumSpecializationsForClassID(classID)
+            for specIndex = 1, numSpecs do
+                local _, specName = GetSpecializationInfoForClassID(classID, specIndex, sex)
+                if specName and self:HasListValue(displayID, groupID, 'loadSpecs', specName) then
+                    classExpanded = true
+                    break
+                end
+            end
+            table.insert(fields, {
+                type = 'title',
+                label = className,
+                size = 12,
+                width = 100,
+                accent = classAccent(classFile),
+                expanded = classExpanded,
+                depends = function()
+                    return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions')
+                end,
+            })
+            for specIndex = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
+                local _, specName = GetSpecializationInfoForClassID(classID, specIndex, sex)
+                if specName then
+                    table.insert(fields, {
+                        type = 'checkbox',
+                        label = specName,
+                        name = 'spec_' .. classID .. '_' .. specIndex,
+                        width = 33,
+                        depends = function()
+                            return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions')
+                        end,
+                        currentValue = function()
+                            return self:HasListValue(displayID, groupID, 'loadSpecs', specName)
+                        end,
+                        onChange = function(value)
+                            self:SetListValue(displayID, groupID, 'loadSpecs', specName, value)
+                            auraDisplays:RefreshDisplay(displayID)
+                        end,
+                    })
+                end
+            end
+        end
     end
     return fields
 end
@@ -125,12 +223,14 @@ function loadOptions:GetOptions(displayID, groupID)
         },
         {
             type = 'edit-box', label = 'Only Load On Player', name = 'onlyLoadOnPlayer', width = 50,
+            tooltip = { text = 'Comma separated list of players to load the group on.' },
             depends = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions') end,
             currentValue = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'onlyLoadOnPlayer') end,
             onChange = function(v) auraDisplays:UpdateGroupLoad(displayID, groupID, 'onlyLoadOnPlayer', v); auraDisplays:RefreshDisplay(displayID) end,
         },
         {
             type = 'edit-box', label = 'Dont Load On Player', name = 'dontLoadOnPlayer', width = 50,
+            tooltip = { text = 'Comma separated list of players to not load the group on.' },
             depends = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions') end,
             currentValue = function() return auraDisplays:GetGroupLoad(displayID, groupID, 'dontLoadOnPlayer') end,
             onChange = function(v) auraDisplays:UpdateGroupLoad(displayID, groupID, 'dontLoadOnPlayer', v); auraDisplays:RefreshDisplay(displayID) end,
@@ -143,6 +243,7 @@ function loadOptions:GetOptions(displayID, groupID)
                 auraDisplays:UpdateGroupLoad(displayID, groupID, 'loadInCombat', v and true or nil)
                 if v then auraDisplays:UpdateGroupLoad(displayID, groupID, 'loadOutOfCombat', nil) end
                 auraDisplays:RefreshDisplay(displayID)
+                optionsFields:RefreshOptions()
             end,
         },
         {
@@ -153,13 +254,34 @@ function loadOptions:GetOptions(displayID, groupID)
                 auraDisplays:UpdateGroupLoad(displayID, groupID, 'loadOutOfCombat', v and true or nil)
                 if v then auraDisplays:UpdateGroupLoad(displayID, groupID, 'loadInCombat', nil) end
                 auraDisplays:RefreshDisplay(displayID)
+                optionsFields:RefreshOptions()
             end,
         },
     })
 
     append(fields, self:GetClassFields(displayID, groupID))
+    append(fields, self:GetSpecFields(displayID, groupID))
     append(fields, self:GetInstanceFields(displayID, groupID))
     append(fields, self:GetRoleFields(displayID, groupID))
+    append(fields, EXUI:GetModule('aura-displays-encounter-journal'):GetOptionFields({
+        owner = 'ad-' .. tostring(displayID) .. '-' .. tostring(groupID),
+        depends = function()
+            return auraDisplays:GetGroupLoad(displayID, groupID, 'hasLoadConditions')
+        end,
+        getList = function()
+            return auraDisplays:GetGroupLoad(displayID, groupID, 'loadEncounters')
+        end,
+        setList = function(list)
+            auraDisplays:UpdateGroupLoad(displayID, groupID, 'loadEncounters', list)
+        end,
+        refreshDisplay = function()
+            auraDisplays:RefreshDisplay(displayID)
+        end,
+        onChanged = function()
+            auraDisplays:RefreshDisplay(displayID)
+            optionsFields:RefreshOptions()
+        end,
+    }))
 
     return fields
 end

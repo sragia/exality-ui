@@ -246,7 +246,7 @@ function npAuras:DisplayHasLoadableGroup(display)
     end
     for _, groupID in ipairs(display.groupOrder or {}) do
         local group = display.groups[groupID]
-        if group and group.conditions and group.conditions.enable and loadConditions:ShouldLoad(group.load) then
+        if group and group.conditions and group.conditions.enable and loadConditions:ShouldIncludeGroup(group.load) then
             return true
         end
     end

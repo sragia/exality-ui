@@ -3,6 +3,7 @@
 	<Script file="SpellIndex.lua"/>
 	<Script file="ConfigResolver.lua"/>
 	<Script file="LoadConditions.lua"/>
+	<Script file="EncounterJournal.lua"/>
 	<Script file="UnitResolver.lua"/>
 	<Script file="Layout.lua"/>
 	<Script file="DurationFormat.lua"/>

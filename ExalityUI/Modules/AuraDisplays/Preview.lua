@@ -454,10 +454,10 @@ end
 function preview:EnsurePreviewContainer(stateKey, frame, display, positionFn)
     local state = self:EnsureState(stateKey)
     if state.container then
-        state.container:ClearAllPoints()
         if positionFn then
             positionFn(state.container, frame, display)
         else
+            state.container:ClearAllPoints()
             state.container:SetParent(frame)
             self:PositionPreviewContainer(state.container, frame, display)
         end
@@ -498,9 +498,9 @@ function preview:DestroyButtons(state)
             btn:ClearAuraInstance()
         end
         buttonStyle:Clear(btn)
-        -- AuraButton forbids ChangeParent; leave parented and hide.
+        -- AuraButton forbids ChangeParent, and ClearAllPoints can throw once
+        -- auras are secret. Leave it parented and hide.
         button:Hide()
-        button:ClearAllPoints()
     end
     wipe(state.buttons)
 end
@@ -814,6 +814,10 @@ function preview:ApplyScenario(button, scenario, visual, state, index)
         buttonStyle:Apply(btn, visual)
         button:Show()
 
+        if visual.displayStyle == 'glow' then
+            return
+        end
+
         preview:ApplyIcon(btn, scenario, visual, state, index)
         preview:ApplyStacks(btn, scenario, visual)
         preview:ApplyDuration(btn, scenario, visual)
@@ -846,8 +850,6 @@ function preview:HidePreview(stateKey)
 
     if state.container then
         state.container:Hide()
-        state.container:ClearAllPoints()
-        state.container:SetSize(1, 1)
     end
 end
 
@@ -878,6 +880,9 @@ function preview:BuildPreviewOnFrame(stateKey, frame, display, visual, positionF
     local needed = #PREVIEW_SCENARIOS
     if maxCount and maxCount > 0 then
         needed = math.min(needed, maxCount)
+    end
+    if visual.displayStyle == 'glow' then
+        needed = 1
     end
     if needed <= 0 then
         self:HidePreview(stateKey)
@@ -918,7 +923,6 @@ function preview:BuildPreviewOnFrame(stateKey, frame, display, visual, positionF
             end
             buttonStyle:Clear(btn)
             button:Hide()
-            button:ClearAllPoints()
         end
     end
 

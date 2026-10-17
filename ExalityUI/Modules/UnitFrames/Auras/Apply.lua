@@ -56,6 +56,9 @@ apply.PREWARM_MIN = 40
 
 function apply:InvalidateHardSignatures()
     wipe(self.sigCache)
+    if self.encounterSigCache then
+        wipe(self.encounterSigCache)
+    end
 end
 
 function apply:InvalidateSignatures()
@@ -188,6 +191,19 @@ function apply:ApplyVisibilityGate(frame)
     if frame.UFAuraContainers then
         for displayID, container in pairs(frame.UFAuraContainers) do
             if self:IsDisplayGated(displayID) then
+                container:SetShown(visible)
+                if visible and container.UpdateAllAuras then
+                    container:UpdateAllAuras()
+                end
+            end
+        end
+    end
+    if frame.UFEncounterContainers then
+        local encounterID = loadConditions:GetActiveEncounter()
+        for displayID, container in pairs(frame.UFEncounterContainers) do
+            if encounterID and not container._exuiEncounterDisabled
+                and container._exuiEncounterID == encounterID
+                and self:IsDisplayGated(displayID) then
                 container:SetShown(visible)
                 if visible and container.UpdateAllAuras then
                     container:UpdateAllAuras()
@@ -397,8 +413,29 @@ function apply:DiscardContainer(frame, displayID)
     self:ReturnContainerToPool(container)
 end
 
+function apply:IsGlowOnlyDisplay(display)
+    local groups = display and display.groups
+    if type(groups) ~= 'table' then
+        return false
+    end
+    local found = false
+    for _, group in pairs(groups) do
+        local style = group and group.visual and group.visual.displayStyle
+        if style then
+            found = true
+            if style ~= 'glow' then
+                return false
+            end
+        end
+    end
+    return found
+end
+
 function apply:AnchorContainer(container, frame, display)
     local parent = frame.ElementFrame or frame
+    if self:IsGlowOnlyDisplay(display) then
+        parent = frame
+    end
     container:SetParent(parent)
     container:ClearAllPoints()
     container:SetPoint(
@@ -408,12 +445,31 @@ function apply:AnchorContainer(container, frame, display)
         display.XOff or 0,
         display.YOff or 0
     )
+    buttonStyle:FinishPendingFrameGlows()
 end
 
 -- Keep auras above the unit-frame border (ElementFrame is frame+100 with PPBorder).
 -- frameLevel is an offset above ElementFrame.
 function apply:ApplyFrameLayer(container, frame, display)
     if not container or not frame then
+        return
+    end
+
+    -- Glow art stays above the health bar and under ElementFrame texts.
+    if self:IsGlowOnlyDisplay(display) then
+        local strata = frame:GetFrameStrata()
+        if strata then
+            container:SetFrameStrata(strata)
+        end
+        local base = frame:GetFrameLevel()
+        local health = frame.Health
+        if health and health.GetFrameLevel then
+            local healthLevel = health:GetFrameLevel()
+            if healthLevel and healthLevel > base then
+                base = healthLevel
+            end
+        end
+        container:SetFrameLevel(base + 6)
         return
     end
 
@@ -437,7 +493,7 @@ function apply:ApplyProcessingPolicy(container, display)
         return
     end
     local needsProcessAura = resolver:DisplayNeedsProcessAura(display, function(load)
-        return loadConditions:ShouldLoad(load)
+        return loadConditions:ShouldIncludeGroup(load)
     end)
     if not needsProcessAura then
         container:SetAuraProcessingPolicy(0)
@@ -476,18 +532,55 @@ function apply:ApplyItemEnchantments(container, containerConfig, display)
     end
 end
 
+local function groupKey(id, groupID)
+    return defaults:GetGroupKey(id, groupID)
+end
+
+local function shouldIncludeGroup(load)
+    return loadConditions:ShouldIncludeGroup(load)
+end
+
+local function matchesCombat(load)
+    return loadConditions:MatchesCombat(load)
+end
+
+function apply:ApplyCombatEnabled(container, displayID, display)
+    resolver:ApplyCombatEnabled(container, displayID, display, groupKey, shouldIncludeGroup, matchesCombat)
+end
+
+function apply:ApplyCombatState()
+    local function applyFrame(frame)
+        if not frame or frame.isFake or not frame.UFAuraContainers then
+            return
+        end
+        for displayID, container in pairs(frame.UFAuraContainers) do
+            local display = ufAuras:GetDisplay(displayID)
+            if container and display then
+                self:ApplyCombatEnabled(container, displayID, display)
+            end
+        end
+    end
+
+    for _, frame in pairs(ufCore.frames or {}) do
+        applyFrame(frame)
+    end
+    for _, frame in ipairs(ufCore.partyFrames or {}) do
+        applyFrame(frame)
+    end
+    for _, frame in ipairs(ufCore.raidFrames or {}) do
+        applyFrame(frame)
+    end
+end
+
 function apply:RebuildGroups(container, displayID, display, frame)
     resolver:RebuildGroups(
         container,
         displayID,
         display,
         buttonStyle,
-        function(id, groupID)
-            return defaults:GetGroupKey(id, groupID)
-        end,
-        function(load)
-            return loadConditions:ShouldLoad(load)
-        end
+        groupKey,
+        shouldIncludeGroup,
+        matchesCombat
     )
 end
 
@@ -495,17 +588,14 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
     if not resolver:CanUpdateGroupsInPlace(container) then
         return false
     end
-    local getGroupKey = function(id, groupID)
-        return defaults:GetGroupKey(id, groupID)
-    end
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
-        return loadConditions:ShouldLoad(load)
-    end)) do
+    for _, entry in ipairs(resolver:IterActiveGroups(display, shouldIncludeGroup)) do
         local options = resolver:ResolveGroupOptions(
-            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
+            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, groupKey
         )
         resolver:ApplyGroupOptions(container, options)
+        resolver:ApplyInitializeFrame(container, options)
     end
+    self:ApplyCombatEnabled(container, displayID, display)
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
     end
@@ -520,7 +610,7 @@ function apply:GetHardSignature(displayID, display)
     local sig = resolver:BuildHardSignature(displayID, display, function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end, function(load)
-        return loadConditions:ShouldLoad(load)
+        return loadConditions:ShouldIncludeGroup(load)
     end)
     self.sigCache[displayID] = sig
     return sig
@@ -669,6 +759,257 @@ function apply:SuppressLiveAurasOnFakeFrame(frame)
     end
 end
 
+apply.encounterStale = {}
+
+function apply:ForEachLiveFrame(callback)
+    local seen = {}
+    local function visit(frame)
+        if not frame or frame.isFake or seen[frame] then
+            return
+        end
+        seen[frame] = true
+        callback(frame)
+    end
+    for _, frame in pairs(ufCore.frames or {}) do
+        visit(frame)
+    end
+    for _, frame in ipairs(ufCore.partyFrames or {}) do
+        visit(frame)
+    end
+    for _, frame in ipairs(ufCore.raidFrames or {}) do
+        visit(frame)
+    end
+end
+
+function apply:DisableEncounterContainer(container)
+    if not container or container._exuiEncounterDisabled then
+        return
+    end
+    container._exuiEncounterDisabled = true
+    pcall(function()
+        if container.SetEnabled then
+            container:SetEnabled(false)
+        end
+        container:Hide()
+    end)
+end
+
+function apply:DestroyEncounterContainer(container)
+    if not container then
+        return
+    end
+    loadConditions:DebugEncounter('unit frame removed ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
+    self:DisableEncounterContainer(container)
+    pcall(function()
+        container:ClearAllPoints()
+        container:SetParent(nil)
+    end)
+end
+
+function apply:QueueStaleEncounterContainer(container)
+    if not container or container._exuiEncounterStale then
+        return
+    end
+    container._exuiEncounterStale = true
+    loadConditions:DebugEncounter('unit frame disabled ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
+    self:DisableEncounterContainer(container)
+    self.encounterStale[#self.encounterStale + 1] = container
+end
+
+function apply:ReleaseStaleEncounterContainers()
+    if InCombatLockdown() then
+        return
+    end
+    for _, container in ipairs(self.encounterStale) do
+        self:DestroyEncounterContainer(container)
+    end
+    wipe(self.encounterStale)
+end
+
+function apply:DisableFrameEncounterContainers(frame)
+    for displayID, container in pairs(frame.UFEncounterContainers or {}) do
+        frame.UFEncounterContainers[displayID] = nil
+        self:QueueStaleEncounterContainer(container)
+    end
+end
+
+function apply:HideKeptEncounterContainers()
+    self:ForEachLiveFrame(function(frame)
+        for _, container in pairs(frame.UFEncounterContainers or {}) do
+            if not container._exuiEncounterDisabled then
+                pcall(function()
+                    container:Hide()
+                end)
+            end
+        end
+    end)
+end
+
+function apply:DisableAllEncounterContainers()
+    self:ForEachLiveFrame(function(frame)
+        self:DisableFrameEncounterContainers(frame)
+    end)
+end
+
+function apply:ReleaseAllEncounterContainers()
+    if InCombatLockdown() then
+        return
+    end
+    self:ForEachLiveFrame(function(frame)
+        for displayID, container in pairs(frame.UFEncounterContainers or {}) do
+            frame.UFEncounterContainers[displayID] = nil
+            self:DestroyEncounterContainer(container)
+        end
+    end)
+    self:ReleaseStaleEncounterContainers()
+end
+
+function apply:CreateEncounterContainer(frame, displayID, display, encounterID, include, sig)
+    local adContainer = EXUI:GetModule('aura-displays-container')
+    if adContainer and adContainer.IsAvailable and not adContainer:IsAvailable() then
+        return nil
+    end
+    local parent = frame.ElementFrame or frame
+    local container
+    if frame.CreateAuras then
+        local ok, created = pcall(frame.CreateAuras, frame, {
+            maxWidth = self:GetRowWidth(frame, display),
+            initialAnchor = display.containerAnchorPoint or 'TOPLEFT',
+            growthX = display.horizontalGrowth or 'RIGHT',
+            growthY = display.verticalGrowth or 'DOWN',
+            paddingLeft = display.paddingLeft or 0,
+            paddingRight = display.paddingRight or 0,
+            paddingTop = display.paddingTop or 0,
+            paddingBottom = display.paddingBottom or 0,
+        })
+        if ok then
+            container = created
+        end
+    end
+    if not container then
+        local ok, created = pcall(CreateFrame, 'AuraContainer', nil, parent, 'CustomAuraContainerTemplate')
+        if ok then
+            container = created
+        end
+    end
+    if not container then
+        return nil
+    end
+
+    container._exuiEncounterID = encounterID
+    container._exuiEncounterSig = sig
+    container._exuiDisplayID = displayID
+    local configured = pcall(function()
+        self:AnchorContainer(container, frame, display)
+        self:ApplyFrameLayer(container, frame, display)
+        self:ApplyLayout(container, display)
+        if container.SetFlowLayoutMaximumLineSize then
+            container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
+        end
+        if container.SetUnit and frame.__unit then
+            container:SetUnit(frame.__unit)
+        end
+        if container.SetEnabled then
+            container:SetEnabled(ufAuras:IsDisplayEnabled(display))
+        end
+        if container.SetAuraProcessingPolicy then
+            if resolver:DisplayNeedsProcessAura(display, include) then
+                local processAuraOptions = display.container and display.container.processAuraOptions or {}
+                container:SetAuraProcessingPolicy(1, processAuraOptions)
+            else
+                container:SetAuraProcessingPolicy(0)
+            end
+        end
+        container:SetShown(self:ShouldShowContainer(frame, displayID))
+        resolver:RebuildGroups(container, displayID, display, buttonStyle, groupKey, include)
+        if container.UpdateAllAuras then
+            container:UpdateAllAuras()
+        end
+    end)
+    if not configured then
+        loadConditions:DebugEncounter('unit frame load failed ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
+        self:QueueStaleEncounterContainer(container)
+        return nil
+    end
+    loadConditions:DebugEncounter('unit frame loaded ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
+    return container
+end
+
+function apply:GetEncounterSignature(displayID, display, encounterID, include)
+    self.encounterSigCache = self.encounterSigCache or {}
+    local byDisplay = self.encounterSigCache[displayID]
+    local sig = byDisplay and byDisplay[encounterID]
+    if sig then
+        return sig
+    end
+    sig = resolver:BuildHardSignature(displayID, display, function(id, groupID)
+        return defaults:GetGroupKey(id, groupID)
+    end, include)
+    if not byDisplay then
+        byDisplay = {}
+        self.encounterSigCache[displayID] = byDisplay
+    end
+    byDisplay[encounterID] = sig
+    return sig
+end
+
+function apply:EnsureEncounterContainer(frame, displayID, display, encounterID)
+    local include = function(load)
+        return loadConditions:ShouldIncludeEncounterGroup(load, encounterID)
+    end
+    local sig = self:GetEncounterSignature(displayID, display, encounterID, include)
+    frame.UFEncounterContainers = frame.UFEncounterContainers or {}
+    local existing = frame.UFEncounterContainers[displayID]
+    if existing and not existing._exuiEncounterDisabled
+        and existing._exuiEncounterID == encounterID
+        and existing._exuiEncounterSig == sig then
+        pcall(function()
+            existing:SetShown(self:ShouldShowContainer(frame, displayID))
+            if existing:IsShown() and existing.UpdateAllAuras then
+                existing:UpdateAllAuras()
+            end
+        end)
+        return
+    end
+    if existing then
+        frame.UFEncounterContainers[displayID] = nil
+        self:QueueStaleEncounterContainer(existing)
+    end
+    frame.UFEncounterContainers[displayID] = self:CreateEncounterContainer(
+        frame, displayID, display, encounterID, include, sig
+    )
+end
+
+function apply:EnsureEncounterContainers(frame, encounterID)
+    if not frame or frame.isFake then
+        return
+    end
+    local unitType = ufAuras:GetUnitTypeForFrame(frame)
+    if not unitType then
+        return
+    end
+    local displays = ufAuras:GetDisplaysForUnitType(unitType)
+    local keep = {}
+    for displayID, display in pairs(displays) do
+        if ufAuras:IsDisplayEnabled(display) and loadConditions:DisplayHasEncounterGroups(display, encounterID) then
+            keep[displayID] = true
+            self:EnsureEncounterContainer(frame, displayID, display, encounterID)
+        end
+    end
+    for displayID, container in pairs(frame.UFEncounterContainers or {}) do
+        if not keep[displayID] then
+            frame.UFEncounterContainers[displayID] = nil
+            self:QueueStaleEncounterContainer(container)
+        end
+    end
+end
+
+function apply:OnEncounterStart(encounterID)
+    self:ForEachLiveFrame(function(frame)
+        self:EnsureEncounterContainers(frame, encounterID)
+    end)
+end
+
 function apply:UpdateFrame(frame)
     if not frame then
         return
@@ -687,6 +1028,11 @@ function apply:UpdateFrame(frame)
     local unitType = ufAuras:GetUnitTypeForFrame(frame)
     if not unitType then
         return
+    end
+
+    local encounterID = loadConditions:GetActiveEncounter()
+    if encounterID then
+        self:EnsureEncounterContainers(frame, encounterID)
     end
 
     self:RegisterVisibilityEvents(frame)

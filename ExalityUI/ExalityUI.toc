@@ -59,6 +59,7 @@ Modules/General.lua
 Modules/RaidTools.lua
 Modules/ResourceDisplays/ResourceDisplays.xml
 Modules/Cooldowns/Cooldowns.xml
+Modules/Glow/Glow.xml
 Modules/AuraDisplays/AuraDisplays.xml
 Modules/UnitFrames/Auras/Auras.xml
 Modules/XPBar.lua

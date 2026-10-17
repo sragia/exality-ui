@@ -66,7 +66,7 @@ function containerModule:GetPlaceholderSize(display)
     local width, height = 32, 32
     for _, groupID in ipairs(display.groupOrder or {}) do
         local group = display.groups and display.groups[groupID]
-        if group and group.conditions and group.conditions.enable and loadConditions:ShouldLoad(group.load) then
+        if group and group.conditions and group.conditions.enable and loadConditions:ShouldIncludeGroup(group.load) then
             local visual = group.visual or {}
             if visual.displayStyle == 'bar' then
                 local barWidth = visual.barWidth or 160
@@ -133,6 +133,9 @@ function containerModule:SetEditMode(frame, display, enabled)
         if frame.AuraContainer then
             frame.AuraContainer:Hide()
         end
+        for _, container in pairs(frame.EncounterContainers or {}) do
+            container:Hide()
+        end
         local placeholder = self:EnsureEditPlaceholder(frame, display)
         placeholder:SetSize(width, height)
         placeholder:ClearAllPoints()
@@ -150,6 +153,12 @@ function containerModule:SetEditMode(frame, display, enabled)
     end
     if frame.AuraContainer then
         frame.AuraContainer:Show()
+    end
+    local encounterID = loadConditions:GetActiveEncounter()
+    for _, container in pairs(frame.EncounterContainers or {}) do
+        if encounterID and not container._exuiEncounterDisabled and container._exuiEncounterID == encounterID then
+            container:Show()
+        end
     end
 end
 
@@ -204,7 +213,7 @@ function containerModule:ApplyProcessingPolicy(container, display)
         return
     end
     local needsProcessAura = resolver:DisplayNeedsProcessAura(display, function(load)
-        return loadConditions:ShouldLoad(load)
+        return loadConditions:ShouldIncludeGroup(load)
     end)
     if not needsProcessAura then
         container:SetAuraProcessingPolicy(0)
@@ -214,18 +223,42 @@ function containerModule:ApplyProcessingPolicy(container, display)
     container:SetAuraProcessingPolicy(1, processAuraOptions)
 end
 
+local function groupKey(id, groupID)
+    return defaults:GetGroupKey(id, groupID)
+end
+
+local function shouldIncludeGroup(load)
+    return loadConditions:ShouldIncludeGroup(load)
+end
+
+local function matchesCombat(load)
+    return loadConditions:MatchesCombat(load)
+end
+
+function containerModule:ApplyCombatEnabled(container, displayID, display)
+    resolver:ApplyCombatEnabled(container, displayID, display, groupKey, shouldIncludeGroup, matchesCombat)
+end
+
+function containerModule:ApplyCombatState()
+    local displayModule = EXUI:GetModule('aura-displays-display')
+    local auraDisplays = EXUI:GetModule('aura-displays')
+    for displayID, frame in pairs(displayModule.frames or {}) do
+        local display = auraDisplays:GetDisplay(displayID)
+        if frame.AuraContainer and display then
+            self:ApplyCombatEnabled(frame.AuraContainer, displayID, display)
+        end
+    end
+end
+
 function containerModule:RebuildGroups(frame, displayID, display)
     resolver:RebuildGroups(
         frame.AuraContainer,
         displayID,
         display,
         buttonStyle,
-        function(id, groupID)
-            return defaults:GetGroupKey(id, groupID)
-        end,
-        function(load)
-            return loadConditions:ShouldLoad(load)
-        end
+        groupKey,
+        shouldIncludeGroup,
+        matchesCombat
     )
 end
 
@@ -235,14 +268,15 @@ function containerModule:UpdateGroupsInPlace(frame, displayID, display)
         return false
     end
 
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
-        return loadConditions:ShouldLoad(load)
-    end)) do
+    for _, entry in ipairs(resolver:IterActiveGroups(display, shouldIncludeGroup)) do
         local options = resolver:ResolveGroupOptions(
             displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex
         )
         resolver:ApplyGroupOptions(container, options)
+        resolver:ApplyInitializeFrame(container, options)
     end
+
+    self:ApplyCombatEnabled(container, displayID, display)
 
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
@@ -250,11 +284,222 @@ function containerModule:UpdateGroupsInPlace(frame, displayID, display)
     return true
 end
 
+containerModule.encounterStale = {}
+
+function containerModule:DisableEncounterContainer(container)
+    if not container or container._exuiEncounterDisabled then
+        return
+    end
+    container._exuiEncounterDisabled = true
+    pcall(function()
+        if container.SetEnabled then
+            container:SetEnabled(false)
+        end
+        container:Hide()
+    end)
+end
+
+function containerModule:DestroyEncounterContainer(container)
+    if not container then
+        return
+    end
+    loadConditions:DebugEncounter('display removed ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
+    self:DisableEncounterContainer(container)
+    pcall(function()
+        container:SetParent(nil)
+    end)
+end
+
+function containerModule:QueueStaleEncounterContainer(container)
+    if not container or container._exuiEncounterStale then
+        return
+    end
+    container._exuiEncounterStale = true
+    loadConditions:DebugEncounter('display disabled ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
+    self:DisableEncounterContainer(container)
+    self.encounterStale[#self.encounterStale + 1] = container
+end
+
+function containerModule:ReleaseStaleEncounterContainers()
+    if InCombatLockdown() then
+        return
+    end
+    for _, container in ipairs(self.encounterStale) do
+        self:DestroyEncounterContainer(container)
+    end
+    wipe(self.encounterStale)
+end
+
+function containerModule:ReleaseAllEncounterContainers()
+    if InCombatLockdown() then
+        return
+    end
+    local displayModule = EXUI:GetModule('aura-displays-display')
+    for _, frame in pairs(displayModule.frames or {}) do
+        for encounterID, container in pairs(frame.EncounterContainers or {}) do
+            frame.EncounterContainers[encounterID] = nil
+            self:DestroyEncounterContainer(container)
+        end
+    end
+    self:ReleaseStaleEncounterContainers()
+end
+
+function containerModule:HideKeptEncounterContainers()
+    local displayModule = EXUI:GetModule('aura-displays-display')
+    for _, frame in pairs(displayModule.frames or {}) do
+        for _, container in pairs(frame.EncounterContainers or {}) do
+            if not container._exuiEncounterDisabled then
+                pcall(function()
+                    container:Hide()
+                end)
+            end
+        end
+    end
+end
+
+function containerModule:DisableAllEncounterContainers()
+    local displayModule = EXUI:GetModule('aura-displays-display')
+    for _, frame in pairs(displayModule.frames or {}) do
+        for encounterID, container in pairs(frame.EncounterContainers or {}) do
+            frame.EncounterContainers[encounterID] = nil
+            self:QueueStaleEncounterContainer(container)
+        end
+    end
+end
+
+function containerModule:ReleaseFrameEncounterContainers(frame)
+    if not frame or not frame.EncounterContainers then
+        return
+    end
+    for encounterID, container in pairs(frame.EncounterContainers) do
+        frame.EncounterContainers[encounterID] = nil
+        if InCombatLockdown() then
+            self:QueueStaleEncounterContainer(container)
+        else
+            self:DestroyEncounterContainer(container)
+        end
+    end
+end
+
+function containerModule:EncounterInclude(encounterID)
+    return function(load)
+        return loadConditions:ShouldIncludeEncounterGroup(load, encounterID)
+    end
+end
+
+function containerModule:EncounterSignature(displayID, display, encounterID)
+    return resolver:BuildHardSignature(displayID, display, function(id, groupID)
+        return defaults:GetGroupKey(id, groupID)
+    end, self:EncounterInclude(encounterID))
+end
+
+function containerModule:CreateEncounterContainer(frame, displayID, display, encounterID)
+    if not self:IsAvailable() then
+        return nil
+    end
+    local include = self:EncounterInclude(encounterID)
+    local ok, container = pcall(CreateFrame, 'AuraContainer', nil, frame, 'CustomAuraContainerTemplate')
+    if not ok or not container then
+        return nil
+    end
+    container._exuiEncounterID = encounterID
+    container._exuiDisplayID = displayID
+    container._exuiEncounterSig = self:EncounterSignature(displayID, display, encounterID)
+    frame.EncounterContainers = frame.EncounterContainers or {}
+    frame.EncounterContainers[encounterID] = container
+
+    local configured = pcall(function()
+        self:AnchorContainer(container, frame, display)
+        layout:ApplyContainerLayout(container, display)
+        self:ApplyUnit(container, display.container, display.enable)
+        if container.SetAuraProcessingPolicy then
+            local needsProcessAura = resolver:DisplayNeedsProcessAura(display, include)
+            if needsProcessAura then
+                local processAuraOptions = display.container and display.container.processAuraOptions or {}
+                container:SetAuraProcessingPolicy(1, processAuraOptions)
+            else
+                container:SetAuraProcessingPolicy(0)
+            end
+        end
+        container:Show()
+        resolver:RebuildGroups(container, displayID, display, buttonStyle, groupKey, include)
+        if container.UpdateAllAuras then
+            container:UpdateAllAuras()
+        end
+        if self:IsEditMode(frame) then
+            container:Hide()
+        end
+    end)
+    if not configured then
+        frame.EncounterContainers[encounterID] = nil
+        loadConditions:DebugEncounter('display load failed ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
+        self:QueueStaleEncounterContainer(container)
+        return nil
+    end
+    loadConditions:DebugEncounter('display loaded ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
+    return container
+end
+
+function containerModule:EnsureEncounterContainer(frame, displayID, display, encounterID)
+    if not frame or not display then
+        return
+    end
+    frame.EncounterContainers = frame.EncounterContainers or {}
+    local existing = frame.EncounterContainers[encounterID]
+    local staleIDs = {}
+    for id in pairs(frame.EncounterContainers) do
+        if id ~= encounterID then
+            staleIDs[#staleIDs + 1] = id
+        end
+    end
+    for _, id in ipairs(staleIDs) do
+        local container = frame.EncounterContainers[id]
+        frame.EncounterContainers[id] = nil
+        self:QueueStaleEncounterContainer(container)
+    end
+
+    local auraDisplays = EXUI:GetModule('aura-displays')
+    if not auraDisplays:IsDisplayShown(display) or not loadConditions:DisplayHasEncounterGroups(display, encounterID) then
+        if existing and frame.EncounterContainers[encounterID] then
+            frame.EncounterContainers[encounterID] = nil
+            self:QueueStaleEncounterContainer(existing)
+        end
+        return
+    end
+
+    existing = frame.EncounterContainers[encounterID]
+    local sig = self:EncounterSignature(displayID, display, encounterID)
+    if existing and not existing._exuiEncounterDisabled and existing._exuiEncounterSig == sig then
+        if not self:IsEditMode(frame) then
+            pcall(function()
+                existing:Show()
+                if existing.UpdateAllAuras then
+                    existing:UpdateAllAuras()
+                end
+            end)
+        end
+        return
+    end
+    if existing then
+        frame.EncounterContainers[encounterID] = nil
+        self:QueueStaleEncounterContainer(existing)
+    end
+    self:CreateEncounterContainer(frame, displayID, display, encounterID)
+end
+
+function containerModule:OnEncounterStart(encounterID)
+    local displayModule = EXUI:GetModule('aura-displays-display')
+    local auraDisplays = EXUI:GetModule('aura-displays')
+    for displayID, frame in pairs(displayModule.frames or {}) do
+        self:EnsureEncounterContainer(frame, displayID, auraDisplays:GetDisplay(displayID), encounterID)
+    end
+end
+
 function containerModule:GetHardSignature(displayID, display)
     return resolver:BuildHardSignature(displayID, display, function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end, function(load)
-        return loadConditions:ShouldLoad(load)
+        return loadConditions:ShouldIncludeGroup(load)
     end)
 end
 

@@ -132,6 +132,7 @@ defaults.GROUP_LOAD = {
     loadInCombat = nil,
     loadOutOfCombat = nil,
     loadRoles = {},
+    loadEncounters = {},
 }
 
 defaults.GROUP_CONDITIONS = {
@@ -225,6 +226,16 @@ defaults.GROUP_VISUAL = {
     pandemicGlowPulse = true,
     pandemicGlowColor = { r = 1, g = 0.82, b = 0, a = 1 },
     pandemicGlowThickness = 2,
+    glowColor = { r = 1, g = 0.82, b = 0, a = 1 },
+    glowThickness = 2,
+    glowMinAlpha = 0.25,
+    glowMaxAlpha = 1,
+    glowPulseInterval = 0.5,
+    glowTrigger = 'shown',
+    glowKind = 'border',
+    glowAssignDuration = 1,
+    glowEdgeSize = 18,
+    glowBlendMode = 'ADD',
     showDispelBorder = true,
     showDispelIcon = false,
     dispelBorderStyle = 'Default',

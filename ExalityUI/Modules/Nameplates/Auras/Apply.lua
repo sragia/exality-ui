@@ -168,14 +168,24 @@ function apply:SetContainerUnit(container, unit)
 end
 
 function apply:DetachFrame(frame)
-    if not frame or not frame.NPAuraContainers then
+    if not frame then
         return
     end
-    for _, container in pairs(frame.NPAuraContainers) do
-        if container.SetEnabled then
-            container:SetEnabled(false)
+    if frame.NPAuraContainers then
+        for _, container in pairs(frame.NPAuraContainers) do
+            if container.SetEnabled then
+                container:SetEnabled(false)
+            end
+            container:Hide()
         end
-        container:Hide()
+    end
+    for _, container in pairs(frame.NPEncounterContainers or {}) do
+        if not container._exuiEncounterDisabled then
+            if container.SetEnabled then
+                container:SetEnabled(false)
+            end
+            container:Hide()
+        end
     end
 end
 
@@ -204,6 +214,21 @@ function apply:BindFrame(frame)
         container:Show()
         if container.UpdateAllAuras then
             container:UpdateAllAuras()
+        end
+    end
+    local encounterID = loadConditions:GetActiveEncounter()
+    for _, container in pairs(frame.NPEncounterContainers or {}) do
+        if encounterID and not container._exuiEncounterDisabled and container._exuiEncounterID == encounterID then
+            pcall(function()
+                self:SetContainerUnit(container, unit)
+                if container.SetEnabled then
+                    container:SetEnabled(true)
+                end
+                container:Show()
+                if container.UpdateAllAuras then
+                    container:UpdateAllAuras()
+                end
+            end)
         end
     end
 end
@@ -244,7 +269,7 @@ function apply:ApplyProcessingPolicy(container, display)
         return
     end
     local needsProcessAura = resolver:DisplayNeedsProcessAura(display, function(load)
-        return loadConditions:ShouldLoad(load)
+        return loadConditions:ShouldIncludeGroup(load)
     end)
     if not needsProcessAura then
         container:SetAuraProcessingPolicy(0)
@@ -254,18 +279,48 @@ function apply:ApplyProcessingPolicy(container, display)
     container:SetAuraProcessingPolicy(1, processAuraOptions)
 end
 
+local function groupKey(id, groupID)
+    return defaults:GetGroupKey(id, groupID)
+end
+
+local function shouldIncludeGroup(load)
+    return loadConditions:ShouldIncludeGroup(load)
+end
+
+local function matchesCombat(load)
+    return loadConditions:MatchesCombat(load)
+end
+
+function apply:ApplyCombatEnabled(container, displayID, display)
+    resolver:ApplyCombatEnabled(container, displayID, display, groupKey, shouldIncludeGroup, matchesCombat)
+end
+
+function apply:ApplyCombatState()
+    if not npCore.ForEachPlate then
+        return
+    end
+    npCore:ForEachPlate(function(frame)
+        if not frame.NPAuraContainers then
+            return
+        end
+        for displayID, container in pairs(frame.NPAuraContainers) do
+            local display = npAuras:GetDisplay(displayID)
+            if container and display then
+                self:ApplyCombatEnabled(container, displayID, display)
+            end
+        end
+    end)
+end
+
 function apply:RebuildGroups(container, displayID, display, frame)
     resolver:RebuildGroups(
         container,
         displayID,
         display,
         buttonStyle,
-        function(id, groupID)
-            return defaults:GetGroupKey(id, groupID)
-        end,
-        function(load)
-            return loadConditions:ShouldLoad(load)
-        end
+        groupKey,
+        shouldIncludeGroup,
+        matchesCombat
     )
 end
 
@@ -273,17 +328,14 @@ function apply:UpdateGroupsInPlace(container, displayID, display)
     if not resolver:CanUpdateGroupsInPlace(container) then
         return false
     end
-    local getGroupKey = function(id, groupID)
-        return defaults:GetGroupKey(id, groupID)
-    end
-    for _, entry in ipairs(resolver:IterActiveGroups(display, function(load)
-        return loadConditions:ShouldLoad(load)
-    end)) do
+    for _, entry in ipairs(resolver:IterActiveGroups(display, shouldIncludeGroup)) do
         local options = resolver:ResolveGroupOptions(
-            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, getGroupKey
+            displayID, display, entry.groupID, entry.group, buttonStyle, entry.layoutIndex, groupKey
         )
         resolver:ApplyGroupOptions(container, options)
+        resolver:ApplyInitializeFrame(container, options)
     end
+    self:ApplyCombatEnabled(container, displayID, display)
     if container.UpdateAllAuras then
         container:UpdateAllAuras()
     end
@@ -292,6 +344,9 @@ end
 
 function apply:InvalidateHardSignatures()
     wipe(self.sigCache)
+    if self.encounterSigCache then
+        wipe(self.encounterSigCache)
+    end
 end
 
 function apply:InvalidateSignatures()
@@ -307,7 +362,7 @@ function apply:GetHardSignature(displayID, display)
     local sig = resolver:BuildHardSignature(displayID, display, function(id, groupID)
         return defaults:GetGroupKey(id, groupID)
     end, function(load)
-        return loadConditions:ShouldLoad(load)
+        return loadConditions:ShouldIncludeGroup(load)
     end)
     self.sigCache[displayID] = sig
     return sig
@@ -453,6 +508,271 @@ function apply:ConfigureContainer(frame, displayID, display, container)
     end
 end
 
+apply.encounterStale = {}
+
+function apply:DisableEncounterContainer(container)
+    if not container or container._exuiEncounterDisabled then
+        return
+    end
+    container._exuiEncounterDisabled = true
+    pcall(function()
+        if container.SetEnabled then
+            container:SetEnabled(false)
+        end
+        container:Hide()
+    end)
+end
+
+function apply:DestroyEncounterContainer(container)
+    if not container then
+        return
+    end
+    loadConditions:DebugEncounter('nameplate removed ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID) .. ' unit ' .. tostring(container._exuiEncounterUnit))
+    self:DisableEncounterContainer(container)
+    pcall(function()
+        container:ClearAllPoints()
+        container:SetParent(nil)
+    end)
+end
+
+function apply:ForgetEncounterContainer(container)
+    local tracked = self.encounterTracked
+    if not tracked or not container then
+        return
+    end
+    for i = #tracked, 1, -1 do
+        if tracked[i] == container then
+            table.remove(tracked, i)
+        end
+    end
+end
+
+function apply:UnslotEncounterContainer(container)
+    local frame = container and container._exuiEncounterFrame
+    local displayID = container and container._exuiDisplayID
+    if frame and displayID and frame.NPEncounterContainers and frame.NPEncounterContainers[displayID] == container then
+        frame.NPEncounterContainers[displayID] = nil
+    end
+end
+
+function apply:QueueStaleEncounterContainer(container)
+    if not container or container._exuiEncounterStale then
+        return
+    end
+    container._exuiEncounterStale = true
+    loadConditions:DebugEncounter('nameplate disabled ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID) .. ' unit ' .. tostring(container._exuiEncounterUnit))
+    self:ForgetEncounterContainer(container)
+    self:UnslotEncounterContainer(container)
+    self:DisableEncounterContainer(container)
+    self.encounterStale[#self.encounterStale + 1] = container
+end
+
+function apply:ReleaseStaleEncounterContainers()
+    if InCombatLockdown() then
+        return
+    end
+    for _, container in ipairs(self.encounterStale) do
+        self:DestroyEncounterContainer(container)
+    end
+    wipe(self.encounterStale)
+end
+
+function apply:DisableFrameEncounterContainers(frame)
+    for displayID, container in pairs(frame.NPEncounterContainers or {}) do
+        frame.NPEncounterContainers[displayID] = nil
+        self:QueueStaleEncounterContainer(container)
+    end
+end
+
+function apply:ForEachEncounterFrame(callback)
+    if not npCore.ForEachPlate then
+        return
+    end
+    npCore:ForEachPlate(function(frame)
+        if frame and not frame.isPreview then
+            callback(frame)
+        end
+    end)
+end
+
+function apply:HideKeptEncounterContainers()
+    for _, container in ipairs(self.encounterTracked or {}) do
+        if not container._exuiEncounterDisabled then
+            pcall(function()
+                container:Hide()
+            end)
+        end
+    end
+end
+
+function apply:DisableAllEncounterContainers()
+    local tracked = self.encounterTracked
+    self.encounterTracked = {}
+    for _, container in ipairs(tracked or {}) do
+        self:UnslotEncounterContainer(container)
+        self:QueueStaleEncounterContainer(container)
+    end
+end
+
+function apply:ReleaseAllEncounterContainers()
+    if InCombatLockdown() then
+        return
+    end
+    local tracked = self.encounterTracked
+    self.encounterTracked = {}
+    for _, container in ipairs(tracked or {}) do
+        self:UnslotEncounterContainer(container)
+        self:DestroyEncounterContainer(container)
+    end
+    self:ReleaseStaleEncounterContainers()
+end
+
+function apply:CreateEncounterContainer(frame, displayID, display, encounterID, include, sig)
+    local createdOk, container = pcall(self.CreateContainer, self, frame, display)
+    if not createdOk then
+        container = nil
+    end
+    if not container then
+        local parent = frame.ElementFrame or frame
+        local ok, created = pcall(CreateFrame, 'AuraContainer', nil, parent, 'CustomAuraContainerTemplate')
+        if ok then
+            container = created
+        end
+    end
+    if not container then
+        return nil
+    end
+    container._exuiEncounterID = encounterID
+    container._exuiEncounterSig = sig
+    container._exuiDisplayID = displayID
+    container._exuiEncounterFrame = frame
+    container._exuiEncounterUnit = frame.unit or frame.__unit
+    self.encounterTracked = self.encounterTracked or {}
+    self.encounterTracked[#self.encounterTracked + 1] = container
+    local configured = pcall(function()
+        self:AnchorContainer(container, frame, display)
+        self:ApplyFrameLayer(container, frame, display)
+        self:ApplyLayout(container, display)
+        if container.SetFlowLayoutMaximumLineSize then
+            container:SetFlowLayoutMaximumLineSize(self:GetRowWidth(frame, display))
+        end
+        self:SetContainerUnit(container, frame.unit or frame.__unit)
+        if container.SetEnabled then
+            container:SetEnabled(npAuras:IsDisplayEnabled(display))
+        end
+        if container.SetAuraProcessingPolicy then
+            if resolver:DisplayNeedsProcessAura(display, include) then
+                local processAuraOptions = display.container and display.container.processAuraOptions or {}
+                container:SetAuraProcessingPolicy(1, processAuraOptions)
+            else
+                container:SetAuraProcessingPolicy(0)
+            end
+        end
+        container:Show()
+        resolver:RebuildGroups(container, displayID, display, buttonStyle, groupKey, include)
+        if container.UpdateAllAuras then
+            container:UpdateAllAuras()
+        end
+    end)
+    if not configured then
+        loadConditions:DebugEncounter('nameplate load failed ' .. tostring(encounterID) .. ' display ' .. tostring(displayID) .. ' unit ' .. tostring(frame.unit or frame.__unit))
+        self:QueueStaleEncounterContainer(container)
+        return nil
+    end
+    loadConditions:DebugEncounter('nameplate loaded ' .. tostring(encounterID) .. ' display ' .. tostring(displayID) .. ' unit ' .. tostring(frame.unit or frame.__unit))
+    return container
+end
+
+function apply:ReuseEncounterContainer(frame, display, container)
+    local parent = frame.ElementFrame or frame
+    local unit = frame.unit or frame.__unit
+    if container:GetParent() == parent and container:IsShown() and container._exuiEncounterUnit == unit then
+        return true
+    end
+    local ok = pcall(function()
+        if container:GetParent() ~= parent then
+            self:AnchorContainer(container, frame, display)
+            self:ApplyFrameLayer(container, frame, display)
+        end
+        self:SetContainerUnit(container, unit)
+        container._exuiEncounterUnit = unit
+        if container.SetEnabled then
+            container:SetEnabled(npAuras:IsDisplayEnabled(display))
+        end
+        container:Show()
+        if container.UpdateAllAuras then
+            container:UpdateAllAuras()
+        end
+    end)
+    return ok
+end
+
+function apply:GetEncounterSignature(displayID, display, encounterID, include)
+    self.encounterSigCache = self.encounterSigCache or {}
+    local byDisplay = self.encounterSigCache[displayID]
+    local sig = byDisplay and byDisplay[encounterID]
+    if sig then
+        return sig
+    end
+    sig = resolver:BuildHardSignature(displayID, display, function(id, groupID)
+        return defaults:GetGroupKey(id, groupID)
+    end, include)
+    if not byDisplay then
+        byDisplay = {}
+        self.encounterSigCache[displayID] = byDisplay
+    end
+    byDisplay[encounterID] = sig
+    return sig
+end
+
+function apply:EnsureEncounterContainer(frame, displayID, display, encounterID)
+    local include = function(load)
+        return loadConditions:ShouldIncludeEncounterGroup(load, encounterID)
+    end
+    local sig = self:GetEncounterSignature(displayID, display, encounterID, include)
+    frame.NPEncounterContainers = frame.NPEncounterContainers or {}
+    local existing = frame.NPEncounterContainers[displayID]
+    if existing and not existing._exuiEncounterDisabled
+        and existing._exuiEncounterID == encounterID
+        and existing._exuiEncounterSig == sig
+        and self:ReuseEncounterContainer(frame, display, existing) then
+        return
+    end
+    if existing then
+        frame.NPEncounterContainers[displayID] = nil
+        self:QueueStaleEncounterContainer(existing)
+    end
+    frame.NPEncounterContainers[displayID] = self:CreateEncounterContainer(
+        frame, displayID, display, encounterID, include, sig
+    )
+end
+
+function apply:EnsureEncounterContainers(frame, encounterID)
+    if not frame or frame.isPreview or npCore:IsFriendlyNameOnly(frame) then
+        return
+    end
+    local displays = npAuras:GetDisplays()
+    local keep = {}
+    for displayID, display in pairs(displays) do
+        if npAuras:IsDisplayEnabled(display) and loadConditions:DisplayHasEncounterGroups(display, encounterID) then
+            keep[displayID] = true
+            self:EnsureEncounterContainer(frame, displayID, display, encounterID)
+        end
+    end
+    for displayID, container in pairs(frame.NPEncounterContainers or {}) do
+        if not keep[displayID] then
+            frame.NPEncounterContainers[displayID] = nil
+            self:QueueStaleEncounterContainer(container)
+        end
+    end
+end
+
+function apply:OnEncounterStart(encounterID)
+    self:ForEachEncounterFrame(function(frame)
+        self:EnsureEncounterContainers(frame, encounterID)
+    end)
+end
+
 function apply:UpdateFrame(frame)
     if not frame then
         return
@@ -463,6 +783,10 @@ function apply:UpdateFrame(frame)
     end
 
     frame.NPAuraContainers = frame.NPAuraContainers or {}
+    local encounterID = loadConditions:GetActiveEncounter()
+    if encounterID then
+        self:EnsureEncounterContainers(frame, encounterID)
+    end
     local displays = npAuras:GetDisplays()
     local keep = {}
 
