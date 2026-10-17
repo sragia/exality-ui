@@ -2,4 +2,5 @@
     <Script file="CustomWindows.lua"/>
     <Include file="CharacterFrame/CharacterFrame.xml"/>
     <Include file="Talents/Talents.xml"/>
+    <Include file="QuestLog/QuestLog.xml"/>
 </Ui>

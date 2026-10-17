@@ -13,6 +13,9 @@ local characterFrame = EXUI:GetModule('character-frame-window')
 ---@class EXUITalentsWindow
 local talentsWindow = EXUI:GetModule('talents-window')
 
+---@class EXUIQuestLogWindow
+local questLogWindow = EXUI:GetModule('quest-log-window')
+
 ------------------
 
 ---@class EXUICustomWindows
@@ -43,11 +46,13 @@ end
 customWindows.GetDefaults = function(self)
     return {
         TalentsEnabled = false,
+        QuestLogEnabled = false,
+        QuestLogSide = 'right',
     }
 end
 
 customWindows.GetOptions = function(self)
-    return {
+    local options = {
         {
             type = 'disclaimer',
             label =
@@ -75,7 +80,7 @@ customWindows.GetOptions = function(self)
         {
             type = 'description',
             label =
-            "Replaces default Blizzard character frame (PaperDollFrame) with fully custom character frame. Unfortunately, this can't be used in combat and will be hidden on entering combat.",
+            "Character frame with updated visuals without reskinning existing frames.",
             width = 100,
         },
         {
@@ -98,10 +103,59 @@ customWindows.GetOptions = function(self)
         {
             type = 'description',
             label =
-            "Replaces the default talents and spellbook window out of combat. In combat it closes and the Blizzard window is used instead.",
+            "Talents & Spellbook reimagined (not really but buzzwords you know).",
             width = 100,
-        }
+        },
     }
+
+    if (EXUI.IsRetail() or EXUI.IsForever()) then
+        table.insert(options, {
+            label = 'Map & Quest Log',
+            name = 'questLogEnabled',
+            type = 'toggle',
+            onChange = function(value)
+                customWindows.Data:SetValue('QuestLogEnabled', value)
+                if (value) then
+                    questLogWindow:Enable()
+                else
+                    questLogWindow:Disable()
+                end
+            end,
+            currentValue = function()
+                return customWindows.Data:GetValue('QuestLogEnabled') == true
+            end,
+            width = 100,
+        })
+        table.insert(options, {
+            label = 'Quest Log Side',
+            name = 'questLogSide',
+            type = 'dropdown',
+            width = 50,
+            getOptions = function()
+                return {
+                    right = { label = 'Right', order = 1 },
+                    left = { label = 'Left', order = 2 },
+                }
+            end,
+            currentValue = function()
+                return customWindows.Data:GetValue('QuestLogSide') or 'right'
+            end,
+            onChange = function(value)
+                customWindows.Data:SetValue('QuestLogSide', value)
+                if (questLogWindow.Layout and questLogWindow.isCreated) then
+                    questLogWindow:Layout()
+                end
+            end,
+        })
+        table.insert(options, {
+            type = 'description',
+            label =
+            'Minimal map window with quest log.',
+            width = 100,
+        })
+    end
+
+    return options
 end
 
 customWindows.Data = data:GetControlsForKey('custom-windows')

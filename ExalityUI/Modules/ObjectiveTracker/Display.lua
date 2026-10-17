@@ -15,6 +15,9 @@ local LSM = LibStub('LibSharedMedia-3.0', true)
 ---@class EXUIObjectiveTrackerDisplay
 local display = EXUI:GetModule('objective-tracker-display')
 
+---@class EXUIQuestLogWindow
+local questLogWindow = EXUI:GetModule('quest-log-window')
+
 display.frame = nil
 display.chipButtons = {}
 display.categoryFrames = {}
@@ -106,6 +109,10 @@ function display:OpenBlockDetails(blockData)
                 return
             end
         end
+        if (questLogWindow.enabled and questLogWindow.ShowQuest) then
+            questLogWindow:ShowQuest(blockData.untrackId)
+            return
+        end
         if QuestMapFrame_OpenToQuestDetails then
             QuestMapFrame_OpenToQuestDetails(blockData.untrackId)
         end
@@ -180,7 +187,10 @@ function display:HandleBlockTitleClick(blockData, mouseButton)
     end
 
     if InCombatLockdown() then
-        return
+        local customQuest = questLogWindow.enabled and blockData.untrackType == 'quest'
+        if not customQuest then
+            return
+        end
     end
 
     self:OpenBlockDetails(blockData)
@@ -465,7 +475,8 @@ function display:GetStructureKey(categories, db)
             signatureParts[#signatureParts + 1] = barCount
             signatureParts[#signatureParts + 1] = showStage and '1' or '0'
             signatureParts[#signatureParts + 1] = hasTimer and '1' or '0'
-            signatureParts[#signatureParts + 1] = (stage and stage.description and stage.description ~= '') and '1' or '0'
+            signatureParts[#signatureParts + 1] = (stage and stage.description and stage.description ~= '') and '1' or
+            '0'
             signatureParts[#signatureParts + 1] = (stage and stage.weightedProgress ~= nil) and '1' or '0'
             signatureParts[#signatureParts + 1] = delveCount
             signatureParts[#signatureParts + 1] = hasTier and '1' or '0'
@@ -474,7 +485,8 @@ function display:GetStructureKey(categories, db)
             signatureParts[#signatureParts + 1] = hasReward and '1' or '0'
             signatureParts[#signatureParts + 1] = block.challengeMode and '1' or '0'
             signatureParts[#signatureParts + 1] = block.isAutoQuestPopUp and '1' or '0'
-            signatureParts[#signatureParts + 1] = (block.untrackType == 'quest' and not block.isAutoQuestPopUp) and '1' or '0'
+            signatureParts[#signatureParts + 1] = (block.untrackType == 'quest' and not block.isAutoQuestPopUp) and '1' or
+            '0'
         end
     end
     return self:FinishSignature()
@@ -611,7 +623,8 @@ function display:UpdateDelveSpellCounts()
                     index = index + 1
                     local button = line.spellButtons[index]
                     if button then
-                        self:SetDelveSpellAmount(button, self:GetDelveSpellCountText(spell), line.delveTextureKit or delve.frameTextureKit, DELVE_SPELL_ICON_SIZE)
+                        self:SetDelveSpellAmount(button, self:GetDelveSpellCountText(spell),
+                            line.delveTextureKit or delve.frameTextureKit, DELVE_SPELL_ICON_SIZE)
                     end
                 end
             end
@@ -1217,7 +1230,8 @@ function display:GetDelveSpellCountText(spell)
         return widgetText
     end
 
-    local description = spell.spellID and C_Spell and C_Spell.GetSpellDescription and C_Spell.GetSpellDescription(spell.spellID)
+    local description = spell.spellID and C_Spell and C_Spell.GetSpellDescription and
+    C_Spell.GetSpellDescription(spell.spellID)
     if type(description) == 'string' and description ~= '' then
         local plain = description:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '')
         local current = plain:match('(%d+)%s*/%s*%d+')
@@ -1611,10 +1625,12 @@ function display:AppendDelveSpells(frame, block, db, blockHeight, blockWidth, li
 
     local align = self:GetTextAlign(db)
     local isRightAlign = align == 'RIGHT'
-    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize,
+        db.blockHeaderFontFlag)
     local iconSize = DELVE_SPELL_ICON_SIZE
     local spellLine = self.linePool:Acquire()
-    self:PrepareTrackerLine(spellLine, frame, blockWidth, lineIndent, isRightAlign, headerFontPath, headerFontSize, headerFontFlag)
+    self:PrepareTrackerLine(spellLine, frame, blockWidth, lineIndent, isRightAlign, headerFontPath, headerFontSize,
+        headerFontFlag)
     spellLine.delveBlockWidth = blockWidth
     spellLine.delveLineIndent = lineIndent
     spellLine.delveRightAlign = isRightAlign
@@ -1645,10 +1661,12 @@ function display:AppendDelveReward(frame, block, db, blockHeight, blockWidth, li
     local align = self:GetTextAlign(db)
     local isRightAlign = align == 'RIGHT'
     local lineTextWidth = blockWidth - lineIndent
-    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize,
+        db.blockHeaderFontFlag)
     local iconSize = math.max(12, headerFontSize)
     local rewardLine = self.linePool:Acquire()
-    self:PrepareTrackerLine(rewardLine, frame, blockWidth, lineIndent, isRightAlign, headerFontPath, headerFontSize, headerFontFlag)
+    self:PrepareTrackerLine(rewardLine, frame, blockWidth, lineIndent, isRightAlign, headerFontPath, headerFontSize,
+        headerFontFlag)
     if not self:ApplyDelveRewardLine(rewardLine, reward, db, iconSize) then
         rewardLine:EnableMouse(false)
         rewardLine.delveTooltip = nil
@@ -1675,7 +1693,8 @@ function display:AppendDelveCurrencies(frame, block, db, blockHeight, blockWidth
     local align = self:GetTextAlign(db)
     local isRightAlign = align == 'RIGHT'
     local lineTextWidth = blockWidth - lineIndent
-    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize,
+        db.blockHeaderFontFlag)
     local iconSize = math.max(12, headerFontSize)
 
     for _, currency in ipairs(currencies) do
@@ -1703,7 +1722,8 @@ function display:AppendDelveCurrencies(frame, block, db, blockHeight, blockWidth
             local currencyColor = self:GetColor(db, colorKey)
             currencyLine.text:SetTextColor(currencyColor.r, currencyColor.g, currencyColor.b)
 
-            local currencyHeight = self:MeasureFontString(currencyLine.text, headerFontSize, lineTextWidth, headerFontFlag)
+            local currencyHeight = self:MeasureFontString(currencyLine.text, headerFontSize, lineTextWidth,
+                headerFontFlag)
             currencyLine:SetHeight(currencyHeight)
             blockHeight = self:AppendBlockRow(frame, currencyLine, blockHeight, spacing)
             self.lineFrames[#self.lineFrames + 1] = currencyLine
@@ -1741,7 +1761,8 @@ function display:AppendScenarioStage(frame, block, db, blockHeight, blockWidth, 
     local isRightAlign = align == 'RIGHT'
     local lineTextWidth = blockWidth - lineIndent
 
-    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize,
+        db.blockHeaderFontFlag)
     local lineFontPath, lineFontSize, lineFontFlag = self:GetFont(db.lineFont, db.lineFontSize, db.lineFontFlag)
 
     local stageLabel
@@ -1849,7 +1870,8 @@ function display:UpdateScenarioHeaderTimers()
         if timeRemaining == nil then
             needsRebuild = true
         else
-            self:SetScenarioStageLineText(timer.stageLine, timer.stageLabel, timeRemaining, db, timer.tierText, timer.headerText)
+            self:SetScenarioStageLineText(timer.stageLine, timer.stageLabel, timeRemaining, db, timer.tierText,
+                timer.headerText)
         end
     end
 
@@ -1954,7 +1976,8 @@ function display:AppendChallengeModeSection(frame, block, db, blockHeight, block
     local align = self:GetTextAlign(db)
     local isRightAlign = align == 'RIGHT'
     local lineTextWidth = blockWidth - lineIndent
-    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local headerFontPath, headerFontSize, headerFontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize,
+        db.blockHeaderFontFlag)
     local lineTextWidth = blockWidth - lineIndent
 
     local levelLine = self.linePool:Acquire()
@@ -2324,7 +2347,8 @@ function display:RefreshChipStates()
                         button:SetBackdropBorderColor(accent[1], accent[2], accent[3], 1)
                     else
                         button:SetBackdropColor(bg[1], bg[2], bg[3], 0.9)
-                        button:SetBackdropBorderColor(EXUI.const.theme.border[1], EXUI.const.theme.border[2], EXUI.const.theme.border[3], 1)
+                        button:SetBackdropBorderColor(EXUI.const.theme.border[1], EXUI.const.theme.border[2],
+                            EXUI.const.theme.border[3], 1)
                     end
                 else
                     button:Hide()
@@ -2546,7 +2570,8 @@ function display:CreateCategoryFrame(parent, category, db, categoryWidth)
 
     local padX = spacing.headerPaddingX or 4
     local padY = spacing.headerPaddingY or 2
-    local fontPath, fontSize, fontFlag = self:GetFont(db.moduleHeaderFont, db.moduleHeaderFontSize, db.moduleHeaderFontFlag)
+    local fontPath, fontSize, fontFlag = self:GetFont(db.moduleHeaderFont, db.moduleHeaderFontSize,
+        db.moduleHeaderFontFlag)
     local categoryHeaderHeight = self:GetCategoryHeaderHeight(db, fontSize, fontFlag)
     frame.header:SetHeight(categoryHeaderHeight)
     frame.categoryHeaderHeight = categoryHeaderHeight
@@ -2601,7 +2626,8 @@ function display:CreateCategoryFrame(parent, category, db, categoryWidth)
     frame.minimizeButton:ClearAllPoints()
     local collapseRightInset = self:GetCategoryCollapseButtonRightInset(db, padX)
     frame.minimizeButton:SetPoint('RIGHT', frame.header, 'RIGHT', -collapseRightInset, 0)
-    frame.minimizeButton:SetPoint('CENTER', frame.header, 'RIGHT', -(collapseRightInset + self.COLLAPSE_BUTTON_SIZE / 2), 0)
+    frame.minimizeButton:SetPoint('CENTER', frame.header, 'RIGHT', -(collapseRightInset + self.COLLAPSE_BUTTON_SIZE / 2),
+        0)
     frame.minimizeButton.categoryId = category.id
 
     frame.title = frame.title or frame.header:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
@@ -2611,7 +2637,8 @@ function display:CreateCategoryFrame(parent, category, db, categoryWidth)
     else
         frame.minimizeButton:Show()
     end
-    self:ApplyHeaderTitleLayout(frame.title, frame.header, db, padX, padY, frame.minimizeButton, db.hideModuleMinimizeButtons)
+    self:ApplyHeaderTitleLayout(frame.title, frame.header, db, padX, padY, frame.minimizeButton,
+        db.hideModuleMinimizeButtons)
     frame.title:SetText(category.label)
 
     frame.title:SetFont(fontPath, fontSize, fontFlag)
@@ -2768,7 +2795,8 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
             lineFrame.text:SetFont(lineFontPath, lineFontSize, lineFontFlag)
             lineFrame.text:SetText(objective.text)
 
-            local colorKey = objective.colorKey or (objective.failed and 'Failed' or (objective.finished and 'Complete' or 'Normal'))
+            local colorKey = objective.colorKey or
+            (objective.failed and 'Failed' or (objective.finished and 'Complete' or 'Normal'))
             local color = self:GetColor(db, colorKey)
             lineFrame.text:SetTextColor(color.r, color.g, color.b)
 
@@ -2984,7 +3012,8 @@ function display:PatchBlockFrame(frame, block, db, blockWidth)
             end
             lineFrame.text:SetFont(lineFontPath, lineFontSize, lineFontFlag)
             lineFrame.text:SetText(objective.text)
-            local colorKey = objective.colorKey or (objective.failed and 'Failed' or (objective.finished and 'Complete' or 'Normal'))
+            local colorKey = objective.colorKey or
+            (objective.failed and 'Failed' or (objective.finished and 'Complete' or 'Normal'))
             local color = self:GetColor(db, colorKey)
             lineFrame.text:SetTextColor(color.r, color.g, color.b)
             textIndex = textIndex + 1
@@ -3008,7 +3037,8 @@ function display:PatchBlockFrame(frame, block, db, blockWidth)
         if child == frame.ownedDelveSpellLine then
             child:SetHeight(child.delveIconSize or headerFontSize)
         elseif child.text then
-            local useHeader = child == frame.ownedStageLine or child == frame.challengeLevelLine or child == frame.ownedDelveRewardLine
+            local useHeader = child == frame.ownedStageLine or child == frame.challengeLevelLine or
+            child == frame.ownedDelveRewardLine
             if not useHeader and frame.ownedDelveLines then
                 for i = 1, #frame.ownedDelveLines do
                     if frame.ownedDelveLines[i] == child then
@@ -3194,7 +3224,8 @@ function display:TryUpdateDelveHeaderInPlace()
 
             if blockFrame.ownedDelveSpellLine then
                 blockFrame.ownedDelveSpellLine.delveTextureKit = delve.frameTextureKit
-                self:ApplyDelveSpellLine(blockFrame.ownedDelveSpellLine, delve.spells, db, DELVE_SPELL_ICON_SIZE, delve.frameTextureKit)
+                self:ApplyDelveSpellLine(blockFrame.ownedDelveSpellLine, delve.spells, db, DELVE_SPELL_ICON_SIZE,
+                    delve.frameTextureKit)
             end
 
             if newHasReward then
@@ -3211,7 +3242,8 @@ function display:TryUpdateDelveHeaderInPlace()
                     stageLabel = string.format('%s %d/%d', STAGE or 'Stage', stage.current or 0, stage.total)
                 end
                 local headerText = self:GetDelveHeaderText(block)
-                self:SetScenarioStageLineText(blockFrame.ownedStageLine, stageLabel, timeRemaining, db, delve.tierText, headerText)
+                self:SetScenarioStageLineText(blockFrame.ownedStageLine, stageLabel, timeRemaining, db, delve.tierText,
+                    headerText)
                 if blockFrame.scenarioHeaderTimer then
                     blockFrame.scenarioHeaderTimer.tierText = delve.tierText
                     blockFrame.scenarioHeaderTimer.headerText = headerText
@@ -3316,7 +3348,8 @@ function display:FilterCategoriesForEncounter(categories, db)
         local filtered = self.encounterCategoryScratch
         local category = filtered[1]
         category.id = self.SCENARIO_CATEGORY_ID
-        category.label = entry and trackerData:GetCategoryTitle(entry, db) or (categories[1] and categories[1].label) or 'Scenario'
+        category.label = entry and trackerData:GetCategoryTitle(entry, db) or (categories[1] and categories[1].label) or
+        'Scenario'
         category.blocks = blocks
         filtered[2] = nil
         return filtered
