@@ -119,6 +119,40 @@ local function RefreshSlotAfterItemChange(slot)
     end)
 end
 
+local function ItemQuality(itemLocation, itemLink)
+    if (C_Item.GetItemQuality and itemLocation) then
+        local ok, quality = pcall(C_Item.GetItemQuality, itemLocation)
+        if (ok and type(quality) == 'number') then
+            return quality
+        end
+    end
+    if (itemLink and C_Item.GetItemQualityByID) then
+        local ok, quality = pcall(C_Item.GetItemQualityByID, itemLink)
+        if (ok and type(quality) == 'number') then
+            return quality
+        end
+    end
+end
+
+local function QualityBorder(quality)
+    local borders = EXUI.const.textures.characterFrame.border
+    local q = Enum and Enum.ItemQuality
+    if (q and quality == q.Uncommon) then
+        return borders.uncommon
+    elseif (q and quality == q.Rare) then
+        return borders.rare
+    elseif (q and quality == q.Epic) then
+        return borders.epic
+    elseif (q and quality == q.Legendary) then
+        return borders.legendary
+    elseif (q and quality == q.Artifact) then
+        return borders.supermax
+    elseif (q and (quality == q.Heirloom or quality == q.WoWToken)) then
+        return borders.rare
+    end
+    return borders.empty
+end
+
 equipmentSlot.GetItemColorAndBorder = function(self, ilvl)
     local result = EXUI.utils.getIlvlInfo(ilvl)
     return result.color, result.border
@@ -547,6 +581,9 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             else
                 local ilvl = C_Item.GetCurrentItemLevel(itemLocation)
                 local color, border = equipmentSlot:GetItemColorAndBorder(ilvl)
+                if (EXUI.IsForever()) then
+                    border = QualityBorder(ItemQuality(itemLocation, itemLink))
+                end
                 self.ItemLevel:SetText(WrapTextInColorCode(ilvl, color))
                 self.Border:SetTexture(border)
             end

@@ -11,8 +11,13 @@ EXUI.changelog = [[
 - [Auras] Add Encounter load condition, so you can load aura only for specific encounters.
 - [Auras/Cooldowns/Resource Displays] Add option to export/import individual items/groups from them.
 
-## Custom Map / Quest Log window
+## Custom Map / Quest Log Window |cffeb7a34New|r
 Fairly minimal Map window, with definitely less features, but most of the features removed are ones I didnt use much anyway. Has support for HandyNotes and TomTom.
+
+## Forever
+
+- [Bags] Remove Crest currency display from bags
+- [Character Frame] Use item rarity instead of ILvL for the equipment slots
 
 # |cffdb49000.9.7|r
 - [Minimap] Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.
