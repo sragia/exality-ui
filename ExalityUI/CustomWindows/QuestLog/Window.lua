@@ -21,8 +21,12 @@ questLog.isCreated = false
 questLog.suppressHook = false
 questLog.selectedQuestID = nil
 
-local MAP_WIDTH = 800
-local MAP_HEIGHT = 533
+local MAP_HEIGHT_DEFAULT = 533
+local MAP_HEIGHT_MIN = 400
+local MAP_HEIGHT_MAX = 1100
+questLog.mapHeightDefault = MAP_HEIGHT_DEFAULT
+questLog.mapHeightMin = MAP_HEIGHT_MIN
+questLog.mapHeightMax = MAP_HEIGHT_MAX
 local QUEST_WIDTH = 300
 local DETAIL_WIDTH = 300
 local GAP = 5
@@ -36,6 +40,24 @@ local LINE_SIZE = 12
 local REWARD_ROW_HEIGHT = 26
 local REWARD_ROW_GAP = 4
 local BINDING_COMMANDS = { 'TOGGLEWORLDMAP', 'TOGGLEQUESTLOG' }
+
+local function MapHeight()
+    local height = customWindows.Data:GetValue('QuestLogMapHeight')
+    if (type(height) ~= 'number') then
+        return MAP_HEIGHT_DEFAULT
+    end
+    if (height < MAP_HEIGHT_MIN) then
+        return MAP_HEIGHT_MIN
+    end
+    if (height > MAP_HEIGHT_MAX) then
+        return MAP_HEIGHT_MAX
+    end
+    return height
+end
+
+local function MapWidth()
+    return math.floor(MapHeight() * 3 / 2 + 0.5)
+end
 
 local MAP_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/map-canvas.png]]
 local CLOSE_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/close-icon.png]]
@@ -1641,11 +1663,13 @@ questLog.Layout = function(self)
         return
     end
     local showDetails = self.detailPanel and self.selectedQuestID ~= nil
-    local width = MAP_WIDTH + GAP + QUEST_WIDTH
+    local mapWidth = MapWidth()
+    local mapHeight = MapHeight()
+    local width = mapWidth + GAP + QUEST_WIDTH
     if (showDetails) then
         width = width + GAP + DETAIL_WIDTH
     end
-    window:SetSize(width, MAP_HEIGHT)
+    window:SetSize(width, mapHeight)
     self.mapHost:ClearAllPoints()
     self.questPanel:ClearAllPoints()
     if (self:GetSide() == 'left') then
@@ -1655,16 +1679,20 @@ questLog.Layout = function(self)
         self.mapHost:SetPoint('TOPLEFT', window, 'TOPLEFT', 0, 0)
         self.questPanel:SetPoint('TOPLEFT', self.mapHost, 'TOPRIGHT', GAP, 0)
     end
-    self.mapHost:SetSize(MAP_WIDTH, MAP_HEIGHT)
-    self.questPanel:SetSize(QUEST_WIDTH, MAP_HEIGHT)
+    local hostWidth, hostHeight = self.mapHost:GetSize()
+    self.mapHost:SetSize(mapWidth, mapHeight)
+    self.questPanel:SetSize(QUEST_WIDTH, mapHeight)
     if (self.detailPanel) then
         self.detailPanel:ClearAllPoints()
         self.detailPanel:SetShown(showDetails)
         if (showDetails) then
             local anchor = self:GetSide() == 'left' and self.mapHost or self.questPanel
             self.detailPanel:SetPoint('TOPLEFT', anchor, 'TOPRIGHT', GAP, 0)
-            self.detailPanel:SetSize(DETAIL_WIDTH, MAP_HEIGHT)
+            self.detailPanel:SetSize(DETAIL_WIDTH, mapHeight)
         end
+    end
+    if (self.canvas and self.canvas.OnFrameSizeChanged and (hostWidth ~= mapWidth or hostHeight ~= mapHeight)) then
+        self.canvas:OnFrameSizeChanged()
     end
 end
 
@@ -1746,7 +1774,7 @@ end
 questLog.CreateDetailPanel = function(self, window)
     local theme = Theme()
     local panel = CreateFrame('Frame', nil, window)
-    panel:SetSize(DETAIL_WIDTH, MAP_HEIGHT)
+    panel:SetSize(DETAIL_WIDTH, MapHeight())
     ApplyQuestChrome(panel)
     panel:EnableMouse(true)
     panel:RegisterForDrag('LeftButton')
@@ -2068,7 +2096,7 @@ questLog.Create = function(self)
     local theme = Theme()
     local window = CreateFrame('Frame', 'EXUIMapQuestFrame', UIParent)
     window:SetFrameStrata('HIGH')
-    window:SetSize(MAP_WIDTH + GAP + QUEST_WIDTH, MAP_HEIGHT)
+    window:SetSize(MapWidth() + GAP + QUEST_WIDTH, MapHeight())
     window:SetPoint(OPEN_POINT[1], UIParent, OPEN_POINT[2], OPEN_POINT[3], OPEN_POINT[4])
     window:SetMovable(true)
     window:SetClampedToScreen(true)
@@ -2078,12 +2106,12 @@ questLog.Create = function(self)
     tinsert(UISpecialFrames, 'EXUIMapQuestFrame')
 
     local mapHost = CreateFrame('Frame', nil, window)
-    mapHost:SetSize(MAP_WIDTH, MAP_HEIGHT)
+    mapHost:SetSize(MapWidth(), MapHeight())
     ApplyMapChrome(mapHost)
     self.mapHost = mapHost
 
     local panel = CreateFrame('Frame', nil, window)
-    panel:SetSize(QUEST_WIDTH, MAP_HEIGHT)
+    panel:SetSize(QUEST_WIDTH, MapHeight())
     ApplyQuestChrome(panel)
     panel:EnableMouse(true)
     panel:RegisterForDrag('LeftButton')

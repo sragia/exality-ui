@@ -48,6 +48,7 @@ customWindows.GetDefaults = function(self)
         TalentsEnabled = false,
         QuestLogEnabled = false,
         QuestLogSide = 'right',
+        QuestLogMapHeight = questLogWindow.mapHeightDefault or 533,
     }
 end
 
@@ -142,6 +143,24 @@ customWindows.GetOptions = function(self)
             end,
             onChange = function(value)
                 customWindows.Data:SetValue('QuestLogSide', value)
+                if (questLogWindow.Layout and questLogWindow.isCreated) then
+                    questLogWindow:Layout()
+                end
+            end,
+        })
+        table.insert(options, {
+            label = 'Map Height',
+            name = 'questLogMapHeight',
+            type = 'range',
+            width = 50,
+            min = questLogWindow.mapHeightMin or 400,
+            max = questLogWindow.mapHeightMax or 1100,
+            step = 1,
+            currentValue = function()
+                return customWindows.Data:GetValue('QuestLogMapHeight') or questLogWindow.mapHeightDefault or 533
+            end,
+            onChange = function(value)
+                customWindows.Data:SetValue('QuestLogMapHeight', value)
                 if (questLogWindow.Layout and questLogWindow.isCreated) then
                     questLogWindow:Layout()
                 end
