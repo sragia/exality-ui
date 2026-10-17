@@ -304,10 +304,12 @@ window.CreateFooter = function(self, parent)
         return button
     end
 
-    for i = 1, #EXUI.const.crestCurrencyIDs do
-        local button = CreateCurrencyButton()
-        button.currencyID = EXUI.const.crestCurrencyIDs[i]
-        self.crestButtons[i] = button
+    if not EXUI.IsForever() then
+        for i = 1, #EXUI.const.crestCurrencyIDs do
+            local button = CreateCurrencyButton()
+            button.currencyID = EXUI.const.crestCurrencyIDs[i]
+            self.crestButtons[i] = button
+        end
     end
 
     for i = 1, MAX_CURRENCIES do
@@ -326,6 +328,9 @@ local function CurrencyWidth(button)
 end
 
 local function IsCrestCurrency(currencyID)
+    if EXUI.IsForever() then
+        return false
+    end
     local ids = EXUI.const.crestCurrencyIDs
     for i = 1, #ids do
         if ids[i] == currencyID then
