@@ -100,15 +100,28 @@ function loadConditions:MatchesClass(loadClasses)
     return className and tContains(loadClasses, className)
 end
 
+local function getPlayerSpecInfo()
+    local getSpec = GetSpecialization
+    local getSpecInfo = GetSpecializationInfo
+    if not getSpec and C_SpecializationInfo then
+        getSpec = C_SpecializationInfo.GetSpecialization
+        getSpecInfo = C_SpecializationInfo.GetSpecializationInfo
+    end
+    if not getSpec or not getSpecInfo then
+        return nil
+    end
+    local specIndex = getSpec()
+    if not specIndex then
+        return nil
+    end
+    return getSpecInfo(specIndex)
+end
+
 function loadConditions:MatchesSpec(loadSpecs)
     if not loadSpecs or #loadSpecs == 0 then
         return true
     end
-    local specIndex = GetSpecialization()
-    if not specIndex then
-        return false
-    end
-    local _, specName = GetSpecializationInfo(specIndex)
+    local _, specName = getPlayerSpecInfo()
     return specName and tContains(loadSpecs, specName)
 end
 
@@ -117,11 +130,7 @@ function loadConditions:GetPlayerRole()
     if role and role ~= 'NONE' then
         return role
     end
-    local specIndex = GetSpecialization()
-    if not specIndex then
-        return nil
-    end
-    return select(5, GetSpecializationInfo(specIndex))
+    return select(5, getPlayerSpecInfo())
 end
 
 function loadConditions:MatchesRole(loadRoles)

@@ -16,6 +16,9 @@ local loadConditions = EXUI:GetModule('aura-displays-load-conditions')
 ---@class EXUIOptionsFields
 local optionsFields = EXUI:GetModule('options-fields')
 
+---@class EXUIShare
+local share = EXUI:GetModule('share')
+
 ---@class EXUINameplatesAuras
 local npAuras = EXUI:GetModule('np-auras')
 
@@ -573,6 +576,7 @@ end
 
 function npAuras:DisplayContextMenu()
     return {
+        share:ExportMenuItem('np-auras', 'item'),
         {
             label = 'Duplicate',
             onClick = function(id)
@@ -600,6 +604,7 @@ end
 
 function npAuras:ListGroupContextMenu()
     return {
+        share:ExportMenuItem('np-auras', 'group'),
         {
             label = 'Delete',
             color = EXUI.EXFrames and EXUI.EXFrames.Theme.danger,
@@ -692,3 +697,50 @@ function npAuras:RefreshEditorList()
         editor:RefreshItemList()
     end
 end
+
+share:Register({
+    id = 'np-auras',
+    parentKey = 'listGroupID',
+    idLength = 12,
+    getGroup = function(id)
+        return npAuras:GetListGroup(id)
+    end,
+    eachGroup = function(callback)
+        for id, group in pairs(npAuras:GetListGroups()) do
+            callback(id, group)
+        end
+    end,
+    getItem = function(id)
+        return npAuras:GetDisplay(id)
+    end,
+    eachItem = function(callback)
+        local db = npAuras:EnsureDB()
+        for id, display in pairs(db.displays or {}) do
+            if type(display) == 'table' then
+                callback(id, display)
+            end
+        end
+    end,
+    nextOrder = function(parentID)
+        return npAuras:NextListOrder(parentID)
+    end,
+    addGroup = function(id, group)
+        local db = npAuras:EnsureDB()
+        db.__groups = db.__groups or {}
+        db.__groups[id] = group
+        npAuras:SaveDB(db)
+    end,
+    addItem = function(id, item)
+        local db = npAuras:EnsureDB()
+        db.displays = db.displays or {}
+        db.displays[id] = item
+        npAuras:SaveDB(db)
+    end,
+    finish = function(selectID)
+        npAuras:RefreshAll()
+        local editor = EXUI:GetModule('np-aura-editor')
+        if editor and editor.Refresh then
+            editor:Refresh(selectID)
+        end
+    end,
+})

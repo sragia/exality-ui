@@ -31,6 +31,9 @@ local displayOptions = EXUI:GetModule('cooldowns-display-options')
 ---@class EXUICooldownsLoadOptions
 local loadOptions = EXUI:GetModule('cooldowns-load-options')
 
+---@class EXUIShare
+local share = EXUI:GetModule('share')
+
 ---@class EXUICooldownsModule
 local cooldowns = EXUI:GetModule('cooldowns')
 
@@ -160,6 +163,7 @@ cooldowns.splitViewExtraButton = {
                 optionsFields:SetItemID(frame.ID)
             end,
         },
+        share:ImportAction('cooldowns'),
         {
             icon = 'folderPlus',
             align = 'right',
@@ -507,6 +511,7 @@ end
 
 function cooldowns:CooldownContextMenu()
     return {
+        share:ExportMenuItem('cooldowns', 'item'),
         {
             label = 'Duplicate',
             color = { 2 / 255, 145 / 255, 227 / 255, 1 },
@@ -531,6 +536,7 @@ end
 
 function cooldowns:GroupContextMenu()
     return {
+        share:ExportMenuItem('cooldowns', 'group'),
         {
             label = 'Delete',
             color = EXUI.EXFrames.Theme.danger,
@@ -881,3 +887,52 @@ function cooldowns:DuplicateCD(cdID)
     self:UpdateById(newID)
     return newID
 end
+
+share:Register({
+    id = 'cooldowns',
+    parentKey = 'groupID',
+    idLength = 10,
+    ownsItemID = true,
+    getGroup = function(id)
+        return cooldowns:GetGroup(id)
+    end,
+    eachGroup = function(callback)
+        for id, group in pairs(cooldowns:GetGroups()) do
+            callback(id, group)
+        end
+    end,
+    getItem = function(id)
+        local entry = cooldowns:GetCDDBByID(id)
+        if cooldowns:IsCooldownEntry(id, entry) then
+            return entry
+        end
+        return nil
+    end,
+    eachItem = function(callback)
+        local db = cooldowns:EnsureDB()
+        for id, entry in pairs(db) do
+            if cooldowns:IsCooldownEntry(id, entry) then
+                callback(id, entry)
+            end
+        end
+    end,
+    nextOrder = function(parentID)
+        return cooldowns:NextOrder(parentID)
+    end,
+    addGroup = function(id, group)
+        local db = cooldowns:EnsureDB()
+        db.__groups = db.__groups or {}
+        db.__groups[id] = group
+        cooldowns:SaveBaseDB(db)
+    end,
+    addItem = function(id, item)
+        local db = cooldowns:EnsureDB()
+        db[id] = item
+        cooldowns:SaveBaseDB(db)
+    end,
+    finish = function(selectID)
+        cooldowns:InitFrames()
+        optionsFields:Refresh()
+        optionsFields:SetItemID(selectID)
+    end,
+})

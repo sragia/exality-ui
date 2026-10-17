@@ -22,6 +22,9 @@ local displayOptions = EXUI:GetModule('resource-displays-display-options')
 ---@class EXUIResourceDisplaysLoadOptions
 local loadOptions = EXUI:GetModule('resource-displays-load-options')
 
+---@class EXUIShare
+local share = EXUI:GetModule('share')
+
 ---@class EXUIResourceDisplaysCore
 local core = EXUI:GetModule('resource-displays-core')
 
@@ -40,6 +43,7 @@ core.splitViewExtraButton = {
                 optionsFields:SetItemID(displayID)
             end,
         },
+        share:ImportAction('resource-displays'),
         {
             icon = 'folderPlus',
             align = 'right',
@@ -381,6 +385,7 @@ end
 
 function core:DisplayContextMenu()
     return {
+        share:ExportMenuItem('resource-displays', 'item'),
         {
             label = 'Duplicate',
             color = { 2 / 255, 145 / 255, 227 / 255, 1 },
@@ -405,6 +410,7 @@ end
 
 function core:ListGroupContextMenu()
     return {
+        share:ExportMenuItem('resource-displays', 'group'),
         {
             label = 'Delete',
             color = EXUI.EXFrames.Theme.danger,
@@ -587,3 +593,53 @@ function core:ShouldShowDisplay(displayID, frame)
     end
     return previousShouldShow(self, displayID, frame)
 end
+
+share:Register({
+    id = 'resource-displays',
+    parentKey = 'listGroupID',
+    idLength = 10,
+    ownsItemID = true,
+    getGroup = function(id)
+        return core:GetListGroup(id)
+    end,
+    eachGroup = function(callback)
+        for id, group in pairs(core:GetListGroups()) do
+            callback(id, group)
+        end
+    end,
+    getItem = function(id)
+        local db = core:GetDB()
+        local display = db and db[id]
+        if core:IsDisplayEntry(id, display) then
+            return display
+        end
+        return nil
+    end,
+    eachItem = function(callback)
+        local db = core:EnsureDB()
+        for id, display in pairs(db) do
+            if core:IsDisplayEntry(id, display) then
+                callback(id, display)
+            end
+        end
+    end,
+    nextOrder = function(parentID)
+        return core:NextListOrder(parentID)
+    end,
+    addGroup = function(id, group)
+        local db = core:EnsureDB()
+        db.__groups = db.__groups or {}
+        db.__groups[id] = group
+        SaveDB(db)
+    end,
+    addItem = function(id, item)
+        local db = core:EnsureDB()
+        db[id] = item
+        SaveDB(db)
+    end,
+    finish = function(selectID)
+        core:InitFrames()
+        optionsFields:Refresh()
+        optionsFields:SetItemID(selectID)
+    end,
+})

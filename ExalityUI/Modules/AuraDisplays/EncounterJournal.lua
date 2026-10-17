@@ -237,9 +237,11 @@ function journal:GetOptionFields(api)
     local depends = api.depends
     local encounters = api.getList and api.getList() or nil
     local encounterExpanded = type(encounters) == 'table' and #encounters > 0
-    return {
+    local fields = {
         { type = 'title', label = 'Encounter', width = 100, expanded = encounterExpanded },
-        {
+    }
+    if not EXUI.IsForever() then
+        fields[#fields + 1] = {
             type = 'dropdown',
             label = 'Encounter',
             name = 'encounterPick',
@@ -254,8 +256,8 @@ function journal:GetOptionFields(api)
             onChange = function(value)
                 pick.encounterID = tonumber(value)
             end,
-        },
-        {
+        }
+        fields[#fields + 1] = {
             type = 'button',
             label = 'Add',
             name = 'addEncounter',
@@ -275,23 +277,27 @@ function journal:GetOptionFields(api)
                     api.onChanged()
                 end
             end,
+        }
+    end
+    fields[#fields + 1] = {
+        type = 'edit-box',
+        label = 'Encounter IDs',
+        name = 'loadEncounters',
+        width = 100,
+        tooltip = {
+            text = EXUI.IsForever() and 'Comma separated encounter IDs.'
+                or 'Comma separated encounter IDs. Add a current season boss above, or type an ID.',
         },
-        {
-            type = 'edit-box',
-            label = 'Encounter IDs',
-            name = 'loadEncounters',
-            width = 100,
-            tooltip = { text = 'Comma separated encounter IDs. Add a current season boss above, or type an ID.' },
-            depends = depends,
-            currentValue = function()
-                return self:FormatList(api.getList())
-            end,
-            onChange = function(value)
-                api.setList(self:ParseList(value))
-                if api.refreshDisplay then
-                    api.refreshDisplay()
-                end
-            end,
-        },
+        depends = depends,
+        currentValue = function()
+            return self:FormatList(api.getList())
+        end,
+        onChange = function(value)
+            api.setList(self:ParseList(value))
+            if api.refreshDisplay then
+                api.refreshDisplay()
+            end
+        end,
     }
+    return fields
 end

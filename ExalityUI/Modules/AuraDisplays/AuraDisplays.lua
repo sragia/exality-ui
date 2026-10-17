@@ -34,6 +34,9 @@ local groupNav = EXUI:GetModule('aura-displays-group-nav')
 ---@class EXUIAuraDisplaysPreview
 local preview = EXUI:GetModule('aura-displays-preview')
 
+---@class EXUIShare
+local share = EXUI:GetModule('share')
+
 ---@class EXUIAuraDisplaysModule
 local auraDisplays = EXUI:GetModule('aura-displays')
 
@@ -57,6 +60,7 @@ auraDisplays.splitViewExtraButton = {
                 optionsFields:SetItemID(displayID)
             end,
         },
+        share:ImportAction('aura-displays'),
         {
             icon = 'folderPlus',
             align = 'right',
@@ -627,6 +631,7 @@ end
 
 function auraDisplays:DisplayContextMenu()
     return {
+        share:ExportMenuItem('aura-displays', 'item'),
         {
             label = 'Duplicate',
             color = { 2 / 255, 145 / 255, 227 / 255, 1 },
@@ -651,6 +656,7 @@ end
 
 function auraDisplays:ListGroupContextMenu()
     return {
+        share:ExportMenuItem('aura-displays', 'group'),
         {
             label = 'Delete',
             color = EXUI.EXFrames.Theme.danger,
@@ -807,3 +813,48 @@ end
 function auraDisplays:RefreshAll()
     displayModule:RefreshAll()
 end
+
+share:Register({
+    id = 'aura-displays',
+    parentKey = 'listGroupID',
+    idLength = 12,
+    getGroup = function(id)
+        return auraDisplays:GetListGroup(id)
+    end,
+    eachGroup = function(callback)
+        for id, group in pairs(auraDisplays:GetListGroups()) do
+            callback(id, group)
+        end
+    end,
+    getItem = function(id)
+        return auraDisplays:GetDisplay(id)
+    end,
+    eachItem = function(callback)
+        local db = auraDisplays:EnsureDB()
+        for id, display in pairs(db.displays or {}) do
+            if type(display) == 'table' then
+                callback(id, display)
+            end
+        end
+    end,
+    nextOrder = function(parentID)
+        return auraDisplays:NextListOrder(parentID)
+    end,
+    addGroup = function(id, group)
+        local db = auraDisplays:EnsureDB()
+        db.__groups = db.__groups or {}
+        db.__groups[id] = group
+        auraDisplays:SaveDB(db)
+    end,
+    addItem = function(id, item)
+        local db = auraDisplays:EnsureDB()
+        db.displays = db.displays or {}
+        db.displays[id] = item
+        auraDisplays:SaveDB(db)
+    end,
+    finish = function(selectID)
+        auraDisplays:RefreshAll()
+        optionsFields:Refresh()
+        optionsFields:SetItemID(selectID)
+    end,
+})

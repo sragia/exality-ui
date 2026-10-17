@@ -19,6 +19,7 @@ local ROW_BORDER = ROW_ICON * (96 / 82)
 local ROW_HEIGHT = 40
 local ROW_GAP = 2
 local HEADER_GOLD = { 235 / 255, 183 / 255, 52 / 255, 1 }
+local IMPORT_ERROR_COLOR = { 1, 0.35, 0.35, 1 }
 local RECENT_LIMIT = 5
 local ICON_SIZE = 30
 local ICON_PAD = 4
@@ -459,16 +460,16 @@ local function NotifyTalents()
 end
 
 builds.ShowStageError = function(self, message)
-    if (self.importDialog and self.importDialog:IsShown()) then
-        self.importDialog.errorText:SetText(message or '')
+    if (self.textDialog and self.textDialogMode == 'import' and self.textDialog:IsShown()) then
+        self.textDialog:SetHint(message or '', IMPORT_ERROR_COLOR)
         return
     end
     UIErrorsFrame:AddMessage(message or 'Import failed.', 1, 0.2, 0.2, 1)
 end
 
 builds.AfterStage = function(self)
-    if (self.importDialog) then
-        self.importDialog:Hide()
+    if (self.textDialog and self.textDialogMode == 'import') then
+        self.textDialog:Close()
     end
     NotifyTalents()
 end
@@ -1320,169 +1321,67 @@ builds.CreateEditDialog = function(self)
     cancelButton:SetPoint('BOTTOMRIGHT', -14, 12)
 end
 
-builds.ShowImport = function(self)
-    if (not self.importDialog) then
-        return
+builds.EnsureTextDialog = function(self)
+    if (self.textDialog) then
+        return self.textDialog
     end
-    self.importDialog.errorText:SetText('')
-    self.importDialog.editBox:SetText('')
-    self.importDialog:Show()
-    self.importDialog.editBox:SetFocus()
+    self.textDialog = EXFrames:GetFrame('text-dialog-frame'):Create()
+    return self.textDialog
 end
 
-builds.CreateImportDialog = function(self)
-    local theme = EXUI.const.theme
-    local popup = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
-    popup:SetSize(420, 240)
-    popup:SetPoint('CENTER')
-    popup:SetFrameStrata('DIALOG')
-    popup:SetFrameLevel(200)
-    popup:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    popup:SetBackdropColor(0.05, 0.05, 0.05, 0.96)
-    popup:SetBackdropBorderColor(0, 0, 0, 1)
-    popup:EnableMouse(true)
-    popup:Hide()
-    self.importDialog = popup
-
-    local title = popup:CreateFontString(nil, 'OVERLAY')
-    title:SetFont(EXFrames.assets.font.default(), 14, 'OUTLINE')
-    title:SetPoint('TOPLEFT', 14, -14)
-    title:SetText('Import talents')
-
-    local editBox = CreateFrame('EditBox', nil, popup)
-    editBox:SetMultiLine(true)
-    editBox:SetAutoFocus(false)
-    editBox:SetFont(EXFrames.assets.font.default(), 12, 'OUTLINE')
-    editBox:SetPoint('TOPLEFT', 14, -44)
-    editBox:SetPoint('BOTTOMRIGHT', -14, 72)
-    editBox:SetTextInsets(8, 8, 8, 8)
-    editBox:SetMaxLetters(8000)
-    local editBg = editBox:CreateTexture(nil, 'BACKGROUND')
-    editBg:SetColorTexture(0.04, 0.04, 0.04, 1)
-    editBg:SetAllPoints()
-    local editBorder = EXUI:AddPixelPerfectBorder(editBox, 1, { register = false })
-    editBorder:SetBorderColor(unpack(theme.border))
-    editBox:SetScript('OnEscapePressed', function()
-        popup:Hide()
-    end)
-    editBox:SetScript('OnEditFocusGained', function()
-        editBorder:SetBorderColor(unpack(theme.accent))
-    end)
-    editBox:SetScript('OnEditFocusLost', function()
-        editBorder:SetBorderColor(unpack(theme.border))
-    end)
-    popup.editBox = editBox
-
-    local errorText = popup:CreateFontString(nil, 'OVERLAY')
-    errorText:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
-    errorText:SetPoint('BOTTOMLEFT', 14, 44)
-    errorText:SetPoint('BOTTOMRIGHT', -14, 44)
-    errorText:SetJustifyH('LEFT')
-    errorText:SetTextColor(1, 0.35, 0.35, 1)
-    popup.errorText = errorText
-
-    local importButton = SmallButton(popup, 'Import')
-    importButton:SetSize(80, 24)
-    importButton:SetPoint('BOTTOMLEFT', 14, 12)
-    importButton:SetScript('OnClick', function()
-        local err = builds:StageImportString(editBox:GetText())
-        if (err) then
-            errorText:SetText(err)
-        else
-            errorText:SetText('')
-        end
-    end)
-
-    local cancelButton = SmallButton(popup, 'Cancel')
-    cancelButton:SetSize(80, 24)
-    cancelButton:SetPoint('BOTTOMRIGHT', -14, 12)
-    cancelButton:SetScript('OnClick', function()
-        popup:Hide()
-    end)
+builds.ShowImport = function(self)
+    local dialog = self:EnsureTextDialog()
+    self.textDialogMode = 'import'
+    dialog:Open({
+        title = 'Import talents',
+        hint = 'Paste a talent string.',
+        text = '',
+        buttons = {
+            {
+                text = 'Import',
+                onClick = function()
+                    local err = builds:StageImportString(dialog:GetText())
+                    if (err) then
+                        dialog:SetHint(err, IMPORT_ERROR_COLOR)
+                    end
+                end,
+            },
+            {
+                text = 'Cancel',
+                onClick = function()
+                    dialog:Close()
+                end,
+            },
+        },
+    })
 end
 
 builds.ShowExport = function(self)
-    if (not self.exportDialog) then
-        return
-    end
-    local popup = self.exportDialog
+    local dialog = self:EnsureTextDialog()
+    self.textDialogMode = 'export'
     local importString = self:CurrentImportString()
     if (IsSecret(importString)) then
         importString = nil
     end
-    if (not importString or importString == '') then
-        popup.editBox:SetText('')
-        popup.hint:SetText('Talents are not available to export yet.')
-        popup.hint:SetTextColor(1, 0.35, 0.35, 1)
-    else
-        popup.editBox:SetText(importString)
-        popup.hint:SetText('Select the string and press Ctrl+C to copy.')
-        popup.hint:SetTextColor(unpack(ThemeColor('textMuted')))
-    end
-    RaiseDialog(popup)
-    popup:Show()
-    popup.editBox:SetFocus()
-    popup.editBox:HighlightText()
-end
-
-builds.CreateExportDialog = function(self)
-    local theme = EXUI.const.theme
-    local popup = CreateFrame('Frame', nil, UIParent, 'BackdropTemplate')
-    popup:SetSize(420, 240)
-    popup:SetPoint('CENTER')
-    popup:SetFrameStrata('DIALOG')
-    popup:SetFrameLevel(250)
-    popup:SetBackdrop(EXUI.const.backdrop.pixelPerfect())
-    popup:SetBackdropColor(0.05, 0.05, 0.05, 0.96)
-    popup:SetBackdropBorderColor(0, 0, 0, 1)
-    popup:EnableMouse(true)
-    popup:Hide()
-    self.exportDialog = popup
-
-    local title = popup:CreateFontString(nil, 'OVERLAY')
-    title:SetFont(EXFrames.assets.font.default(), 14, 'OUTLINE')
-    title:SetPoint('TOPLEFT', 14, -14)
-    title:SetText('Export talents')
-
-    local editBox = CreateFrame('EditBox', nil, popup)
-    editBox:SetMultiLine(true)
-    editBox:SetAutoFocus(false)
-    editBox:SetFont(EXFrames.assets.font.default(), 12, 'OUTLINE')
-    editBox:SetPoint('TOPLEFT', 14, -44)
-    editBox:SetPoint('BOTTOMRIGHT', -14, 72)
-    editBox:SetTextInsets(8, 8, 8, 8)
-    editBox:SetMaxLetters(8000)
-    local editBg = editBox:CreateTexture(nil, 'BACKGROUND')
-    editBg:SetColorTexture(0.04, 0.04, 0.04, 1)
-    editBg:SetAllPoints()
-    local editBorder = EXUI:AddPixelPerfectBorder(editBox, 1, { register = false })
-    editBorder:SetBorderColor(unpack(theme.border))
-    editBox:SetScript('OnEscapePressed', function()
-        popup:Hide()
-    end)
-    editBox:SetScript('OnEditFocusGained', function(box)
-        editBorder:SetBorderColor(unpack(theme.accent))
-        box:HighlightText()
-    end)
-    editBox:SetScript('OnEditFocusLost', function()
-        editBorder:SetBorderColor(unpack(theme.border))
-    end)
-    popup.editBox = editBox
-
-    local hint = popup:CreateFontString(nil, 'OVERLAY')
-    hint:SetFont(EXFrames.assets.font.default(), 11, 'OUTLINE')
-    hint:SetPoint('BOTTOMLEFT', 14, 44)
-    hint:SetPoint('BOTTOMRIGHT', -14, 44)
-    hint:SetJustifyH('LEFT')
-    hint:SetTextColor(unpack(ThemeColor('textMuted')))
-    popup.hint = hint
-
-    local closeButton = SmallButton(popup, 'Close')
-    closeButton:SetSize(80, 24)
-    closeButton:SetPoint('BOTTOMRIGHT', -14, 12)
-    closeButton:SetScript('OnClick', function()
-        popup:Hide()
-    end)
+    local available = importString and importString ~= ''
+    dialog:Open({
+        title = 'Export talents',
+        hint = available and 'Press Ctrl+C to copy.' or 'Talents are not available to export yet.',
+        hintColor = not available and IMPORT_ERROR_COLOR or nil,
+        text = available and dialog:WrapText(importString) or '',
+        highlight = available,
+        buttons = {
+            {
+                text = 'Close',
+                onClick = function()
+                    dialog:Close()
+                end,
+            },
+        },
+        onReady = available and function()
+            dialog:SetText(dialog:WrapText(importString))
+        end or nil,
+    })
 end
 
 builds.Toggle = function(self)
@@ -1508,12 +1407,8 @@ builds.HandleEscape = function(self)
         self.deleteDialog:Hide()
         return true
     end
-    if (self.exportDialog and self.exportDialog:IsShown()) then
-        self.exportDialog:Hide()
-        return true
-    end
-    if (self.importDialog and self.importDialog:IsShown()) then
-        self.importDialog:Hide()
+    if (self.textDialog and self.textDialog:IsShown()) then
+        self.textDialog:Close()
         return true
     end
     if (self.editDialog and self.editDialog:IsShown()) then
@@ -1525,11 +1420,8 @@ end
 
 builds.HideDialogs = function(self)
     self:HideEdit()
-    if (self.importDialog) then
-        self.importDialog:Hide()
-    end
-    if (self.exportDialog) then
-        self.exportDialog:Hide()
+    if (self.textDialog) then
+        self.textDialog:Close()
     end
     if (self.deleteDialog) then
         self.deleteDialog.onAccept = nil
@@ -1640,8 +1532,6 @@ builds.Create = function(self, window)
     self.emptyRecent = emptyRecent
 
     self:CreateEditDialog()
-    self:CreateImportDialog()
-    self:CreateExportDialog()
     self:CreateDeleteDialog()
 end
 

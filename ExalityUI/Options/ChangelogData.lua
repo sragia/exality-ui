@@ -5,9 +5,11 @@ EXUI.changelog = [[
 # |cffdb49000.9.8|r
 - [Options] Bunch of changes visually and functionality wise for tabs and side option items.
   - Now you can group up and adjust ordering of Resource Displays, Cooldowns, Aura Displays, Aura Editors for UF/NP. Also add icons to them.
+- [Options] Import and export a single item or a whole group for Aura Displays, Unit Frame auras, Nameplate auras, Resource Displays, and Cooldowns.
 - [Auras] Add glow type for Unit Frame auras.
 - [Auras] Adjust/Fix load conditions for aura displays across the board.
 - [Auras] Add Encounter load condition, so you can load aura only for specific encounters.
+- [Auras/Cooldowns/Resource Displays] Add option to export/import individual items/groups from them.
 
 # |cffdb49000.9.7|r
 - [Minimap] Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.

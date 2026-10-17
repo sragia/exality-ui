@@ -19,6 +19,9 @@ local ufCore = EXUI:GetModule('uf-core')
 ---@class EXUIOptionsFields
 local optionsFields = EXUI:GetModule('options-fields')
 
+---@class EXUIShare
+local share = EXUI:GetModule('share')
+
 ---@class EXUIUnitFramesAuras
 local ufAuras = EXUI:GetModule('uf-auras')
 
@@ -617,6 +620,7 @@ end
 
 function ufAuras:DisplayContextMenu()
     return {
+        share:ExportMenuItem('uf-auras', 'item'),
         {
             label = 'Duplicate',
             onClick = function(id)
@@ -644,6 +648,7 @@ end
 
 function ufAuras:ListGroupContextMenu()
     return {
+        share:ExportMenuItem('uf-auras', 'group'),
         {
             label = 'Delete',
             color = EXUI.EXFrames and EXUI.EXFrames.Theme.danger,
@@ -777,3 +782,50 @@ function ufAuras:GetUnitTypeForFrame(frame)
     end
     return unit
 end
+
+share:Register({
+    id = 'uf-auras',
+    parentKey = 'listGroupID',
+    idLength = 12,
+    getGroup = function(id)
+        return ufAuras:GetListGroup(id)
+    end,
+    eachGroup = function(callback)
+        for id, group in pairs(ufAuras:GetListGroups()) do
+            callback(id, group)
+        end
+    end,
+    getItem = function(id)
+        return ufAuras:GetDisplay(id)
+    end,
+    eachItem = function(callback)
+        local db = ufAuras:EnsureDB()
+        for id, display in pairs(db.displays or {}) do
+            if type(display) == 'table' then
+                callback(id, display)
+            end
+        end
+    end,
+    nextOrder = function(parentID)
+        return ufAuras:NextListOrder(parentID)
+    end,
+    addGroup = function(id, group)
+        local db = ufAuras:EnsureDB()
+        db.__groups = db.__groups or {}
+        db.__groups[id] = group
+        ufAuras:SaveDB(db)
+    end,
+    addItem = function(id, item)
+        local db = ufAuras:EnsureDB()
+        db.displays = db.displays or {}
+        db.displays[id] = item
+        ufAuras:SaveDB(db)
+    end,
+    finish = function(selectID)
+        ufAuras:RefreshAll()
+        local editor = EXUI:GetModule('uf-aura-editor')
+        if editor and editor.Refresh then
+            editor:Refresh(selectID)
+        end
+    end,
+})

@@ -7,6 +7,9 @@ local EXFrames = EXUI.EXFrames
 ---@class EXUIOptionsFields
 local optionsFields = EXUI:GetModule('options-fields')
 
+---@class EXUIShare
+local share = EXUI:GetModule('share')
+
 ---@class EXUINameplatesAuras
 local ufAuras = EXUI:GetModule('np-auras')
 
@@ -301,6 +304,7 @@ function editor:EnsureSplitView()
                     self:Refresh(displayID)
                 end,
             },
+            share:ImportAction('np-auras'),
             {
                 icon = 'folderPlus',
                 align = 'right',

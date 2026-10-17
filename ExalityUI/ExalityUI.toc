@@ -43,6 +43,7 @@ Options/ChangelogData.lua
 Options/Changelog.lua
 Options/ReloadDialog.lua
 Options/CopyLinkDialog.lua
+Options/Share.lua
 Options/Controller.lua
 Options/NavIcons.lua
 Options/Editor.lua
