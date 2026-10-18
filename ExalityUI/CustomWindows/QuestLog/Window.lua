@@ -60,6 +60,7 @@ local function MapWidth()
 end
 
 local MAP_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/map-canvas.png]]
+local MAP_ZOOM_WHEEL_FACTOR = 1.15
 local CLOSE_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/close-icon.png]]
 local HOME_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/home-icon.png]]
 local CAMPAIGN_MASK = [[Interface/Addons/ExalityUI/Assets/Images/Map/campaign-header.png]]
@@ -596,6 +597,43 @@ questLog.CreateMap = function(self, host)
     canvas:SetShouldPanOnClick(false)
     canvas:SetShouldNavigateOnClick(true)
     canvas:SetShouldZoomInstantly(true)
+
+    scroll:SetScalingMode('SCALING_MODE_LINEAR')
+    scroll.normalizedZoomLerpAmount = 0.2
+    scroll.normalizedPanXLerpAmount = 0.2
+    scroll.normalizedPanYLerpAmount = 0.2
+    if (MAP_CANVAS_MOUSE_WHEEL_ZOOM_BEHAVIOR_NONE) then
+        scroll:SetMouseWheelZoomMode(MAP_CANVAS_MOUSE_WHEEL_ZOOM_BEHAVIOR_NONE)
+    end
+    scroll:SetScript('OnMouseWheel', function(self, delta)
+        if (not self:HasZoomLevels() or not delta or delta == 0) then
+            return
+        end
+        local currentScale = self:GetCanvasScale()
+        local minScale = self:GetScaleForMinZoom()
+        local maxScale = self:GetScaleForMaxZoom()
+        local nextScale = Clamp((self.targetScale or currentScale) * (MAP_ZOOM_WHEEL_FACTOR ^ delta), minScale, maxScale)
+        if (nextScale == (self.targetScale or currentScale)) then
+            return
+        end
+
+        local cursorX, cursorY = self:GetCursorPosition()
+        local childLeft = self.Child and self.Child:GetLeft()
+        local childTop = self.Child and self.Child:GetTop()
+        if (not cursorX or not childLeft or not childTop or currentScale == 0) then
+            self:SetZoomTarget(nextScale)
+            return
+        end
+
+        local normalizedCursorX = self:NormalizeHorizontalSize(cursorX / currentScale - childLeft)
+        local normalizedCursorY = self:NormalizeVerticalSize(childTop - cursorY / currentScale)
+        local scaleRatio = currentScale / nextScale
+        local panX = Lerp(normalizedCursorX, self:GetCurrentScrollX() or 0.5, scaleRatio)
+        local panY = Lerp(normalizedCursorY, self:GetCurrentScrollY() or 0.5, scaleRatio)
+        local minX, maxX, minY, maxY = self:CalculateScrollExtentsAtScale(nextScale)
+        self:SetZoomTarget(nextScale)
+        self:SetPanTarget(Clamp(panX, minX, maxX), Clamp(panY, minY, maxY))
+    end)
 
     InstallPinLevels(canvas)
     InstallProviders(canvas)
