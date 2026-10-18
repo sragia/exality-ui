@@ -798,7 +798,6 @@ function apply:DestroyEncounterContainer(container)
     if not container then
         return
     end
-    loadConditions:DebugEncounter('unit frame removed ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
     self:DisableEncounterContainer(container)
     pcall(function()
         container:ClearAllPoints()
@@ -811,7 +810,6 @@ function apply:QueueStaleEncounterContainer(container)
         return
     end
     container._exuiEncounterStale = true
-    loadConditions:DebugEncounter('unit frame disabled ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
     self:DisableEncounterContainer(container)
     self.encounterStale[#self.encounterStale + 1] = container
 end
@@ -927,11 +925,9 @@ function apply:CreateEncounterContainer(frame, displayID, display, encounterID, 
         end
     end)
     if not configured then
-        loadConditions:DebugEncounter('unit frame load failed ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
         self:QueueStaleEncounterContainer(container)
         return nil
     end
-    loadConditions:DebugEncounter('unit frame loaded ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
     return container
 end
 

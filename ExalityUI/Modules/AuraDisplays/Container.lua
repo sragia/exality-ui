@@ -303,7 +303,6 @@ function containerModule:DestroyEncounterContainer(container)
     if not container then
         return
     end
-    loadConditions:DebugEncounter('display removed ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
     self:DisableEncounterContainer(container)
     pcall(function()
         container:SetParent(nil)
@@ -315,7 +314,6 @@ function containerModule:QueueStaleEncounterContainer(container)
         return
     end
     container._exuiEncounterStale = true
-    loadConditions:DebugEncounter('display disabled ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID))
     self:DisableEncounterContainer(container)
     self.encounterStale[#self.encounterStale + 1] = container
 end
@@ -432,11 +430,9 @@ function containerModule:CreateEncounterContainer(frame, displayID, display, enc
     end)
     if not configured then
         frame.EncounterContainers[encounterID] = nil
-        loadConditions:DebugEncounter('display load failed ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
         self:QueueStaleEncounterContainer(container)
         return nil
     end
-    loadConditions:DebugEncounter('display loaded ' .. tostring(encounterID) .. ' display ' .. tostring(displayID))
     return container
 end
 

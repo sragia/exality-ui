@@ -527,7 +527,6 @@ function apply:DestroyEncounterContainer(container)
     if not container then
         return
     end
-    loadConditions:DebugEncounter('nameplate removed ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID) .. ' unit ' .. tostring(container._exuiEncounterUnit))
     self:DisableEncounterContainer(container)
     pcall(function()
         container:ClearAllPoints()
@@ -560,7 +559,6 @@ function apply:QueueStaleEncounterContainer(container)
         return
     end
     container._exuiEncounterStale = true
-    loadConditions:DebugEncounter('nameplate disabled ' .. tostring(container._exuiEncounterID) .. ' display ' .. tostring(container._exuiDisplayID) .. ' unit ' .. tostring(container._exuiEncounterUnit))
     self:ForgetEncounterContainer(container)
     self:UnslotEncounterContainer(container)
     self:DisableEncounterContainer(container)
@@ -675,11 +673,9 @@ function apply:CreateEncounterContainer(frame, displayID, display, encounterID, 
         end
     end)
     if not configured then
-        loadConditions:DebugEncounter('nameplate load failed ' .. tostring(encounterID) .. ' display ' .. tostring(displayID) .. ' unit ' .. tostring(frame.unit or frame.__unit))
         self:QueueStaleEncounterContainer(container)
         return nil
     end
-    loadConditions:DebugEncounter('nameplate loaded ' .. tostring(encounterID) .. ' display ' .. tostring(displayID) .. ' unit ' .. tostring(frame.unit or frame.__unit))
     return container
 end
 

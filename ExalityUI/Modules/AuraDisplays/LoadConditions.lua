@@ -291,10 +291,6 @@ function loadConditions:ForEachEncounterApplier(method, ...)
     end
 end
 
-function loadConditions:DebugEncounter(message)
-    print('|cffc334eb[ExalityUI]|r Encounter: ' .. message)
-end
-
 function loadConditions:OnEncounterStart(encounterID)
     encounterID = tonumber(encounterID)
     if not encounterID then
@@ -302,7 +298,6 @@ function loadConditions:OnEncounterStart(encounterID)
     end
     self.activeEncounterID = encounterID
     self.pendingEncounterRelease = nil
-    self:DebugEncounter('start ' .. encounterID)
     self:ForEachEncounterApplier('OnEncounterStart', encounterID)
 end
 
@@ -313,7 +308,6 @@ function loadConditions:OnEncounterEnd(encounterID, success)
         if self.activeEncounterID == encounterID then
             self.activeEncounterID = nil
         end
-        self:DebugEncounter('end ' .. tostring(encounterID) .. ' wipe, hiding containers')
         self:ForEachEncounterApplier('HideKeptEncounterContainers')
         return
     end
@@ -322,23 +316,19 @@ function loadConditions:OnEncounterEnd(encounterID, success)
     end
     self.pendingEncounterRelease = true
     if not InCombatLockdown() then
-        self:DebugEncounter('end ' .. tostring(encounterID) .. ' kill, releasing')
         self:ForEachEncounterApplier('ReleaseAllEncounterContainers')
         self.pendingEncounterRelease = nil
         return
     end
-    self:DebugEncounter('end ' .. tostring(encounterID) .. ' kill, release when combat drops')
 end
 
 function loadConditions:OnZoneChanged()
     self.activeEncounterID = nil
     self.pendingEncounterRelease = true
     if InCombatLockdown() then
-        self:DebugEncounter('zone change during combat, disabling')
         self:ForEachEncounterApplier('DisableAllEncounterContainers')
         return
     end
-    self:DebugEncounter('zone change, releasing')
     self:ForEachEncounterApplier('ReleaseAllEncounterContainers')
     self.pendingEncounterRelease = nil
 end
@@ -348,7 +338,6 @@ function loadConditions:ReleasePendingEncounterContainers()
         return
     end
     if self.pendingEncounterRelease then
-        self:DebugEncounter('combat dropped, releasing kept containers')
         self:ForEachEncounterApplier('ReleaseAllEncounterContainers')
         self.pendingEncounterRelease = nil
         return
