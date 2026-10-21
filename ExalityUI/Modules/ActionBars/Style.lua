@@ -18,6 +18,10 @@ local buttonMod = EXUI:GetModule('action-bars-button')
 local ping = EXUI:GetModule('action-bars-ping')
 
 style.masqueGroups = {}
+
+-- Resolved bar configs are rebuilt on every SetDB, so signatures can be memoized per config table.
+local cooldownSigCache = setmetatable({}, { __mode = 'k' })
+local styleSigCache = setmetatable({}, { __mode = 'k' })
 style.initialized = false
 style.pendingSlotRefresh = false
 style.pendingSlotChanges = {}
@@ -164,9 +168,13 @@ style.GetCooldownSignature = function(self, barConfig)
     if not barConfig then
         return ''
     end
+    local cached = cooldownSigCache[barConfig]
+    if cached then
+        return cached
+    end
     local cooldown = barConfig.cooldown or {}
     local color = cooldown.color or {}
-    return table.concat({
+    local sig = table.concat({
         barConfig.showCooldownSwipe ~= false and '1' or '0',
         barConfig.showCooldownText ~= false and '1' or '0',
         barConfig.hideCooldownCharge and '1' or '0',
@@ -190,14 +198,20 @@ style.GetCooldownSignature = function(self, barConfig)
         tostring((cooldown.fontShadowColor and cooldown.fontShadowColor.b) or 0),
         tostring((cooldown.fontShadowColor and cooldown.fontShadowColor.a) or 1),
     }, ':')
+    cooldownSigCache[barConfig] = sig
+    return sig
 end
 
 style.GetStyleSignature = function(self, barConfig)
     if not barConfig then
         return ''
     end
+    local cached = styleSigCache[barConfig]
+    if cached then
+        return cached
+    end
     local backdrop = barConfig.backdropColor or {}
-    return table.concat({
+    local sig = table.concat({
         tostring(barConfig.width or 0),
         tostring(barConfig.height or 0),
         tostring(barConfig.zoom or 0),
@@ -211,6 +225,8 @@ style.GetStyleSignature = function(self, barConfig)
         tostring(backdrop.b or 0),
         tostring(backdrop.a or 0),
     }, ':')
+    styleSigCache[barConfig] = sig
+    return sig
 end
 
 style.BuildLABConfig = function(self, barConfig, commandName)
@@ -522,10 +538,32 @@ end
 -- feedback; keep full texels + ADD, and inset slightly so the rim doesn't bloom onto neighbors.
 local HIGHLIGHT_INSET = 1
 
-local function applyOverlayTexture(texture, button, file, color, alpha, drawLayer)
+local function isOverlayAnchored(texture, button)
+    if texture:GetNumPoints() ~= 2 then
+        return false
+    end
+    local _, rel, relPoint, x, y = texture:GetPointByName('TOPLEFT')
+    if rel ~= button or relPoint ~= 'TOPLEFT' or x ~= HIGHLIGHT_INSET or y ~= -HIGHLIGHT_INSET then
+        return false
+    end
+    _, rel, relPoint, x, y = texture:GetPointByName('BOTTOMRIGHT')
+    return rel == button and relPoint == 'BOTTOMRIGHT' and x == -HIGHLIGHT_INSET and y == HIGHLIGHT_INSET
+end
+
+-- anchorOnly: LAB Update only moves overlay anchors, so skip re-applying texture/colour once styled.
+local function applyOverlayTexture(texture, button, file, color, alpha, drawLayer, anchorOnly)
     if not texture then
         return
     end
+    if anchorOnly and texture.exuiOverlayStyled then
+        if not isOverlayAnchored(texture, button) then
+            texture:ClearAllPoints()
+            texture:SetPoint('TOPLEFT', button, 'TOPLEFT', HIGHLIGHT_INSET, -HIGHLIGHT_INSET)
+            texture:SetPoint('BOTTOMRIGHT', button, 'BOTTOMRIGHT', -HIGHLIGHT_INSET, HIGHLIGHT_INSET)
+        end
+        return
+    end
+    texture.exuiOverlayStyled = true
     texture:ClearAllPoints()
     texture:SetPoint('TOPLEFT', button, 'TOPLEFT', HIGHLIGHT_INSET, -HIGHLIGHT_INSET)
     texture:SetPoint('BOTTOMRIGHT', button, 'BOTTOMRIGHT', -HIGHLIGHT_INSET, HIGHLIGHT_INSET)
@@ -538,7 +576,7 @@ local function applyOverlayTexture(texture, button, file, color, alpha, drawLaye
     end
 end
 
-style.ApplyButtonHighlight = function(self, button)
+style.ApplyButtonHighlight = function(self, button, anchorOnly)
     local highlightTexture = EXUI.const.masque.rectangle.highlight
     local accent = EXUI.const.theme.accentLight
 
@@ -550,19 +588,19 @@ style.ApplyButtonHighlight = function(self, button)
         button:SetHighlightTexture(highlightTexture, 'ADD')
     end
 
-    applyOverlayTexture(button:GetHighlightTexture(), button, highlightTexture, accent, 0.55)
+    applyOverlayTexture(button:GetHighlightTexture(), button, highlightTexture, accent, 0.55, nil, anchorOnly)
 
     local pushed = button.GetPushedTexture and button:GetPushedTexture()
     if pushed then
         button.exuiPushedConfigured = true
         -- Match Blizzard: pushed must sit above the icon or press feedback disappears under it.
-        applyOverlayTexture(pushed, button, highlightTexture, EXUI.const.theme.accentDark, 0.65, 'OVERLAY')
+        applyOverlayTexture(pushed, button, highlightTexture, EXUI.const.theme.accentDark, 0.65, 'OVERLAY', anchorOnly)
     end
 
     local checked = button.GetCheckedTexture and button:GetCheckedTexture()
     if checked then
         button.exuiCheckedConfigured = true
-        applyOverlayTexture(checked, button, highlightTexture, accent, 0.45, 'OVERLAY')
+        applyOverlayTexture(checked, button, highlightTexture, accent, 0.45, 'OVERLAY', anchorOnly)
     end
 
     if button.Flash and not button.exuiFlashConfigured then
@@ -770,7 +808,7 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
     else
         -- Filled slots: LAB still repositions Highlight/Checked to 52x51 @ -2.5.
         -- Skip full chrome, but always clamp overlays back inside the button.
-        self:ApplyButtonHighlight(button)
+        self:ApplyButtonHighlight(button, true)
     end
 
     if styleChanged or emptyChanged then

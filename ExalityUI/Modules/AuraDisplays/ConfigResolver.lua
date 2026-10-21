@@ -36,6 +36,13 @@ local PROCESSED_AURA_TYPE_MAP = {
     Dispel = 3,
 }
 
+local function KeyLess(a, b)
+    if type(a) == 'string' and type(b) == 'string' then
+        return a < b
+    end
+    return tostring(a) < tostring(b)
+end
+
 local function AppendSerialized(parts, value)
     local valueType = type(value)
     if valueType == 'table' then
@@ -44,9 +51,7 @@ local function AppendSerialized(parts, value)
         for key in pairs(value) do
             keys[#keys + 1] = key
         end
-        table.sort(keys, function(a, b)
-            return tostring(a) < tostring(b)
-        end)
+        table.sort(keys, KeyLess)
         for _, key in ipairs(keys) do
             parts[#parts + 1] = tostring(key)
             parts[#parts + 1] = '='

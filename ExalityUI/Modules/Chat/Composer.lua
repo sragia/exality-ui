@@ -263,10 +263,33 @@ function composer:PlaceEditBox()
     edit:SetFrameLevel((bg:GetFrameLevel() or 0) + 20)
 end
 
+local function IsAnchoredTo(edit, point, relativeTo, x, y)
+    local p, rel, relPoint, px, py = edit:GetPointByName(point)
+    return p and rel == relativeTo and relPoint == point and px == x and py == y
+end
+
+-- Sync runs every frame; avoid re-anchoring (and the layout pass it triggers) when nothing moved.
+local function IsDockedInBackground(edit, bg)
+    if edit:GetNumPoints() ~= 2 then
+        return false
+    end
+    if not IsAnchoredTo(edit, 'TOPLEFT', bg, 4, -2) or not IsAnchoredTo(edit, 'BOTTOMRIGHT', bg, -4, 2) then
+        return false
+    end
+    if edit.GetTextInsets then
+        local left, right, top, bottom = edit:GetTextInsets()
+        return left == 4 and right == 8 and top == 0 and bottom == 0
+    end
+    return true
+end
+
 function composer:AnchorEditBox(besideHeader)
     local edit = self.editBox
     local bg = window.editBg
     if not edit or not bg then
+        return
+    end
+    if not besideHeader and IsDockedInBackground(edit, bg) then
         return
     end
     edit:ClearAllPoints()
@@ -329,13 +352,15 @@ function composer:Sync()
         if not chat:IsShown() then
             chat:Show()
         end
-        if chat.SetClipsChildren then
+        if chat.SetClipsChildren and chat:DoesClipChildren() then
             chat:SetClipsChildren(false)
         end
         if chat:GetAlpha() ~= 0 then
             chat:SetAlpha(0)
         end
-        chat:EnableMouse(false)
+        if chat:IsMouseEnabled() then
+            chat:EnableMouse(false)
+        end
     end
     if edit.setText == 1 and IsSecret(edit.text) then
         self.secretTextWait = (self.secretTextWait or 0) + 1

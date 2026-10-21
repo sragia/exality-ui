@@ -21,7 +21,7 @@ local function StripHyperlinks(text)
     if not C_StringUtil or not C_StringUtil.StripHyperlinks then
         return text
     end
-    local ok, stripped = pcall(C_StringUtil.StripHyperlinks, text, true, true)
+    local ok, stripped = pcall(C_StringUtil.StripHyperlinks, text, true, true, false, true, true)
     if ok then
         return stripped
     end

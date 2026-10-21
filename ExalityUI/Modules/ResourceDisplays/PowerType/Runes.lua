@@ -53,9 +53,17 @@ runes.CreateSingleRune = function(self, parent)
     text:SetText('')
     text:Hide()
 
+    -- Text only changes on tenth/threshold boundaries; _cdWait skips frames until the next one.
     frame.OnUpdate = function(self, elapsed)
         if not self.DurationObject then
             return
+        end
+        if self._cdWait then
+            self._cdWait = self._cdWait - elapsed
+            if self._cdWait > 0 then
+                return
+            end
+            self._cdWait = nil
         end
         local parentFrame = self:GetParent()
         local db = parentFrame and parentFrame.db
@@ -70,11 +78,15 @@ runes.CreateSingleRune = function(self, parent)
                 self._cdText = ''
                 self.Text:SetText('')
             end
+            if not issecretvalue(remaining) then
+                self._cdWait = remaining - threshold
+            end
             return
         end
         local formatName = db.runeCDTextFormat
         if not issecretvalue(remaining) then
             local tenth = math.floor(remaining * 10 + 0.5)
+            self._cdWait = remaining - (tenth - 0.5) / 10
             if self._cdTenth == tenth and self._cdFormat == formatName then
                 return
             end
@@ -126,6 +138,7 @@ runes.ApplyPreview = function(self, frame)
             runeFrame.DurationObject = durationObject
             runeFrame._cdTenth = nil
             runeFrame._cdText = nil
+            runeFrame._cdWait = nil
             if frame.db.runeShowText and not runeFrame:GetScript('OnUpdate') then
                 runeFrame:SetScript('OnUpdate', runeFrame.OnUpdate)
             elseif not frame.db.runeShowText and runeFrame:GetScript('OnUpdate') then
@@ -193,6 +206,7 @@ runes.Create = function(self, frame)
                         runeFrame.DurationObject = durationObject
                         runeFrame._cdTenth = nil
                         runeFrame._cdText = nil
+                        runeFrame._cdWait = nil
                         if self.db.runeShowText and not runeFrame:GetScript('OnUpdate') then
                             runeFrame:SetScript('OnUpdate', runeFrame.OnUpdate)
                         elseif not self.db.runeShowText and runeFrame:GetScript('OnUpdate') then
@@ -242,6 +256,7 @@ runes.Update = function(frame)
             runeFrame = runes:CreateSingleRune(frame)
             frame.ActiveFrames[i] = runeFrame
         end
+        runeFrame._cdWait = nil
         frame.RuneColor = db.runeColor
         frame.RuneOnCDColor = db.runeOnCDColor
         EXUI:SetSize(runeFrame, db.runeWidth, db.runeHeight)

@@ -456,6 +456,9 @@ core.BindPlateUnit = function(self, frame)
             apply:BindFrame(frame)
         end
         EXUI:GetModule('np-element-target-highlight'):Update(frame)
+        if frame.isFriendly then
+            EXUI:GetModule('np-element-name'):Update(frame)
+        end
     end
 
     if frame.UpdateTags then

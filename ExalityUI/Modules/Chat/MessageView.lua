@@ -26,6 +26,8 @@ local FontPath = util.FontPath
 local IsSecret = util.IsSecret
 local HasText = util.HasText
 
+local FADE_DURATION = 0.6
+
 local ACTION = {
     CHANNEL_JOIN = 'joined channel.',
     CHANNEL_LEAVE = 'left channel.',
@@ -484,6 +486,7 @@ function messages:Layout()
     if not window.clip or self.layingOut then
         return
     end
+    self.fadeGateAt = nil
     self.layingOut = true
     local ok, err = pcall(self.LayoutNow, self)
     self.layingOut = false
@@ -554,6 +557,7 @@ function messages:LayoutNow()
                 self:FillRow(row, line)
             end
             self:PlaceRow(row, anchor)
+            row.fadeAlpha = alpha
             row:SetAlpha(alpha)
             row:SetShown(alpha > 0)
             anchor = row
@@ -568,6 +572,7 @@ function messages:LayoutNow()
             end
             row.boundLine = nil
             row.line = nil
+            row.fadeAlpha = 1
             row:SetAlpha(1)
             row:Hide()
             if row.span then
@@ -607,49 +612,82 @@ end
 
 function messages:ResetFade()
     self.fadeReset = GetTime()
+    self.fadeGateAt = nil
 end
 
-function messages:RefreshFade()
+-- Skips the per-frame pass until the next visible line starts fading; Layout/ResetFade clear the gate.
+function messages:RefreshFade(delay)
+    delay = delay or Chat():GetHideAfter()
+    local now = GetTime()
+    if self.fadeGateAt and self.fadeDelay == delay and now < self.fadeGateAt then
+        return
+    end
+    self.fadeDelay = delay
+    local tab = history:ActiveTab()
+    local scrolled = tab and (tab.scroll or 0) > 0
+    local gate = math.huge
     local collapsed = false
     for _, row in ipairs(self.rows) do
         if row.placed and row.line then
-            local alpha = self:LineAlpha(row.line)
+            local alpha = self:LineAlpha(row.line, delay, scrolled, now)
             if alpha <= 0 then
                 collapsed = true
             else
-                row:SetAlpha(alpha)
+                if row.fadeAlpha ~= alpha then
+                    row.fadeAlpha = alpha
+                    row:SetAlpha(alpha)
+                end
+                if alpha < 1 then
+                    gate = now
+                elseif not scrolled then
+                    local clock = self:LineClock(row.line)
+                    if clock and clock + delay - FADE_DURATION < gate then
+                        gate = clock + delay - FADE_DURATION
+                    end
+                end
             end
         end
     end
+    self.fadeGateAt = gate
     if collapsed then
         self:Layout()
     end
 end
 
-function messages:LineAlpha(line)
-    local delay = Chat():GetHideAfter()
-    if delay <= 0 then
-        return 1
-    end
-    local tab = history:ActiveTab()
-    if tab and (tab.scroll or 0) > 0 then
-        return 1
-    end
+function messages:LineClock(line)
     local clock = line and line.clock
     if type(clock) ~= 'number' then
-        return 1
+        return nil
     end
     local reset = self.fadeReset
     if type(reset) == 'number' and reset > clock then
         clock = reset
     end
-    local age = GetTime() - clock
-    local fade = 0.6
+    return clock
+end
+
+function messages:LineAlpha(line, delay, scrolled, now)
+    delay = delay or Chat():GetHideAfter()
+    if delay <= 0 then
+        return 1
+    end
+    if scrolled == nil then
+        local tab = history:ActiveTab()
+        scrolled = tab and (tab.scroll or 0) > 0
+    end
+    if scrolled then
+        return 1
+    end
+    local clock = self:LineClock(line)
+    if not clock then
+        return 1
+    end
+    local age = (now or GetTime()) - clock
     if age >= delay then
         return 0
     end
-    if age > delay - fade then
-        return (delay - age) / fade
+    if age > delay - FADE_DURATION then
+        return (delay - age) / FADE_DURATION
     end
     return 1
 end

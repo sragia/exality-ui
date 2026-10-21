@@ -153,8 +153,9 @@ function window:Create()
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
     frame:SetScript('OnUpdate', function()
-        if Chat():GetHideAfter() > 0 then
-            messages:RefreshFade()
+        local hideAfter = Chat():GetHideAfter()
+        if hideAfter > 0 then
+            messages:RefreshFade(hideAfter)
         end
         composer:Sync()
     end)
