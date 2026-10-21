@@ -93,6 +93,9 @@ Modules/DataBrokers/DataBrokers.xml
 # Bags
 Modules/Bags/Bags.xml
 
+# Chat
+Modules/Chat/Chat.xml
+
 # Custom Windows
 CustomWindows/CustomWindows.xml
 

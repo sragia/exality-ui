@@ -16,7 +16,7 @@ local optionsController = EXUI:GetModule('options-controller')
 ---@class EXUIProfiles
 local profiles = EXUI:GetModule('profiles')
 
-local WINDOW_SIZE = { 980, 690 }
+local WINDOW_SIZE = { 980, 700 }
 local COLUMN_GAP = 10
 local PANEL_INSET = 10
 

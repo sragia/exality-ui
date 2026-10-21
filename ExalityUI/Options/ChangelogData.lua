@@ -11,6 +11,9 @@ EXUI.changelog = [[
 - [Auras] Add Encounter load condition, so you can load aura only for specific encounters.
 - [Auras/Cooldowns/Resource Displays] Add option to export/import individual items/groups from them.
 
+## Chat |cffeb7a34New|r
+Add chat window that replaces default chat. More changes to come, but generally styled and adds some features I wanted out of it. Feature wise fairly basic, so don't expect too much.
+
 ## Custom Map / Quest Log Window |cffeb7a34New|r
 Fairly minimal Map window, with definitely less features, but most of the features removed are ones I didnt use much anyway. Has support for HandyNotes and TomTom.
 

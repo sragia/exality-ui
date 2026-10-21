@@ -1,0 +1,13 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="Skin.lua"/>
+    <Script file="Menu.lua"/>
+    <Script file="Util.lua"/>
+    <Script file="Format.lua"/>
+    <Script file="History.lua"/>
+    <Script file="MessageView.lua"/>
+    <Script file="Composer.lua"/>
+    <Script file="Panels.lua"/>
+    <Script file="DefaultChat.lua"/>
+    <Script file="Window.lua"/>
+    <Script file="Core.lua"/>
+</Ui>

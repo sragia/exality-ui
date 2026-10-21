@@ -27,6 +27,14 @@ local function SpriteIcon(row)
     }
 end
 
+local function SpriteIconAt(col, row)
+    return {
+        texture = SPRITE,
+        inactive = CellCoords(col, row),
+        active = CellCoords(col + 1, row),
+    }
+end
+
 -- Row order matches the collapsed options menu.
 local icons = {
     ['General'] = SpriteIcon(0),
@@ -38,6 +46,7 @@ local icons = {
     ['Damage Meters'] = SpriteIcon(6),
     ['Cooldowns'] = SpriteIcon(7),
     ['Bags'] = SpriteIcon(8),
+    ['Chat'] = SpriteIconAt(2, 0),
     ['Minimap'] = SpriteIcon(9),
     ['Data Brokers'] = SpriteIcon(10),
     ['Raid Tools'] = SpriteIcon(11),
