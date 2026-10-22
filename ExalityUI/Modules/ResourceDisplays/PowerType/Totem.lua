@@ -19,6 +19,7 @@ local textElement = EXUI:GetModule('resource-displays-elements-text')
 local RDCore = EXUI:GetModule('resource-displays-core')
 
 local DEFAULT_TOTEM_SLOT = 1
+local TICK = 0.05
 
 local ZERO_DURATION
 if C_DurationUtil and C_DurationUtil.CreateDuration then
@@ -154,7 +155,14 @@ totem.Create = function(self, frame)
 
         applyTotemSlot(self, slot)
 
-        self:SetScript('OnUpdate', function(selfRef)
+        self._tickWait = nil
+        self:SetScript('OnUpdate', function(selfRef, elapsed)
+            local wait = (selfRef._tickWait or 0) - elapsed
+            if wait > 0 then
+                selfRef._tickWait = wait
+                return
+            end
+            selfRef._tickWait = TICK
             local activeSlot = getConfiguredSlot(selfRef.db)
             local haveTotem = GetTotemInfo(activeSlot)
             applyVisibility(selfRef, haveTotem)

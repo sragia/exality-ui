@@ -482,13 +482,13 @@ function messages:EnsureLineRow(line)
     return row
 end
 
-function messages:Layout()
+function messages:Layout(keepRows)
     if not window.clip or self.layingOut then
         return
     end
     self.fadeGateAt = nil
     self.layingOut = true
-    local ok, err = pcall(self.LayoutNow, self)
+    local ok, err = pcall(self.LayoutNow, self, keepRows)
     self.layingOut = false
     if not ok and not self.layoutFailed then
         self.layoutFailed = true
@@ -498,7 +498,7 @@ function messages:Layout()
     end
 end
 
-function messages:LayoutNow()
+function messages:LayoutNow(keepRows)
     local lines = history:MatchingLines()
     local tab = history:ActiveTab()
     local limit = window.clip:GetHeight()
@@ -553,7 +553,7 @@ function messages:LayoutNow()
             end
             row.placed = true
             row.line = line
-            if existing then
+            if existing and not keepRows then
                 self:FillRow(row, line)
             end
             self:PlaceRow(row, anchor)

@@ -88,6 +88,7 @@ end
 
 function history:SaveTabs()
     Chat().Data:SetValue('tabs', self.tabs)
+    self.matchCache = nil
 end
 
 function history:ActiveTab()
@@ -172,12 +173,17 @@ end
 
 function history:MatchingLines()
     local tab = self:ActiveTab()
+    local cache = self.matchCache
+    if cache and cache.tab == tab then
+        return cache.lines
+    end
     local lines = {}
     for _, line in ipairs(self.lines) do
         if self:LineMatches(tab, line) then
             lines[#lines + 1] = line
         end
     end
+    self.matchCache = { tab = tab, lines = lines }
     return lines
 end
 
@@ -237,6 +243,7 @@ function history:TrimLines()
     if #lines <= MAX_LINES then
         return
     end
+    self.matchCache = nil
     local tabs = self:EnsureTabs()
     local counts = {}
     local hidden = 0
@@ -284,6 +291,7 @@ function history:LoadLog()
         return
     end
     self.logLoaded = true
+    self.matchCache = nil
     local store = ChatLog()
     if not store then
         return
@@ -345,13 +353,17 @@ function history:PushLine(chatType, message, sender, channel, guid, lineID, motd
     self.lines[#self.lines + 1] = line
     self:RememberLine(line)
     self:TrimLines()
+    local cache = self.matchCache
+    if cache and self:LineMatches(cache.tab, line) then
+        cache.lines[#cache.lines + 1] = line
+    end
     self:MarkWhisperTabs(line)
     local active = self:ActiveTab()
     if active and (active.scroll or 0) > 0 and self:LineMatches(active, line) then
         active.scroll = active.scroll + 1
     end
     if not quiet then
-        messages:Layout()
+        messages:Layout(true)
     end
     return line
 end
