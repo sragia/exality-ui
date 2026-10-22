@@ -20,6 +20,11 @@ local buttonMod = EXUI:GetModule('action-bars-button')
 
 buttonMod.RETAIL_PAGES = 18
 
+-- lossOfControlCooldown is off in BuildLABConfig, so LAB would discard these results anyway.
+local function NoLossOfControl()
+    return nil
+end
+
 buttonMod.SetupActionStates = function(self, button, barId, buttonIndex, buttonOffset)
     if not button or not barId or not buttonIndex then
         return
@@ -60,6 +65,8 @@ buttonMod.CreateActionButton = function(self, barId, index, header, barConfig, a
     local name = 'EXUIActionBar_' .. barId .. '_' .. index
     local commandName = definitions:GetCommandName(barId, index)
     local button = LAB:CreateButton(index, name, header, barStyle:BuildLABConfig(barConfig, commandName))
+    button.GetLoCCooldownInfo = NoLossOfControl
+    button.GetLoCCooldownDuration = NoLossOfControl
     self:DetachFromBlizzardEventDispatch(button)
 
     button.commandName = commandName

@@ -166,7 +166,11 @@ totem.Create = function(self, frame)
             local activeSlot = getConfiguredSlot(selfRef.db)
             local haveTotem = GetTotemInfo(activeSlot)
             applyVisibility(selfRef, haveTotem)
-            helpers:ApplyDurationBarColor(selfRef.StatusBar, selfRef.db, selfRef.DurationObject)
+            local duration = selfRef.DurationObject
+            local zero = duration and duration.IsZero and duration:IsZero()
+            if issecretvalue(zero) or not zero then
+                helpers:ApplyDurationBarColor(selfRef.StatusBar, selfRef.db, duration)
+            end
         end)
     end
 

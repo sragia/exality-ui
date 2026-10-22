@@ -57,6 +57,9 @@ tags.DESCRIPTIONS = {
     ['nsrt-name'] = 'Nickname provided by Northern Sky Raid Tools addon'
 }
 
+local classMarkup = {}
+local whiteMarkup
+
 local function formatPerhp(unit, decimals)
     local pct = UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
     local text = string.format('%.' .. decimals .. 'f', pct)
@@ -100,11 +103,17 @@ tags.TAGS = {
         method = function(unit)
             local _, class = UnitClass(unit)
             if (class) then
-                local classColor = C_ClassColor.GetClassColor(class)
-                return classColor:GenerateHexColorMarkup()
+                local markup = classMarkup[class]
+                if not markup then
+                    markup = C_ClassColor.GetClassColor(class):GenerateHexColorMarkup()
+                    classMarkup[class] = markup
+                end
+                return markup
             end
-            local white = CreateColor(1, 1, 1)
-            return white:GenerateHexColorMarkup()
+            if not whiteMarkup then
+                whiteMarkup = CreateColor(1, 1, 1):GenerateHexColorMarkup()
+            end
+            return whiteMarkup
         end,
         events = 'UNIT_NAME_UPDATE'
     },

@@ -130,6 +130,29 @@ function apply:PurgeYard(displayID)
     self.containerGraveyard = kept
 end
 
+function apply:PurgeStaleYard()
+    local yard = self.containerGraveyard
+    if #yard == 0 then
+        return
+    end
+    local displays = npAuras:GetDisplays()
+    local kept = {}
+    for i = 1, #yard do
+        local container = yard[i]
+        local displayID = container._exuiDisplayID
+        local display = displayID and displays[displayID]
+        if display
+            and npAuras:IsDisplayEnabled(display)
+            and npAuras:DisplayHasLoadableGroup(display)
+            and container._exuiHardSig == self:GetHardSignature(displayID, display) then
+            kept[#kept + 1] = container
+        else
+            self:DestroyContainer(container)
+        end
+    end
+    self.containerGraveyard = kept
+end
+
 function apply:PopPooledContainer(hardSig)
     local yard = self.containerGraveyard
     for i = #yard, 1, -1 do
@@ -444,7 +467,7 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
 end
 
 function apply:PrewarmPool()
-    if InCombatLockdown() then
+    if InCombatLockdown() or not npCore.enabled then
         return
     end
 
@@ -852,6 +875,7 @@ end
 
 function apply:RefreshAll()
     self:InvalidateSignatures()
-    self:PurgeYard()
+    self:PurgeStaleYard()
     npCore:UpdateAllPlates()
+    self:PrewarmPool()
 end
