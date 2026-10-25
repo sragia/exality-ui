@@ -155,6 +155,20 @@ party.Init = function(self)
         ['targetBorderColor'] = { r = 1, g = 1, b = 1, a = 1 },
         ['mouseoverBorderEnable'] = false,
         ['mouseoverBorderColor'] = { r = 1, g = 1, b = 1, a = 0.7 },
+        -- Portrait
+        ['portraitEnable'] = false,
+        ['portraitStyle'] = 'circle',
+        ['portraitType'] = 'static',
+        ['portraitClassIcon'] = false,
+        ['portraitSize'] = 36,
+        ['portraitAttachedSide'] = 'LEFT',
+        ['portraitAttachedWidth'] = 40,
+        ['portraitBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
+        ['portraitBorderClassColor'] = false,
+        ['portraitAnchorPoint'] = 'RIGHT',
+        ['portraitRelativeAnchorPoint'] = 'LEFT',
+        ['portraitXOff'] = -4,
+        ['portraitYOff'] = 0,
     })
 
     local shouldShowBlizzardFrame = core:GetValueForUnit('party', 'showBlizzardFrame') and
@@ -168,6 +182,7 @@ party.Create = function(self, frame, unit)
     core:Base(frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
+    frame.Portrait = EXUI:GetModule('uf-element-portrait'):Create(frame)
     frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
     frame.Range = EXUI:GetModule('uf-element-range'):Create(frame)
     frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)

@@ -42,7 +42,7 @@ tags.DESCRIPTIONS = {
     ['offline'] = 'Shows "Offline" if the unit is not connected to the server',
     ['missinghp'] = 'Missing Health',
     ['chi'] = 'Chi Count',
-    ['difficulty'] = 'Shows the difficulty of the unit',
+    ['difficulty'] = 'Add difficulty color (attackable units only) to the next tag. e.g [difficulty][level]',
     ['arcanecharges'] = 'Arcane Charges Count',
     ['plus'] = 'Shows "+" if the unit is elite or rare elite',
     ['faction'] = 'Unit Faction',
@@ -54,6 +54,7 @@ tags.DESCRIPTIONS = {
     -- Custom
     ['curhp:formatted'] = 'Current Health in abbreviated format',
     ['classcolor'] = 'Add Class Color to the next tag. e.g [classcolor][name]',
+    ['difficultycolor'] = 'Add level difficulty color to the next tag for any unit. e.g [difficultycolor][level]',
     ['nsrt-name'] = 'Nickname provided by Northern Sky Raid Tools addon'
 }
 
@@ -118,6 +119,15 @@ tags.TAGS = {
         events = 'UNIT_NAME_UPDATE'
     },
     {
+        name = 'difficultycolor',
+        method = function(unit)
+            local level = UnitEffectiveLevel(unit)
+            local color = GetCreatureDifficultyColor((level and level > 0) and level or 999)
+            return string.format('|cff%02x%02x%02x', color.r * 255, color.g * 255, color.b * 255)
+        end,
+        events = 'UNIT_LEVEL PLAYER_LEVEL_UP'
+    },
+    {
         name = 'nsrt-name',
         method = function(unit)
             local name, surnameF = UnitName(unit)
@@ -133,6 +143,40 @@ tags.TAGS = {
         events = 'UNIT_NAME_UPDATE'
     }
 }
+
+-- Mirrors oUF's bracket parsing ([prefix$>tag<$suffix(args)]) so options can skip invalid tags
+local function GetBracketTagName(bracket)
+    local prefixEnd, prefixOffset = bracket:match('()$>'), 1
+    if (not prefixEnd) then
+        prefixEnd = 1
+    else
+        prefixEnd = prefixEnd - 1
+        prefixOffset = 3
+    end
+
+    local suffixEnd = (bracket:match('()%(', prefixOffset + 1) or -1) - 1
+    local suffixStart, suffixOffset = bracket:match('<$()', prefixEnd), 1
+    if (not suffixStart) then
+        suffixStart = suffixEnd + 1
+    else
+        suffixOffset = 3
+    end
+
+    return bracket:sub(prefixEnd + prefixOffset, suffixStart - suffixOffset)
+end
+
+tags.IsValidTagString = function(self, tagString)
+    if (not tagString) then
+        return true
+    end
+    local methods = EXUI.oUF.Tags.Methods
+    for bracket in tagString:gmatch('%[..-%]+') do
+        if (not methods[bracket:sub(2, -2)] and not methods[GetBracketTagName(bracket)]) then
+            return false
+        end
+    end
+    return true
+end
 
 tags.Init = function(self)
     self:RegisterNSRTCallback()

@@ -195,6 +195,23 @@ editor.GetOptions = function(self, unit, id)
             end
         },
         {
+            type = 'range',
+            label = 'Frame Level',
+            name = 'frameLevel',
+            min = 0,
+            max = 50,
+            step = 1,
+            width = 50,
+            tooltip = 'Offset above the unit frame overlay (border). Shaped portraits sit at 5-7.',
+            currentValue = function()
+                return ctCore:GetValue(unit, id, 'frameLevel') or 1
+            end,
+            onChange = function(value)
+                ctCore:UpdateValue(unit, id, 'frameLevel', value)
+                UFCore:UpdateFrameForUnit(unit)
+            end
+        },
+        {
             type = 'title',
             width = 100,
             label = 'Tag',
@@ -208,6 +225,9 @@ editor.GetOptions = function(self, unit, id)
                 return ctCore:GetValue(unit, id, 'tag')
             end,
             onChange = function(value)
+                if (not EXUI:GetModule('oUF-Tags'):IsValidTagString(value)) then
+                    return
+                end
                 ctCore:UpdateValue(unit, id, 'tag', value)
                 UFCore:UpdateFrameForUnit(unit)
                 self.currentListItem:RefreshTag()

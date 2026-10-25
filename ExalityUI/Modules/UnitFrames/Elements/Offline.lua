@@ -3,13 +3,18 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
+
 local offline = EXUI:GetModule('uf-element-offline')
 
 offline.Create = function(self, frame)
-    local healthPerc = frame.ElementFrame:CreateFontString(nil, 'OVERLAY')
-    healthPerc:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
+    local holder = core:CreateTextHolder(frame)
+    local offlineText = holder:CreateFontString(nil, 'OVERLAY')
+    offlineText:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
+    offlineText.holder = holder
 
-    return healthPerc
+    return offlineText
 end
 
 offline.Update = function(self, frame)
@@ -21,6 +26,7 @@ offline.Update = function(self, frame)
         return
     end
     Offline:Show()
+    core:ApplyTextFrameLevel(frame, Offline.holder, db.offlineFrameLevel)
     Offline:SetFont(LSM:Fetch('font', db.offlineFont), db.offlineFontSize, db.offlineFontFlag)
     EXUI.utils.applyFontShadow(Offline, db.offlineFontShadow, db.offlineFontShadowX, db.offlineFontShadowY,
         db.offlineFontShadowColor)

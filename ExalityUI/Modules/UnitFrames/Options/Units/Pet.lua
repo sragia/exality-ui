@@ -122,6 +122,16 @@ core:AddOption({
             },
         },
         {
+            name = 'Portrait',
+            id = 'portrait',
+            allowPreview = true,
+            options = {
+                function()
+                    return EXUI:GetModule('uf-options-portrait'):GetOptions('pet')
+                end
+            }
+        },
+        {
             name = 'Auras',
             id = 'auras',
             options = {

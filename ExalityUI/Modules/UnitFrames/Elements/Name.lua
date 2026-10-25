@@ -3,10 +3,15 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
+
 local name = EXUI:GetModule('uf-element-name')
 
 name.Create = function(self, frame)
-    local name = frame.ElementFrame:CreateFontString('EXUI_Name_' .. frame.__unit, 'OVERLAY')
+    local holder = core:CreateTextHolder(frame)
+    local name = holder:CreateFontString('EXUI_Name_' .. frame.__unit, 'OVERLAY')
+    name.holder = holder
     name:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
     name:SetWidth(100)
     return name
@@ -21,6 +26,7 @@ name.Update = function(self, frame)
         return
     end
     name:Show()
+    core:ApplyTextFrameLevel(frame, name.holder, db.nameFrameLevel)
     name:SetFont(LSM:Fetch('font', db.nameFont), db.nameFontSize, db.nameFontFlag)
     EXUI.utils.applyFontShadow(name, db.nameFontShadow, db.nameFontShadowX, db.nameFontShadowY, db.nameFontShadowColor)
     if (db.nameMaxWidth) then

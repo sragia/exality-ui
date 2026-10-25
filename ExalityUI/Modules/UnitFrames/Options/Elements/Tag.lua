@@ -23,6 +23,9 @@ tag.GetOptions = function(self, unit, prefix)
                 return core:GetValueForUnit(unit, prefix .. 'Tag')
             end,
             onChange = function(value)
+                if (not EXUI:GetModule('oUF-Tags'):IsValidTagString(value)) then
+                    return
+                end
                 core:UpdateValueForUnit(unit, prefix .. 'Tag', value)
                 core:UpdateFrameForUnit(unit)
             end,

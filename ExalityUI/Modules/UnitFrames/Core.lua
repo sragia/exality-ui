@@ -317,6 +317,17 @@ core.Base = function(self, frame)
     end
 end
 
+-- Texts live in their own holder so their frame level can be offset above ElementFrame
+core.CreateTextHolder = function(self, frame)
+    local holder = CreateFrame('Frame', nil, frame.ElementFrame)
+    holder:SetAllPoints()
+    return holder
+end
+
+core.ApplyTextFrameLevel = function(self, frame, holder, offset)
+    holder:SetFrameLevel(frame.ElementFrame:GetFrameLevel() + (offset or 1))
+end
+
 core.UpdateFrame = function(self, frame)
     -- Update All Elements on frame
     if (frame.Name) then
@@ -340,6 +351,10 @@ core.UpdateFrame = function(self, frame)
 
     if (frame.HealthPrediction) then
         EXUI:GetModule('uf-element-healthprediction'):Update(frame)
+    end
+
+    if (frame.Portrait) then
+        EXUI:GetModule('uf-element-portrait'):Update(frame)
     end
 
     if (frame.RaidTargetIndicator) then

@@ -110,6 +110,11 @@ health.Update = function(self, frame)
         health.colorReaction = true
     end
 
+    local insetLeft, insetRight = EXUI:GetModule('uf-element-portrait'):GetBarInsets(frame)
+    health:ClearAllPoints()
+    health:SetPoint('TOPLEFT', frame, 'TOPLEFT', insetLeft, 0)
+    health:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -insetRight, 0)
+
     health.bg.multiplier = generalDB.useClassColoredBackdrop and 1 or 0.2
     local statusBarTexture = db.overrideStatusBarTexture ~= '' and db.overrideStatusBarTexture or
         generalDB.statusBarTexture

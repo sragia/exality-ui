@@ -129,6 +129,20 @@ arena.Init = function(self)
         ['damageAbsorbShowAt'] = 'AS_EXTENSION',
         ['healAbsorbEnable'] = true,
         ['healAbsorbShowOverIndicator'] = true,
+        -- Portrait
+        ['portraitEnable'] = false,
+        ['portraitStyle'] = 'circle',
+        ['portraitType'] = 'static',
+        ['portraitClassIcon'] = false,
+        ['portraitSize'] = 36,
+        ['portraitAttachedSide'] = 'LEFT',
+        ['portraitAttachedWidth'] = 40,
+        ['portraitBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
+        ['portraitBorderClassColor'] = false,
+        ['portraitAnchorPoint'] = 'RIGHT',
+        ['portraitRelativeAnchorPoint'] = 'LEFT',
+        ['portraitXOff'] = -4,
+        ['portraitYOff'] = 0,
     })
 
     self.container:SetPoint(
@@ -150,6 +164,7 @@ arena.Create = function(self, frame)
     core:Base(frame)
 
     frame.Health = EXUI:GetModule('uf-element-health'):Create(frame)
+    frame.Portrait = EXUI:GetModule('uf-element-portrait'):Create(frame)
     frame.Name = EXUI:GetModule('uf-element-name'):Create(frame)
     frame.HealthText = EXUI:GetModule('uf-element-health-text'):Create(frame)
     frame.HealthPerc = EXUI:GetModule('uf-element-health-perc'):Create(frame)

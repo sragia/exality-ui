@@ -78,6 +78,7 @@ customTexts.Update = function(self, frame)
         textContainer:ClearAllPoints()
         text:ClearAllPoints()
         textContainer:SetPoint(db.anchorPoint, frame.ElementFrame, db.relativeAnchorPoint, db.XOffset, db.YOffset)
+        textContainer:SetFrameLevel(frame.ElementFrame:GetFrameLevel() + (db.frameLevel or 1))
         text:SetPoint(db.anchorPoint, textContainer, db.relativeAnchorPoint)
         frame:Tag(text, db.tag)
     end

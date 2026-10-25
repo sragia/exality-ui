@@ -171,6 +171,23 @@ genericText.GetOptions = function(self, unit, prefix)
                 core:UpdateValueForUnit(unit, prefix .. 'YOffset', value)
                 core:UpdateFrameForUnit(unit)
             end
+        },
+        {
+            type = 'range',
+            label = 'Frame Level',
+            name = prefix .. 'FrameLevel',
+            min = 0,
+            max = 50,
+            step = 1,
+            width = 23,
+            tooltip = 'Offset above the unit frame overlay (border). Shaped portraits sit at 5-7.',
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'FrameLevel') or 1
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'FrameLevel', value)
+                core:UpdateFrameForUnit(unit)
+            end
         }
     }
     for _, field in ipairs(positionFields) do

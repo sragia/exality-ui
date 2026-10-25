@@ -12,6 +12,8 @@ EXUI.changelog = [[
 - [Auras/Cooldowns/Resource Displays] Add option to export/import individual items/groups from them.
 - [Character Frame] Add same styling for Inspect UI too. As well as when viewing other players talents use talent UI if enabled.
 - [Profiles] Fix toggle that somehow got broken.
+- [Unit Frames] Add portrait element with 4 different styles - circle, square, hexagon as separate elements and attached as part of the unitframe. 
+- [Unit Frames] Add option to change frame level for all text elements
 
 ## Chat |cffeb7a34New|r
 Add chat window that replaces default chat. More changes to come, but generally styled and adds some features I wanted out of it. Feature wise fairly basic, so don't expect too much.

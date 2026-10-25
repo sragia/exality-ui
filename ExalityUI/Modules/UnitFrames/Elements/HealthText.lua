@@ -3,11 +3,15 @@ local EXUI = select(2, ...)
 
 local LSM = LibStub('LibSharedMedia-3.0')
 
+---@class EXUIUnitFramesCore
+local core = EXUI:GetModule('uf-core')
 
 local healthText = EXUI:GetModule('uf-element-health-text')
 
 healthText.Create = function(self, frame)
-    local healthText = frame.ElementFrame:CreateFontString(nil, 'OVERLAY')
+    local holder = core:CreateTextHolder(frame)
+    local healthText = holder:CreateFontString(nil, 'OVERLAY')
+    healthText.holder = holder
     healthText:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
 
     return healthText
@@ -22,6 +26,7 @@ healthText.Update = function(self, frame)
         return
     end
     healthText:Show()
+    core:ApplyTextFrameLevel(frame, healthText.holder, db.healthFrameLevel)
     healthText:SetFont(LSM:Fetch('font', db.healthFont), db.healthFontSize, db.healthFontFlag)
     EXUI.utils.applyFontShadow(healthText, db.healthFontShadow, db.healthFontShadowX, db.healthFontShadowY,
         db.healthFontShadowColor)

@@ -35,8 +35,10 @@ power.Update = function(self, frame)
         return
     end
     core:EnableElementForFrame(frame, 'Power')
-    powerBar:SetPoint('BOTTOMLEFT')
-    powerBar:SetPoint('BOTTOMRIGHT')
+    local insetLeft, insetRight = EXUI:GetModule('uf-element-portrait'):GetBarInsets(frame)
+    powerBar:ClearAllPoints()
+    powerBar:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', insetLeft, 0)
+    powerBar:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -insetRight, 0)
     powerBar:SetHeight(db.powerHeight)
     local statusBarTexture = db.overrideStatusBarTexture ~= '' and db.overrideStatusBarTexture or
         generalDB.statusBarTexture

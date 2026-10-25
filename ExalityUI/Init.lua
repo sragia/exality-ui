@@ -128,6 +128,10 @@ EXUI.const = {
         },
         unitFrames = {
             dispelOverlay = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/dispel-overlay.png]],
+            portraitSprite = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/Portraits/shape-sprite.png]],
+            portraitMaskCircle = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/Portraits/circle-mask.png]],
+            portraitMaskHexagon = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/Portraits/hexagon-mask.png]],
+            portraitMaskSquare = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/Portraits/square-mask.png]],
         },
         nameplates = {
             glow = [[Interface/Addons/ExalityUI/Assets/Images/Nameplates/glow.png]],
