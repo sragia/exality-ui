@@ -271,6 +271,7 @@ profiles.SetupWindow = function(self)
     shouldCopyToggle:SetParent(profilePanel)
     shouldCopyToggle:SetPoint('LEFT', createButton, 'RIGHT', 15, 0)
     shouldCopyToggle:SetPoint('TOP', createButton, 'TOP', 0, 0)
+    shouldCopyToggle:SetPoint('RIGHT', createInput, 'RIGHT', 0, 0)
 
     -- Left column: import
     local importPanel = panel:Create()
