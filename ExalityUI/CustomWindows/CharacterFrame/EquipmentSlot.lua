@@ -153,6 +153,14 @@ local function QualityBorder(quality)
     return borders.empty
 end
 
+equipmentSlot.QualityBorder = function(self, quality)
+    return QualityBorder(quality)
+end
+
+equipmentSlot.SlotName = function(self, slotId)
+    return _G[strupper(SLOTNAME_BY_ID[slotId] or '')]
+end
+
 equipmentSlot.GetItemColorAndBorder = function(self, ilvl)
     local result = EXUI.utils.getIlvlInfo(ilvl)
     return result.color, result.border
@@ -216,24 +224,7 @@ equipmentSlot.CreateGem = function(self, parent)
     return gem
 end
 
----@param self EXUICharacterFrameEquipmentSlot
----@param slotId number
----@param side 'LEFT' | 'RIGHT' | 'BOTTOM'
----@param parent Frame
----@return Frame
-equipmentSlot.Create = function(self, slotId, side, index, parent)
-    local slot = CreateFrame('Button', nil, parent, 'SecureActionButtonTemplate')
-    slot:SetSize(36, 36)
-    slot:SetID(slotId)
-    slot:SetAttribute('type2', 'item')
-    slot:SetAttribute('item', slotId)
-    slot:RegisterForDrag('LeftButton')
-    -- Both up/down required for SecureActionButton actions to fire reliably
-    slot:RegisterForClicks('LeftButtonUp', 'LeftButtonDown', 'RightButtonUp', 'RightButtonDown')
-    slot.Side = side
-    slot.Index = index
-    slot.slotId = slotId
-
+equipmentSlot.BuildVisuals = function(self, slot, slotId, side, index)
     local textureName = LookupEmptyTexture(slotId)
     slot.emptyTexture = textureName
 
@@ -249,6 +240,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     iconMask:SetPoint('BOTTOMRIGHT', 1, -1)
     iconMask:SetTexture(EXUI.const.textures.characterFrame.slotMask, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
     icon:AddMaskTexture(iconMask)
+    slot.IconMask = iconMask
 
 
     local overlayFrame = CreateFrame('Frame', nil, slot)
@@ -281,31 +273,6 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot.Highlight.FadeOut = EXUI.utils.animation.fade(highlight, 0.2, 1, 0)
     slot.Highlight.FadeOut:SetScript('OnFinished', function() slot.Highlight:SetAlpha(0) end)
     slot.Highlight:SetAlpha(0)
-
-    local cooldown = CreateFrame('Cooldown', nil, slot, 'CooldownFrameTemplate')
-    slot.Cooldown = cooldown
-    cooldown:SetAllPoints()
-    cooldown:SetSwipeColor(0, 0, 0, 0.6)
-    cooldown:SetDrawEdge(false)
-    cooldown:SetCountdownFont('ExalityUI_EQUIPMENT_SLOT_CD_Font')
-    slot.AnchorCooldownText = function(self)
-        local countdown = self.Cooldown.GetCountdownFontString and self.Cooldown:GetCountdownFontString()
-        if not countdown then
-            return
-        end
-        countdown:ClearAllPoints()
-        countdown:SetPoint('BOTTOMLEFT', self.Cooldown, 'BOTTOMLEFT', 4, 3)
-        countdown:SetJustifyH('LEFT')
-    end
-    slot:AnchorCooldownText()
-
-    -- Dim overlay for invalid enchant / temp-enchant targets (below Border OVERLAY)
-    local itemContextOverlay = overlayFrame:CreateTexture(nil, 'ARTWORK', nil, 1)
-    slot.ItemContextOverlay = itemContextOverlay
-    itemContextOverlay:SetAllPoints(slot)
-    itemContextOverlay:SetColorTexture(0, 0, 0, 0.8)
-    itemContextOverlay:AddMaskTexture(iconMask)
-    itemContextOverlay:Hide()
 
     -- Enchant Text
     local enchantText = overlayFrame:CreateFontString(nil, 'OVERLAY')
@@ -383,6 +350,52 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
             f.ItemLink = nil
         end
     end
+end
+
+---@param self EXUICharacterFrameEquipmentSlot
+---@param slotId number
+---@param side 'LEFT' | 'RIGHT' | 'BOTTOM'
+---@param parent Frame
+---@return Frame
+equipmentSlot.Create = function(self, slotId, side, index, parent)
+    local slot = CreateFrame('Button', nil, parent, 'SecureActionButtonTemplate')
+    slot:SetSize(36, 36)
+    slot:SetID(slotId)
+    slot:SetAttribute('type2', 'item')
+    slot:SetAttribute('item', slotId)
+    slot:RegisterForDrag('LeftButton')
+    -- Both up/down required for SecureActionButton actions to fire reliably
+    slot:RegisterForClicks('LeftButtonUp', 'LeftButtonDown', 'RightButtonUp', 'RightButtonDown')
+    slot.Side = side
+    slot.Index = index
+    slot.slotId = slotId
+
+    equipmentSlot:BuildVisuals(slot, slotId, side, index)
+
+    local cooldown = CreateFrame('Cooldown', nil, slot, 'CooldownFrameTemplate')
+    slot.Cooldown = cooldown
+    cooldown:SetAllPoints()
+    cooldown:SetSwipeColor(0, 0, 0, 0.6)
+    cooldown:SetDrawEdge(false)
+    cooldown:SetCountdownFont('ExalityUI_EQUIPMENT_SLOT_CD_Font')
+    slot.AnchorCooldownText = function(self)
+        local countdown = self.Cooldown.GetCountdownFontString and self.Cooldown:GetCountdownFontString()
+        if not countdown then
+            return
+        end
+        countdown:ClearAllPoints()
+        countdown:SetPoint('BOTTOMLEFT', self.Cooldown, 'BOTTOMLEFT', 4, 3)
+        countdown:SetJustifyH('LEFT')
+    end
+    slot:AnchorCooldownText()
+
+    -- Dim overlay for invalid enchant / temp-enchant targets (below Border OVERLAY)
+    local itemContextOverlay = slot.OverlayFrame:CreateTexture(nil, 'ARTWORK', nil, 1)
+    slot.ItemContextOverlay = itemContextOverlay
+    itemContextOverlay:SetAllPoints(slot)
+    itemContextOverlay:SetColorTexture(0, 0, 0, 0.8)
+    itemContextOverlay:AddMaskTexture(slot.IconMask)
+    itemContextOverlay:Hide()
 
     -- Oils / profession enchants use spell-targeting (SpellCanTargetItem), not a cursor item.
     -- Addon PickupInventoryItem is forbidden in that state; PaperDoll uses PickupInventoryItem from

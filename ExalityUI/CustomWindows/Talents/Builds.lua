@@ -1356,10 +1356,10 @@ builds.ShowImport = function(self)
     })
 end
 
-builds.ShowExport = function(self)
+builds.ShowExport = function(self, importString)
     local dialog = self:EnsureTextDialog()
     self.textDialogMode = 'export'
-    local importString = self:CurrentImportString()
+    importString = importString or self:CurrentImportString()
     if (IsSecret(importString)) then
         importString = nil
     end

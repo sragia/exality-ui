@@ -32,6 +32,7 @@ talents.isCreated = false
 talents.window = nil
 talents.activeTab = 'talents'
 talents.refreshQueued = false
+talents.inspectUnit = nil
 
 local ICON_SIZE = 40
 local BORDER_SIZE = ICON_SIZE * (96 / 82)
@@ -616,8 +617,83 @@ talents.UpdateBackground = function(self, specID)
     end
 end
 
+talents.IsInspecting = function(self)
+    return self.inspectUnit ~= nil
+end
+
+talents.UpdateInspectChrome = function(self)
+    local inspecting = self:IsInspecting()
+    self.tabButtons.spellbook:SetShown(not inspecting)
+    self.importButton:SetShown(not inspecting)
+    self.sidebarButton:SetShown(not inspecting)
+    self.exportButton:ClearAllPoints()
+    if (inspecting) then
+        self.exportButton:SetPoint('RIGHT', self.sidebarButton:GetParent(), 'RIGHT', -8, 0)
+    else
+        self.exportButton:SetPoint('RIGHT', self.importButton, 'LEFT', -16, 0)
+    end
+    if (inspecting) then
+        if (builds.sidebar) then
+            builds.sidebar:Hide()
+        end
+        pvp:Hide()
+        self.pvpButton:Hide()
+        self.applyButton:Hide()
+        self.resetButton:Hide()
+        self.pointsText:Hide()
+        self.statusText:SetText('')
+    else
+        self.applyButton:Show()
+    end
+end
+
+talents.RefreshInspect = function(self)
+    local unit = self.inspectUnit
+    local specID = C_SpecializationInfo.GetInspectSpecialization(unit)
+    if (not specID or specID == 0) then
+        specID = nil
+    end
+    self:UpdateBackground(specID)
+
+    for index, button in ipairs(self.specButtons) do
+        if (index == 1 and specID) then
+            local _, _, _, icon = GetSpecializationInfoByID(specID)
+            button.specIndex = nil
+            button.Icon:SetTexture(icon)
+            button.Icon:SetVertexColor(1, 1, 1)
+            button.Border:SetTexture(TEX.selected)
+            button:ClearAllPoints()
+            button:SetPoint('LEFT', 0, 0)
+            button:Show()
+        else
+            button:Hide()
+        end
+    end
+    self.specRow:SetWidth(BORDER_SIZE)
+
+    local configID = Constants.TraitConsts.INSPECT_TRAIT_CONFIG_ID
+    self.talentConfigID = configID
+    tree:SetViewOnly(true)
+    local treeID = specID and C_ClassTalents.GetTraitTreeForSpec(specID) or nil
+    tree:Refresh(configID, treeID, specID)
+    self:RefreshHero(configID, specID)
+end
+
+talents.Export = function(self)
+    if (self:IsInspecting()) then
+        builds:ShowExport(C_Traits.GenerateInspectImportString(self.inspectUnit))
+        return
+    end
+    builds:ShowExport()
+end
+
 talents.Refresh = function(self)
     if (not self.window or not self.window:IsShown()) then
+        return
+    end
+    self:UpdateInspectChrome()
+    if (self:IsInspecting()) then
+        self:RefreshInspect()
         return
     end
     builds:UpdateCurrentBorder()
@@ -687,6 +763,11 @@ end
 
 talents.HandleIntercept = function(self, suggestedTab)
     local tab = TabForSuggested(suggestedTab)
+    if (self:IsInspecting()) then
+        self:StopInspecting()
+        self:Show(tab)
+        return
+    end
     if (self.window and self.window:IsShown()) then
         if (self.activeTab == tab) then
             self.window:HideWindow()
@@ -702,11 +783,36 @@ talents.OpenDefault = function(self)
     if (not self.window) then
         return
     end
+    local inspectUnit = self.inspectUnit
     local suggested = SuggestedForTab(self.activeTab)
     self.window:HideWindow()
     self.override = true
-    PlayerSpellsUtil.TogglePlayerSpellsFrame(suggested)
+    if (inspectUnit) then
+        PlayerSpellsUtil.OpenToClassTalentsTab(inspectUnit)
+    else
+        PlayerSpellsUtil.TogglePlayerSpellsFrame(suggested)
+    end
     self.override = false
+end
+
+talents.StopInspecting = function(self)
+    if (not self.inspectUnit) then
+        return
+    end
+    self.inspectUnit = nil
+    tree:SetViewOnly(false)
+    local inspectWindow = EXUI:GetModule('character-frame-inspect')
+    if (not inspectWindow:IsShown() and not (PlayerSpellsFrame and PlayerSpellsFrame:IsInspecting())) then
+        ClearInspectPlayer()
+    end
+end
+
+talents.ShowInspect = function(self, unit)
+    self.inspectUnit = unit
+    if (self.isCreated) then
+        builds:HideDialogs()
+    end
+    self:Show('talents')
 end
 
 local function CreateTabButton(parent, label, flipped)
@@ -850,6 +956,9 @@ talents.Create = function(self)
         builds:HideDialogs()
         talents:CollapseSearch()
     end
+    window:HookScript('OnHide', function()
+        talents:StopInspecting()
+    end)
     builds:Create(window)
     pvp:Create(window)
     window.Texture:SetShown(EXUI.IsForever())
@@ -1018,6 +1127,9 @@ talents.Create = function(self)
         button:SetWidth(160)
         button:SetPoint('LEFT', (index - 1) * 168, 0)
         button:SetScript('OnClick', function(self)
+            if (talents:IsInspecting()) then
+                return
+            end
             if (self.configID and self.nodeID and self.entryID) then
                 local canEdit = C_ClassTalents.CanEditTalents()
                 if (canEdit) then
@@ -1207,7 +1319,7 @@ talents.Create = function(self)
     end
     exportButton:SetWidth(exportWidth + 28)
     exportButton:SetScript('OnClick', function()
-        builds:ShowExport()
+        talents:Export()
     end)
     exportButton:SetScript('OnEnter', function()
         exportText:SetTextColor(1, 1, 1, 1)

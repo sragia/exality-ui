@@ -1,10 +1,13 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="EquipmentPopout.lua"/>
     <Script file="EquipmentSlot.lua"/>
+    <Script file="InspectSlot.lua"/>
+    <Script file="EdgeToggle.lua"/>
     <Script file="Stats.lua"/>
     <Script file="Titles.lua"/>
     <Script file="Sets.lua"/>
     <Script file="Currencies.lua"/>
     <Script file="Reputation.lua"/>
     <Script file="Window.lua"/>
+    <Script file="Inspect.lua"/>
 </Ui>

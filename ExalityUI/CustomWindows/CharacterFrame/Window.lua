@@ -31,6 +31,9 @@ local reputation = EXUI:GetModule('character-frame-reputation')
 ---@class ExalityFramesTooltipInput
 local tooltip = EXFrames:GetFrame('tooltip')
 
+---@class EXUICharacterFrameInspect
+local inspect = EXUI:GetModule('character-frame-inspect')
+
 -------------------------
 
 ---@class EXUICharacterFrameWindow
@@ -89,15 +92,18 @@ local function ShouldShowBottomSlot(slotId)
     return true
 end
 
-local function MoveFrameNextToWindow(frame)
-    if (characterFrame.window and characterFrame.window:IsShown()) then
-        local window = characterFrame.window
+characterFrame.MoveFrameNextTo = function(self, frame, window)
+    if (window and window:IsShown()) then
         local left, bottom, width, height = window:GetRect()
         frame:ClearAllPoints()
         local x = left + width + 10
         local y = bottom + height
         frame:SetPoint('TOPLEFT', UIParent, 'BOTTOMLEFT', x, y)
     end
+end
+
+local function MoveFrameNextToWindow(frame)
+    characterFrame:MoveFrameNextTo(frame, characterFrame.window)
 end
 
 characterFrame.ReplaceItemSocketingFrameOnShow = function(self)
@@ -239,8 +245,10 @@ characterFrame.UpdateHeader = function(self)
 end
 
 characterFrame.FitBackground = function(self)
-    local texture = self.background
-    local atlas = self.backgroundAtlas
+    self:FitAtlas(self.background, self.backgroundAtlas)
+end
+
+characterFrame.FitAtlas = function(self, texture, atlas)
     if (not texture or not atlas) then
         return
     end
@@ -371,6 +379,88 @@ EXUI:RegisterEventHandler('PLAYER_EQUIPMENT_CHANGED', 'character-frame', functio
         characterFrame:UpdateModel()
     end
 end)
+
+characterFrame.SetupRotatingModel = function(self, characterModel, window)
+    characterModel:SetCamDistanceScale(1.2)
+    if characterModel.SetKeepModelOnHide then
+        characterModel:SetKeepModelOnHide(true)
+    end
+    local rotation = math.rad(20)
+    local ROTATION_SENSITIVITY = 0.05
+
+    characterModel:SetRotation(rotation)
+
+    characterModel:EnableMouse(true)
+
+    -- PlayerModel does not follow parent Translation animations; hide during window dive/fade.
+    local function HideModelForWindowAnim()
+        characterModel:Hide()
+    end
+
+    local function ShowModelAfterWindowAnim()
+        if (characterModel.unavailable) then
+            return
+        end
+        characterModel:Show()
+        characterModel:SetCamDistanceScale(1.2)
+        characterModel:SetRotation(rotation)
+        if characterModel.RefreshUnit then
+            characterModel:RefreshUnit()
+        end
+    end
+
+    if window.fadeIn then
+        window.fadeIn:HookScript('OnPlay', HideModelForWindowAnim)
+        window.fadeIn:HookScript('OnFinished', ShowModelAfterWindowAnim)
+    end
+    if window.fadeOut then
+        window.fadeOut:HookScript('OnPlay', HideModelForWindowAnim)
+    end
+
+    local function StopRotation(self)
+        self.lastMouseX = nil
+        self:SetScript("OnUpdate", nil)
+    end
+
+    local function OnRotationUpdate(self)
+        if not IsMouseButtonDown("LeftButton") then
+            StopRotation(self)
+            return
+        end
+
+        if self.lastMouseX then
+            local currentX = GetCursorPosition()
+            local deltaX = currentX - self.lastMouseX
+            self.lastMouseX = currentX
+
+            rotation = rotation + (deltaX * ROTATION_SENSITIVITY)
+
+            if rotation < 0 then
+                rotation = rotation + (2 * math.pi)
+            elseif rotation >= (2 * math.pi) then
+                rotation = rotation - (2 * math.pi)
+            end
+
+            self:SetRotation(rotation)
+        end
+    end
+
+    -- Handle mouse down
+    characterModel:SetScript("OnMouseDown", function(self, button)
+        if button == "LeftButton" then
+            local x = GetCursorPosition()
+            self.lastMouseX = x
+            self:SetScript("OnUpdate", OnRotationUpdate)
+        end
+    end)
+
+    -- Handle mouse up
+    characterModel:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" then
+            StopRotation(self)
+        end
+    end)
+end
 
 characterFrame.CreateToBlizzIcon = function(self, window)
     local toBlizzIcon = CreateFrame("Button", nil, window)
@@ -645,82 +735,7 @@ characterFrame.Create = function(self)
     self.window.CharacterModel = characterModel
     characterModel:SetAllPoints()
     characterModel:SetUnit('player')
-    characterModel:SetCamDistanceScale(1.2)
-    if characterModel.SetKeepModelOnHide then
-        characterModel:SetKeepModelOnHide(true)
-    end
-    local rotation = math.rad(20)
-    local ROTATION_SENSITIVITY = 0.05
-
-    characterModel:SetRotation(rotation)
-
-    characterModel:EnableMouse(true)
-
-    -- PlayerModel does not follow parent Translation animations; hide during window dive/fade.
-    local function HideModelForWindowAnim()
-        characterModel:Hide()
-    end
-
-    local function ShowModelAfterWindowAnim()
-        characterModel:Show()
-        characterModel:SetCamDistanceScale(1.2)
-        characterModel:SetRotation(rotation)
-        if characterModel.RefreshUnit then
-            characterModel:RefreshUnit()
-        end
-    end
-
-    if window.fadeIn then
-        window.fadeIn:HookScript('OnPlay', HideModelForWindowAnim)
-        window.fadeIn:HookScript('OnFinished', ShowModelAfterWindowAnim)
-    end
-    if window.fadeOut then
-        window.fadeOut:HookScript('OnPlay', HideModelForWindowAnim)
-    end
-
-    local function StopRotation(self)
-        self.lastMouseX = nil
-        self:SetScript("OnUpdate", nil)
-    end
-
-    local function OnRotationUpdate(self)
-        if not IsMouseButtonDown("LeftButton") then
-            StopRotation(self)
-            return
-        end
-
-        if self.lastMouseX then
-            local currentX = GetCursorPosition()
-            local deltaX = currentX - self.lastMouseX
-            self.lastMouseX = currentX
-
-            rotation = rotation + (deltaX * ROTATION_SENSITIVITY)
-
-            if rotation < 0 then
-                rotation = rotation + (2 * math.pi)
-            elseif rotation >= (2 * math.pi) then
-                rotation = rotation - (2 * math.pi)
-            end
-
-            self:SetRotation(rotation)
-        end
-    end
-
-    -- Handle mouse down
-    characterModel:SetScript("OnMouseDown", function(self, button)
-        if button == "LeftButton" then
-            local x = GetCursorPosition()
-            self.lastMouseX = x
-            self:SetScript("OnUpdate", OnRotationUpdate)
-        end
-    end)
-
-    -- Handle mouse up
-    characterModel:SetScript("OnMouseUp", function(self, button)
-        if button == "LeftButton" then
-            StopRotation(self)
-        end
-    end)
+    self:SetupRotatingModel(characterModel, window)
 
     local rightSlots = CreateFrame('Frame', nil, container)
     rightSlots:SetSize(38, 350)
@@ -832,10 +847,12 @@ characterFrame.Enable = function(self)
             self:ReplaceItemUpgradeFrameOnShow()
         end
     end)
+    inspect:Enable()
 end
 
 characterFrame.Disable = function(self)
     self.enabled = false
+    inspect:Disable()
 end
 
 EXUI:RegisterEventHandler('PLAYER_REGEN_ENABLED', 'character-frame-bottom-slots', function()

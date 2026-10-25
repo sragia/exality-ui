@@ -10,6 +10,7 @@ EXUI.changelog = [[
 - [Auras] Adjust/Fix load conditions for aura displays across the board.
 - [Auras] Add Encounter load condition, so you can load aura only for specific encounters.
 - [Auras/Cooldowns/Resource Displays] Add option to export/import individual items/groups from them.
+- [Character Frame] Add same styling for Inspect UI too. As well as when viewing other players talents use talent UI if enabled.
 
 ## Chat |cffeb7a34New|r
 Add chat window that replaces default chat. More changes to come, but generally styled and adds some features I wanted out of it. Feature wise fairly basic, so don't expect too much.

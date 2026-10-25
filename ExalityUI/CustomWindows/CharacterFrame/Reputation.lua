@@ -7,6 +7,9 @@ local EXFrames = EXUI.EXFrames
 ---@class ExalityFramesTooltipInput
 local tooltip = EXFrames:GetFrame('tooltip')
 
+---@class EXUICharacterFrameEdgeToggle
+local edgeToggle = EXUI:GetModule('character-frame-edge-toggle')
+
 ---@class EXUICharacterFrameReputation
 local reputation = EXUI:GetModule('character-frame-reputation')
 
@@ -31,10 +34,6 @@ local PANEL_GAP = 6
 local OPTIONS_WIDTH = 210
 local VIEW_RENOWN_HEIGHT = 26
 local OPTIONS_GAP = 4
-local BUTTON_WIDTH = 38
-local BUTTON_HEIGHT = 30
-local BUTTON_OUTSET_X = -10
-local BUTTON_ICON_OFFSET_X = 5
 local BUTTON_OFFSET_Y = -94
 local TITLE_HEIGHT = 28
 local ROW_HEIGHT = 28
@@ -452,14 +451,7 @@ local function ApplyHeaderVisual(button, hovered)
 end
 
 local function ApplyToggleVisual(button, hovered)
-    local theme = EXUI.const.theme
-    if hovered then
-        button.bg:SetVertexColor(unpack(theme.backgroundLight))
-        button.icon:SetVertexColor(unpack(TOGGLE_ICON_HOVER))
-    else
-        button.bg:SetVertexColor(unpack(theme.backgroundDeep))
-        button.icon:SetVertexColor(unpack(TOGGLE_ICON))
-    end
+    edgeToggle:ApplyVisual(button, hovered)
 end
 
 local function SetHeaderTextColor(button, isChild)
@@ -1140,146 +1132,17 @@ reputation.HidePanel = function(self, immediate)
     self.panel.fadeOut:Play()
 end
 
-local function AttachToggleBehindWindow(button, window, offsetX, offsetY)
-    local animDuration = 0.2
-    local diveY = 20
-
-    button.hostWindow = window
-    button:SetParent(window:GetParent() or UIParent)
-    button:SetFrameStrata(window:GetFrameStrata())
-    button:SetFrameLevel(math.max(1, window:GetFrameLevel() - 1))
-    button:ClearAllPoints()
-    button:SetPoint('TOPLEFT', window, 'TOPRIGHT', offsetX, offsetY)
-    button:Hide()
-
-    local function syncLayer()
-        if not window:IsShown() then
-            return
-        end
-        button:SetFrameStrata(window:GetFrameStrata())
-        button:SetFrameLevel(math.max(1, window:GetFrameLevel() - 1))
-    end
-
-    -- Match window dive/fade. No point adjustment: layout already follows the window anchor.
-    local windowFadeIn = button:CreateAnimationGroup()
-    local alphaIn = windowFadeIn:CreateAnimation('Alpha')
-    alphaIn:SetFromAlpha(0)
-    alphaIn:SetToAlpha(1)
-    alphaIn:SetDuration(animDuration)
-    alphaIn:SetSmoothing('IN')
-    local translateIn = windowFadeIn:CreateAnimation('Translation')
-    translateIn:SetOffset(0, -diveY)
-    translateIn:SetDuration(animDuration)
-    translateIn:SetSmoothing('IN')
-    windowFadeIn:SetScript('OnFinished', function()
-        button:SetAlpha(1)
-    end)
-    button.windowFadeIn = windowFadeIn
-
-    local windowFadeOut = button:CreateAnimationGroup()
-    local alphaOut = windowFadeOut:CreateAnimation('Alpha')
-    alphaOut:SetFromAlpha(1)
-    alphaOut:SetToAlpha(0)
-    alphaOut:SetDuration(animDuration)
-    alphaOut:SetSmoothing('OUT')
-    local translateOut = windowFadeOut:CreateAnimation('Translation')
-    translateOut:SetOffset(0, diveY)
-    translateOut:SetDuration(animDuration)
-    translateOut:SetSmoothing('OUT')
-    windowFadeOut:SetScript('OnFinished', function()
-        button:SetAlpha(1)
-        button:Hide()
-    end)
-    button.windowFadeOut = windowFadeOut
-
-    local function stopWindowAnims()
-        if button.windowFadeIn then
-            button.windowFadeIn:Stop()
-        end
-        if button.windowFadeOut then
-            button.windowFadeOut:Stop()
-        end
-    end
-    button.stopWindowAnims = stopWindowAnims
-
-    if window.fadeIn then
-        window.fadeIn:HookScript('OnPlay', function()
-            if button.edgeHidden then
-                return
-            end
-            stopWindowAnims()
-            if button.fadeIn then
-                button.fadeIn:Stop()
-            end
-            syncLayer()
-            button:SetAlpha(0)
-            button:Show()
-            button.windowFadeIn:Play()
-        end)
-    end
-
-    if window.fadeOut then
-        window.fadeOut:HookScript('OnPlay', function()
-            if button.edgeHidden or not button:IsShown() then
-                return
-            end
-            stopWindowAnims()
-            if button.fadeIn then
-                button.fadeIn:Stop()
-            end
-            button.windowFadeOut:Play()
-        end)
-    end
-
-    window:HookScript('OnHide', function()
-        stopWindowAnims()
-        button:SetAlpha(1)
-        button:Hide()
-    end)
-
-    window:HookScript('OnShow', syncLayer)
-end
-
 reputation.CreateToggle = function(self, window)
-    local button = CreateFrame('Button', nil, window:GetParent() or UIParent)
-    button:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
-
-    local bg = button:CreateTexture(nil, 'BACKGROUND')
-    bg:SetTexture(EXUI.const.textures.characterFrame.input.buttonBg)
-    bg:SetTextureSliceMargins(20, 20, 20, 20)
-    bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
-    bg:SetAllPoints()
-    button.bg = bg
-
-    local icon = button:CreateTexture(nil, 'OVERLAY')
-    icon:SetTexture(EXUI.const.textures.characterFrame.users)
-    icon:SetSize(18, 18)
-    icon:SetPoint('CENTER', BUTTON_ICON_OFFSET_X, 0)
-    icon:SetVertexColor(1, 1, 1, 1)
-    button.icon = icon
-
-    AttachToggleBehindWindow(button, window, BUTTON_OUTSET_X, BUTTON_OFFSET_Y)
-
-    button.Tooltip = tooltip:Get({
-        text = REPUTATION or 'Reputation'
-    }, button)
-
-    button:SetScript('OnEnter', function(btn)
-        ApplyToggleVisual(btn, true)
-        btn.Tooltip:ShowTooltip()
-    end)
-    button:SetScript('OnLeave', function(btn)
-        ApplyToggleVisual(btn, false)
-        btn.Tooltip:HideTooltip()
-    end)
-    button:SetScript('OnClick', function()
-        PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
-        reputation:ShowPanel()
-    end)
-
-    button.fadeIn = EXUI.utils.animation.fade(button, ANIM_DURATION, 0, 1)
-
-    ApplyToggleVisual(button, false)
+    local button = edgeToggle:Create(window, {
+        icon = EXUI.const.textures.characterFrame.users,
+        offsetY = BUTTON_OFFSET_Y,
+        tooltip = REPUTATION or 'Reputation',
+        iconColor = TOGGLE_ICON,
+        iconHoverColor = TOGGLE_ICON_HOVER,
+        onClick = function()
+            reputation:ShowPanel()
+        end,
+    })
     self.toggle = button
     return button
 end
