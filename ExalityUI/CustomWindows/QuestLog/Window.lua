@@ -846,16 +846,36 @@ questLog.PlayerMapID = function(self)
     end
 end
 
+-- Records the player's map; returns it only when it differs from the last one seen.
+questLog.TrackPlayerMap = function(self)
+    local mapID = self:PlayerMapID()
+    if (not IsReadable(mapID) or mapID == 0 or SameID(mapID, self.playerMapID)) then
+        return nil
+    end
+    self.playerMapID = mapID
+    return mapID
+end
+
 questLog.ApplyPendingMap = function(self)
     local mapID = self.pendingMapID
     self.pendingMapID = nil
+    local moved = self:TrackPlayerMap()
     if (not mapID) then
-        if (self.canvas and self.canvas.mapID) then
+        if (self.canvas and self.canvas.mapID and not moved) then
             return
         end
-        mapID = self:PlayerMapID()
+        mapID = moved or self:PlayerMapID()
     end
     self:ShowMap(mapID)
+end
+
+questLog.FollowPlayerMap = function(self)
+    local mapID = self:TrackPlayerMap()
+    if (mapID) then
+        self:ShowMap(mapID)
+    else
+        self:UpdateReturnButton()
+    end
 end
 
 questLog.PingQuest = function(self, questID)
@@ -2342,10 +2362,11 @@ questLog.Init = function(self)
         'ZONE_CHANGED',
         'ZONE_CHANGED_INDOORS',
         'ZONE_CHANGED_NEW_AREA',
+        'NEW_WMO_CHUNK',
         'PLAYER_MAP_CHANGED',
     }, 'quest-log-window-return', function()
         if (questLog.enabled and questLog.window and questLog.window:IsShown()) then
-            questLog:UpdateReturnButton()
+            questLog:FollowPlayerMap()
         end
     end)
 
