@@ -75,6 +75,9 @@ defaults.PLATE = {
     friendlyFriendColor = color(0.25, 0.65, 1),
     friendlyHitWidth = 80,
     friendlyHitHeight = 18,
+    friendlyNameFont = 'DMSans',
+    friendlyNameFontSize = 13,
+    friendlyNameFontFlag = 'OUTLINE',
 
     -- Absorbs
     damageAbsorbEnable = true,

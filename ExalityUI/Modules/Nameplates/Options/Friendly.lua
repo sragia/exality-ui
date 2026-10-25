@@ -60,6 +60,19 @@ function friendly:GetMenu()
             end,
         },
         {
+            id = 'font',
+            name = 'Name Font',
+            options = function()
+                return {
+                    helpers.FontDropdown('Font', 'friendlyNameFont', 33),
+                    helpers.Dropdown('Font Flag', 'friendlyNameFontFlag', function()
+                        return EXUI.const.fontFlags
+                    end, 33),
+                    helpers.Range('Size', 'friendlyNameFontSize', 1, 40, 1, 33),
+                }
+            end,
+        },
+        {
             id = 'colors',
             name = 'Colors',
             options = function()

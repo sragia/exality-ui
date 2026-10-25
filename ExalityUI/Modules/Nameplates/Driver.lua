@@ -1,6 +1,8 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
+local LSM = LibStub('LibSharedMedia-3.0')
+
 ---@class EXUINameplatesCore
 local npCore = EXUI:GetModule('np-core')
 
@@ -289,6 +291,26 @@ local function hookBlizzardPlateSize()
     driver.blizzardSizeHooked = true
 end
 
+local BLIZZARD_PLATE_FONTS = { 'SystemFont_NamePlate', 'SystemFont_NamePlate_Outlined' }
+
+-- Blizzard plates (friendly in instances) override text height themselves, so only the font file is swapped
+driver.ApplyBlizzardPlateFont = function(self)
+    local path = LSM:Fetch('font', npCore:GetDB().friendlyNameFont)
+    if path == self.blizzardFontPath then
+        return
+    end
+    for _, fontName in ipairs(BLIZZARD_PLATE_FONTS) do
+        local fontObject = _G[fontName]
+        if fontObject then
+            local _, height, flags = fontObject:GetFont()
+            if height then
+                fontObject:SetFont(path, height, flags)
+            end
+        end
+    end
+    self.blizzardFontPath = path
+end
+
 driver.HideBlizzardPlate = function(self, plate)
     if not plate or plate:IsForbidden() then
         return
@@ -355,6 +377,7 @@ driver.Enable = function(self)
     end
 
     wrapProtectedNamePlateApis()
+    self:ApplyBlizzardPlateFont()
     hookBlizzardPlateSize()
     hookFriendlyHitTest()
 

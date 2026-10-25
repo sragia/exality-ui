@@ -14,6 +14,8 @@ EXUI.changelog = [[
 - [Profiles] Fix toggle that somehow got broken.
 - [Unit Frames] Add portrait element with 4 different styles - circle, square, hexagon as separate elements and attached as part of the unitframe. 
 - [Unit Frames] Add option to change frame level for all text elements
+- [Misc] Default font - DMSans, now supports Cyrillic characters.
+- [Nameplates] Add options to modify friendly nameplates font.
 
 ## Chat |cffeb7a34New|r
 Add chat window that replaces default chat. More changes to come, but generally styled and adds some features I wanted out of it. Feature wise fairly basic, so don't expect too much.

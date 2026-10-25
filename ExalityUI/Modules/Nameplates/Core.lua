@@ -38,6 +38,9 @@ end
 
 core.EnsureDB = function(self)
     local db = self:GetDB()
+    if db.friendlyNameFont == nil and db.nameFont then
+        db.friendlyNameFont, db.friendlyNameFontSize, db.friendlyNameFontFlag = db.nameFont, db.nameFontSize, db.nameFontFlag
+    end
     defaults:MergeIntoDB(db)
     self:SetDB(db)
     return db
@@ -505,6 +508,7 @@ core.UpdateAllPlates = function(self)
         apply:InvalidateSignatures()
     end
     EXUI:GetModule('np-driver'):ApplySize()
+    EXUI:GetModule('np-driver'):ApplyBlizzardPlateFont()
     self:ForEachPlate(function(frame)
         EXUI:GetModule('np-driver'):ApplyFrameSize(frame)
         self:UpdatePlate(frame)

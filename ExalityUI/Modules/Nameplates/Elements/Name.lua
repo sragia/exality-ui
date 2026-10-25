@@ -80,14 +80,14 @@ local function applyFriendlyName(frame, fontString, db)
     ensureNameTag()
     local unit = frame.unit or frame.__unit
     fontString:Show()
-    fontString:SetFont(LSM:Fetch('font', db.nameFont), db.nameFontSize, db.nameFontFlag)
+    fontString:SetFont(LSM:Fetch('font', db.friendlyNameFont), db.friendlyNameFontSize, db.friendlyNameFontFlag)
     fontString:SetWordWrap(false)
     if EXUI.IsForever() and unit and UnitIsPlayer(unit) then
         fontString:SetWidth(0)
     else
         fontString:SetWidth(db.sizeWidth or 140)
     end
-    fontString:SetHeight(db.nameFontSize + db.nameFontSize / 2)
+    fontString:SetHeight(db.friendlyNameFontSize + db.friendlyNameFontSize / 2)
     fontString:SetJustifyH('CENTER')
     fontString:ClearAllPoints()
     fontString:SetPoint('CENTER', frame.ElementFrame, 'CENTER', 0, 0)
@@ -122,6 +122,8 @@ local function applyFriendlyBarName(frame, fontString, db)
         return
     end
     ensureNameTag()
+    fontString:SetFont(LSM:Fetch('font', db.friendlyNameFont), db.friendlyNameFontSize, db.friendlyNameFontFlag)
+    fontString:SetHeight(db.friendlyNameFontSize + db.friendlyNameFontSize / 2)
     local override = npCore:GetFriendlyPlayerColor(unit)
     local useClass = not override and UnitIsPlayer(unit) and db.friendlyNameClassColor ~= false
     if override then

@@ -104,6 +104,9 @@ tags.TAGS = {
         method = function(unit)
             local _, class = UnitClass(unit)
             if (class) then
+                if (issecretvalue(class)) then
+                    return C_ClassColor.GetClassColor(class):GenerateHexColorMarkup()
+                end
                 local markup = classMarkup[class]
                 if not markup then
                     markup = C_ClassColor.GetClassColor(class):GenerateHexColorMarkup()
@@ -122,6 +125,9 @@ tags.TAGS = {
         name = 'difficultycolor',
         method = function(unit)
             local level = UnitEffectiveLevel(unit)
+            if (issecretvalue(level)) then
+                return
+            end
             local color = GetCreatureDifficultyColor((level and level > 0) and level or 999)
             return string.format('|cff%02x%02x%02x', color.r * 255, color.g * 255, color.b * 255)
         end,
