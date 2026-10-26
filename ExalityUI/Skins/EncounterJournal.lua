@@ -7,22 +7,22 @@ local skins = EXUI:GetModule('skins')
 ---@class EXUIEncounterJournalSkin
 local encounterJournalSkin = EXUI:GetModule('skin-EncounterJournal')
 
-local TITLE_SIZE = 13
-local PANEL_BG_ALPHA = 0.95
-local HEADER_HEIGHT = 26
-
-local TAB_TEXT_SIZE = 11
-local TAB_HEIGHT = 28
-local TAB_ACTIVE_EXTRA = 4
-local TAB_TEXT_PADDING = 20
-local TAB_INSET = 1
-local TAB_GRADIENT_HEIGHT = 18
-local TAB_SLICE = 6
-local BOTTOM_TAB_FIRST_X = 11
-local BOTTOM_TAB_FIRST_Y = 2
-local BOTTOM_TAB_SPACING = 3
-local TAB_TEXT_TOP_Y_INACTIVE = -10
-local TAB_TEXT_TOP_Y_ACTIVE = -10
+-- Room for the in-window title row / close button; Blizzard's header sits at y=-22..-60.
+local TOP_SPACE = 12
+local NAV_BAR_X = 8
+local NAV_BAR_RIGHT = -120
+local NAV_BAR_Y = -26
+local SEARCH_BOX_Y = -35
+local INSET_RIGHT = -4
+local INSET_TOP = -60
+-- Suggested Content / Tutorials sit 51px into the inset to clear the nav bar; with the
+-- extra top space that gap is too large. Journeys starts flush and needs a little room.
+local INSET_PANEL_X = 5
+local INSET_PANEL_Y = -51
+local SUGGEST_PANEL_LIFT = TOP_SPACE
+local JOURNEYS_PANEL_DROP = 6
+local HELP_BUTTON_SCALE = 0.55
+local HELP_BUTTON_GAP = 8
 
 local NAV_CRUMB_SPACING = 2
 local EXPANSION_DROPDOWN_X_ADJUST = 0
@@ -44,6 +44,7 @@ local BOTTOM_TAB_KEYS = {
     'TutorialsTab',
 }
 
+local SIDE_TAB_SLICE = 6
 local ENCOUNTER_TAB_KEYS = { 'overviewTab', 'lootTab', 'bossTab', 'modelTab' }
 local ENCOUNTER_OVERVIEW_TAB_X = 8
 local ENCOUNTER_OVERVIEW_TAB_Y = -35
@@ -271,30 +272,6 @@ local function IsPanelTabSelected(tab)
     return not tab:IsEnabled()
 end
 
-local function ConfigureTabBackgroundTexture(bg)
-    bg:SetTexture(EXUI.const.textures.frame.whiteTextured)
-    bg:SetTextureSliceMargins(TAB_SLICE, TAB_SLICE, TAB_SLICE, TAB_SLICE)
-    bg:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
-    bg:SetAlpha(1)
-end
-
-local function EnsureBottomTabChrome(tab)
-    if (not tab.exuiTabBg) then
-        local bg = tab:CreateTexture(nil, 'BACKGROUND', nil, 0)
-        ConfigureTabBackgroundTexture(bg)
-        tab.exuiTabBg = bg
-    else
-        ConfigureTabBackgroundTexture(tab.exuiTabBg)
-    end
-
-    if (not tab.exuiTabGlow) then
-        local glow = tab:CreateTexture(nil, 'ARTWORK', nil, 1)
-        glow:SetTexture(EXUI.const.textures.frame.gradientBottom)
-        glow:SetBlendMode('BLEND')
-        tab.exuiTabGlow = glow
-    end
-end
-
 local function GetBottomTabs(frame)
     local tabs = {}
     for _, key in ipairs(BOTTOM_TAB_KEYS) do
@@ -308,101 +285,12 @@ end
 
 local function ApplyBottomTabAnchors(frame)
     if (not frame) then return end
-
-    local tabs = GetBottomTabs(frame)
-    for i, tab in ipairs(tabs) do
-        tab:ClearAllPoints()
-        if (i == 1) then
-            tab:SetPoint('TOPLEFT', frame, 'BOTTOMLEFT', BOTTOM_TAB_FIRST_X, BOTTOM_TAB_FIRST_Y)
-        else
-            tab:SetPoint('TOPLEFT', tabs[i - 1], 'TOPRIGHT', BOTTOM_TAB_SPACING, 0)
-        end
-    end
-end
-
-local function ApplyBottomTabLayout(tab, bg, glow, selected)
-    bg:ClearAllPoints()
-    bg:SetPoint('TOPLEFT', tab, 'TOPLEFT', TAB_INSET, -TAB_INSET)
-    bg:SetPoint('BOTTOMRIGHT', tab, 'BOTTOMRIGHT', -TAB_INSET, TAB_INSET)
-
-    glow:ClearAllPoints()
-    if (selected) then
-        local glowHeight = EXUI:ScalePixel(TAB_GRADIENT_HEIGHT, tab, 1)
-        glow:SetPoint('BOTTOMLEFT', bg, 'BOTTOMLEFT')
-        glow:SetPoint('BOTTOMRIGHT', bg, 'BOTTOMRIGHT')
-        glow:SetPoint('TOPLEFT', bg, 'BOTTOMLEFT', 0, glowHeight)
-        glow:SetPoint('TOPRIGHT', bg, 'BOTTOMRIGHT', 0, glowHeight)
-        glow:SetVertexColor(unpack(GetTheme().accent))
-        glow:SetAlpha(1)
-        glow:Show()
-    else
-        glow:Hide()
-    end
-end
-
-local function ApplyBottomTabTextLayout(tab, selected)
-    local text = tab.Text
-    if (not text) then return end
-
-    text:SetDrawLayer('OVERLAY', 7)
-    text:Show()
-    text:SetAlpha(1)
-    text:SetFont(EXUI.const.fonts.DEFAULT, TAB_TEXT_SIZE, 'OUTLINE')
-    text:ClearAllPoints()
-    text:SetPoint('TOP', tab, 'TOP', 0, selected and TAB_TEXT_TOP_Y_ACTIVE or TAB_TEXT_TOP_Y_INACTIVE)
-end
-
-local function ApplyBottomTabTextColor(tab)
-    local th = GetTheme()
-    local text = tab.Text
-    if (not text) then return end
-
-    if (IsPanelTabSelected(tab)) then
-        text:SetTextColor(unpack(th.white))
-    elseif (tab.isDisabled) then
-        text:SetTextColor(unpack(th.textMuted))
-    elseif (tab:IsMouseOver()) then
-        text:SetTextColor(unpack(th.white))
-    else
-        text:SetTextColor(unpack(th.gray))
-    end
-    text:SetAlpha(1)
-end
-
-local function UpdateBottomTabWidth(tab)
-    local text = tab.Text
-    if (not text) then return end
-
-    local width = (text:GetStringWidth() or 0) + TAB_TEXT_PADDING
-    local textWidth = math.max(0, width - TAB_TEXT_PADDING)
-    if (textWidth > 0) then
-        text:SetWidth(textWidth)
-    end
-    tab:SetWidth(width)
+    skins:AnchorWindowTabs(frame, GetBottomTabs(frame))
 end
 
 local function ApplyBottomTabVisualState(tab)
     if (not tab.exuiTabSkinned) then return end
-
-    EnsureBottomTabChrome(tab)
-    local th = GetTheme()
-    local selected = IsPanelTabSelected(tab)
-    local bg = tab.exuiTabBg
-    local glow = tab.exuiTabGlow
-
-    tab:SetHeight(selected and (TAB_HEIGHT + TAB_ACTIVE_EXTRA) or TAB_HEIGHT)
-
-    if (selected) then
-        bg:SetVertexColor(unpack(th.backgroundLight))
-    else
-        bg:SetVertexColor(unpack(th.backgroundDeep))
-    end
-    bg:Show()
-
-    ApplyBottomTabLayout(tab, bg, glow, selected)
-    ApplyBottomTabTextLayout(tab, selected)
-    ApplyBottomTabTextColor(tab)
-    UpdateBottomTabWidth(tab)
+    skins:ApplyWindowTabStyle(tab, IsPanelTabSelected(tab), tab.isDisabled)
 end
 
 local function SkinBottomTab(tab)
@@ -420,17 +308,10 @@ local function SkinBottomTab(tab)
         end
     end
 
-    EnsureBottomTabChrome(tab)
     ApplyBottomTabVisualState(tab)
 
-    tab:HookScript('OnEnter', function(btn)
-        if (IsPanelTabSelected(btn)) then return end
-        ApplyBottomTabTextColor(btn)
-    end)
-    tab:HookScript('OnLeave', function(btn)
-        if (IsPanelTabSelected(btn)) then return end
-        ApplyBottomTabTextColor(btn)
-    end)
+    tab:HookScript('OnEnter', ApplyBottomTabVisualState)
+    tab:HookScript('OnLeave', ApplyBottomTabVisualState)
 end
 
 local function RefreshBottomTabs(frame)
@@ -522,7 +403,7 @@ local function SkinEncounterSideTab(tab)
     if (not tab.exuiSideTabBg) then
         local bg = tab:CreateTexture(nil, 'BACKGROUND', nil, 0)
         bg:SetTexture(EXUI.const.textures.frame.whiteTextured)
-        bg:SetTextureSliceMargins(TAB_SLICE, TAB_SLICE, TAB_SLICE, TAB_SLICE)
+        bg:SetTextureSliceMargins(SIDE_TAB_SLICE, SIDE_TAB_SLICE, SIDE_TAB_SLICE, SIDE_TAB_SLICE)
         bg:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
         bg:SetAllPoints()
         tab.exuiSideTabBg = bg
@@ -722,37 +603,47 @@ local function RefreshEncounterSideTabs(info)
     end
 end
 
-local function SkinHeaderBackdrop(frame)
-    if (frame.exuiHeaderBackdrop) then return end
-    local th = GetTheme()
+local function LayoutTitleRowSpace(frame)
+    if (frame.exuiTitleRowLayout) then return end
+    frame.exuiTitleRowLayout = true
 
-    local header = CreateFrame('Frame', nil, frame)
-    header:EnableMouse(false)
-    header:SetFrameLevel(2)
-    header:SetPoint('TOPLEFT', frame, 'TOPLEFT', 1, -1)
-    header:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -1, -1)
-    header:SetHeight(HEADER_HEIGHT)
-    frame.exuiHeaderBackdrop = header
-
-    skins:AddBackdrop(header, { color = th.background, alpha = 1 })
-end
-
-local function AdjustTitleBarLayout(frame)
-    local titleContainer = frame.TitleContainer
-    if (titleContainer and not titleContainer.exuiAdjusted) then
-        titleContainer.exuiAdjusted = true
-        titleContainer:ClearAllPoints()
-        titleContainer:SetPoint('TOPLEFT', frame, 'TOPLEFT', 16, -1)
-        titleContainer:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -48, -1)
-    end
+    frame:SetHeight(frame:GetHeight() + TOP_SPACE)
 
     local navBar = frame.navBar
-    if (navBar and not navBar.exuiNavAdjusted) then
-        navBar.exuiNavAdjusted = true
+    if (navBar) then
         navBar:ClearAllPoints()
-        navBar:SetPoint('TOPLEFT', frame, 'TOPLEFT', 8, -26)
-        navBar:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -120, -26)
+        navBar:SetPoint('TOPLEFT', frame, 'TOPLEFT', NAV_BAR_X, NAV_BAR_Y - TOP_SPACE)
+        navBar:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', NAV_BAR_RIGHT, NAV_BAR_Y - TOP_SPACE)
     end
+
+    if (frame.searchBox) then
+        local point, relativeTo, relativePoint, xOfs = frame.searchBox:GetPoint(1)
+        frame.searchBox:ClearAllPoints()
+        frame.searchBox:SetPoint(point, relativeTo, relativePoint, xOfs, SEARCH_BOX_Y - TOP_SPACE)
+    end
+
+    -- Bottom stays put; the window grew by TOP_SPACE, so the inset keeps its height.
+    local inset = frame.inset
+    if (not inset) then return end
+    inset:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', INSET_RIGHT, INSET_TOP - TOP_SPACE)
+
+    for _, panel in ipairs({ frame.suggestFrame, frame.TutorialsFrame }) do
+        panel:SetPoint('TOPLEFT', inset, 'TOPLEFT', INSET_PANEL_X, INSET_PANEL_Y + SUGGEST_PANEL_LIFT)
+    end
+    if (frame.JourneysFrame) then
+        frame.JourneysFrame:SetPoint('TOPLEFT', inset, 'TOPLEFT', 0, -JOURNEYS_PANEL_DROP)
+    end
+end
+
+---The Traveler's Log help button sits in the top-left, where the title now is.
+local function AdjustHelpButton(frame)
+    local helpButton = frame.MonthlyActivitiesFrame and frame.MonthlyActivitiesFrame.HelpButton
+    if (not helpButton or helpButton.exuiAdjusted or not frame.CloseButton) then return end
+    helpButton.exuiAdjusted = true
+
+    helpButton:SetScale(HELP_BUTTON_SCALE)
+    helpButton:ClearAllPoints()
+    helpButton:SetPoint('RIGHT', frame.CloseButton, 'LEFT', -HELP_BUTTON_GAP, 0)
 end
 
 local function ApplyNavButtonTextColor(button, text)
@@ -991,9 +882,7 @@ function encounterJournalSkin:InstallTabHooks()
     end)
 
     hooksecurefunc('PanelTemplates_TabResize', function(tab)
-        if (not tab.exuiTabSkinned) then return end
-        UpdateBottomTabWidth(tab)
-        ApplyBottomTabTextLayout(tab, IsPanelTabSelected(tab))
+        ApplyBottomTabVisualState(tab)
     end)
 
     hooksecurefunc('EncounterJournal_SetTab', function()
@@ -1024,23 +913,16 @@ function encounterJournalSkin:SkinFrame()
     local frame = EncounterJournal
     if (not frame) then return end
 
-    skins:SkinPanelFrame(frame, {
-        hidePortrait = true,
-        titleSize = TITLE_SIZE,
-        backdropAlpha = PANEL_BG_ALPHA,
-    })
+    skins:SkinPanelFrame(frame, { hidePortrait = true })
 
-    SkinHeaderBackdrop(frame)
-    AdjustTitleBarLayout(frame)
+    LayoutTitleRowSpace(frame)
+    AdjustHelpButton(frame)
     SkinInset(frame)
     SkinNavBar(frame.navBar)
     SkinBottomTabs(frame)
 
     if (frame.searchBox) then
         skins:SkinSearchBox(frame.searchBox)
-        local point, relativeTo, relativePoint, xOfs, yOfs = frame.searchBox:GetPoint(1)
-        frame.searchBox:ClearAllPoints()
-        frame.searchBox:SetPoint(point, relativeTo, relativePoint, xOfs, -35)
     end
 
     SkinDropdowns(frame)

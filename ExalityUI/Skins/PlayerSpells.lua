@@ -100,6 +100,10 @@ local function IsTopTab(tab)
 end
 
 local function ApplyTabHeight(tab, selected)
+    if (not IsTopTab(tab)) then
+        tab:SetHeight(skins:GetWindowTabHeight())
+        return
+    end
     tab:SetHeight(selected and (TAB_HEIGHT + TAB_ACTIVE_EXTRA) or TAB_HEIGHT)
 end
 
@@ -217,6 +221,13 @@ end
 local function ApplyTabVisualState(tab)
     if (not tab.exuiTabSkinned) then return end
 
+    -- Bottom tabs use the shared Talents-window pill tabs; the tab system sets their width.
+    if (not IsTopTab(tab)) then
+        local selected = IsTabSelected(tab)
+        skins:ApplyWindowTabStyle(tab, selected, not selected and not tab:IsEnabled(), true)
+        return
+    end
+
     EnsureTabChrome(tab)
     local th = GetTheme()
     local selected = IsTabSelected(tab)
@@ -249,7 +260,8 @@ local function UpdateExuiTabWidth(tab)
     if (not tabSystem) then return end
 
     local minTabWidth, maxTabWidth = tabSystem:GetTabWidthConstraints()
-    local width = (tab.Text:GetStringWidth() or 0) + TAB_TEXT_PADDING
+    local padding = IsTopTab(tab) and TAB_TEXT_PADDING or (skins:GetWindowTabWidth(tab) - (tab.Text:GetStringWidth() or 0))
+    local width = (tab.Text:GetStringWidth() or 0) + padding
 
     if (maxTabWidth and width > maxTabWidth) then
         width = maxTabWidth
@@ -258,7 +270,7 @@ local function UpdateExuiTabWidth(tab)
         width = minTabWidth
     end
 
-    local textWidth = math.max(0, width - TAB_TEXT_PADDING)
+    local textWidth = math.max(0, width - padding)
     if (textWidth > 0) then
         tab.Text:SetWidth(textWidth)
     end
@@ -325,17 +337,19 @@ local function SkinTabButton(tab, isBottomTab)
         end
     end
 
-    EnsureTabChrome(tab)
+    if (IsTopTab(tab)) then
+        EnsureTabChrome(tab)
+    end
     ApplyTabVisualState(tab)
     UpdateExuiTabWidth(tab)
 
     tab:HookScript('OnEnter', function(btn)
         if (IsTabSelected(btn)) then return end
-        ApplyTabTextColor(btn)
+        if (IsTopTab(btn)) then ApplyTabTextColor(btn) else ApplyTabVisualState(btn) end
     end)
     tab:HookScript('OnLeave', function(btn)
         if (IsTabSelected(btn)) then return end
-        ApplyTabTextColor(btn)
+        if (IsTopTab(btn)) then ApplyTabTextColor(btn) else ApplyTabVisualState(btn) end
     end)
 end
 
@@ -347,11 +361,13 @@ local function SkinTabSystem(tabSystem, isBottomTab)
         tabSystem.exuiSkinned = true
         tabSystem.exuiTopTab = isTopTabSystem
 
+        local parent = tabSystem:GetParent()
         if (isTopTabSystem) then
-            local parent = tabSystem:GetParent()
             if (parent) then
                 tabSystem:SetFrameLevel(parent:GetFrameLevel() + 50)
             end
+        elseif (parent) then
+            skins:AnchorWindowTabSystem(tabSystem, parent)
         end
 
         EnsureTabSystemLayoutHook(tabSystem)

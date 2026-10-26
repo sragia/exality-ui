@@ -15,6 +15,7 @@ local SPRITE_RECTS = {
     entryBorder = { 15, 137, 442, 210 },
     entryBgExpired = { 15, 218, 442, 291 },
     entryBorderHover = { 15, 299, 442, 372 },
+    entryBgPending = { 17, 961, 444, 1034 },
     slotEmpty = { 453, 56, 482, 85 },
     slotBorder = { 493, 56, 522, 85 },
     plus = { 204, 7, 246, 49 },
@@ -499,7 +500,13 @@ local function UpdateEntry(button)
     end
 
     local searchResultInfo = C_LFGList.GetSearchResultInfo(resultID)
-    ApplySprite(button.exuiBg, IsExpired(button, resultID, searchResultInfo) and 'entryBgExpired' or 'entryBg')
+    local bgKey = 'entryBg'
+    if (IsExpired(button, resultID, searchResultInfo)) then
+        bgKey = 'entryBgExpired'
+    elseif (button.isApplication) then
+        bgKey = 'entryBgPending'
+    end
+    ApplySprite(button.exuiBg, bgKey)
     ApplyTitleColor(button.Name)
 
     local activityInfo = C_LFGList.GetActivityInfoTable(searchResultInfo.activityIDs[1])

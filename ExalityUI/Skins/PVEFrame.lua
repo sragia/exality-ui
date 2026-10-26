@@ -13,9 +13,8 @@ local searchEntrySkin = EXUI:GetModule('skin-PVEFrame-searchEntry')
 ---@class EXUIPVEFrameFiltersSkin
 local filtersSkin = EXUI:GetModule('skin-PVEFrame-filters')
 
-local TITLE_SIZE = 13
-local PANEL_BG_ALPHA = 0.95
-local HEADER_HEIGHT = 26
+-- Space kept above the content panels for the edge title and close button.
+local HEADER_HEIGHT = 37
 local ROW_HIGHLIGHT_ALPHA = 0.5
 
 local SIDEBAR_LEFT = 6
@@ -32,18 +31,6 @@ local NAV_NAME_SIZE = 15
 local NAV_NAME_PAD = 8
 local NAV_GLOW_HOVER_ALPHA = 0.35
 local NAV_DISABLED_SHADE = 0.5
-
-local TAB_TEXT_SIZE = 11
-local TAB_HEIGHT = 28
-local TAB_ACTIVE_EXTRA = 4
-local TAB_TEXT_PADDING = 20
-local TAB_INSET = 1
-local TAB_GRADIENT_HEIGHT = 18
-local TAB_SLICE = 6
-local BOTTOM_TAB_FIRST_X = 11
-local BOTTOM_TAB_FIRST_Y = 2
-local BOTTOM_TAB_SPACING = 3
-local TAB_TEXT_TOP_Y = -10
 
 local PANEL_TAB_TEXTURE_KEYS = {
     'Left', 'Middle', 'Right',
@@ -130,30 +117,6 @@ local function IsPanelTabSelected(tab)
     return not tab:IsEnabled()
 end
 
-local function ConfigureTabBackgroundTexture(bg)
-    bg:SetTexture(EXUI.const.textures.frame.whiteTextured)
-    bg:SetTextureSliceMargins(TAB_SLICE, TAB_SLICE, TAB_SLICE, TAB_SLICE)
-    bg:SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
-    bg:SetAlpha(1)
-end
-
-local function EnsureBottomTabChrome(tab)
-    if (not tab.exuiTabBg) then
-        local bg = tab:CreateTexture(nil, 'BACKGROUND', nil, 0)
-        ConfigureTabBackgroundTexture(bg)
-        tab.exuiTabBg = bg
-    else
-        ConfigureTabBackgroundTexture(tab.exuiTabBg)
-    end
-
-    if (not tab.exuiTabGlow) then
-        local glow = tab:CreateTexture(nil, 'ARTWORK', nil, 1)
-        glow:SetTexture(EXUI.const.textures.frame.gradientBottom)
-        glow:SetBlendMode('BLEND')
-        tab.exuiTabGlow = glow
-    end
-end
-
 local function GetBottomTabs(frame)
     local tabs = {}
     for _, key in ipairs(BOTTOM_TAB_KEYS) do
@@ -167,101 +130,12 @@ end
 
 local function ApplyBottomTabAnchors(frame)
     if (not frame) then return end
-
-    local tabs = GetBottomTabs(frame)
-    for i, tab in ipairs(tabs) do
-        tab:ClearAllPoints()
-        if (i == 1) then
-            tab:SetPoint('TOPLEFT', frame, 'BOTTOMLEFT', BOTTOM_TAB_FIRST_X, BOTTOM_TAB_FIRST_Y)
-        else
-            tab:SetPoint('TOPLEFT', tabs[i - 1], 'TOPRIGHT', BOTTOM_TAB_SPACING, 0)
-        end
-    end
-end
-
-local function ApplyBottomTabLayout(tab, bg, glow, selected)
-    bg:ClearAllPoints()
-    bg:SetPoint('TOPLEFT', tab, 'TOPLEFT', TAB_INSET, -TAB_INSET)
-    bg:SetPoint('BOTTOMRIGHT', tab, 'BOTTOMRIGHT', -TAB_INSET, TAB_INSET)
-
-    glow:ClearAllPoints()
-    if (selected) then
-        local glowHeight = EXUI:ScalePixel(TAB_GRADIENT_HEIGHT, tab, 1)
-        glow:SetPoint('BOTTOMLEFT', bg, 'BOTTOMLEFT')
-        glow:SetPoint('BOTTOMRIGHT', bg, 'BOTTOMRIGHT')
-        glow:SetPoint('TOPLEFT', bg, 'BOTTOMLEFT', 0, glowHeight)
-        glow:SetPoint('TOPRIGHT', bg, 'BOTTOMRIGHT', 0, glowHeight)
-        glow:SetVertexColor(unpack(GetTheme().accent))
-        glow:SetAlpha(1)
-        glow:Show()
-    else
-        glow:Hide()
-    end
-end
-
-local function ApplyBottomTabTextLayout(tab, selected)
-    local text = tab.Text
-    if (not text) then return end
-
-    text:SetDrawLayer('OVERLAY', 7)
-    text:Show()
-    text:SetAlpha(1)
-    text:SetFont(EXUI.const.fonts.DEFAULT, TAB_TEXT_SIZE, 'OUTLINE')
-    text:ClearAllPoints()
-    text:SetPoint('TOP', tab, 'TOP', 0, TAB_TEXT_TOP_Y)
-end
-
-local function ApplyBottomTabTextColor(tab)
-    local th = GetTheme()
-    local text = tab.Text
-    if (not text) then return end
-
-    if (IsPanelTabSelected(tab)) then
-        text:SetTextColor(unpack(th.white))
-    elseif (tab.isDisabled) then
-        text:SetTextColor(unpack(th.textMuted))
-    elseif (tab:IsMouseOver()) then
-        text:SetTextColor(unpack(th.white))
-    else
-        text:SetTextColor(unpack(th.gray))
-    end
-    text:SetAlpha(1)
-end
-
-local function UpdateBottomTabWidth(tab)
-    local text = tab.Text
-    if (not text) then return end
-
-    local width = (text:GetStringWidth() or 0) + TAB_TEXT_PADDING
-    local textWidth = math.max(0, width - TAB_TEXT_PADDING)
-    if (textWidth > 0) then
-        text:SetWidth(textWidth)
-    end
-    tab:SetWidth(width)
+    skins:AnchorWindowTabs(frame, GetBottomTabs(frame))
 end
 
 local function ApplyBottomTabVisualState(tab)
     if (not tab.exuiTabSkinned) then return end
-
-    EnsureBottomTabChrome(tab)
-    local th = GetTheme()
-    local selected = IsPanelTabSelected(tab)
-    local bg = tab.exuiTabBg
-    local glow = tab.exuiTabGlow
-
-    tab:SetHeight(selected and (TAB_HEIGHT + TAB_ACTIVE_EXTRA) or TAB_HEIGHT)
-
-    if (selected) then
-        bg:SetVertexColor(unpack(th.backgroundLight))
-    else
-        bg:SetVertexColor(unpack(th.backgroundDeep))
-    end
-    bg:Show()
-
-    ApplyBottomTabLayout(tab, bg, glow, selected)
-    ApplyBottomTabTextLayout(tab, selected)
-    ApplyBottomTabTextColor(tab)
-    UpdateBottomTabWidth(tab)
+    skins:ApplyWindowTabStyle(tab, IsPanelTabSelected(tab), tab.isDisabled)
 end
 
 local function SkinBottomTab(tab)
@@ -279,17 +153,10 @@ local function SkinBottomTab(tab)
         end
     end
 
-    EnsureBottomTabChrome(tab)
     ApplyBottomTabVisualState(tab)
 
-    tab:HookScript('OnEnter', function(btn)
-        if (IsPanelTabSelected(btn)) then return end
-        ApplyBottomTabTextColor(btn)
-    end)
-    tab:HookScript('OnLeave', function(btn)
-        if (IsPanelTabSelected(btn)) then return end
-        ApplyBottomTabTextColor(btn)
-    end)
+    tab:HookScript('OnEnter', ApplyBottomTabVisualState)
+    tab:HookScript('OnLeave', ApplyBottomTabVisualState)
 end
 
 function pveFrameSkin:RefreshBottomTabs()
@@ -319,31 +186,6 @@ end
 -- ---------------------------------------------------------------------------
 -- Shell
 -- ---------------------------------------------------------------------------
-
-local function SkinHeaderBackdrop(frame)
-    if (frame.exuiHeaderBackdrop) then return end
-    local th = GetTheme()
-
-    local header = CreateFrame('Frame', nil, frame)
-    header:EnableMouse(false)
-    header:SetFrameLevel(2)
-    header:SetPoint('TOPLEFT', frame, 'TOPLEFT', 1, -1)
-    header:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -1, -1)
-    header:SetHeight(HEADER_HEIGHT)
-    frame.exuiHeaderBackdrop = header
-
-    skins:AddBackdrop(header, { color = th.background, alpha = 1 })
-end
-
-local function AdjustTitleBarLayout(frame)
-    local titleContainer = frame.TitleContainer
-    if (titleContainer and not titleContainer.exuiAdjusted) then
-        titleContainer.exuiAdjusted = true
-        titleContainer:ClearAllPoints()
-        titleContainer:SetPoint('TOPLEFT', frame, 'TOPLEFT', 16, -1)
-        titleContainer:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -48, -1)
-    end
-end
 
 local function GetPVEFrameBlueBg(frame)
     if (not frame) then return nil end
@@ -603,7 +445,7 @@ local SEARCH_BOX_TOP = -58
 local REFRESH_SIZE = 24
 local REFRESH_ICON_SIZE = 18
 
--- Centered between the header (27px) and the first category button (TOP y=-77).
+-- Centered between the top spacing and the first category button (TOP y=-77).
 local CATEGORY_LABEL_X = -3
 local CATEGORY_LABEL_Y = -(HEADER_HEIGHT + 1 + 77) / 2
 
@@ -1324,7 +1166,7 @@ end
 
 local CHALLENGES_WEEKLY_INFO_X = 6
 -- Blizzard places WeeklyInfo at y=-12; drop it with the inset so "This Week" clears the border.
-local CHALLENGES_WEEKLY_INFO_Y = -22
+local CHALLENGES_WEEKLY_INFO_Y = -30
 local CHALLENGES_ICON_PAD = 8
 -- Room for both icons' border outsets between neighbours.
 local CHALLENGES_ICON_GAP = 10
@@ -1487,14 +1329,8 @@ function pveFrameSkin:SkinFrame()
     if (not frame or frame.exuiSkinned) then return end
     frame.exuiSkinned = true
 
-    skins:SkinPanelFrame(frame, {
-        hidePortrait = true,
-        titleSize = TITLE_SIZE,
-        backdropAlpha = PANEL_BG_ALPHA,
-    })
+    skins:SkinPanelFrame(frame, { hidePortrait = true })
 
-    SkinHeaderBackdrop(frame)
-    AdjustTitleBarLayout(frame)
     SkinLeftSidebar(frame)
     SkinBottomTabs(frame)
 
@@ -1521,9 +1357,7 @@ function pveFrameSkin:InstallTabHooks()
     end)
 
     hooksecurefunc('PanelTemplates_TabResize', function(tab)
-        if (not tab.exuiTabSkinned) then return end
-        UpdateBottomTabWidth(tab)
-        ApplyBottomTabTextLayout(tab, IsPanelTabSelected(tab))
+        ApplyBottomTabVisualState(tab)
     end)
 end
 

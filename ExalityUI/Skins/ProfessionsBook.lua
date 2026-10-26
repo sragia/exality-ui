@@ -7,9 +7,11 @@ local skins = EXUI:GetModule('skins')
 ---@class EXUIProfessionsBookSkin
 local professionsBookSkin = EXUI:GetModule('skin-ProfessionsBook')
 
-local TITLE_SIZE = 13
-local PANEL_BG_ALPHA = 0.95
-local HEADER_HEIGHT = 26
+-- Blizzard puts the book at y=-25, under the title row / close button; push it (and the window) down.
+local TOP_SPACE = 13
+local BOOK_PAGE_X = 7
+local BOOK_PAGE_Y = -25
+local HELP_BUTTON_GAP = 8
 
 local BOOK_BG_COLOR = { 179 / 255, 179 / 255, 179 / 255, 1 }
 local ABILITY_BORDER_COLOR = { 154 / 255, 154 / 255, 154 / 255, 1 }
@@ -62,29 +64,22 @@ local function ApplyFontOnly(fontString, size)
     ApplyFontText(fontString, size)
 end
 
-local function AdjustTitleBarLayout(frame)
-    local titleContainer = frame.TitleContainer
-    if (titleContainer and not titleContainer.exuiAdjusted) then
-        titleContainer.exuiAdjusted = true
-        titleContainer:ClearAllPoints()
-        titleContainer:SetPoint('TOPLEFT', frame, 'TOPLEFT', 16, -1)
-        titleContainer:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -48, -1)
+local function LayoutTitleRowSpace(frame)
+    if (frame.exuiTitleRowLayout) then return end
+    frame.exuiTitleRowLayout = true
+
+    frame:SetHeight(frame:GetHeight() + TOP_SPACE)
+
+    if (ProfessionsBookPage1) then
+        ProfessionsBookPage1:ClearAllPoints()
+        ProfessionsBookPage1:SetPoint('TOPLEFT', frame, 'TOPLEFT', BOOK_PAGE_X, BOOK_PAGE_Y - TOP_SPACE)
     end
-end
 
-local function SkinHeaderBackdrop(frame)
-    if (frame.exuiHeaderBackdrop) then return end
-    local th = GetTheme()
-
-    local header = CreateFrame('Frame', nil, frame)
-    header:EnableMouse(false)
-    header:SetFrameLevel(2)
-    header:SetPoint('TOPLEFT', frame, 'TOPLEFT', 1, -1)
-    header:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -1, -1)
-    header:SetHeight(HEADER_HEIGHT)
-    frame.exuiHeaderBackdrop = header
-
-    skins:AddBackdrop(header, { color = th.background, alpha = 1 })
+    if (ProfessionsContentFrame) then
+        ProfessionsContentFrame:ClearAllPoints()
+        ProfessionsContentFrame:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, -TOP_SPACE)
+        ProfessionsContentFrame:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, -TOP_SPACE)
+    end
 end
 
 local function AdjustHelpButton(frame)
@@ -92,9 +87,14 @@ local function AdjustHelpButton(frame)
     if (not helpButton or helpButton.exuiAdjusted) then return end
     helpButton.exuiAdjusted = true
 
+    -- The title now sits in the top-left; keep help beside the close button instead.
     helpButton:SetScale(0.55)
     helpButton:ClearAllPoints()
-    helpButton:SetPoint('TOPLEFT', frame, 'TOPLEFT', 10, -6)
+    if (frame.CloseButton) then
+        helpButton:SetPoint('RIGHT', frame.CloseButton, 'LEFT', -HELP_BUTTON_GAP, 0)
+    else
+        helpButton:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -HELP_BUTTON_GAP, 0)
+    end
 end
 
 local function ApplyBookBackgrounds()
@@ -413,14 +413,9 @@ function professionsBookSkin:SkinFrame()
     local frame = ProfessionsBookFrame
     if (not frame) then return end
 
-    skins:SkinPanelFrame(frame, {
-        hidePortrait = true,
-        titleSize = TITLE_SIZE,
-        backdropAlpha = PANEL_BG_ALPHA,
-    })
+    skins:SkinPanelFrame(frame, { hidePortrait = true })
 
-    SkinHeaderBackdrop(frame)
-    AdjustTitleBarLayout(frame)
+    LayoutTitleRowSpace(frame)
     AdjustHelpButton(frame)
     ApplyBookBackgrounds()
     SkinProfessionsContent()

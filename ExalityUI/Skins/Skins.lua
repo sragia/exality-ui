@@ -1762,6 +1762,174 @@ skins.SkinSlimScrollBar = function(self, scrollBar)
     end)
 end
 
+local WINDOW_CORNER = 24
+local WINDOW_TITLE_SIZE = 18
+local WINDOW_TITLE_X = 16
+local WINDOW_TITLE_LIFT = 2
+local WINDOW_CLOSE_WIDTH = 38
+local WINDOW_CLOSE_HEIGHT = 28
+local WINDOW_CLOSE_INSET_X = 8
+local WINDOW_CLOSE_INSET_Y = 5
+local WINDOW_CLOSE_ICON_SIZE = 14
+local WINDOW_CLOSE_SLICE = 20
+-- Above content panel borders that reach into the window's top corner.
+local WINDOW_CLOSE_LEVEL_OFFSET = 30
+
+---Rounded, slightly see-through window fill, the same as the Character / Talents windows.
+skins.AddWindowBackdrop = function(self, frame, options)
+    options = options or {}
+    if (not frame.exuiWindowBackdrop) then
+        local backdrop = CreateFrame('Frame', nil, frame)
+        backdrop:SetAllPoints()
+        backdrop:SetFrameLevel(0)
+        backdrop:EnableMouse(false)
+
+        local mask = backdrop:CreateMaskTexture()
+        mask:SetAllPoints()
+        mask:SetTexture(EXUI.const.textures.frame.windowBg, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+        mask:SetTextureSliceMargins(WINDOW_CORNER, WINDOW_CORNER, WINDOW_CORNER, WINDOW_CORNER)
+        mask:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+
+        local fill = backdrop:CreateTexture(nil, 'BACKGROUND')
+        fill:SetTexture(EXUI.const.textures.frame.solidBg)
+        fill:SetAllPoints()
+        fill:AddMaskTexture(mask)
+
+        backdrop.bg = fill
+        frame.exuiWindowBackdrop = backdrop
+    end
+
+    local color = options.color or GetTheme().backgroundDeep
+    frame.exuiWindowBackdrop.bg:SetVertexColor(color[1], color[2], color[3], options.alpha or 1)
+    frame.exuiWindowBackdrop:Show()
+    return frame.exuiWindowBackdrop
+end
+
+---Close button matching the Character / Talents windows: rounded button, danger tint on hover.
+skins.SkinWindowCloseButton = function(self, button, anchor)
+    if (not button) then return end
+    local th = GetTheme()
+
+    if (not button.exuiWindowCloseSkinned) then
+        button.exuiWindowCloseSkinned = true
+
+        self:StripTexture(button:GetNormalTexture())
+        self:StripTexture(button:GetPushedTexture())
+        if (button.GetDisabledTexture) then self:StripTexture(button:GetDisabledTexture()) end
+        if (button.GetHighlightTexture) then self:StripTexture(button:GetHighlightTexture()) end
+
+        local bg = button:CreateTexture(nil, 'BACKGROUND')
+        bg:SetTexture(EXUI.const.textures.characterFrame.input.buttonBg)
+        bg:SetTextureSliceMargins(WINDOW_CLOSE_SLICE, WINDOW_CLOSE_SLICE, WINDOW_CLOSE_SLICE, WINDOW_CLOSE_SLICE)
+        bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+        bg:SetAllPoints()
+        button.exuiCloseBg = bg
+
+        local icon = button:CreateTexture(nil, 'OVERLAY')
+        icon:SetTexture(EXUI.const.textures.frame.closeIcon)
+        icon:SetSize(WINDOW_CLOSE_ICON_SIZE, WINDOW_CLOSE_ICON_SIZE)
+        icon:SetPoint('CENTER')
+        button.exuiIcon = icon
+
+        button:HookScript('OnEnter', function(btn)
+            btn.exuiCloseBg:SetVertexColor(unpack(GetTheme().dangerHover))
+        end)
+        button:HookScript('OnLeave', function(btn)
+            btn.exuiCloseBg:SetVertexColor(unpack(GetTheme().faded))
+        end)
+    end
+
+    anchor = anchor or button:GetParent()
+    button.exuiCloseBg:SetVertexColor(unpack(th.faded))
+    button:SetSize(WINDOW_CLOSE_WIDTH, WINDOW_CLOSE_HEIGHT)
+    button:ClearAllPoints()
+    button:SetPoint('TOPRIGHT', anchor, 'TOPRIGHT', -WINDOW_CLOSE_INSET_X, -WINDOW_CLOSE_INSET_Y)
+    button:SetFrameLevel(anchor:GetFrameLevel() + WINDOW_CLOSE_LEVEL_OFFSET)
+end
+
+-- Talents window tabs: pill art hanging just below the window's bottom edge.
+local WINDOW_TAB_TEXT_SIZE = 11
+local WINDOW_TAB_PAD_X = 30
+local WINDOW_TAB_PAD_Y = 20
+local WINDOW_TAB_SLICE = 6
+local WINDOW_TAB_ALPHA = 0.8
+local WINDOW_TAB_DISABLED_ALPHA = 0.4
+local WINDOW_TAB_FIRST_X = 17
+-- The pill art has a few transparent pixels at the top, so a small overlap reads as flush.
+local WINDOW_TAB_FIRST_Y = 4
+-- Negative: the soft pill edges otherwise leave a visible gap.
+local WINDOW_TAB_SPACING = -2
+
+skins.GetWindowTabHeight = function(self)
+    return WINDOW_TAB_TEXT_SIZE + WINDOW_TAB_PAD_Y
+end
+
+skins.GetWindowTabWidth = function(self, tab)
+    local textWidth = tab.Text and tab.Text:GetStringWidth() or 0
+    return textWidth + WINDOW_TAB_PAD_X
+end
+
+---Talents-window tab look. Pass `keepWidth` when a tab system sizes the tab itself.
+skins.ApplyWindowTabStyle = function(self, tab, selected, disabled, keepWidth)
+    local th = GetTheme()
+    local textures = EXUI.const.textures.frame
+
+    local bg = tab.exuiWindowTabBg
+    if (not bg) then
+        bg = tab:CreateTexture(nil, 'BACKGROUND', nil, 0)
+        bg:SetAllPoints()
+        tab.exuiWindowTabBg = bg
+    end
+    bg:SetTexture(selected and textures.windowTabActive or textures.windowTabInactive)
+    bg:SetTextureSliceMargins(WINDOW_TAB_SLICE, WINDOW_TAB_SLICE, WINDOW_TAB_SLICE, WINDOW_TAB_SLICE)
+    bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    bg:SetAlpha(disabled and WINDOW_TAB_DISABLED_ALPHA or WINDOW_TAB_ALPHA)
+    bg:Show()
+
+    tab:SetHeight(self:GetWindowTabHeight())
+
+    local text = tab.Text
+    if (not text) then return end
+
+    text:SetDrawLayer('OVERLAY', 7)
+    text:Show()
+    text:SetAlpha(1)
+    text:SetFont(EXUI.const.fonts.DEFAULT, WINDOW_TAB_TEXT_SIZE, 'OUTLINE')
+    text:SetShadowColor(0, 0, 0, 0)
+    text:ClearAllPoints()
+    text:SetPoint('CENTER', tab, 'CENTER', 0, 0)
+
+    local active = selected or (not disabled and tab:IsMouseOver())
+    text:SetTextColor(unpack(active and th.text or th.textMuted))
+
+    if (not keepWidth) then
+        local textWidth = text:GetStringWidth() or 0
+        if (textWidth > 0) then
+            text:SetWidth(textWidth)
+        end
+        tab:SetWidth(textWidth + WINDOW_TAB_PAD_X)
+    end
+end
+
+---Lines tabs up under `frame`'s bottom-left edge.
+skins.AnchorWindowTabs = function(self, frame, tabs)
+    for i, tab in ipairs(tabs) do
+        tab:ClearAllPoints()
+        if (i == 1) then
+            tab:SetPoint('TOPLEFT', frame, 'BOTTOMLEFT', WINDOW_TAB_FIRST_X, WINDOW_TAB_FIRST_Y)
+        else
+            tab:SetPoint('TOPLEFT', tabs[i - 1], 'TOPRIGHT', WINDOW_TAB_SPACING, 0)
+        end
+    end
+end
+
+---Anchor for a tab system frame that lays its own tabs out horizontally.
+skins.AnchorWindowTabSystem = function(self, tabSystem, frame)
+    tabSystem:ClearAllPoints()
+    tabSystem:SetPoint('TOPLEFT', frame, 'BOTTOMLEFT', WINDOW_TAB_FIRST_X, WINDOW_TAB_FIRST_Y)
+    tabSystem.spacing = WINDOW_TAB_SPACING
+end
+
 ---Generic skin for the PortraitFrame/ButtonFrame template family (map, quest popup, ...).
 ---@param options? { hidePortrait?: boolean, titleSize?: number, backdropColor?: number[], backdropAlpha?: number, backdropAnchor?: Frame, skipBackdrop?: boolean, skipBorder?: boolean, skipRefreshHooks?: boolean }
 skins.SkinPanelFrame = function(self, frame, options)
@@ -1782,23 +1950,28 @@ skins.SkinPanelFrame = function(self, frame, options)
         frame.PortraitContainer:SetAlpha(0)
     end
 
+    -- Title shares the top row with the close button, bottom-aligned with it.
     local title = frame.TitleContainer and frame.TitleContainer.TitleText
     if (title) then
-        title:SetFont(EXUI.const.fonts.DEFAULT, options.titleSize or 13, 'OUTLINE')
+        title:SetFont(EXUI.const.fonts.DEFAULT, WINDOW_TITLE_SIZE, 'OUTLINE')
         title:SetTextColor(unpack(th.text))
+        title:SetShadowColor(0, 0, 0, 0)
+        title:SetJustifyH('LEFT')
+        title:ClearAllPoints()
+        title:SetPoint('BOTTOMLEFT', frame, 'TOPLEFT', WINDOW_TITLE_X, -(WINDOW_CLOSE_INSET_Y + WINDOW_CLOSE_HEIGHT) + WINDOW_TITLE_LIFT)
     end
 
     if (frame.CloseButton) then
-        self:SkinCloseButton(frame.CloseButton)
+        self:SkinWindowCloseButton(frame.CloseButton, frame)
     end
 
+    -- The rounded fill carries the window edge; a square border would cut across its corners.
     if (not options.skipBackdrop) then
-        self:AddBackdrop(options.backdropAnchor or frame, {
+        self:AddWindowBackdrop(options.backdropAnchor or frame, {
             color = options.backdropColor,
             alpha = options.backdropAlpha,
         })
-    end
-    if (not options.skipBorder) then
+    elseif (not options.skipBorder) then
         self:AddBorder(frame, { skipRefreshHooks = options.skipRefreshHooks })
     end
 end
