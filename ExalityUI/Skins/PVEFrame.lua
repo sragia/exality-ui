@@ -7,16 +7,31 @@ local skins = EXUI:GetModule('skins')
 ---@class EXUIPVEFrameSkin
 local pveFrameSkin = EXUI:GetModule('skin-PVEFrame')
 
+---@class EXUIPVEFrameSearchEntrySkin
+local searchEntrySkin = EXUI:GetModule('skin-PVEFrame-searchEntry')
+
+---@class EXUIPVEFrameFiltersSkin
+local filtersSkin = EXUI:GetModule('skin-PVEFrame-filters')
+
 local TITLE_SIZE = 13
 local PANEL_BG_ALPHA = 0.95
 local HEADER_HEIGHT = 26
 local ROW_HIGHLIGHT_ALPHA = 0.5
 
-local NAV_TEXT_SIZE = 13
-local NAV_BG_ALPHA_SELECTED = 1
-local NAV_BG_ALPHA_HOVER = 0.7
-local NAV_BG_ALPHA_NORMAL = 0.35
-local NAV_BG_ALPHA_DISABLED = 0.2
+local SIDEBAR_LEFT = 6
+local SIDEBAR_WIDTH = 213
+local SIDEBAR_TOP_GAP = 5
+
+local NAV_ART_HEIGHT = 60
+local NAV_ART_WIDTH = NAV_ART_HEIGHT * 3
+-- Group buttons sit at x=10; pull the art flush with the sidebar panel edge.
+local NAV_ART_X = SIDEBAR_LEFT - 10
+-- Sprite padding is authored against a 78px tall border.
+local NAV_ART_UNIT = NAV_ART_HEIGHT / 78
+local NAV_NAME_SIZE = 15
+local NAV_NAME_PAD = 8
+local NAV_GLOW_HOVER_ALPHA = 0.35
+local NAV_DISABLED_SHADE = 0.5
 
 local TAB_TEXT_SIZE = 11
 local TAB_HEIGHT = 28
@@ -58,6 +73,52 @@ local function StripButtonTextures(button)
     skins:StripTexture(button:GetPushedTexture())
     if (button.GetDisabledTexture) then skins:StripTexture(button:GetDisabledTexture()) end
     if (button.GetHighlightTexture) then skins:StripTexture(button:GetHighlightTexture()) end
+end
+
+-- Panel art is authored at the left sidebar size (306px wide art for SIDEBAR_WIDTH).
+local PANEL_ART_SCALE = SIDEBAR_WIDTH / 306
+local PANEL_BG_MARGIN = 12
+local PANEL_BORDER_MARGIN = 20
+-- Border art extends 8.5px past the background art on each side.
+local PANEL_BORDER_OUTSET = 8.5 * PANEL_ART_SCALE
+-- Above the Group Finder nav buttons and panel content.
+local PANEL_BORDER_LEVEL_OFFSET = 20
+
+---Nine-sliced panel border around `target`, on its own frame above `owner`'s content.
+local function CreatePanelBorder(owner, target)
+    local borderFrame = CreateFrame('Frame', nil, owner)
+    borderFrame:SetAllPoints(target)
+    borderFrame:SetFrameLevel(owner:GetFrameLevel() + PANEL_BORDER_LEVEL_OFFSET)
+    local border = searchEntrySkin.CreateSpriteNineSlice(borderFrame, 'panelBorder', PANEL_BORDER_MARGIN,
+        PANEL_ART_SCALE, 'OVERLAY')
+    border:SetPoints(target, PANEL_BORDER_OUTSET)
+    return borderFrame
+end
+
+---Nine-sliced panel background + border over `target`. A texture target is alpha-hidden and followed for visibility.
+local function ApplyPanelArt(target, layer, subLevel)
+    if (target.exuiPanelArt) then return end
+
+    local isTexture = target:IsObjectType('Texture')
+    local owner = isTexture and target:GetParent() or target
+
+    local bg = searchEntrySkin.CreateSpriteNineSlice(owner, 'panelBg', PANEL_BG_MARGIN, PANEL_ART_SCALE, layer, subLevel)
+    bg:SetPoints(target, 0)
+
+    local borderFrame = CreatePanelBorder(owner, target)
+
+    target.exuiPanelArt = { bg = bg, border = borderFrame }
+    if (not isTexture) then return end
+
+    target:SetAlpha(0)
+    local function Sync(shown)
+        bg:SetShown(shown)
+        borderFrame:SetShown(shown)
+    end
+    Sync(target:IsShown())
+    hooksecurefunc(target, 'Show', function() Sync(true) end)
+    hooksecurefunc(target, 'Hide', function() Sync(false) end)
+    hooksecurefunc(target, 'SetShown', function(_, shown) Sync(shown) end)
 end
 
 -- ---------------------------------------------------------------------------
@@ -293,11 +354,12 @@ local function StylePVEFrameBlueBg(frame)
     local blueBg = GetPVEFrameBlueBg(frame)
     if (not blueBg) then return end
 
-    blueBg:SetTexture(EXUI.const.textures.skins.lfgLeftBg)
-    blueBg:SetTexCoord(0, 1, 0, 1)
-    blueBg:SetVertexColor(1, 1, 1, 1)
-    blueBg:SetAlpha(1)
+    blueBg:ClearAllPoints()
+    blueBg:SetPoint('TOPLEFT', frame, 'TOPLEFT', SIDEBAR_LEFT, -(HEADER_HEIGHT + 1 + SIDEBAR_TOP_GAP))
+    blueBg:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', SIDEBAR_LEFT, SIDEBAR_LEFT)
+    blueBg:SetWidth(SIDEBAR_WIDTH)
     blueBg:Show()
+    ApplyPanelArt(blueBg, 'BORDER', -1)
 end
 
 local function StripBlizzardSidebarTextures(frame)
@@ -322,66 +384,14 @@ local function StripBlizzardSidebarTextures(frame)
     end
 end
 
-local function EnsureLeftSidebarChrome(frame)
-    if (frame.exuiSidebar) then return end
-    local th = GetTheme()
-
-    -- Divider only; left fill comes from PVEFrameBlueBg art.
-    local sidebar = CreateFrame('Frame', nil, frame)
-    sidebar:SetFrameLevel(1)
-    sidebar:SetPoint('TOPLEFT', frame, 'TOPLEFT', 4, -24)
-    sidebar:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 4, 4)
-    sidebar:SetWidth(217)
-    frame.exuiSidebar = sidebar
-
-    local divider = sidebar:CreateTexture(nil, 'OVERLAY')
-    divider:SetTexture(EXUI.const.textures.frame.solidBg)
-    divider:SetPoint('TOPRIGHT', sidebar, 'TOPRIGHT')
-    divider:SetPoint('BOTTOMRIGHT', sidebar, 'BOTTOMRIGHT')
-    divider:SetWidth(EXUI:ScalePixel(1, sidebar, 1))
-    divider:SetVertexColor(unpack(th.border))
-    sidebar.exuiDivider = divider
-end
-
-function pveFrameSkin:SetLeftSidebarShown(shown)
-    local frame = PVEFrame
-    if (not frame or not frame.exuiSidebar) then return end
-
-    if (shown) then
-        frame.exuiSidebar:Show()
-        StylePVEFrameBlueBg(frame)
-    else
-        frame.exuiSidebar:Hide()
-    end
-end
-
 local function SkinLeftSidebar(frame)
     StripBlizzardSidebarTextures(frame)
     StylePVEFrameBlueBg(frame)
-    EnsureLeftSidebarChrome(frame)
-    pveFrameSkin:SetLeftSidebarShown(true)
 end
 
 -- ---------------------------------------------------------------------------
 -- Side nav buttons (Group Finder + PvP category buttons)
 -- ---------------------------------------------------------------------------
-
-local function EnsureNavButtonBg(button)
-    if (not button.exuiNavBg) then
-        local bg = button:CreateTexture(nil, 'BACKGROUND', nil, 0)
-        bg:SetAllPoints()
-        button.exuiNavBg = bg
-    end
-
-    local bg = button.exuiNavBg
-    bg:SetTexture(EXUI.const.textures.skins.lfgLeftBtnBg)
-    bg:SetTexCoord(0, 1, 0, 1)
-    bg:SetVertexColor(1, 1, 1, 1)
-end
-
-local function GetNavButtonName(button, nameKey)
-    return button[nameKey] or button.name or button.Name
-end
 
 local function IsGroupFinderNavSelected(button)
     local gf = GroupFinderFrame
@@ -390,92 +400,111 @@ local function IsGroupFinderNavSelected(button)
 end
 
 local function IsPvPNavSelected(button)
-    local queue = PVPQueueFrame
-    if (not queue or not queue.CategoryButtons) then return false end
-    for i, categoryButton in ipairs(queue.CategoryButtons) do
-        if (categoryButton == button) then
-            local bg = button.Background or button.bg
-            if (not bg or not bg.GetTexCoord) then return false end
-            local left, _, _, bottom = bg:GetTexCoord()
-            -- Selected texcoords use bottom near 0.66992188
-            return math.abs(bottom - 0.66992188) < 0.001 and math.abs(left - 0.00390625) < 0.001
-        end
-    end
-    return false
+    local bg = button.Background
+    if (not bg or not bg.GetTexCoord) then return false end
+    local left, _, _, bottom = bg:GetTexCoord()
+    -- PVPQueueFrame_SelectButton marks the selected button with bottom texcoord 0.66992188.
+    return math.abs(bottom - 0.66992188) < 0.001 and math.abs(left - 0.00390625) < 0.001
 end
 
-local function ApplySideNavButtonState(button, options)
-    if (not button or not button.exuiNavSkinned) then return end
+---Button ids shift when the Scenario button (timerunning) is shown; it reuses the dungeon art.
+local function GetGroupNavArtKey(button)
+    local id = button:GetID()
+    if (PVEFrame.ScenariosEnabled and PVEFrame:ScenariosEnabled()) then
+        id = id > 1 and id - 1 or id
+    end
+    if (id == 2) then return 'navRaid' end
+    if (id == 3) then return 'navPremade' end
+    return 'navDungeon'
+end
 
-    options = options or {}
+-- Quick Match, Rated, Premade Groups, Training Grounds; Plunderstorm reuses Quick Match.
+local PVP_NAV_ART_KEYS = { 'navQuickMatch', 'navRated', 'navPremade', 'navTraining' }
+
+local function GetPvPNavArtKey(button)
+    return PVP_NAV_ART_KEYS[button:GetID()] or 'navQuickMatch'
+end
+
+local GROUP_NAV_OPTIONS = {
+    keys = { name = 'name', icon = 'icon', ring = 'ring', bg = 'bg' },
+    getArtKey = GetGroupNavArtKey,
+    isSelected = IsGroupFinderNavSelected,
+}
+
+local PVP_NAV_OPTIONS = {
+    keys = { name = 'Name', icon = 'Icon', ring = 'Ring', bg = 'Background' },
+    getArtKey = GetPvPNavArtKey,
+    isSelected = IsPvPNavSelected,
+}
+
+local function ApplyNavButtonState(button)
+    local options = button and button.exuiNavOptions
+    if (not options) then return end
+
     local th = GetTheme()
-    local nameKey = options.nameKey or 'name'
-    local ringKey = options.ringKey or 'ring'
-    local bgKey = options.bgKey or 'bg'
-    local isSelectedFn = options.isSelectedFn
-
-    EnsureNavButtonBg(button)
-
-    local selected = isSelectedFn and isSelectedFn(button) or false
     local enabled = button:IsEnabled()
-    local alpha = NAV_BG_ALPHA_NORMAL
-    if (not enabled) then
-        alpha = NAV_BG_ALPHA_DISABLED
-    elseif (selected) then
-        alpha = NAV_BG_ALPHA_SELECTED
-    elseif (button:IsMouseOver()) then
-        alpha = NAV_BG_ALPHA_HOVER
+    local selected = enabled and options.isSelected(button)
+    local hovered = enabled and button:IsMouseOver()
+    local key = options.getArtKey(button)
+    local shade = enabled and 1 or NAV_DISABLED_SHADE
+
+    for suffix, texture in pairs({ Border = button.exuiNavArtBorder, Bg = button.exuiNavArtBg }) do
+        searchEntrySkin.ApplySprite(texture, key .. suffix)
+        texture:SetDesaturated(not enabled)
+        texture:SetVertexColor(shade, shade, shade)
     end
 
-    button.exuiNavBg:SetAlpha(alpha)
-    button.exuiNavBg:Show()
+    local glow = button.exuiNavArtGlow
+    searchEntrySkin.ApplySprite(glow, key .. 'Glow')
+    glow:SetAlpha(selected and 1 or NAV_GLOW_HOVER_ALPHA)
+    glow:SetShown(selected or hovered)
 
-    local blizBg = button[bgKey] or button.Background or button.bg
-    if (blizBg) then skins:StripTexture(blizBg) end
-
-    local ring = button[ringKey] or button.Ring or button.ring
-    if (ring) then
-        if (not enabled) then
-            ring:SetDesaturated(true)
-        end
-    end
-
-    local name = GetNavButtonName(button, nameKey)
+    local name = button[options.keys.name]
     if (name) then
-        name:SetFont(EXUI.const.fonts.DEFAULT, NAV_TEXT_SIZE, '')
-        if (not enabled) then
-            name:SetTextColor(unpack(th.textMuted))
-        elseif (selected) then
-            name:SetTextColor(unpack(th.white))
-        elseif (button:IsMouseOver()) then
-            name:SetTextColor(unpack(th.white))
-        else
-            name:SetTextColor(unpack(th.gray))
-        end
+        name:SetFont(EXUI.const.fonts.DEFAULT, NAV_NAME_SIZE, 'OUTLINE')
+        name:SetShadowColor(0, 0, 0, 0)
+        name:SetTextColor(unpack(enabled and th.white or th.textMuted))
     end
 end
 
-local function SkinSideNavButton(button, options)
-    if (not button or button.exuiNavSkinned) then return end
-    button.exuiNavSkinned = true
+local function SkinNavButton(button, options)
+    if (not button or button.exuiNavOptions) then return end
+    button.exuiNavOptions = options
 
-    options = options or {}
-    local bgKey = options.bgKey or 'bg'
-    local ringKey = options.ringKey or 'ring'
-
+    local keys = options.keys
     StripButtonTextures(button)
-    if (button[bgKey]) then skins:StripTexture(button[bgKey]) end
-    if (button.Background) then skins:StripTexture(button.Background) end
+    if (button[keys.bg]) then skins:StripTexture(button[keys.bg]) end
+    if (button[keys.icon]) then button[keys.icon]:SetAlpha(0) end
+    if (button[keys.ring]) then button[keys.ring]:SetAlpha(0) end
 
-    EnsureNavButtonBg(button)
-    ApplySideNavButtonState(button, options)
+    local unit = NAV_ART_UNIT
+    local border = button:CreateTexture(nil, 'BORDER')
+    border:SetPoint('TOPLEFT', button, 'TOPLEFT', NAV_ART_X, 0)
+    border:SetSize(NAV_ART_WIDTH, NAV_ART_HEIGHT)
+    button.exuiNavArtBorder = border
 
-    button:HookScript('OnEnter', function(btn)
-        ApplySideNavButtonState(btn, options)
-    end)
-    button:HookScript('OnLeave', function(btn)
-        ApplySideNavButtonState(btn, options)
-    end)
+    local bg = button:CreateTexture(nil, 'BACKGROUND', nil, 0)
+    bg:SetPoint('TOPLEFT', border, 'TOPLEFT', -7 * unit, 7 * unit)
+    bg:SetPoint('BOTTOMRIGHT', border, 'BOTTOMRIGHT', 7 * unit, -7 * unit)
+    button.exuiNavArtBg = bg
+
+    local glow = button:CreateTexture(nil, 'BACKGROUND', nil, -8)
+    glow:SetPoint('TOPLEFT', border, 'TOPLEFT', 0, 35 * unit)
+    glow:SetPoint('BOTTOMRIGHT', border, 'BOTTOMRIGHT', 38 * unit, -37 * unit)
+    button.exuiNavArtGlow = glow
+
+    local name = button[keys.name]
+    if (name) then
+        name:ClearAllPoints()
+        name:SetPoint('RIGHT', border, 'RIGHT', -NAV_NAME_PAD, 0)
+        name:SetWidth(NAV_ART_WIDTH - NAV_NAME_PAD * 2)
+        name:SetJustifyH('RIGHT')
+    end
+
+    button:SetHitRectInsets(0, math.max(0, button:GetWidth() - NAV_ART_X - NAV_ART_WIDTH), 0, 0)
+
+    button:HookScript('OnEnter', ApplyNavButtonState)
+    button:HookScript('OnLeave', ApplyNavButtonState)
 end
 
 function pveFrameSkin:RefreshGroupNavButtons()
@@ -484,13 +513,8 @@ function pveFrameSkin:RefreshGroupNavButtons()
 
     for i = 1, 4 do
         local button = gf['groupButton' .. i]
-        if (button and button.exuiNavSkinned and button:IsShown()) then
-            ApplySideNavButtonState(button, {
-                nameKey = 'name',
-                bgKey = 'bg',
-                ringKey = 'ring',
-                isSelectedFn = IsGroupFinderNavSelected,
-            })
+        if (button and button:IsShown()) then
+            ApplyNavButtonState(button)
         end
     end
 end
@@ -500,13 +524,8 @@ function pveFrameSkin:RefreshPvPNavButtons()
     if (not queue or not queue.CategoryButtons) then return end
 
     for _, button in ipairs(queue.CategoryButtons) do
-        if (button.exuiNavSkinned and button:IsShown()) then
-            ApplySideNavButtonState(button, {
-                nameKey = 'Name',
-                bgKey = 'Background',
-                ringKey = 'Ring',
-                isSelectedFn = IsPvPNavSelected,
-            })
+        if (button:IsShown()) then
+            ApplyNavButtonState(button)
         end
     end
 end
@@ -516,12 +535,7 @@ local function SkinGroupFinderNavButtons()
     if (not gf) then return end
 
     for i = 1, 4 do
-        SkinSideNavButton(gf['groupButton' .. i], {
-            nameKey = 'name',
-            bgKey = 'bg',
-            ringKey = 'ring',
-            isSelectedFn = IsGroupFinderNavSelected,
-        })
+        SkinNavButton(gf['groupButton' .. i], GROUP_NAV_OPTIONS)
     end
     pveFrameSkin:RefreshGroupNavButtons()
 end
@@ -531,12 +545,7 @@ local function SkinPvPCategoryButtons()
     if (not queue or not queue.CategoryButtons) then return end
 
     for _, button in ipairs(queue.CategoryButtons) do
-        SkinSideNavButton(button, {
-            nameKey = 'Name',
-            bgKey = 'Background',
-            ringKey = 'Ring',
-            isSelectedFn = IsPvPNavSelected,
-        })
+        SkinNavButton(button, PVP_NAV_OPTIONS)
     end
     pveFrameSkin:RefreshPvPNavButtons()
 end
@@ -576,8 +585,27 @@ end
 
 -- ResultsInset sits at y=26 while magic buttons are 22px tall at y=4, so they kiss the border.
 local SEARCH_RESULTS_INSET_BOTTOM = 34
+-- Matches the Dungeon Finder panel's distance from the sidebar.
+local SEARCH_RESULTS_INSET_LEFT = 4
+local SEARCH_RESULTS_INSET_RIGHT = -6
+local SEARCH_RESULTS_PAD = 6
+local SEARCH_RESULTS_SCROLLBAR_SPACE = 14
+local SEARCH_SCROLLBAR_GAP = 4
 local SEARCH_BOTTOM_BUTTON_Y = 6
-local SEARCH_BOTTOM_BUTTON_X = 2
+
+local TOOLBAR_RIGHT = -8
+local TOOLBAR_TOP = -55
+local TOOLBAR_GAP = 4
+local SEARCH_BOX_GAP = 8
+local CATEGORY_NAME_TOP = -33
+local SEARCH_BOX_LEFT = 8
+local SEARCH_BOX_TOP = -58
+local REFRESH_SIZE = 24
+local REFRESH_ICON_SIZE = 18
+
+-- Centered between the header (27px) and the first category button (TOP y=-77).
+local CATEGORY_LABEL_X = -3
+local CATEGORY_LABEL_Y = -(HEADER_HEIGHT + 1 + 77) / 2
 
 -- CategorySelection Start/Find Group default to x=-3 (flush with the window edge).
 local CATEGORY_BOTTOM_BUTTON_X = 6
@@ -603,45 +631,76 @@ local function LayoutSearchPanelButtons(panel)
     local inset = panel.ResultsInset
     if (inset) then
         inset:ClearAllPoints()
-        inset:SetPoint('TOPLEFT', panel, 'TOPLEFT', 0, -86)
-        inset:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', -25, SEARCH_RESULTS_INSET_BOTTOM)
+        inset:SetPoint('TOPLEFT', panel, 'TOPLEFT', SEARCH_RESULTS_INSET_LEFT, -86)
+        inset:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', SEARCH_RESULTS_INSET_RIGHT, SEARCH_RESULTS_INSET_BOTTOM)
+
+        if (panel.ScrollBox) then
+            panel.ScrollBox:ClearAllPoints()
+            panel.ScrollBox:SetPoint('TOPLEFT', inset, 'TOPLEFT', SEARCH_RESULTS_PAD, -SEARCH_RESULTS_PAD)
+            panel.ScrollBox:SetPoint('BOTTOMRIGHT', inset, 'BOTTOMRIGHT', -SEARCH_RESULTS_SCROLLBAR_SPACE,
+                SEARCH_RESULTS_PAD)
+        end
+        if (panel.ScrollBar and panel.ScrollBox) then
+            panel.ScrollBar:ClearAllPoints()
+            panel.ScrollBar:SetPoint('TOPLEFT', panel.ScrollBox, 'TOPRIGHT', SEARCH_SCROLLBAR_GAP, 0)
+            panel.ScrollBar:SetPoint('BOTTOMLEFT', panel.ScrollBox, 'BOTTOMRIGHT', SEARCH_SCROLLBAR_GAP, 0)
+        end
     end
 
     for _, key in ipairs({ 'BackButton', 'BackToGroupButton' }) do
         local button = panel[key]
         if (button) then
             button:ClearAllPoints()
-            button:SetPoint('BOTTOMLEFT', panel, 'BOTTOMLEFT', SEARCH_BOTTOM_BUTTON_X, SEARCH_BOTTOM_BUTTON_Y)
+            button:SetPoint('BOTTOMLEFT', panel, 'BOTTOMLEFT', SEARCH_RESULTS_INSET_LEFT, SEARCH_BOTTOM_BUTTON_Y)
         end
     end
 
     if (panel.SignUpButton) then
         panel.SignUpButton:ClearAllPoints()
-        panel.SignUpButton:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', -SEARCH_BOTTOM_BUTTON_X, SEARCH_BOTTOM_BUTTON_Y)
+        panel.SignUpButton:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', SEARCH_RESULTS_INSET_RIGHT, SEARCH_BOTTOM_BUTTON_Y)
     end
 end
 
----Named `$parentBackground` textures (e.g. LFDQueueFrameBackground) get dungeon art
----reapplied by Blizzard; lock them to a solid theme fill.
-local function StyleLockedSolidBackground(texture)
-    if (not texture or texture.exuiSolidLocked) then return end
-    texture.exuiSolidLocked = true
+local function SkinResultsInset(inset)
+    if (inset.exuiPanelArt) then return end
+    SkinInsetFrame(inset)
+    ApplyPanelArt(inset, 'BACKGROUND')
+end
 
-    local solid = EXUI.const.textures.frame.solidBg
-    local applying = false
-    local function Apply()
-        if (applying) then return end
-        applying = true
-        local th = GetTheme()
-        texture:SetTexture(solid)
-        texture:SetTexCoord(0, 1, 0, 1)
-        texture:SetVertexColor(th.backgroundDeep[1], th.backgroundDeep[2], th.backgroundDeep[3], 1)
-        texture:SetAlpha(0.9)
-        applying = false
+---Blizzard's filter dropdown is replaced by our filter side panel button.
+local function SkinSearchToolbar(panel)
+    if (panel.exuiToolbarSkinned) then return end
+    panel.exuiToolbarSkinned = true
+
+    panel.FilterButton:SetAlpha(0)
+    panel.FilterButton:EnableMouse(false)
+
+    local filterButton = filtersSkin:CreateButton(panel)
+    filterButton:ClearAllPoints()
+    filterButton:SetPoint('TOPRIGHT', panel, 'TOPRIGHT', TOOLBAR_RIGHT, TOOLBAR_TOP)
+
+    local refresh = panel.RefreshButton
+    if (refresh) then
+        StripButtonTextures(refresh)
+        refresh:SetSize(REFRESH_SIZE, REFRESH_SIZE)
+        refresh:ClearAllPoints()
+        refresh:SetPoint('RIGHT', filterButton, 'LEFT', -TOOLBAR_GAP, 0)
+        if (refresh.Icon) then
+            searchEntrySkin.ApplySprite(refresh.Icon, 'refresh')
+            searchEntrySkin.SetSpriteHeight(refresh.Icon, 'refresh', REFRESH_ICON_SIZE)
+        end
     end
 
-    Apply()
-    hooksecurefunc(texture, 'SetTexture', Apply)
+    if (panel.CategoryName) then
+        panel.CategoryName:ClearAllPoints()
+        panel.CategoryName:SetPoint('TOPRIGHT', panel, 'TOPRIGHT', TOOLBAR_RIGHT, CATEGORY_NAME_TOP)
+        panel.CategoryName:SetJustifyH('RIGHT')
+    end
+
+    local searchBox = panel.SearchBox
+    searchBox:ClearAllPoints()
+    searchBox:SetPoint('TOPLEFT', panel, 'TOPLEFT', SEARCH_BOX_LEFT, SEARCH_BOX_TOP)
+    searchBox:SetPoint('RIGHT', refresh or filterButton, 'LEFT', -SEARCH_BOX_GAP, 0)
 end
 
 local function ResolveNamedChild(parent, suffix)
@@ -662,29 +721,6 @@ local QUEUE_BG_RIGHT = -6
 local QUEUE_BG_BOTTOM = 36
 local QUEUE_BG_DROPDOWN_GAP = -7
 local QUEUE_BG_FALLBACK_TOP = -144
-local QUEUE_BG_BORDER_THICKNESS = 1
-
-local function RefreshQueueBackgroundBorder(chrome)
-    if (not chrome or not chrome.exuiBorder) then return end
-
-    local queueFrame = chrome:GetParent()
-    local texture = queueFrame and ResolveQueueBackground(queueFrame)
-    if (texture) then
-        chrome:ClearAllPoints()
-        chrome:SetPoint('TOPLEFT', texture, 'TOPLEFT')
-        chrome:SetPoint('BOTTOMRIGHT', texture, 'BOTTOMRIGHT')
-    end
-
-    if (queueFrame) then
-        chrome:SetFrameLevel((queueFrame:GetFrameLevel() or 1) + 100)
-    end
-
-    local border = chrome.exuiBorder
-    border:SetBorderThickness(QUEUE_BG_BORDER_THICKNESS)
-    border:SetBorderColor(unpack(GetTheme().border))
-    border:Show()
-    chrome:Show()
-end
 
 local function ResolveQueueTypeDropdown(queueFrame)
     return queueFrame.TypeDropdown
@@ -718,29 +754,6 @@ local function LayoutQueueBackground(queueFrame, texture)
         texture:SetPoint('TOPLEFT', queueFrame, 'TOPLEFT', left, fallbackTop)
         texture:SetPoint('BOTTOMRIGHT', queueFrame, 'BOTTOMRIGHT', right, bottom)
     end
-
-    local chrome = queueFrame.exuiQueueBgChrome
-    if (not chrome) then
-        chrome = CreateFrame('Frame', nil, queueFrame)
-        chrome:EnableMouse(false)
-        chrome.exuiBorder = EXUI:AddPixelPerfectBorder(chrome, QUEUE_BG_BORDER_THICKNESS, {
-            register = false,
-            layer = 'OVERLAY',
-        })
-        queueFrame.exuiQueueBgChrome = chrome
-
-        chrome:HookScript('OnShow', function(self)
-            RefreshQueueBackgroundBorder(self)
-        end)
-        chrome:HookScript('OnSizeChanged', function(self)
-            RefreshQueueBackgroundBorder(self)
-        end)
-        queueFrame:HookScript('OnShow', function()
-            RefreshQueueBackgroundBorder(queueFrame.exuiQueueBgChrome)
-        end)
-    end
-
-    RefreshQueueBackgroundBorder(chrome)
 end
 
 ---Keep Specific Dungeons list inset inside the bordered background (esp. top padding).
@@ -776,12 +789,12 @@ local function SkinQueueFrame(queueFrame, options)
 
     local background = ResolveQueueBackground(queueFrame)
     if (background) then
-        StyleLockedSolidBackground(background)
+        ApplyPanelArt(background, 'BORDER')
         LayoutQueueBackground(queueFrame, background)
         LayoutQueueScrollBoxes(queueFrame, background)
     end
     if (queueFrame.Bg and queueFrame.Bg ~= background) then
-        StyleLockedSolidBackground(queueFrame.Bg)
+        ApplyPanelArt(queueFrame.Bg, 'BORDER')
     end
 
     local findGroup = ResolveNamedChild(queueFrame, 'FindGroupButton')
@@ -893,7 +906,7 @@ local function SkinLFGRequirementRow(row)
     row.exuiRequirementSkinned = true
 
     if (row.CheckButton) then
-        skins:SkinCheckButton(row.CheckButton)
+        skins:SkinModernCheckButton(row.CheckButton)
     end
     if (row.Label) then
         SkinThemeFontString(row.Label, 11)
@@ -918,7 +931,7 @@ local function SkinLFGOptionCheck(row)
     row.exuiOptionSkinned = true
 
     if (row.CheckButton) then
-        skins:SkinCheckButton(row.CheckButton)
+        skins:SkinModernCheckButton(row.CheckButton)
     end
     if (row.Label) then
         SkinThemeFontString(row.Label, 11)
@@ -953,28 +966,77 @@ local function SkinEntryCreationActivityFinder(finder)
     end
 end
 
--- EntryCreation Inset defaults to y=26; buttons are 22px at y=6 and collide with the border.
+-- Inset matches the search results panel; every input shares one inner padding.
+-- LFGListFrame's XML width, used if the panel has not been laid out yet.
+local ENTRY_PANEL_WIDTH = 338
+local ENTRY_INSET_TOP = -61
 local ENTRY_INSET_BOTTOM = 36
-local ENTRY_INSET_TOPLEFT = { 0, -61 }
-local ENTRY_INSET_RIGHT = -5
+local ENTRY_CONTENT_PAD = 16
+local ENTRY_DROPDOWN_TOP = -15
+local ENTRY_DROPDOWN_GAP = 12
+-- Blizzard anchors requirement rows 1px left of the playstyle dropdown.
+local ENTRY_ROW_NUDGE = 1
+-- InputScrollFrame_OnLoad sizes the inner EditBox to the frame width minus 18.
+local ENTRY_DESCRIPTION_EDIT_INSET = 18
+local ENTRY_ROW_KEYS = { 'ItemLevel', 'PvpItemLevel', 'PVPRating', 'MythicPlusRating', 'VoiceChat', 'CrossFactionGroup' }
 
-local function LayoutEntryCreationButtons(panel)
+local function LayoutEntryCreation(panel)
     if (not panel or panel.exuiEntryLayoutAdjusted) then return end
     panel.exuiEntryLayoutAdjusted = true
 
-    if (panel.Inset) then
-        panel.Inset:ClearAllPoints()
-        panel.Inset:SetPoint('TOPLEFT', panel, 'TOPLEFT', ENTRY_INSET_TOPLEFT[1], ENTRY_INSET_TOPLEFT[2])
-        panel.Inset:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', ENTRY_INSET_RIGHT, ENTRY_INSET_BOTTOM)
+    local inset = panel.Inset
+    inset:ClearAllPoints()
+    inset:SetPoint('TOPLEFT', panel, 'TOPLEFT', SEARCH_RESULTS_INSET_LEFT, ENTRY_INSET_TOP)
+    inset:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', SEARCH_RESULTS_INSET_RIGHT, ENTRY_INSET_BOTTOM)
+
+    local panelWidth = panel:GetWidth()
+    if (panelWidth <= 1) then panelWidth = ENTRY_PANEL_WIDTH end
+    local innerWidth = panelWidth - SEARCH_RESULTS_INSET_LEFT + SEARCH_RESULTS_INSET_RIGHT - ENTRY_CONTENT_PAD * 2
+    local halfWidth = (innerWidth - ENTRY_DROPDOWN_GAP) / 2
+
+    panel.GroupDropdown:ClearAllPoints()
+    panel.GroupDropdown:SetPoint('TOPLEFT', inset, 'TOPLEFT', ENTRY_CONTENT_PAD, ENTRY_DROPDOWN_TOP)
+    panel.GroupDropdown:SetWidth(halfWidth)
+    panel.ActivityDropdown:ClearAllPoints()
+    panel.ActivityDropdown:SetPoint('LEFT', panel.GroupDropdown, 'RIGHT', ENTRY_DROPDOWN_GAP, 0)
+    panel.ActivityDropdown:SetWidth(halfWidth)
+
+    -- Labels already sit at the inner padding (x=20); inputs line up under them.
+    panel.Name:ClearAllPoints()
+    panel.Name:SetPoint('TOPLEFT', panel.NameLabel, 'BOTTOMLEFT', 0, -5)
+    panel.Name:SetWidth(innerWidth)
+
+    local description = panel.Description
+    description:ClearAllPoints()
+    description:SetPoint('TOPLEFT', panel.DescriptionLabel, 'BOTTOMLEFT', 0, -10)
+    description:SetWidth(innerWidth)
+    if (description.EditBox) then
+        description.EditBox:SetWidth(innerWidth - ENTRY_DESCRIPTION_EDIT_INSET)
+    end
+
+    panel.PlayStyleDropdown:ClearAllPoints()
+    panel.PlayStyleDropdown:SetPoint('TOPLEFT', description, 'BOTTOMLEFT', 0, -20)
+    panel.PlayStyleDropdown:SetPoint('TOPRIGHT', description, 'BOTTOMRIGHT', 0, -20)
+
+    for _, key in ipairs(ENTRY_ROW_KEYS) do
+        local row = panel[key]
+        if (row) then
+            row:SetWidth(innerWidth + ENTRY_ROW_NUDGE)
+            if (row.EditBox) then
+                row.EditBox:ClearAllPoints()
+                row.EditBox:SetPoint('RIGHT', row, 'RIGHT', 0, 0)
+            end
+        end
     end
 
     if (panel.CancelButton) then
         panel.CancelButton:ClearAllPoints()
-        panel.CancelButton:SetPoint('BOTTOMLEFT', panel, 'BOTTOMLEFT', CATEGORY_BOTTOM_BUTTON_X, CATEGORY_BOTTOM_BUTTON_Y)
+        panel.CancelButton:SetPoint('BOTTOMLEFT', panel, 'BOTTOMLEFT', SEARCH_RESULTS_INSET_LEFT, CATEGORY_BOTTOM_BUTTON_Y)
     end
     if (panel.ListGroupButton) then
         panel.ListGroupButton:ClearAllPoints()
-        panel.ListGroupButton:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', -CATEGORY_BOTTOM_BUTTON_X, CATEGORY_BOTTOM_BUTTON_Y)
+        panel.ListGroupButton:SetPoint('BOTTOMRIGHT', panel, 'BOTTOMRIGHT', SEARCH_RESULTS_INSET_RIGHT,
+            CATEGORY_BOTTOM_BUTTON_Y)
     end
 end
 
@@ -983,7 +1045,8 @@ local function SkinEntryCreation(panel)
     panel.exuiEntrySkinned = true
 
     if (panel.Inset) then
-        SkinInsetFrame(panel.Inset, { chrome = true, backdropAlpha = 0.55 })
+        SkinInsetFrame(panel.Inset)
+        ApplyPanelArt(panel.Inset, 'BACKGROUND')
     end
 
     if (panel.Label) then SkinThemeFontString(panel.Label, 14) end
@@ -1011,7 +1074,7 @@ local function SkinEntryCreation(panel)
     if (panel.ListGroupButton) then skins:SkinPanelButton(panel.ListGroupButton) end
     if (panel.CancelButton) then skins:SkinPanelButton(panel.CancelButton) end
 
-    LayoutEntryCreationButtons(panel)
+    LayoutEntryCreation(panel)
     SkinEntryCreationActivityFinder(panel.ActivityFinder)
 end
 
@@ -1025,12 +1088,14 @@ local function SkinLFGListPanel(panel)
     end
 
     if (panel.Inset) then SkinInsetFrame(panel.Inset) end
-    if (panel.ResultsInset) then
-        SkinInsetFrame(panel.ResultsInset, { chrome = true })
-    end
+    if (panel.ResultsInset) then SkinResultsInset(panel.ResultsInset) end
 
     if (panel.Label and panel.Label.SetFont) then
         SkinThemeFontString(panel.Label, 14)
+        if (LFGListFrame and panel == LFGListFrame.CategorySelection) then
+            panel.Label:ClearAllPoints()
+            panel.Label:SetPoint('CENTER', panel, 'TOP', CATEGORY_LABEL_X, CATEGORY_LABEL_Y)
+        end
     end
     if (panel.CategoryName) then
         SkinThemeFontString(panel.CategoryName, 14)
@@ -1044,9 +1109,7 @@ local function SkinLFGListPanel(panel)
     if (panel.CancelButton) then skins:SkinPanelButton(panel.CancelButton) end
 
     if (panel.SearchBox) then skins:SkinSearchBox(panel.SearchBox) end
-    if (panel.FilterButton) then
-        skins:SkinModernDropdown(panel.FilterButton, { fontSize = 11 })
-    end
+    if (panel.FilterButton and panel.SearchBox) then SkinSearchToolbar(panel) end
 
     if (panel.AutoAcceptButton) then
         skins:SkinCheckButton(panel.AutoAcceptButton)
@@ -1055,7 +1118,7 @@ local function SkinLFGListPanel(panel)
         end
     end
 
-    if (panel.ScrollBar) then skins:SkinMinimalScrollBar(panel.ScrollBar) end
+    if (panel.ScrollBar) then skins:SkinSlimScrollBar(panel.ScrollBar) end
 
     LayoutCategorySelectionButtons(panel)
 
@@ -1112,13 +1175,62 @@ local function SkinLFGListFrame()
     pveFrameSkin:RestyleLFGListCategoryRows()
 end
 
+-- Left edge matches the Dungeon Finder panel (x=228); the right edge leaves room for both
+-- borders against the Honor sidebar. Bottom offsets are from the window bottom, since the
+-- content frames differ in height; the Join button matches the Premade Groups padding.
+local PVP_FRAME_TOP = -22
+local PVP_INSET_LEFT = 8
+local PVP_INSET_TOP = -79
+local PVP_INSET_RIGHT = -15
+local PVP_INSET_BOTTOM = 37
+local PVP_JOIN_BUTTON_BOTTOM = SEARCH_BOTTOM_BUTTON_Y
+-- Role list and type dropdown sit on the inset's top edge, under the panel border.
+local PVP_INSET_HEADER_LIFT = 5
+
+local function LayoutPvPInset(frame)
+    local frameBottom = PVEFrame:GetHeight() + PVP_FRAME_TOP - frame:GetHeight()
+
+    local inset = frame.Inset
+    inset:ClearAllPoints()
+    inset:SetPoint('TOPLEFT', frame, 'TOPLEFT', PVP_INSET_LEFT, PVP_INSET_TOP)
+    inset:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', PVP_INSET_RIGHT, PVP_INSET_BOTTOM - frameBottom)
+
+    local joinButton = frame.QueueButton or frame.JoinButton
+    if (joinButton) then
+        joinButton:ClearAllPoints()
+        joinButton:SetPoint('BOTTOM', frame, 'BOTTOM', 0, PVP_JOIN_BUTTON_BOTTOM - frameBottom)
+    end
+
+    if (frame.RoleList) then
+        frame.RoleList:ClearAllPoints()
+        frame.RoleList:SetPoint('BOTTOMLEFT', inset, 'TOPLEFT', 5, 2 + PVP_INSET_HEADER_LIFT)
+    end
+    if (frame.TypeDropdown) then
+        frame.TypeDropdown:ClearAllPoints()
+        frame.TypeDropdown:SetPoint('BOTTOMRIGHT', inset, 'TOPRIGHT', -6, 4 + PVP_INSET_HEADER_LIFT)
+    end
+    -- Blizzard anchors this to the frame edge; keep it inside the narrowed inset.
+    if (frame.SpecificScrollBar) then
+        frame.SpecificScrollBar:ClearAllPoints()
+        frame.SpecificScrollBar:SetPoint('TOPLEFT', inset, 'TOPRIGHT', -17, -7)
+        frame.SpecificScrollBar:SetPoint('BOTTOMLEFT', inset, 'BOTTOMRIGHT', -17, 5)
+    end
+end
+
 local function SkinPvPContentFrame(frame)
     if (not frame or frame.exuiContentSkinned) then return end
     frame.exuiContentSkinned = true
 
     StripPanelRootTextures(frame)
 
-    if (frame.Inset) then SkinInsetFrame(frame.Inset) end
+    if (frame.Inset) then
+        SkinInsetFrame(frame.Inset)
+        -- Plunderstorm keeps its full-panel event art.
+        if (frame ~= PlunderstormFrame) then
+            ApplyPanelArt(frame.Inset, 'BACKGROUND')
+            LayoutPvPInset(frame)
+        end
+    end
     if (frame.Background) then skins:StripTexture(frame.Background) end
     if (frame.Bg) then skins:StripTexture(frame.Bg) end
 
@@ -1173,10 +1285,26 @@ function pveFrameSkin:SkinGroupFinderTab()
     SkinLFGListFrame()
 end
 
+---Right-hand Honor / Conquest sidebar; Blizzard anchors it at y=-22, under our taller header.
+local function SkinHonorInset(inset)
+    if (not inset or inset.exuiPanelArt) then return end
+
+    SkinInsetFrame(inset)
+    if (inset.Background) then inset.Background:SetAlpha(0) end
+
+    inset:ClearAllPoints()
+    inset:SetPoint('TOPRIGHT', PVEFrame, 'TOPRIGHT', -SIDEBAR_LEFT, -(HEADER_HEIGHT + 1 + SIDEBAR_TOP_GAP))
+    inset:SetPoint('BOTTOMRIGHT', PVEFrame, 'BOTTOMRIGHT', -SIDEBAR_LEFT, SIDEBAR_LEFT)
+
+    ApplyPanelArt(inset, 'BACKGROUND')
+end
+
 function pveFrameSkin:SkinPvPTab()
     if (not PVPUIFrame) then return end
 
     SkinPvPCategoryButtons()
+
+    SkinHonorInset(PVPQueueFrame and PVPQueueFrame.HonorInset)
 
     if (PVPQueueFrame and PVPQueueFrame.PrestigePortrait) then
         local portrait = PVPQueueFrame.PrestigePortrait
@@ -1194,15 +1322,138 @@ function pveFrameSkin:SkinPvPTab()
     end
 end
 
+local CHALLENGES_WEEKLY_INFO_X = 6
+-- Blizzard places WeeklyInfo at y=-12; drop it with the inset so "This Week" clears the border.
+local CHALLENGES_WEEKLY_INFO_Y = -22
+local CHALLENGES_ICON_PAD = 8
+-- Room for both icons' border outsets between neighbours.
+local CHALLENGES_ICON_GAP = 10
+local CHALLENGES_TEXT_PAD = 5
+local CHALLENGES_LEVEL_SIZE = 12
+local CHALLENGES_SCORE_SIZE = 15
+local CHALLENGES_TEXT_LEVEL_OFFSET = 25
+
+local function GetChallengesInset()
+    return ChallengesFrameInset
+end
+
+---Season best icon: our border, rounded icon, level above a slightly larger dungeon score (bottom left).
+local function SkinChallengeIcon(icon)
+    if (icon.exuiChallengeSkinned) then return end
+    icon.exuiChallengeSkinned = true
+
+    for _, region in ipairs({ icon:GetRegions() }) do
+        if (region:IsObjectType('Texture') and region:GetAtlas() == 'ChallengeMode-DungeonIconFrame') then
+            region:SetAlpha(0)
+        end
+    end
+
+    local mask = icon:CreateMaskTexture()
+    mask:SetAllPoints(icon.Icon)
+    mask:SetTexture(EXUI.const.textures.skins.lfgSpecMask, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    icon.Icon:AddMaskTexture(mask)
+
+    CreatePanelBorder(icon, icon)
+
+    -- Text sits above the border frame so its inner shadow does not darken it.
+    local textFrame = CreateFrame('Frame', nil, icon)
+    textFrame:SetAllPoints()
+    textFrame:SetFrameLevel(icon:GetFrameLevel() + CHALLENGES_TEXT_LEVEL_OFFSET)
+
+    local score = textFrame:CreateFontString(nil, 'OVERLAY')
+    score:SetFont(EXUI.const.fonts.DEFAULT, CHALLENGES_SCORE_SIZE, 'OUTLINE')
+    score:SetShadowColor(0, 0, 0, 0)
+    score:SetJustifyH('LEFT')
+    score:SetPoint('BOTTOMLEFT', textFrame, 'BOTTOMLEFT', CHALLENGES_TEXT_PAD, CHALLENGES_TEXT_PAD)
+    icon.exuiScore = score
+
+    local level = icon.HighestLevel
+    level:SetParent(textFrame)
+    level:SetFont(EXUI.const.fonts.DEFAULT, CHALLENGES_LEVEL_SIZE, 'OUTLINE')
+    level:SetShadowColor(0, 0, 0, 0)
+    level:SetJustifyH('LEFT')
+    level:ClearAllPoints()
+    level:SetPoint('BOTTOMLEFT', score, 'TOPLEFT', 0, 0)
+end
+
+local function UpdateChallengeIconText(icon)
+    local score = icon.exuiScore
+    local _, overallScore = C_MythicPlus.GetSeasonBestAffixScoreInfoForMap(icon.mapID)
+    if (not icon.HighestLevel:IsShown() or not overallScore) then
+        score:Hide()
+        return
+    end
+
+    local color = C_ChallengeMode.GetSpecificDungeonOverallScoreRarityColor(overallScore) or HIGHLIGHT_FONT_COLOR
+    score:SetText(overallScore)
+    score:SetTextColor(color.r, color.g, color.b)
+    score:Show()
+    icon.HighestLevel:SetTextColor(unpack(GetTheme().white))
+end
+
+---BigWigs adds its own score string at the icon's bottom; it would sit on top of ours.
+local function HideForeignIconScores(frame)
+    for _, icon in ipairs(frame.DungeonIcons or {}) do
+        for _, region in ipairs({ icon:GetRegions() }) do
+            if (region:IsObjectType('FontString') and region ~= icon.HighestLevel) then
+                local point, relativeTo = region:GetPoint(1)
+                if (point == 'BOTTOM' and (relativeTo == nil or relativeTo == icon)) then
+                    region:SetAlpha(0)
+                end
+            end
+        end
+    end
+end
+
+local function LayoutChallengeIcons(frame)
+    local inset = GetChallengesInset()
+    local icons = frame.DungeonIcons
+    if (not inset or not icons) then return end
+
+    local count = 0
+    for i = 1, #icons do
+        if (icons[i]:IsShown()) then count = i end
+    end
+    local width = inset:GetWidth() - CHALLENGES_ICON_PAD * 2
+    if (count == 0 or width <= 1) then return end
+
+    local size = (width - CHALLENGES_ICON_GAP * (count - 1)) / count
+    for i = 1, count do
+        local icon = icons[i]
+        SkinChallengeIcon(icon)
+        icon:SetSize(size, size)
+        icon.Icon:SetSize(size, size)
+        icon:ClearAllPoints()
+        if (i == 1) then
+            icon:SetPoint('BOTTOMLEFT', inset, 'BOTTOMLEFT', CHALLENGES_ICON_PAD, CHALLENGES_ICON_PAD)
+        else
+            icon:SetPoint('LEFT', icons[i - 1], 'RIGHT', CHALLENGES_ICON_GAP, 0)
+        end
+        UpdateChallengeIconText(icon)
+    end
+
+    HideForeignIconScores(frame)
+end
+
 function pveFrameSkin:SkinChallengesTab()
     local frame = ChallengesFrame
     if (not frame or frame.exuiChallengesSkinned) then return end
     frame.exuiChallengesSkinned = true
 
-    if (frame.Inset) then SkinInsetFrame(frame.Inset) end
+    local inset = GetChallengesInset()
+    if (inset) then
+        SkinInsetFrame(inset)
+        inset:ClearAllPoints()
+        inset:SetPoint('TOPLEFT', frame, 'TOPLEFT', SIDEBAR_LEFT, -(HEADER_HEIGHT + 1 + SIDEBAR_TOP_GAP))
+        inset:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -SIDEBAR_LEFT, SIDEBAR_LEFT)
+        -- One level under the frame so Blizzard's faded dungeon art always draws over our panel.
+        inset:SetFrameLevel(math.max(0, frame:GetFrameLevel() - 1))
+        ApplyPanelArt(inset, 'BACKGROUND')
+    end
 
-    if (frame.Background) then
-        skins:StripTexture(frame.Background)
+    if (frame.WeeklyInfo) then
+        frame.WeeklyInfo:ClearAllPoints()
+        frame.WeeklyInfo:SetPoint('TOPLEFT', frame, 'TOPLEFT', CHALLENGES_WEEKLY_INFO_X, CHALLENGES_WEEKLY_INFO_Y)
     end
 
     for _, region in ipairs({ frame:GetRegions() }) do
@@ -1213,6 +1464,10 @@ function pveFrameSkin:SkinChallengesTab()
 
     if (frame.WeeklyInfo and frame.WeeklyInfo.Child) then
         SkinChallengesWeeklyInfo(frame.WeeklyInfo.Child)
+    end
+
+    if (frame:IsShown()) then
+        LayoutChallengeIcons(frame)
     end
 end
 
@@ -1316,13 +1571,15 @@ end
 
 function pveFrameSkin:InstallChallengesHooks()
     if (self.challengesHooksInstalled) then return end
-    if (not ChallengesFrameMixin) then return end
+    local frame = ChallengesFrame
+    if (not frame) then return end
     self.challengesHooksInstalled = true
 
-    hooksecurefunc(ChallengesFrameMixin, 'Update', function(frame)
-        if (frame.Background) then
-            skins:StripTexture(frame.Background)
-        end
+    -- The frame already carries its mixin methods, so hook the instance rather than the mixin.
+    hooksecurefunc(frame, 'Update', LayoutChallengeIcons)
+    -- BigWigs adds its icon strings from its own OnShow hook; catch them once both have run.
+    frame:HookScript('OnShow', function(self)
+        C_Timer.After(0, function() HideForeignIconScores(self) end)
     end)
 end
 
@@ -1340,14 +1597,6 @@ function pveFrameSkin:InstallContentHooks()
         pveFrameSkin:RefreshBottomTabs()
     end)
 
-    hooksecurefunc('PVEFrame_HideLeftInset', function()
-        pveFrameSkin:SetLeftSidebarShown(false)
-    end)
-
-    hooksecurefunc('PVEFrame_ShowLeftInset', function()
-        pveFrameSkin:SetLeftSidebarShown(true)
-    end)
-
     if (type(LFGListCategorySelection_UpdateCategoryButtons) == 'function') then
         hooksecurefunc('LFGListCategorySelection_UpdateCategoryButtons', function()
             pveFrameSkin:RestyleLFGListCategoryRows()
@@ -1360,6 +1609,8 @@ function pveFrameSkin:InstallContentHooks()
         end)
     end
 
+    searchEntrySkin:Install()
+    filtersSkin:Install()
     self:InstallChallengesHooks()
 end
 

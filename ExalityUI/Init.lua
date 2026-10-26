@@ -138,8 +138,8 @@ EXUI.const = {
         },
         skins = {
             btnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Skins/btn-highlight.png]],
-            lfgLeftBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-bg.jpg]],
-            lfgLeftBtnBg = [[Interface/Addons/ExalityUI/Assets/Images/Skins/lfg-left-btn-bg.png]],
+            lfgSprite = [[Interface/Addons/ExalityUI/Assets/Images/Skins/LFG/LFG-sprite.png]],
+            lfgSpecMask = [[Interface/Addons/ExalityUI/Assets/Images/Skins/LFG/spec-mask.png]],
         },
         bags = {
             bg = [[Interface/Addons/ExalityUI/Assets/Images/Bags/bg.png]],

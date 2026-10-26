@@ -16,6 +16,7 @@ EXUI.changelog = [[
 - [Unit Frames] Add option to change frame level for all text elements
 - [Misc] Default font - DMSans, now supports Cyrillic characters.
 - [Nameplates] Add options to modify friendly nameplates font.
+- [Skins] Re-skin LFG frame (LFG/PvP/M+) with much more polish. And some small added features like filtering of LFG. 
 
 ## Chat |cffeb7a34New|r
 Add chat window that replaces default chat. More changes to come, but generally styled and adds some features I wanted out of it. Feature wise fairly basic, so don't expect too much.

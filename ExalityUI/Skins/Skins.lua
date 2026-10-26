@@ -1325,6 +1325,59 @@ skins.SkinCheckButton = function(self, checkButton)
     end)
 end
 
+local MODERN_CHECK_BOX_SIZE = 18
+local MODERN_CHECK_MARK_SIZE = 12
+
+local function SetModernCheckTexture(texture, path, color, size)
+    texture:SetTexture(path)
+    texture:SetTexCoord(0, 1, 0, 1)
+    texture:SetSize(size, size)
+    texture:ClearAllPoints()
+    texture:SetPoint('CENTER')
+    texture:SetVertexColor(unpack(color))
+end
+
+---Blizzard CheckButton → ExalityFrames 'checkbox' look (tinted box, accent border and mark when checked).
+skins.SkinModernCheckButton = function(self, checkButton)
+    if (not checkButton or checkButton.exuiSkinned) then return end
+    local tex = GetCheckboxTextures()
+    if (not tex) then return end
+    checkButton.exuiSkinned = true
+    local th = GetTheme()
+
+    checkButton:SetNormalTexture(tex.bg)
+    SetModernCheckTexture(checkButton:GetNormalTexture(), tex.bg, th.background, MODERN_CHECK_BOX_SIZE)
+    checkButton:SetPushedTexture(tex.bg)
+    SetModernCheckTexture(checkButton:GetPushedTexture(), tex.bg, th.backgroundLight, MODERN_CHECK_BOX_SIZE)
+    checkButton:SetDisabledTexture(tex.bg)
+    SetModernCheckTexture(checkButton:GetDisabledTexture(), tex.bg, th.background, MODERN_CHECK_BOX_SIZE)
+    checkButton:GetDisabledTexture():SetAlpha(0.5)
+    -- The highlight layer draws above the border and mark; hover recolors the box instead.
+    checkButton:SetHighlightTexture(tex.bg)
+    checkButton:GetHighlightTexture():SetAlpha(0)
+    checkButton:SetCheckedTexture(tex.markIcon)
+    SetModernCheckTexture(checkButton:GetCheckedTexture(), tex.markIcon, th.accent, MODERN_CHECK_MARK_SIZE)
+    checkButton:SetDisabledCheckedTexture(tex.markIcon)
+    SetModernCheckTexture(checkButton:GetDisabledCheckedTexture(), tex.markIcon, th.accent, MODERN_CHECK_MARK_SIZE)
+    checkButton:GetDisabledCheckedTexture():SetDesaturated(true)
+
+    local border = checkButton:CreateTexture(nil, 'ARTWORK', nil, 2)
+    SetModernCheckTexture(border, tex.border, th.border, MODERN_CHECK_BOX_SIZE)
+    checkButton.exuiCheckBorder = border
+
+    local function UpdateState(btn)
+        border:SetVertexColor(unpack(btn:GetChecked() and th.accent or th.border))
+        local hovered = btn:IsEnabled() and btn:IsMouseOver()
+        btn:GetNormalTexture():SetVertexColor(unpack(hovered and th.backgroundLight or th.background))
+    end
+
+    hooksecurefunc(checkButton, 'SetChecked', UpdateState)
+    checkButton:HookScript('OnClick', UpdateState)
+    checkButton:HookScript('OnEnter', UpdateState)
+    checkButton:HookScript('OnLeave', UpdateState)
+    UpdateState(checkButton)
+end
+
 ---InputBox / LFGListEditBoxTemplate: flat dark field with 1px border (no search icon).
 ---@param options? { fontSize?: number, textInset?: number }
 skins.SkinEditBox = function(self, editBox, options)
@@ -1642,6 +1695,71 @@ skins.SkinMinimalScrollBar = function(self, scrollBar)
             stepper.Texture:SetVertexColor(unpack(th.textMuted))
         end
     end
+end
+
+local SLIM_SCROLL_WIDTH = 4
+-- scroll-thumb.png and scroll-track.png are 4x16; the first and last 2 rows are the rounded caps.
+local SLIM_SCROLL_CAP = 2
+local SLIM_THUMB_ALPHA = 0.75
+
+local function CreateSlimScrollTexture(parent, layer, file)
+    local texture = parent:CreateTexture(nil, layer, nil, 7)
+    texture:SetTexture(file)
+    texture:SetTextureSliceMargins(0, SLIM_SCROLL_CAP, 0, SLIM_SCROLL_CAP)
+    texture:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    texture:SetWidth(EXUI:ScalePixel(SLIM_SCROLL_WIDTH, parent))
+    texture:SetPoint('TOP')
+    texture:SetPoint('BOTTOM')
+    return texture
+end
+
+---Restyle a MinimalScrollBar to match the ExalityFrames smooth scroll frame bar.
+skins.SkinSlimScrollBar = function(self, scrollBar)
+    if (not scrollBar or scrollBar.exuiSkinned) then return end
+    local track = scrollBar.Track
+    local thumb = track and track.Thumb
+    if (not thumb) then return end
+    scrollBar.exuiSkinned = true
+
+    local textures = EXUI.EXFrames.assets.textures
+
+    for _, key in ipairs({ 'Back', 'Forward' }) do
+        local stepper = scrollBar[key]
+        if (stepper) then
+            stepper:SetAlpha(0)
+            stepper:EnableMouse(false)
+        end
+    end
+
+    track:ClearAllPoints()
+    track:SetPoint('TOP')
+    track:SetPoint('BOTTOM')
+    self:StripRegions(track, { 'Begin', 'Middle', 'End' })
+
+    local trackTex = CreateSlimScrollTexture(track, 'BACKGROUND', textures.scrollTrack)
+    trackTex:SetShown(thumb:IsShown())
+    track.exuiSlimTrack = trackTex
+
+    -- Alpha-only hide: the thumb mixin's OnSizeChanged reads Middle:GetAtlas().
+    for _, key in ipairs({ 'Begin', 'Middle', 'End' }) do
+        if (thumb[key]) then thumb[key]:SetAlpha(0) end
+    end
+
+    local thumbTex = CreateSlimScrollTexture(thumb, 'ARTWORK', textures.scrollThumb)
+    thumbTex:SetAlpha(SLIM_THUMB_ALPHA)
+    thumb.exuiSlimThumb = thumbTex
+
+    -- Blizzard hides the thumb when nothing can scroll; hide the track with it.
+    thumb:HookScript('OnShow', function() trackTex:Show() end)
+    thumb:HookScript('OnHide', function() trackTex:Hide() end)
+
+    thumb:HookScript('OnEnter', function() thumbTex:SetAlpha(1) end)
+    thumb:HookScript('OnLeave', function()
+        if (not IsMouseButtonDown('LeftButton')) then thumbTex:SetAlpha(SLIM_THUMB_ALPHA) end
+    end)
+    thumb:HookScript('OnMouseUp', function(btn)
+        if (not btn:IsMouseOver()) then thumbTex:SetAlpha(SLIM_THUMB_ALPHA) end
+    end)
 end
 
 ---Generic skin for the PortraitFrame/ButtonFrame template family (map, quest popup, ...).
