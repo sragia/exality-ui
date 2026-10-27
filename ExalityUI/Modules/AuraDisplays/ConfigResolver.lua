@@ -353,7 +353,10 @@ function resolver:ApplyCombatEnabled(container, displayID, display, getGroupKey,
             if matchesCombat then
                 enabled = matchesCombat(entry.group.load) and true or false
             end
-            container:SetAuraGroupEnabled(groupKey, enabled)
+            -- SetAuraGroupEnabled always queues a full aura rebuild, even when unchanged
+            if container:IsAuraGroupEnabled(groupKey) ~= enabled then
+                container:SetAuraGroupEnabled(groupKey, enabled)
+            end
         end
     end
 end
