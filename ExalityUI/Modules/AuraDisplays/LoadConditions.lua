@@ -246,6 +246,11 @@ function loadConditions:ApplyCombatState()
     end
 end
 
+function loadConditions:GetStaticStateKey()
+    local _, specName = getPlayerSpecInfo()
+    return tostring(specName) .. '|' .. tostring(self:GetPlayerRole()) .. '|' .. self:GetCurrentInstanceType()
+end
+
 function loadConditions:RefreshStatic()
     if InCombatLockdown() then
         self.pendingStaticRefresh = true
@@ -261,6 +266,12 @@ function loadConditions:RefreshStatic()
             self.pendingStaticRefresh = true
             return
         end
+        -- Roster/zone events fire often; only rebuild when a static load input changed
+        local stateKey = self:GetStaticStateKey()
+        if stateKey == self.lastStaticStateKey then
+            return
+        end
+        self.lastStaticStateKey = stateKey
         local auraDisplays = EXUI:GetModule('aura-displays')
         if auraDisplays.RefreshAll then
             auraDisplays:RefreshAll()
