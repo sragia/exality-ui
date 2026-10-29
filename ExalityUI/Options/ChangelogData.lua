@@ -1,256 +1,384 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
-EXUI.changelog = [[
-# |cffdb49000.9.8|r
-- [Options] Bunch of changes visually and functionality wise for tabs and side option items.
-  - Now you can group up and adjust ordering of Resource Displays, Cooldowns, Aura Displays, Aura Editors for UF/NP. Also add icons to them.
-- [Options] Import and export a single item or a whole group for Aura Displays, Unit Frame auras, Nameplate auras, Resource Displays, and Cooldowns.
-- [Auras] Add glow type for Unit Frame auras.
-- [Auras] Adjust/Fix load conditions for aura displays across the board.
-- [Auras] Add Encounter load condition, so you can load aura only for specific encounters.
-- [Auras/Cooldowns/Resource Displays] Add option to export/import individual items/groups from them.
-- [Character Frame] Add same styling for Inspect UI too. As well as when viewing other players talents use talent UI if enabled.
-- [Profiles] Fix toggle that somehow got broken.
-- [Unit Frames] Add portrait element with 4 different styles - circle, square, hexagon as separate elements and attached as part of the unitframe. 
-- [Unit Frames] Add option to change frame level for all text elements
-- [Misc] Default font - DMSans, now supports Cyrillic characters.
-- [Nameplates] Add options to modify friendly nameplates font.
-- [Skins] Re-skin LFG frame (LFG/PvP/M+) with much more polish. And some small added features like filtering of LFG. 
-- [Objective Tracker] Fix category underline color option and adjust texture used
-
-## Chat |cffeb7a34New|r
-Add chat window that replaces default chat. More changes to come, but generally styled and adds some features I wanted out of it. Feature wise fairly basic, so don't expect too much.
-
-## Custom Map / Quest Log Window |cffeb7a34New|r
-Fairly minimal Map window, with definitely less features, but most of the features removed are ones I didnt use much anyway. Has support for HandyNotes and TomTom.
-
-## Forever
-
-- [Bags] Remove Crest currency display from bags
-- [Character Frame] Use item rarity instead of ILvL for the equipment slots
-
-# |cffdb49000.9.7|r
-- [Minimap] Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.
-- [Minimap] Fix mail icon on minimap not being hidden after closing options. Add Difficulty preview while we are viewing it's options.
-- [BW Skin] Fix icon not showing after latest update.
-- [Action Bars] Fix taint issue after going into keybind mode.
-- [Pixel Perfect] Updates using new 12.1.5 API for better support for native rounding.
-- [Auras] Add support for pandemic glows.
-- [Minimap] Add coordinates display. And hide default one by default.
-- [Damage Meters] Move overall enable/disable out of window options
-- [Unit Frames] Hide filtered auras when unit is not visible to you.
-- [Unit Frames] Add an option to fade boss frames when they are out of range.
-
-## Support for Forever |cffeb7a34New|r
-Basic support for things to work mostly. Some small adjustments for Forever differences from Retail.
-
-## Talents Custom Window |cffeb7a34New|r
-New custom window added for talents. Fairly basic stuff here. Essentially just talents re-imagined.
-
-# |cffdb49000.9.6|r
-- [Action Bars] Add our own keybind mode dialog instead of using Blizzard one.
-- [Options] Visul rework of options. Probably more to come to improve UX more.
-- [Misc] Bunch of small fixes and improvements.
-- [Nameplates] Add bunch of options for friendly nameplates.
-- [Objective Tracker] Add "affixes" display for delves.
-
-## Damage Meter |cffeb7a34New|r
-For now fairly alpha version of them. Mostly mimicking default damage meters. With some added customization options of how you are displaying the values on bars.
-
-# |cffdb49000.9.5|r
-- [Action Bars] Allow to ping action bars.
-- [Bags] Add keystone level text to the item.
-- [Mythic+ Timer] Add historic data and keep timer visible until you leave key.
-
-# |cffdb49000.9.4|r
-- [Minimap] Instance difficulty is now overlay text instead of a minimap button.
-- [Action Bars] Fix issue where sometimes possess bar buttons are not shown.
-- [Unit Frames] Override player castbar with pet/vehicle if player is possessed.
-- [General] A lot of small optimizations to improve FPS.
-- [Action Bars] Fix pet bar not showing up
-
-## Nameplates |cffeb7a34New|r
-Basic nameplates. Using same aura system as Unit Frames / Aura Displays.
-Have basic functionality that I wanted out of them Not a lot of options, still quite not a lot of customization that dedicated nameplate addons offer, but good enough for me to start.
-
-## Bags |cffeb7a34New|r
-Bags and Bank module. Offers basic one bag mode and also other tabs like Gear, Reagents, Consumables and Quest Items. Also sticky item section where you can pin items. Drag them into empty slot and middle click to remove them.
-
-# |cffdb49000.9.3|r
-- [Objective Tracker] Update delve display to show remaining lives
-- [Objective Tracker] Show auto completable quests in tracker.
-- [XP Bar] Add reputation watch inside of XP bar. Supports rep/hr
-- [Unit Frames] Fix group role indicator hide to work after update.
-- [Action Bars] Add Leave Vehicle button that was missed.
-
-# |cffdb49000.9.2|r
-- [Action Bars] Fix issue with button highlight going out of container
-- [Resource Displays] Fix issue with preview staying shown after options switch/window close
-- [Action Bars] Possess Bar replaces Bar 1
-- [Objective Tracker] Fix issue of scenarios missing timer.
-- [Objective Tracker] Show delve tier.
-- [Unit Frames] Keep Blizzard party/raid frames hidden across roster changes in combat.
-- [Skins] Some fixes for taints happening all over the place. Still more to do, i know...
-
-# |cffdb49000.9.0|r
-
-This major update marks the first step of 1.0.0, as feature wise it's basically quite complete of what I currently want from this addon. Most major things are there, things that are missing mainly are Bags and Nameplates, both of which personally I think other addons handle quite well.
-There's ton of new stuff added, and while in my testing things are working quite well, there's still a lot of polishing that will need to happen and many bugs that I haven't found yet to fix.
-
-## General
-- Updated options. Adjusted styling, made them more compact (aka smaller), sidebar menu is collapsable.
-- Improved Pixel Perfect across the board. Most if not all elements should now look much closer to what is set.
-- Floating combat text font now is also replaced with the configured font.
-
-## Aura Displays |cffeb7a34New|r
-New module for displaying auras using new 12.1 aura system.
-Create aura displays and place them anywhere on your screen. Adjust visual look, what unit to show it for, what filters to use, and what kind of conditions to load them on.
-
-## Action Bars |cffeb7a34New|r
-Fairly basic action bar module. Adjust visual look of each bar, quick keybind mode.
-There are couple things built in it that I have always wanted from action bars and some other stuff:
-- Non-Square buttons. Generally AB addons make you make them square as that's the default Blizzard style, but I wanted some bars to have rectangle buttons.
-- Showing CD on charges instead of only showing when charges = 0. There were some addons that did this already, this was more just something to add on top.
-- Spell Picker (|cffdb4900Ctrl + Right Click|r) to pick spells/consumables from spellbook or bags. Just easier way to setup bars.
-- Custom Glow. Added LibCustomGlow that allows you to have some wider choice of glows to pick from.
-- CD Text location adjustments.
-
-## Minimap |cffeb7a34New|r
-Minimap styling. Adjust size, clock, zone name, button styling on it.
-
-## Objective Tracker |cffeb7a34New|r
-Custom objective tracker replacing default blizzard one. Allows to have more styling options. Easier filtering of objectives via quick filter bar at the top of tracker.
-Easier untracking of the quests/recipes/achievements by just middle clicking on them.
-
-## Mythic Plus Timer |cffeb7a34New|r
-As complimentary to the objective tracker, added M+ timer. Fairly basic functionality.
-Mostly meant as something that is there to use while also using my Objective Tracker as other M+ Timers will not be able to hide them easily. However there's option to hide my Objective Tracker in M+ setting.
-
-## Unit Frames
-Aura Rework. Now you can make as many displays on each unit frame as you want, you can reuse the same display for multiple units. Have much more powerful filters to use.
-Old aura settings will no longer be available and you will need to redo them, sorry.
-
-Additionally:
-- Added targetting border color change for current target and mouseover for party/raid frames.
-- Fixed party frame size in edit mode.
-- Fixed Mythic visibility (1-4 grp) staying on after leaving Mythic raid.
-- Added options to Dispel Overlay to show also when there's any dispellable auras present, that anyone in raid/grp can dispel or anything at all.
-
-## Profiles
-Profiles moved completely to it's own window. Added partial profile import/export, you can choose which modules to export now.
-
-## Cooldowns & Resource Displays
-Updated both module options to match new style better, and also added some more additional options to use, like color curve where you can adjust the color of the resource display bar depending on value.
-Or some improved CD options like desature on cooldown.
-
-## Character Frame
-- Fix temp enchant applying throwing error.
-- Update slot border visuals a bit to not be as "chaotic".
-- Dim icons that enchant is not for.
-- Add Sets and Titles tabs like in default character frame.
-- Add Currency and Reputation display
-
-## Skinning
-
-Added a lot more blizzard window skins. You can also now enable/disable individual skins.
-There will be more in future probably. Skinning these frames are boring.
-
-## Edit Mode
-Improved Edit mod, added X/Y offset editor, improved selecting frames that are overlapping, added snap mode, nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.
-
-## Misc
-- Added loot pickup notification option under Tweaks
-
-# |cffdb49000.2.8|r
-
-- [Unit Frames] Update oUF to 13.4.5.
-- [General] Fix missing LibDBIcon library.
-
-Note: If after the patch you can't target anyone by clicking on the unit frame, go into Options > Gameplay Enhancements > Click Casting > Set keybind to Target Unit Frame.
-
-# |cffdb49000.2.7|r
-
-- Some quick fixes for 12.0.5 compatibility.
-
-# |cffdb49000.2.6|r
-
-- [Skins] Add basic bigwigs bar skin. Basically adds border and darker background.
-- [Unit Frames] Update oUF to 13.3.2 to fix private aura issues.
-
-# |cffdb49000.2.5|r
-
-- [Unit Frames] Add missed preview option for Dispel Overlay.
-- [Unit Frames] Fix issue where player frame previews wouldn't hide on window close.
-- [Character Frame] Equipment popout now limits to 10 items due to some issue where it causes freezes with more items.
-- [Character Frame] Increase window height slightly to accomodate specs with more stats showing.
-
-# |cffdb49000.2.4|r
-
-- [Character Frame] Equipment popout small improvements
-- [Unit Frames] Fix issue where party/raid frames still enabled elements in background when they should be disabled. Should improve performance a bit.
-- [Unit Frames] New UF element - Dispel Overlay. Shows a colored overlay on the unit frame when dispellable auras are present, that you can dispel. This is enabled by default for Raid and Party frames.
-- [Unit Frames] Update oUF to 13.3.1
-- [Brezz] Only show in encounters in raid
-- [Media] Add new absorb bar texture
-- [Character Frame] Add crest display
-
-# |cffdb49000.2.3|r
-
-- Bunch of small fixes for spotted errors during leveling.
-
-# |cffdb49000.2.2|r
-
-- [Broker] Fix issue with guild broker throwing error when API doesnt return zone for player
-- [Unit Frames] Update oUF to 13.3.0
-- [Skins] Adjust tooltip skinning to not taint from loot frame
-- [Unit Frames] Update NSRT nickname tag on nickname update
-- [Tweaks] Remove quest tracking bugfix which is causing more issues than it fixes.
-
-# |cffdb49000.2.1|r
-
-- Update visuals of Anchor Point inputs and titles.
-- New option "Smooth Health Color" for UFs. Uses smooth gradient to color the health bar based on the unit's current health percentage.
-- Adjust menu sidebar in options
-- Fix issue with custom text offsets not updating.
-- Fix issue with group role indicator preview not showing.
-- Add Notifications which will be used for other modules to show notifications (Disabled by default).
-- Add Tweaks and Bugfixes module which will be used for some small tweaks or bugfixes in UI. (All are disabled by default). Not much added here yet, but core framework is in place to add more easily in future.
-
-# |cffdb49000.2.0|r - "The Previews" Update
-
-## A lot of improvements for previewing each element for unitframes.
-
-- Fix buffs and debuffs CD font settings being shared between units.
-- Add additional aura display to all UFs. Disabled by default.
-- Fix issue where raid frame flickers on screen on zone change.
-- Improve Party/Raid preview to include all units
-- Make aura previews toggleable in the options instead of showing no matter what.
-- Update oUF to latest version, which includes updates to many icons that show up on UFs
-- Add previewing for almost all of the elements that can be seen on UFs, excluding text elements.
-- Fix issue where encounter timer would not stop after finishing encounter
-
-# |cffdb49000.1.4|r
-
-- Add support for NSRT nicknames via custom tag [nsrt-name]
-- Fix duplicate friends showing up in friends broker.
-- Update oUF for 12.0.1 compatibility.
-
-# |cffdb49000.1.3|r
-
-- Fix ilvl for default character frame Improvements.
-- Fix ilvl text in custom Character Frame, to correctly display the bag ilvl.
-- Update battle ress display more often to detect charge changes more reliably.
-- Small option improvements.
-- Add filter options to buffs/debuffs elements. Note: Either Buffs or Debuffs always need to be enabled to see any auras. You can use other filters to filter them down further. Also some filter options only work on 12.0.1 patch.
-- Add options to customize castbar's spark and empowered stage width and color.
-
-# |cffdb49000.1.2|r
-
-- Fix ilvl for available items in custom Character Frame
-- Fixing profile creation
-- Rework how custom Character Frame is shown, to allow default character frame to be shown in combat
-- Update defaults to something more sensible. First time load should result in a more usable UI.
-- Fixing Data Broker options breaking if none have been created yet.
-- Adding changelog to highlight changes ingame.
-]]
+-- Entry: { 'Tag', 'Text', { 'Sub item', ... } } or plain 'Text'. Multiple tags: { { 'Tag', 'Tag' }, 'Text' }.
+-- Forever specific entry: { 'Tag', 'Text', forever = true } (tag can be nil for untagged: { nil, 'Text', forever = true }).
+-- Version fields: version, subtitle, intro, changes, sections ({ title, new, forever, text, changes }), notes.
+EXUI.GetChangelog = function()
+    return {
+        {
+            version = '0.9.8',
+            changes = {
+                { 'Options', 'Bunch of changes visually and functionality wise for tabs and side option items.', {
+                    'Now you can group up and adjust ordering of Resource Displays, Cooldowns, Aura Displays, Aura Editors for UF/NP. Also add icons to them.',
+                } },
+                { 'Options', 'Import and export a single item or a whole group for Aura Displays, Unit Frame auras, Nameplate auras, Resource Displays, and Cooldowns.' },
+                { 'Auras', 'Add glow type for Unit Frame auras.' },
+                { 'Auras', 'Adjust/Fix load conditions for aura displays across the board.' },
+                { 'Auras', 'Add Encounter load condition, so you can load aura only for specific encounters.' },
+                { { 'Auras', 'Cooldowns', 'Resource Displays' }, 'Add option to export/import individual items/groups from them.' },
+                { 'Character Frame', 'Add same styling for Inspect UI too. As well as when viewing other players talents use talent UI if enabled.' },
+                { 'Profiles', 'Fix toggle that somehow got broken.' },
+                { 'Unit Frames', 'Add portrait element with 4 different styles - circle, square, hexagon as separate elements and attached as part of the unitframe.' },
+                { 'Unit Frames', 'Add option to change frame level for all text elements' },
+                { 'Misc', 'Default font - DMSans, now supports Cyrillic characters.' },
+                { 'Nameplates', 'Add options to modify friendly nameplates font.' },
+                { 'Skins', 'Re-skin LFG frame (LFG/PvP/M+) with much more polish. And some small added features like filtering of LFG.' },
+                { 'Objective Tracker', 'Fix category underline color option and adjust texture used' },
+                { 'Changelog', 'Adjust/Improve look of changelog window'}, 
+            },
+            sections = {
+                {
+                    title = 'Chat',
+                    new = true,
+                    text = { 'Add chat window that replaces default chat. More changes to come, but generally styled and adds some features I wanted out of it. Feature wise fairly basic, so don\'t expect too much.' },
+                },
+                {
+                    title = 'Custom Map / Quest Log Window',
+                    new = true,
+                    text = { 'Fairly minimal Map window, with definitely less features, but most of the features removed are ones I didnt use much anyway. Has support for HandyNotes and TomTom.' },
+                },
+                {
+                    title = 'Forever',
+                    forever = true,
+                    changes = {
+                        { 'Bags', 'Remove Crest currency display from bags' },
+                        { 'Character Frame', 'Use item rarity instead of ILvL for the equipment slots' },
+                    },
+                },
+            },
+        },
+        {
+            version = '0.9.7',
+            changes = {
+                { 'Minimap', 'Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.' },
+                { 'Minimap', 'Fix mail icon on minimap not being hidden after closing options. Add Difficulty preview while we are viewing it\'s options.' },
+                { 'BW Skin', 'Fix icon not showing after latest update.' },
+                { 'Action Bars', 'Fix taint issue after going into keybind mode.' },
+                { 'Pixel Perfect', 'Updates using new 12.1.5 API for better support for native rounding.' },
+                { 'Auras', 'Add support for pandemic glows.' },
+                { 'Minimap', 'Add coordinates display. And hide default one by default.' },
+                { 'Damage Meters', 'Move overall enable/disable out of window options' },
+                { 'Unit Frames', 'Hide filtered auras when unit is not visible to you.' },
+                { 'Unit Frames', 'Add an option to fade boss frames when they are out of range.' },
+            },
+            sections = {
+                {
+                    title = 'Support for Forever',
+                    forever = true,
+                    new = true,
+                    text = { 'Basic support for things to work mostly. Some small adjustments for Forever differences from Retail.' },
+                },
+                {
+                    title = 'Talents Custom Window',
+                    new = true,
+                    text = { 'New custom window added for talents. Fairly basic stuff here. Essentially just talents re-imagined.' },
+                },
+            },
+        },
+        {
+            version = '0.9.6',
+            changes = {
+                { 'Action Bars', 'Add our own keybind mode dialog instead of using Blizzard one.' },
+                { 'Options', 'Visul rework of options. Probably more to come to improve UX more.' },
+                { 'Misc', 'Bunch of small fixes and improvements.' },
+                { 'Nameplates', 'Add bunch of options for friendly nameplates.' },
+                { 'Objective Tracker', 'Add "affixes" display for delves.' },
+            },
+            sections = {
+                {
+                    title = 'Damage Meter',
+                    new = true,
+                    text = { 'For now fairly alpha version of them. Mostly mimicking default damage meters. With some added customization options of how you are displaying the values on bars.' },
+                },
+            },
+        },
+        {
+            version = '0.9.5',
+            changes = {
+                { 'Action Bars', 'Allow to ping action bars.' },
+                { 'Bags', 'Add keystone level text to the item.' },
+                { 'Mythic+ Timer', 'Add historic data and keep timer visible until you leave key.' },
+            },
+        },
+        {
+            version = '0.9.4',
+            changes = {
+                { 'Minimap', 'Instance difficulty is now overlay text instead of a minimap button.' },
+                { 'Action Bars', 'Fix issue where sometimes possess bar buttons are not shown.' },
+                { 'Unit Frames', 'Override player castbar with pet/vehicle if player is possessed.' },
+                { 'General', 'A lot of small optimizations to improve FPS.' },
+                { 'Action Bars', 'Fix pet bar not showing up' },
+            },
+            sections = {
+                {
+                    title = 'Nameplates',
+                    new = true,
+                    text = {
+                        'Basic nameplates. Using same aura system as Unit Frames / Aura Displays.',
+                        'Have basic functionality that I wanted out of them Not a lot of options, still quite not a lot of customization that dedicated nameplate addons offer, but good enough for me to start.',
+                    },
+                },
+                {
+                    title = 'Bags',
+                    new = true,
+                    text = { 'Bags and Bank module. Offers basic one bag mode and also other tabs like Gear, Reagents, Consumables and Quest Items. Also sticky item section where you can pin items. Drag them into empty slot and middle click to remove them.' },
+                },
+            },
+        },
+        {
+            version = '0.9.3',
+            changes = {
+                { 'Objective Tracker', 'Update delve display to show remaining lives' },
+                { 'Objective Tracker', 'Show auto completable quests in tracker.' },
+                { 'XP Bar', 'Add reputation watch inside of XP bar. Supports rep/hr' },
+                { 'Unit Frames', 'Fix group role indicator hide to work after update.' },
+                { 'Action Bars', 'Add Leave Vehicle button that was missed.' },
+            },
+        },
+        {
+            version = '0.9.2',
+            changes = {
+                { 'Action Bars', 'Fix issue with button highlight going out of container' },
+                { 'Resource Displays', 'Fix issue with preview staying shown after options switch/window close' },
+                { 'Action Bars', 'Possess Bar replaces Bar 1' },
+                { 'Objective Tracker', 'Fix issue of scenarios missing timer.' },
+                { 'Objective Tracker', 'Show delve tier.' },
+                { 'Unit Frames', 'Keep Blizzard party/raid frames hidden across roster changes in combat.' },
+                { 'Skins', 'Some fixes for taints happening all over the place. Still more to do, i know...' },
+            },
+        },
+        {
+            version = '0.9.0',
+            intro = {
+                'This major update marks the first step of 1.0.0, as feature wise it\'s basically quite complete of what I currently want from this addon. Most major things are there, things that are missing mainly are Bags and Nameplates, both of which personally I think other addons handle quite well.',
+                'There\'s ton of new stuff added, and while in my testing things are working quite well, there\'s still a lot of polishing that will need to happen and many bugs that I haven\'t found yet to fix.',
+            },
+            sections = {
+                {
+                    title = 'General',
+                    changes = {
+                        'Updated options. Adjusted styling, made them more compact (aka smaller), sidebar menu is collapsable.',
+                        'Improved Pixel Perfect across the board. Most if not all elements should now look much closer to what is set.',
+                        'Floating combat text font now is also replaced with the configured font.',
+                    },
+                },
+                {
+                    title = 'Aura Displays',
+                    new = true,
+                    text = {
+                        'New module for displaying auras using new 12.1 aura system.',
+                        'Create aura displays and place them anywhere on your screen. Adjust visual look, what unit to show it for, what filters to use, and what kind of conditions to load them on.',
+                    },
+                },
+                {
+                    title = 'Action Bars',
+                    new = true,
+                    text = {
+                        'Fairly basic action bar module. Adjust visual look of each bar, quick keybind mode.',
+                        'There are couple things built in it that I have always wanted from action bars and some other stuff:',
+                    },
+                    changes = {
+                        'Non-Square buttons. Generally AB addons make you make them square as that\'s the default Blizzard style, but I wanted some bars to have rectangle buttons.',
+                        'Showing CD on charges instead of only showing when charges = 0. There were some addons that did this already, this was more just something to add on top.',
+                        'Spell Picker (|cffdb4900Ctrl + Right Click|r) to pick spells/consumables from spellbook or bags. Just easier way to setup bars.',
+                        'Custom Glow. Added LibCustomGlow that allows you to have some wider choice of glows to pick from.',
+                        'CD Text location adjustments.',
+                    },
+                },
+                {
+                    title = 'Minimap',
+                    new = true,
+                    text = { 'Minimap styling. Adjust size, clock, zone name, button styling on it.' },
+                },
+                {
+                    title = 'Objective Tracker',
+                    new = true,
+                    text = {
+                        'Custom objective tracker replacing default blizzard one. Allows to have more styling options. Easier filtering of objectives via quick filter bar at the top of tracker.',
+                        'Easier untracking of the quests/recipes/achievements by just middle clicking on them.',
+                    },
+                },
+                {
+                    title = 'Mythic Plus Timer',
+                    new = true,
+                    text = {
+                        'As complimentary to the objective tracker, added M+ timer. Fairly basic functionality.',
+                        'Mostly meant as something that is there to use while also using my Objective Tracker as other M+ Timers will not be able to hide them easily. However there\'s option to hide my Objective Tracker in M+ setting.',
+                    },
+                },
+                {
+                    title = 'Unit Frames',
+                    text = {
+                        'Aura Rework. Now you can make as many displays on each unit frame as you want, you can reuse the same display for multiple units. Have much more powerful filters to use.',
+                        'Old aura settings will no longer be available and you will need to redo them, sorry.',
+                        'Additionally:',
+                    },
+                    changes = {
+                        'Added targetting border color change for current target and mouseover for party/raid frames.',
+                        'Fixed party frame size in edit mode.',
+                        'Fixed Mythic visibility (1-4 grp) staying on after leaving Mythic raid.',
+                        'Added options to Dispel Overlay to show also when there\'s any dispellable auras present, that anyone in raid/grp can dispel or anything at all.',
+                    },
+                },
+                {
+                    title = 'Profiles',
+                    text = { 'Profiles moved completely to it\'s own window. Added partial profile import/export, you can choose which modules to export now.' },
+                },
+                {
+                    title = 'Cooldowns & Resource Displays',
+                    text = {
+                        'Updated both module options to match new style better, and also added some more additional options to use, like color curve where you can adjust the color of the resource display bar depending on value.',
+                        'Or some improved CD options like desature on cooldown.',
+                    },
+                },
+                {
+                    title = 'Character Frame',
+                    changes = {
+                        'Fix temp enchant applying throwing error.',
+                        'Update slot border visuals a bit to not be as "chaotic".',
+                        'Dim icons that enchant is not for.',
+                        'Add Sets and Titles tabs like in default character frame.',
+                        'Add Currency and Reputation display',
+                    },
+                },
+                {
+                    title = 'Skinning',
+                    text = {
+                        'Added a lot more blizzard window skins. You can also now enable/disable individual skins.',
+                        'There will be more in future probably. Skinning these frames are boring.',
+                    },
+                },
+                {
+                    title = 'Edit Mode',
+                    text = { 'Improved Edit mod, added X/Y offset editor, improved selecting frames that are overlapping, added snap mode, nudge frames with keyboard. Fixed frame sizes for party/raid frames to better match reality.' },
+                },
+                {
+                    title = 'Misc',
+                    changes = {
+                        'Added loot pickup notification option under Tweaks',
+                    },
+                },
+            },
+        },
+        {
+            version = '0.2.8',
+            changes = {
+                { 'Unit Frames', 'Update oUF to 13.4.5.' },
+                { 'General', 'Fix missing LibDBIcon library.' },
+            },
+            notes = {
+                'If after the patch you can\'t target anyone by clicking on the unit frame, go into Options > Gameplay Enhancements > Click Casting > Set keybind to Target Unit Frame.',
+            },
+        },
+        {
+            version = '0.2.7',
+            changes = {
+                'Some quick fixes for 12.0.5 compatibility.',
+            },
+        },
+        {
+            version = '0.2.6',
+            changes = {
+                { 'Skins', 'Add basic bigwigs bar skin. Basically adds border and darker background.' },
+                { 'Unit Frames', 'Update oUF to 13.3.2 to fix private aura issues.' },
+            },
+        },
+        {
+            version = '0.2.5',
+            changes = {
+                { 'Unit Frames', 'Add missed preview option for Dispel Overlay.' },
+                { 'Unit Frames', 'Fix issue where player frame previews wouldn\'t hide on window close.' },
+                { 'Character Frame', 'Equipment popout now limits to 10 items due to some issue where it causes freezes with more items.' },
+                { 'Character Frame', 'Increase window height slightly to accomodate specs with more stats showing.' },
+            },
+        },
+        {
+            version = '0.2.4',
+            changes = {
+                { 'Character Frame', 'Equipment popout small improvements' },
+                { 'Unit Frames', 'Fix issue where party/raid frames still enabled elements in background when they should be disabled. Should improve performance a bit.' },
+                { 'Unit Frames', 'New UF element - Dispel Overlay. Shows a colored overlay on the unit frame when dispellable auras are present, that you can dispel. This is enabled by default for Raid and Party frames.' },
+                { 'Unit Frames', 'Update oUF to 13.3.1' },
+                { 'Brezz', 'Only show in encounters in raid' },
+                { 'Media', 'Add new absorb bar texture' },
+                { 'Character Frame', 'Add crest display' },
+            },
+        },
+        {
+            version = '0.2.3',
+            changes = {
+                'Bunch of small fixes for spotted errors during leveling.',
+            },
+        },
+        {
+            version = '0.2.2',
+            changes = {
+                { 'Broker', 'Fix issue with guild broker throwing error when API doesnt return zone for player' },
+                { 'Unit Frames', 'Update oUF to 13.3.0' },
+                { 'Skins', 'Adjust tooltip skinning to not taint from loot frame' },
+                { 'Unit Frames', 'Update NSRT nickname tag on nickname update' },
+                { 'Tweaks', 'Remove quest tracking bugfix which is causing more issues than it fixes.' },
+            },
+        },
+        {
+            version = '0.2.1',
+            changes = {
+                'Update visuals of Anchor Point inputs and titles.',
+                'New option "Smooth Health Color" for UFs. Uses smooth gradient to color the health bar based on the unit\'s current health percentage.',
+                'Adjust menu sidebar in options',
+                'Fix issue with custom text offsets not updating.',
+                'Fix issue with group role indicator preview not showing.',
+                'Add Notifications which will be used for other modules to show notifications (Disabled by default).',
+                'Add Tweaks and Bugfixes module which will be used for some small tweaks or bugfixes in UI. (All are disabled by default). Not much added here yet, but core framework is in place to add more easily in future.',
+            },
+        },
+        {
+            version = '0.2.0',
+            subtitle = '"The Previews" Update',
+            intro = {
+                'A lot of improvements for previewing each element for unitframes.',
+            },
+            changes = {
+                'Fix buffs and debuffs CD font settings being shared between units.',
+                'Add additional aura display to all UFs. Disabled by default.',
+                'Fix issue where raid frame flickers on screen on zone change.',
+                'Improve Party/Raid preview to include all units',
+                'Make aura previews toggleable in the options instead of showing no matter what.',
+                'Update oUF to latest version, which includes updates to many icons that show up on UFs',
+                'Add previewing for almost all of the elements that can be seen on UFs, excluding text elements.',
+                'Fix issue where encounter timer would not stop after finishing encounter',
+            },
+        },
+        {
+            version = '0.1.4',
+            changes = {
+                'Add support for NSRT nicknames via custom tag [nsrt-name]',
+                'Fix duplicate friends showing up in friends broker.',
+                'Update oUF for 12.0.1 compatibility.',
+            },
+        },
+        {
+            version = '0.1.3',
+            changes = {
+                'Fix ilvl for default character frame Improvements.',
+                'Fix ilvl text in custom Character Frame, to correctly display the bag ilvl.',
+                'Update battle ress display more often to detect charge changes more reliably.',
+                'Small option improvements.',
+                'Add filter options to buffs/debuffs elements. Note: Either Buffs or Debuffs always need to be enabled to see any auras. You can use other filters to filter them down further. Also some filter options only work on 12.0.1 patch.',
+                'Add options to customize castbar\'s spark and empowered stage width and color.',
+            },
+        },
+        {
+            version = '0.1.2',
+            changes = {
+                'Fix ilvl for available items in custom Character Frame',
+                'Fixing profile creation',
+                'Rework how custom Character Frame is shown, to allow default character frame to be shown in combat',
+                'Update defaults to something more sensible. First time load should result in a more usable UI.',
+                'Fixing Data Broker options breaking if none have been created yet.',
+                'Adding changelog to highlight changes ingame.',
+            },
+        },
+    }
+end
