@@ -1746,18 +1746,43 @@ local function invalidateHardSignatures()
     end
 end
 
+local function getTalentStateKey()
+    local getSpec = GetSpecialization or (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization)
+    local getSpecInfo = GetSpecializationInfo or (C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo)
+    local specIndex = getSpec and getSpec()
+    local specID = specIndex and getSpecInfo and getSpecInfo(specIndex)
+    local configID = C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
+    return tostring(specID) .. '|' .. tostring(configID)
+end
+
+local lastTalentStateKey = getTalentStateKey()
+local talentRefreshQueued = false
+
+-- PLAYER_TALENT_UPDATE fires without real changes; full aura rebuilds only on spec/loadout change
 EXUI:RegisterEventHandler({ 'PLAYER_SPECIALIZATION_CHANGED', 'PLAYER_TALENT_UPDATE' }, 'aura-displays-button-style', function()
-    if InCombatLockdown() then
-        buttonStyle:InvalidateStyleSignatures()
-        invalidateHardSignatures()
+    if talentRefreshQueued then
         return
     end
-    local npApply = EXUI:GetModule('np-auras-apply')
-    if npApply and npApply.RefreshAll then
-        npApply:RefreshAll()
-    end
-    local ufApply = EXUI:GetModule('uf-auras-apply')
-    if ufApply and ufApply.RefreshAll then
-        ufApply:RefreshAll()
-    end
+    talentRefreshQueued = true
+    C_Timer.After(0, function()
+        talentRefreshQueued = false
+        local key = getTalentStateKey()
+        if key == lastTalentStateKey then
+            return
+        end
+        lastTalentStateKey = key
+        if InCombatLockdown() then
+            buttonStyle:InvalidateStyleSignatures()
+            invalidateHardSignatures()
+            return
+        end
+        local npApply = EXUI:GetModule('np-auras-apply')
+        if npApply and npApply.RefreshAll then
+            npApply:RefreshAll()
+        end
+        local ufApply = EXUI:GetModule('uf-auras-apply')
+        if ufApply and ufApply.RefreshAll then
+            ufApply:RefreshAll()
+        end
+    end)
 end)

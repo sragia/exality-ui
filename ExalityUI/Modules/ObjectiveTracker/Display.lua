@@ -383,6 +383,13 @@ function display:GetSettingsSignature(db)
     signatureParts[#signatureParts + 1] = db.hideQuestPOI
     signatureParts[#signatureParts + 1] = db.showCategoryHeaderLine
     signatureParts[#signatureParts + 1] = db.categoryHeaderLineThickness
+    local lineColor = db.categoryHeaderLineColor
+    if lineColor then
+        signatureParts[#signatureParts + 1] = lineColor.r
+        signatureParts[#signatureParts + 1] = lineColor.g
+        signatureParts[#signatureParts + 1] = lineColor.b
+        signatureParts[#signatureParts + 1] = lineColor.a
+    end
     signatureParts[#signatureParts + 1] = db.categorySpacing
     signatureParts[#signatureParts + 1] = db.customHeaderStyle
     signatureParts[#signatureParts + 1] = db.blockHeaderFont
@@ -2547,7 +2554,13 @@ function display:ApplyCategoryHeaderLine(frame, db)
         b = EXUI.const.theme.accent[3],
         a = 1,
     }
-    frame.headerLine:SetColorTexture(color.r, color.g, color.b, color.a or 1)
+    frame.headerLine:SetTexture(EXUI.const.textures.frame.gradient)
+    if self:GetTextAlign(db) == 'RIGHT' then
+        frame.headerLine:SetTexCoord(1, 0, 0, 1)
+    else
+        frame.headerLine:SetTexCoord(0, 1, 0, 1)
+    end
+    frame.headerLine:SetVertexColor(color.r, color.g, color.b, color.a or 1)
 
     return lineHeight, frame.headerLine
 end

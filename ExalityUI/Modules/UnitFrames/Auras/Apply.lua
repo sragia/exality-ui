@@ -53,6 +53,7 @@ apply.pendingLiveRefresh = {}
 apply.sigCache = {}
 apply.containerGraveyard = {}
 apply.PREWARM_MIN = 40
+apply.PREWARM_PER_FRAME = 2
 
 function apply:InvalidateHardSignatures()
     wipe(self.sigCache)
@@ -679,11 +680,21 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
     end
 end
 
+-- Container creation is expensive; spread the refill across frames instead of one hitch
 function apply:PrewarmPool()
+    if self.prewarmQueued then
+        return
+    end
+    self:PrewarmStep()
+end
+
+function apply:PrewarmStep()
+    self.prewarmQueued = false
     if InCombatLockdown() then
         return
     end
 
+    local budget = self.PREWARM_PER_FRAME
     local perDisplay = self.PREWARM_MIN
     local poolHolder = self:GetPoolHolder()
     if not self.prewarmFrame then
@@ -697,6 +708,14 @@ function apply:PrewarmPool()
             if ufAuras:IsDisplayEnabled(display) and ufAuras:DisplayHasLoadableGroup(display) then
                 local hardSig = self:GetHardSignature(displayID, display)
                 while self:CountPooledContainers(hardSig) < perDisplay do
+                    if budget <= 0 then
+                        self.prewarmQueued = true
+                        C_Timer.After(0, function()
+                            self:PrewarmStep()
+                        end)
+                        return
+                    end
+                    budget = budget - 1
                     local container = self:CreateContainer(self.prewarmFrame, display)
                     if not container then
                         break

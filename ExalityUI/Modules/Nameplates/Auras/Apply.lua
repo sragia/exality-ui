@@ -29,6 +29,7 @@ apply.pendingFrames = {}
 apply.sigCache = {}
 apply.containerGraveyard = {}
 apply.PREWARM_MIN = 40
+apply.PREWARM_PER_FRAME = 2
 
 function apply:Init()
     if self.eventHandler then
@@ -466,7 +467,16 @@ function apply:BindPreparedContainer(frame, displayID, display, container)
     end
 end
 
+-- Container creation is expensive; spread the refill across frames instead of one hitch
 function apply:PrewarmPool()
+    if self.prewarmQueued then
+        return
+    end
+    self:PrewarmStep()
+end
+
+function apply:PrewarmStep()
+    self.prewarmQueued = false
     if InCombatLockdown() or not npCore.enabled then
         return
     end
@@ -496,10 +506,19 @@ function apply:PrewarmPool()
         self.prewarmFrame = templateFrame
     end
 
+    local budget = self.PREWARM_PER_FRAME
     for displayID, display in pairs(displays) do
         if npAuras:IsDisplayEnabled(display) and npAuras:DisplayHasLoadableGroup(display) then
             local hardSig = self:GetHardSignature(displayID, display)
             while self:CountPooledContainers(hardSig) < perDisplay do
+                if budget <= 0 then
+                    self.prewarmQueued = true
+                    C_Timer.After(0, function()
+                        self:PrewarmStep()
+                    end)
+                    return
+                end
+                budget = budget - 1
                 local container = self:CreateContainer(templateFrame, display, poolHolder)
                 if not container then
                     break
