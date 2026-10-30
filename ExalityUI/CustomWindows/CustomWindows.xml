@@ -3,4 +3,5 @@
     <Include file="CharacterFrame/CharacterFrame.xml"/>
     <Include file="Talents/Talents.xml"/>
     <Include file="QuestLog/QuestLog.xml"/>
+    <Include file="Merchant/Merchant.xml"/>
 </Ui>

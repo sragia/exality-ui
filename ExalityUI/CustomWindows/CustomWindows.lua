@@ -16,6 +16,9 @@ local talentsWindow = EXUI:GetModule('talents-window')
 ---@class EXUIQuestLogWindow
 local questLogWindow = EXUI:GetModule('quest-log-window')
 
+---@class EXUIMerchantWindow
+local merchantWindow = EXUI:GetModule('merchant-window')
+
 ------------------
 
 ---@class EXUICustomWindows
@@ -49,6 +52,7 @@ customWindows.GetDefaults = function(self)
         QuestLogEnabled = false,
         QuestLogSide = 'right',
         QuestLogMapHeight = questLogWindow.mapHeightDefault or 533,
+        MerchantEnabled = false,
     }
 end
 
@@ -105,6 +109,29 @@ customWindows.GetOptions = function(self)
             type = 'description',
             label =
             "Talents & Spellbook reimagined (not really but buzzwords you know).",
+            width = 100,
+        },
+        {
+            label = 'Merchant',
+            name = 'merchantEnabled',
+            type = 'toggle',
+            onChange = function(value)
+                customWindows.Data:SetValue('MerchantEnabled', value)
+                if (value) then
+                    merchantWindow:Enable()
+                else
+                    merchantWindow:Disable()
+                end
+            end,
+            currentValue = function()
+                return customWindows.Data:GetValue('MerchantEnabled') == true
+            end,
+            width = 100,
+        },
+        {
+            type = 'description',
+            label =
+            'Vendor window with a paged item grid and bulk buying.',
             width = 100,
         },
     }

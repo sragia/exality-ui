@@ -1,0 +1,7 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="Sprite.lua"/>
+    <Script file="Pagination.lua"/>
+    <Script file="Rows.lua"/>
+    <Script file="Bulk.lua"/>
+    <Script file="Window.lua"/>
+</Ui>

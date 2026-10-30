@@ -39,6 +39,11 @@ EXUI.GetChangelog = function()
                     text = { 'Fairly minimal Map window, with definitely less features, but most of the features removed are ones I didnt use much anyway. Has support for HandyNotes and TomTom.' },
                 },
                 {
+                    title = 'Custom Vendor Window',
+                    new = true,
+                    text = { 'Custom vendor window that replaces default one with our styling' }
+                },
+                {
                     title = 'Forever',
                     forever = true,
                     changes = {
