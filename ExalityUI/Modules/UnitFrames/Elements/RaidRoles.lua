@@ -36,7 +36,7 @@ raidRoles.Update = function(self, frame)
     core:EnableElementForFrame(frame, 'LeaderIndicator')
     core:EnableElementForFrame(frame, 'AssistantIndicator')
     core:ApplyElementFrameLevel(frame, anchor, db.raidRolesFrameLevel or 1)
-
+    anchor:ClearAllPoints()
     anchor:SetPoint(db.raidRolesAnchorPoint, frame.ElementFrame, db.raidRolesRelativeAnchorPoint, db.raidRolesXOff,
         db.raidRolesYOff)
 

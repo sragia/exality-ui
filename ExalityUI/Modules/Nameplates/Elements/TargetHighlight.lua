@@ -5,8 +5,17 @@ local EXUI = select(2, ...)
 local highlight = EXUI:GetModule('np-element-target-highlight')
 
 local LCG = LibStub('LibCustomGlow-1.0', true)
+local GLOW_WIDTH, GLOW_HEIGHT = 512, 96
 local GLOW_SLICE = 16
-local GLOW_OUTSET = 6
+-- Texture pixels of the art's band, the cutout lands on the plate edge when they match.
+local GLOW_OUTSET = 14
+local GLOW_BAND = 14
+local GLOW_PIECES = { 'TopLeft', 'Top', 'TopRight', 'Left', 'Right', 'BottomLeft', 'Bottom', 'BottomRight' }
+local SHAPED_GLOWS = {
+    [4] = 'glow4',
+    [6] = 'glow6',
+    [10] = 'glow10',
+}
 local hoverSeen = {}
 local pollAccum = 0
 
@@ -18,31 +27,76 @@ end
 
 local function hideGlow(frame)
     if frame.TargetGlow then
-        frame.TargetGlow:Hide()
+        for _, tex in pairs(frame.TargetGlow) do
+            tex:Hide()
+        end
     end
 end
 
+-- Built from plain textures as nine-slice caps ignore scale and plates scale when targeted.
 local function ensureGlow(frame)
     if frame.TargetGlow then
         return frame.TargetGlow
     end
-    local tex = frame:CreateTexture(nil, 'BACKGROUND')
-    tex:SetTexture(EXUI.const.textures.nameplates.glow)
-    tex:SetBlendMode('ADD')
-    tex:SetTextureSliceMargins(GLOW_SLICE, GLOW_SLICE, GLOW_SLICE, GLOW_SLICE)
-    frame.TargetGlow = tex
-    return tex
+    local glow = {}
+    for _, key in ipairs(GLOW_PIECES) do
+        local tex = frame:CreateTexture(nil, 'BACKGROUND')
+        tex:SetBlendMode('ADD')
+        glow[key] = tex
+    end
+    frame.TargetGlow = glow
+    return glow
+end
+
+local function layoutGlow(frame, glow, slice)
+    local npCore = EXUI:GetModule('np-core')
+    local host = frame.HealthHost or frame
+    local outset = npCore:GetChromeInset(GLOW_OUTSET)
+    local size = npCore:GetChromeInset(slice)
+    local u, v = slice / GLOW_WIDTH, slice / GLOW_HEIGHT
+
+    local function corner(tex, point, x, y, left, right, top, bottom)
+        tex:ClearAllPoints()
+        tex:SetPoint(point, host, point, x, y)
+        tex:SetSize(size, size)
+        tex:SetTexCoord(left, right, top, bottom)
+    end
+    corner(glow.TopLeft, 'TOPLEFT', -outset, outset, 0, u, 0, v)
+    corner(glow.TopRight, 'TOPRIGHT', outset, outset, 1 - u, 1, 0, v)
+    corner(glow.BottomLeft, 'BOTTOMLEFT', -outset, -outset, 0, u, 1 - v, 1)
+    corner(glow.BottomRight, 'BOTTOMRIGHT', outset, -outset, 1 - u, 1, 1 - v, 1)
+
+    local function edge(tex, fromTex, fromPoint, toTex, toPoint, left, right, top, bottom)
+        tex:ClearAllPoints()
+        tex:SetPoint('TOPLEFT', fromTex, fromPoint)
+        tex:SetPoint('BOTTOMRIGHT', toTex, toPoint)
+        tex:SetTexCoord(left, right, top, bottom)
+    end
+    edge(glow.Top, glow.TopLeft, 'TOPRIGHT', glow.TopRight, 'BOTTOMLEFT', u, 1 - u, 0, v)
+    edge(glow.Bottom, glow.BottomLeft, 'TOPRIGHT', glow.BottomRight, 'BOTTOMLEFT', u, 1 - u, 1 - v, 1)
+    edge(glow.Left, glow.TopLeft, 'BOTTOMLEFT', glow.BottomLeft, 'TOPRIGHT', 0, u, v, 1 - v)
+    edge(glow.Right, glow.TopRight, 'BOTTOMLEFT', glow.BottomRight, 'TOPRIGHT', 1 - u, 1, v, 1 - v)
+end
+
+local function getGlowLayout(frame)
+    local textures = EXUI.const.textures.nameplates
+    local size = EXUI:GetModule('np-element-shape'):GetStyleSize(frame)
+    if SHAPED_GLOWS[size] then
+        return textures[SHAPED_GLOWS[size]], GLOW_BAND + size + 1
+    end
+    return textures.glow, GLOW_SLICE
 end
 
 local function showGlow(frame, db)
-    local host = frame.HealthHost or frame
-    local tex = ensureGlow(frame)
+    local glow = ensureGlow(frame)
     local c = db.targetHighlightColor or { r = 1, g = 0.82, b = 0.2, a = 1 }
-    tex:ClearAllPoints()
-    tex:SetPoint('TOPLEFT', host, 'TOPLEFT', -GLOW_OUTSET, GLOW_OUTSET)
-    tex:SetPoint('BOTTOMRIGHT', host, 'BOTTOMRIGHT', GLOW_OUTSET, -GLOW_OUTSET)
-    tex:SetVertexColor(c.r, c.g, c.b, c.a or 1)
-    tex:Show()
+    local texture, slice = getGlowLayout(frame)
+    layoutGlow(frame, glow, slice)
+    for _, tex in pairs(glow) do
+        tex:SetTexture(texture)
+        tex:SetVertexColor(c.r, c.g, c.b, c.a or 1)
+        tex:Show()
+    end
 end
 
 local function stopGlow(frame)
@@ -83,6 +137,7 @@ local function ensureHealthOverlay(frame)
     tex:SetColorTexture(1, 1, 1, 1)
     tex:Hide()
     bar._exuiHoverLight = tex
+    EXUI:GetModule('np-element-shape'):MaskOverlay(frame, tex)
     return tex
 end
 

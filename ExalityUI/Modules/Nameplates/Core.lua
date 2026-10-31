@@ -304,12 +304,14 @@ end
 core.ApplyHealthChrome = function(self, frame, color)
     local db = frame.db or self:GetDB()
     local thickness = self:GetBorderThickness(db)
+    local shape = EXUI:GetModule('np-element-shape')
+    local shaped = shape:IsShaped(frame)
     local key
     if self:IsFriendlyNameOnly(frame) or not thickness or thickness <= 0 then
-        key = 'off'
+        key = shaped and 'off-shaped' or 'off'
     else
         local c = color or self:GetBorderColor(db)
-        key = (thickness or 0) .. ':' .. (db.sizeHeight or 16) .. ':' ..
+        key = (shaped and 'shaped:' or '') .. (thickness or 0) .. ':' .. (db.sizeHeight or 16) .. ':' ..
             (c.r or 0) .. ':' .. (c.g or 0) .. ':' .. (c.b or 0) .. ':' .. (c.a or 1)
     end
     if frame._exuiChromeKey == key then
@@ -323,11 +325,14 @@ core.ApplyHealthChrome = function(self, frame, color)
     if fill then
         fill:Hide()
     end
-    if key == 'off' then
+    if key == 'off' or shaped then
         if bar then
             self:ApplyInset(bar, host, 0)
         end
         self:ApplyBorderEdges(host, 0)
+        if shaped then
+            shape:SetBorderColor(frame, color or self:GetBorderColor(db))
+        end
         return
     end
     if bar then
@@ -342,7 +347,7 @@ core.ApplyCastChrome = function(self, bar, db)
     end
     local thickness = self:GetBorderThickness(db)
     local color = self:GetBorderColor(db)
-    if thickness <= 0 then
+    if thickness <= 0 or EXUI:GetModule('np-element-shape'):IsCastbarShaped(db) then
         self:ApplyInset(bar, bar.chrome, 0)
         self:SetFillColor(bar.chrome.BorderFill, nil)
         return
@@ -388,6 +393,7 @@ core.BuildPlate = function(self, frame)
     frame.Castbar = EXUI:GetModule('np-element-cast-bar'):Create(frame)
     frame.RaidTargetIndicator = EXUI:GetModule('np-element-raid-target'):Create(frame)
     frame.CustomTexts = EXUI:GetModule('np-element-custom-texts'):Create(frame)
+    frame.FrameShape = EXUI:GetModule('np-element-shape'):Create(frame)
 end
 
 core.InvalidateStyle = function(self)
@@ -404,6 +410,7 @@ core.ApplyPlateStyle = function(self, frame, opts)
 
     EXUI:GetModule('np-element-health'):Update(frame)
     EXUI:GetModule('np-element-health-prediction'):Update(frame)
+    EXUI:GetModule('np-element-shape'):Update(frame)
     EXUI:GetModule('np-element-name'):Update(frame)
     EXUI:GetModule('np-element-health-text'):Update(frame)
     EXUI:GetModule('np-element-health-perc'):Update(frame)

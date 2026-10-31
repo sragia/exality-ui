@@ -334,10 +334,12 @@ castBar.Create = function(self, frame)
         local color = db and db.castbarSparkColor or { r = 1, g = 1, b = 1, a = 1 }
         line:SetVertexColor(color.r or 1, color.g or 1, color.b or 1, color.a or 1)
         pip.line = line
+        EXUI:GetModule('uf-element-shape'):MaskPip(self, pip)
         return pip
     end
     bar.UpdatePips = updatePips
     bar.layoutSize = 140
+    bar.Shape = EXUI:GetModule('uf-element-shape'):CreateCastbar(bar, container)
 
     bar.ShouldShow = function(element, unit)
         local owner = element.__owner
@@ -404,7 +406,10 @@ castBar.Update = function(self, frame)
     end
     local npCore = EXUI:GetModule('np-core')
     npCore:ApplyCastChrome(bar, db)
-    local inset = npCore:GetChromeInset(npCore:GetBorderThickness(db), barHeight)
+    local thickness = npCore:GetBorderThickness(db)
+    local shaped = EXUI:GetModule('uf-element-shape'):ApplyCastbarShape(bar, db.castbarStyle,
+        npCore:GetBorderColor(db), thickness > 0)
+    local inset = shaped and 0 or npCore:GetChromeInset(thickness, barHeight)
     bar.layoutSize = math.max(1, width - iconWidth - inset * 2)
 
     local font = LSM:Fetch('font', db.castbarFont)

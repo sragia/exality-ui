@@ -9,7 +9,7 @@ EXUI.GetChangelog = function()
         {
             version = '0.9.9',
             changes = {
-                { 'Unit Frames', 'Added different shapes for the unitframes - Rounded (4px, 6px, 10px), Cut (4px, 6px, 10px)' },
+                { { 'Unit Frames', 'Nameplates' }, 'Added different shapes for the unitframes - Rounded (4px, 6px, 10px), Cut (4px, 6px, 10px)' },
                 {
                     'Unit Frames',
                     'Color options for UF borders. Adjust backdrop texture for the UF',

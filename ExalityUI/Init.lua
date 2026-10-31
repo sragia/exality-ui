@@ -151,6 +151,9 @@ EXUI.const = {
         },
         nameplates = {
             glow = [[Interface/Addons/ExalityUI/Assets/Images/Nameplates/glow.png]],
+            glow4 = [[Interface/Addons/ExalityUI/Assets/Images/Nameplates/glow-4.png]],
+            glow6 = [[Interface/Addons/ExalityUI/Assets/Images/Nameplates/glow-6.png]],
+            glow10 = [[Interface/Addons/ExalityUI/Assets/Images/Nameplates/glow-10.png]],
         },
         skins = {
             btnHighlight = [[Interface/Addons/ExalityUI/Assets/Images/Skins/btn-highlight.png]],

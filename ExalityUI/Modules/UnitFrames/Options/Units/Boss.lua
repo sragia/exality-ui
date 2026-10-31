@@ -158,7 +158,6 @@ core:AddOption({
         {
             name = 'Portrait',
             id = 'portrait',
-            allowPreview = true,
             options = {
                 function()
                     return EXUI:GetModule('uf-options-portrait'):GetOptions('boss')

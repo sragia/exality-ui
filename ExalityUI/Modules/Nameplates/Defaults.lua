@@ -18,6 +18,8 @@ defaults.PLATE = {
     -- Inset fill, not a 1px line. Thickness is physical pixels.
     borderThickness = 1,
     borderColor = color(0, 0, 0, 1),
+    frameStyle = 'default',
+    castbarStyle = 'default',
 
     -- Health coloring
     healthColorMode = 'custom', -- custom | reaction | curve

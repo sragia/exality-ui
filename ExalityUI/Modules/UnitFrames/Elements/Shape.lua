@@ -5,12 +5,12 @@ local EXUI = select(2, ...)
 local shape = EXUI:GetModule('uf-element-shape')
 
 local STYLES = {
-    ['round-4'] = { label = 'Rounded (4px)', order = 2, mask = 'shapeRound4', border = 'shapeRound4Border', margin = 5 },
-    ['round-6'] = { label = 'Rounded (6px)', order = 3, mask = 'shapeRound6', border = 'shapeRound6Border', margin = 7 },
-    ['round-10'] = { label = 'Rounded (10px)', order = 4, mask = 'shapeRound10', border = 'shapeRound10Border', margin = 11 },
-    ['cut-4'] = { label = 'Cut (4px)', order = 5, mask = 'shapeCut4', border = 'shapeCut4Border', margin = 5 },
-    ['cut-6'] = { label = 'Cut (6px)', order = 6, mask = 'shapeCut6', border = 'shapeCut6Border', margin = 7 },
-    ['cut-10'] = { label = 'Cut (10px)', order = 7, mask = 'shapeCut10', border = 'shapeCut10Border', margin = 11 },
+    ['round-4'] = { label = 'Rounded (4px)', order = 2, mask = 'shapeRound4', border = 'shapeRound4Border', margin = 5, size = 4 },
+    ['round-6'] = { label = 'Rounded (6px)', order = 3, mask = 'shapeRound6', border = 'shapeRound6Border', margin = 7, size = 6 },
+    ['round-10'] = { label = 'Rounded (10px)', order = 4, mask = 'shapeRound10', border = 'shapeRound10Border', margin = 11, size = 10 },
+    ['cut-4'] = { label = 'Cut (4px)', order = 5, mask = 'shapeCut4', border = 'shapeCut4Border', margin = 5, size = 4 },
+    ['cut-6'] = { label = 'Cut (6px)', order = 6, mask = 'shapeCut6', border = 'shapeCut6Border', margin = 7, size = 6 },
+    ['cut-10'] = { label = 'Cut (10px)', order = 7, mask = 'shapeCut10', border = 'shapeCut10Border', margin = 11, size = 10 },
 }
 
 local function SetMasked(state, texture, enabled)
@@ -54,6 +54,28 @@ local function SelectStyle(state, styleKey)
     end
     state.styleKey = styleKey
     return style ~= nil
+end
+
+-- Styles and masking are shared with Nameplates
+shape.IsStyle = function(self, styleKey)
+    return STYLES[styleKey] ~= nil
+end
+
+shape.GetStyleSize = function(self, styleKey)
+    local style = STYLES[styleKey]
+    return style and style.size
+end
+
+shape.SelectStyle = function(self, state, styleKey)
+    return SelectStyle(state, styleKey)
+end
+
+shape.SetMasked = function(self, state, texture, enabled)
+    SetMasked(state, texture, enabled)
+end
+
+shape.SetBarMasked = function(self, state, bar, enabled)
+    SetBarMasked(state, bar, enabled)
 end
 
 shape.GetStyleOptions = function(self, includeUseDefault)
@@ -168,23 +190,29 @@ shape.MaskPip = function(self, bar, pip)
     SetMasked(state, pip.line, STYLES[state.styleKey] ~= nil)
 end
 
-shape.UpdateCastbar = function(self, frame)
-    local db = frame.db
-    local bar = frame.Castbar
+shape.ApplyCastbarShape = function(self, bar, styleKey, color, showBorder)
     local state = bar.Shape
-    local styleKey = db.castbarStyle ~= '' and db.castbarStyle or frame.generalDB.castbarStyle
     local enabled = SelectStyle(state, styleKey)
 
     SetBarMasked(state, bar, enabled)
     SetMasked(state, bar.Icon, enabled)
     SetMasked(state, bar.Spark, enabled)
+    SetMasked(state, bar.Uninterruptible, enabled)
     for _, pip in pairs(bar.Pips or {}) do
         self:MaskPip(bar, pip)
     end
 
-    local color = db.castbarBackgroundBorderColor
     state.Border:SetVertexColor(color.r, color.g, color.b, color.a)
-    state.Border:SetShown(enabled)
+    state.Border:SetShown(enabled and showBorder)
+    return enabled
+end
+
+shape.UpdateCastbar = function(self, frame)
+    local db = frame.db
+    local bar = frame.Castbar
+    local styleKey = db.castbarStyle ~= '' and db.castbarStyle or frame.generalDB.castbarStyle
+    local enabled = self:ApplyCastbarShape(bar, styleKey, db.castbarBackgroundBorderColor, true)
+
     if enabled then
         bar.PPBorder:Hide()
     else
