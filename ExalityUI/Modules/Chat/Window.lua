@@ -272,6 +272,41 @@ function window:ApplyChrome()
 end
 
 ----------------------------------------------------------------
+-- Chat alerts (Battle.net toasts etc.)
+----------------------------------------------------------------
+
+function window:AnchorAlerts()
+    local alerts = _G.ChatAlertFrame
+    if not alerts or self.alertPoint then
+        return
+    end
+    self.alertPoint = { alerts:GetPoint(1) }
+    if not self.alertHook then
+        hooksecurefunc(alerts, 'SetChatButtonSide', function()
+            if window.alertPoint then
+                alerts:SetJustification('LEFT')
+            end
+        end)
+        self.alertHook = true
+    end
+    alerts:ClearAllPoints()
+    alerts:SetPoint('BOTTOMLEFT', self.frame, 'TOPLEFT')
+    alerts:SetJustification('LEFT')
+end
+
+function window:ReleaseAlerts()
+    local alerts = _G.ChatAlertFrame
+    local point = self.alertPoint
+    if not alerts or not point then
+        return
+    end
+    self.alertPoint = nil
+    alerts:ClearAllPoints()
+    alerts:SetPoint(unpack(point))
+    alerts:SetChatButtonSide(DEFAULT_CHAT_FRAME.buttonSide)
+end
+
+----------------------------------------------------------------
 -- Lock / move
 ----------------------------------------------------------------
 
@@ -476,6 +511,7 @@ function window:Enable()
     self:ApplyLock()
     self.frame:Show()
     self.menuButton:Show()
+    self:AnchorAlerts()
     self:Refresh()
     if composer.editBox then
         composer.editBox:ClearFocus()
@@ -490,6 +526,7 @@ function window:Disable()
     panels:HideConfig()
     self:UnregisterEditor()
     defaultChat:Restore()
+    self:ReleaseAlerts()
     if self.frame then
         self.frame:Hide()
         self.menuButton:Hide()
