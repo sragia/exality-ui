@@ -53,6 +53,7 @@ local GROUPS = {
     'LOOT',
     'CURRENCY',
     'MONEY',
+    'PING',
 }
 
 local HIDE_EVENTS = {
@@ -450,6 +451,10 @@ function defaultChat:OnChatEvent(event, message, sender, _, channelString, playe
     end
     if chatType == 'LOOT' or chatType == 'CURRENCY' or chatType == 'MONEY' then
         history:PushLine(chatType, message)
+        return
+    end
+    if chatType == 'PING' then
+        history:PushLine(chatType, formatter.FormatPing(message, sender), nil, nil, guid, lineID)
         return
     end
     if chatType == 'ACHIEVEMENT' or chatType == 'GUILD_ACHIEVEMENT' or chatType == 'GUILD_ITEM_LOOTED' then

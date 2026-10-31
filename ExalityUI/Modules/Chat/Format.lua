@@ -299,6 +299,17 @@ formatter.FormatNotice = function(chatType, token, channelIndex, channelName, pl
     end
 end
 
+formatter.FormatPing = function(message, sender)
+    if type(CHAT_PING_GET) ~= 'string' then
+        return message
+    end
+    local ok, text = pcall(format, CHAT_PING_GET .. '%s', sender, message)
+    if ok then
+        return text
+    end
+    return message
+end
+
 local function BNDisplayName(name, bnetID)
     local display = name
     if IsSecret(bnetID) or not C_BattleNet or not C_BattleNet.GetAccountInfoByID then
