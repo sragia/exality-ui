@@ -13,6 +13,9 @@ local core = EXUI:GetModule('uf-options-core')
 ---@class EXUIOptionsController
 local optionsController = EXUI:GetModule('options-controller')
 
+---@class EXUIUnitFramesOptionsClipboard
+local clipboard = EXUI:GetModule('uf-options-clipboard')
+
 core.tabs = nil
 core.tabOptions = nil
 core.options = {}
@@ -31,8 +34,13 @@ core.Init = function(self)
         ['useCustomBackdropColor'] = false,
         ['customBackdropColor'] = { r = 0.5, g = 0.5, b = 0.5, a = 1 },
         ['statusBarTexture'] = 'ExalityUI Status Bar',
+        ['backgroundTexture'] = '',
         ['damageAbsorbTexture'] = 'ExalityUI Status Bar',
         ['healAbsorbTexture'] = 'ExalityUI Status Bar',
+        ['frameStyle'] = 'default',
+        ['frameBorderColor'] = { r = 0, g = 0, b = 0, a = 1 },
+        ['frameBorderClassColor'] = false,
+        ['castbarStyle'] = 'default',
         ['healthCurve'] = {
             [0] = {
                 r = 217 / 255,
@@ -99,7 +107,11 @@ core.useSplitView = true
 core.GetTabs = function(self)
     local tabs = {}
     for _, option in ipairs(self.options) do
-        table.insert(tabs, { ID = option.id, label = option.name })
+        table.insert(tabs, {
+            ID = option.id,
+            label = option.name,
+            contextMenuItems = clipboard:GetTabMenu(option),
+        })
     end
     return tabs
 end
@@ -114,7 +126,11 @@ core.GetSplitViewItems = function(self)
     local icons = EXUI.const.textures.frame.icons
     local items = {}
     for _, item in ipairs(tab.menu) do
-        local entry = { ID = item.id, label = item.name }
+        local entry = {
+            ID = item.id,
+            label = item.name,
+            contextMenuItems = clipboard:GetItemMenu(tab, item),
+        }
         if item.allowPreview then
             entry.preview = {
                 enabled = ufCore:IsElementPreviewOn(tab.id, item.id),

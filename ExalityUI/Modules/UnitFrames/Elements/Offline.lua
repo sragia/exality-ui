@@ -9,7 +9,7 @@ local core = EXUI:GetModule('uf-core')
 local offline = EXUI:GetModule('uf-element-offline')
 
 offline.Create = function(self, frame)
-    local holder = core:CreateTextHolder(frame)
+    local holder = core:CreateElementHolder(frame)
     local offlineText = holder:CreateFontString(nil, 'OVERLAY')
     offlineText:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
     offlineText.holder = holder
@@ -26,7 +26,7 @@ offline.Update = function(self, frame)
         return
     end
     Offline:Show()
-    core:ApplyTextFrameLevel(frame, Offline.holder, db.offlineFrameLevel)
+    core:ApplyElementFrameLevel(frame, Offline.holder, db.offlineFrameLevel)
     Offline:SetFont(LSM:Fetch('font', db.offlineFont), db.offlineFontSize, db.offlineFontFlag)
     EXUI.utils.applyFontShadow(Offline, db.offlineFontShadow, db.offlineFontShadowX, db.offlineFontShadowY,
         db.offlineFontShadowColor)

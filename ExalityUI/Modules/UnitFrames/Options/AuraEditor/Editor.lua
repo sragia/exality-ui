@@ -394,6 +394,7 @@ function editor:EnsureSplitView()
             return
         end
         self.currItemID = id
+        ufPreview:ClearUserDisabled(id)
         self:ShowSelection(id)
     end)
 end

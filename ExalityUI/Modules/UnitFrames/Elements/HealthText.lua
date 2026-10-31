@@ -9,7 +9,7 @@ local core = EXUI:GetModule('uf-core')
 local healthText = EXUI:GetModule('uf-element-health-text')
 
 healthText.Create = function(self, frame)
-    local holder = core:CreateTextHolder(frame)
+    local holder = core:CreateElementHolder(frame)
     local healthText = holder:CreateFontString(nil, 'OVERLAY')
     healthText.holder = holder
     healthText:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
@@ -26,7 +26,7 @@ healthText.Update = function(self, frame)
         return
     end
     healthText:Show()
-    core:ApplyTextFrameLevel(frame, healthText.holder, db.healthFrameLevel)
+    core:ApplyElementFrameLevel(frame, healthText.holder, db.healthFrameLevel)
     healthText:SetFont(LSM:Fetch('font', db.healthFont), db.healthFontSize, db.healthFontFlag)
     EXUI.utils.applyFontShadow(healthText, db.healthFontShadow, db.healthFontShadowX, db.healthFontShadowY,
         db.healthFontShadowColor)

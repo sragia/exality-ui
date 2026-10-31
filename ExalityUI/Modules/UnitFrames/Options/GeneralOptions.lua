@@ -47,6 +47,49 @@ core:AddOption({
                 },
                 {
                     type = 'dropdown',
+                    name = 'backgroundTexture',
+                    label = 'Background Texture',
+                    getOptions = function()
+                        local list = LSM:List('statusbar')
+                        local options = {
+                            [''] = {
+                                label = 'Same as Status Bar',
+                                order = 0
+                            }
+                        }
+                        local order = 1
+                        for _, texture in EXUI.utils.spairs(list, function(t, a, b) return t[a] < t[b] end) do
+                            options[texture] = {
+                                label = texture,
+                                order = order
+                            }
+                            order = order + 1
+                        end
+                        return options
+                    end,
+                    isTextureDropdown = true,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'backgroundTexture')
+                    end,
+                    getDisplayValue = function(value)
+                        if value ~= '' then
+                            return value
+                        end
+                        return ufCore:GetValueForUnit('general', 'statusBarTexture')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'backgroundTexture', value)
+                        ufCore:UpdateAllFrames()
+                        ufCore:UpdateFrameForUnit('arena')
+                    end,
+                    width = 50,
+                },
+                {
+                    type = 'spacer',
+                    width = 50,
+                },
+                {
+                    type = 'dropdown',
                     name = 'damageAbsorbTexture',
                     label = 'Damage Absorb Texture',
                     getOptions = function()
@@ -424,6 +467,91 @@ core:AddOption({
                     end,
                     width = 20
                 }
+            }
+        },
+        {
+            name = 'Style',
+            id = 'style',
+            options = {
+                {
+                    type = 'dropdown',
+                    name = 'frameStyle',
+                    label = 'Frame Style',
+                    getOptions = function()
+                        return EXUI:GetModule('uf-element-shape'):GetStyleOptions()
+                    end,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'frameStyle')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'frameStyle', value)
+                        ufCore:UpdateAllFrames()
+                        ufCore:UpdateFrameForUnit('arena')
+                    end,
+                    width = 50,
+                },
+                {
+                    type = 'spacer',
+                    width = 50,
+                },
+                {
+                    type = 'toggle',
+                    label = 'Use Class Colored Border',
+                    name = 'frameBorderClassColor',
+                    tooltip = {
+                        text = 'NPCs use Reaction Color. Border Color is used if neither is available.'
+                    },
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'frameBorderClassColor')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'frameBorderClassColor', value)
+                        ufCore:UpdateAllFrames()
+                        ufCore:UpdateFrameForUnit('arena')
+                    end,
+                    width = 100
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Border Color',
+                    name = 'frameBorderColor',
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'frameBorderColor')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'frameBorderColor', value)
+                        ufCore:UpdateAllFrames()
+                        ufCore:UpdateFrameForUnit('arena')
+                    end,
+                    width = 20
+                },
+                {
+                    type = 'title',
+                    label = 'Cast Bar',
+                    width = 100,
+                    size = 18
+                },
+                {
+                    type = 'dropdown',
+                    name = 'castbarStyle',
+                    label = 'Cast Bar Style',
+                    getOptions = function()
+                        return EXUI:GetModule('uf-element-shape'):GetStyleOptions()
+                    end,
+                    currentValue = function()
+                        return ufCore:GetValueForUnit('general', 'castbarStyle')
+                    end,
+                    onChange = function(value)
+                        ufCore:UpdateValueForUnit('general', 'castbarStyle', value)
+                        ufCore:UpdateAllFrames()
+                        ufCore:UpdateFrameForUnit('arena')
+                    end,
+                    width = 50,
+                },
+                {
+                    type = 'spacer',
+                    width = 50,
+                },
             }
         }
     }

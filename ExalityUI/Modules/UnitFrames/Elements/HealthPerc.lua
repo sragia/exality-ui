@@ -9,7 +9,7 @@ local core = EXUI:GetModule('uf-core')
 local healthPerc = EXUI:GetModule('uf-element-health-perc')
 
 healthPerc.Create = function(self, frame)
-    local holder = core:CreateTextHolder(frame)
+    local holder = core:CreateElementHolder(frame)
     local healthPerc = holder:CreateFontString(nil, 'OVERLAY')
     healthPerc.holder = holder
     healthPerc:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
@@ -26,7 +26,7 @@ healthPerc.Update = function(self, frame)
         return
     end
     healthPerc:Show()
-    core:ApplyTextFrameLevel(frame, healthPerc.holder, db.healthpercFrameLevel)
+    core:ApplyElementFrameLevel(frame, healthPerc.holder, db.healthpercFrameLevel)
     healthPerc:SetFont(LSM:Fetch('font', db.healthpercFont), db.healthpercFontSize, db.healthpercFontFlag)
     EXUI.utils.applyFontShadow(healthPerc, db.healthpercFontShadow, db.healthpercFontShadowX, db.healthpercFontShadowY,
         db.healthpercFontShadowColor)

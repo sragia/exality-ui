@@ -292,6 +292,7 @@ core.Base = function(self, frame)
     elementFrame.PPBorder:SetBorderColor(0, 0, 0, 1)
 
     frame.ElementFrame = elementFrame
+    frame.FrameShape = EXUI:GetModule('uf-element-shape'):Create(frame)
     EXUI:RegisterSnapFrame(frame)
 
     if (not self.groupUnitMap[frame.__unit]) then
@@ -317,14 +318,14 @@ core.Base = function(self, frame)
     end
 end
 
--- Texts live in their own holder so their frame level can be offset above ElementFrame
-core.CreateTextHolder = function(self, frame)
+-- Elements live in their own holder so their frame level can be offset above ElementFrame
+core.CreateElementHolder = function(self, frame)
     local holder = CreateFrame('Frame', nil, frame.ElementFrame)
     holder:SetAllPoints()
     return holder
 end
 
-core.ApplyTextFrameLevel = function(self, frame, holder, offset)
+core.ApplyElementFrameLevel = function(self, frame, holder, offset)
     holder:SetFrameLevel(frame.ElementFrame:GetFrameLevel() + (offset or 1))
 end
 
@@ -356,6 +357,8 @@ core.UpdateFrame = function(self, frame)
     if (frame.Portrait) then
         EXUI:GetModule('uf-element-portrait'):Update(frame)
     end
+
+    EXUI:GetModule('uf-element-shape'):Update(frame)
 
     if (frame.RaidTargetIndicator) then
         EXUI:GetModule('uf-element-raid-target-indicator'):Update(frame)
@@ -413,6 +416,17 @@ core.UpdateFrame = function(self, frame)
     if (frame:IsElementPreviewEnabled('castbar') and frame.Castbar) then
         EXUI:GetModule('uf-element-cast-bar'):Update(frame) -- Reupdate castbar for preview. Kind of a bandaid fix
     end
+end
+
+core.GetBackgroundTexture = function(self, frame, statusBarTexture)
+    local texture = frame.db.overrideBackgroundTexture
+    if not texture or texture == '' then
+        texture = frame.generalDB.backgroundTexture
+    end
+    if not texture or texture == '' then
+        return statusBarTexture
+    end
+    return texture
 end
 
 core.AddTooltip = function(self, frame)

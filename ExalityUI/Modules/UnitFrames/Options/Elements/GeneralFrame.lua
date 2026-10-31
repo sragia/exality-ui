@@ -24,6 +24,23 @@ local function getTextureDisplayValue(globalKey)
     end
 end
 
+local function getBackgroundDisplayValue(unit)
+    return function(value)
+        if value ~= '' then
+            return value
+        end
+        local globalValue = core:GetValueForUnit('general', 'backgroundTexture')
+        if globalValue ~= '' then
+            return globalValue
+        end
+        local statusBarOverride = core:GetValueForUnit(unit, 'overrideStatusBarTexture')
+        if statusBarOverride ~= '' then
+            return statusBarOverride
+        end
+        return core:GetValueForUnit('general', 'statusBarTexture')
+    end
+end
+
 generalFrame.GetOptions = function(self, unit)
     local options = {
         {
@@ -69,6 +86,86 @@ generalFrame.GetOptions = function(self, unit)
             children = {
                 {
                     type = 'optionGroup',
+                    label = 'Style',
+                    accent = EXUI.const.colors.accentSecondary,
+                    titleSize = 14,
+                    collapsible = true,
+                    expanded = false,
+                    children = {
+        {
+            type = 'dropdown',
+            name = 'overrideFrameStyle',
+            label = 'Frame Style',
+            getOptions = function()
+                return EXUI:GetModule('uf-element-shape'):GetStyleOptions(true)
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'overrideFrameStyle')
+            end,
+            getDisplayValue = getTextureDisplayValue('frameStyle'),
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'overrideFrameStyle', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 50
+        },
+        {
+            type = 'spacer',
+            width = 50
+        },
+        {
+            type = 'toggle',
+            label = 'Use Custom Border Color',
+            name = 'overrideFrameBorderColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'overrideFrameBorderColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'overrideFrameBorderColor', value)
+                core:UpdateFrameForUnit(unit)
+                optionsCore:RefreshCurrentView()
+            end,
+            width = 50
+        },
+        {
+            type = 'toggle',
+            label = 'Use Class Colored Border',
+            name = 'frameBorderClassColor',
+            tooltip = {
+                text = 'NPCs use Reaction Color. Border Color is used if neither is available.'
+            },
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'frameBorderClassColor')
+            end,
+            depends = function()
+                return core:GetValueForUnit(unit, 'overrideFrameBorderColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'frameBorderClassColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 50
+        },
+        {
+            type = 'color-picker',
+            label = 'Border Color',
+            name = 'frameBorderColor',
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'frameBorderColor')
+            end,
+            depends = function()
+                return core:GetValueForUnit(unit, 'overrideFrameBorderColor')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'frameBorderColor', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 20
+        },
+                    },
+                },
+                {
+                    type = 'optionGroup',
                     label = 'Textures',
                     accent = EXUI.const.colors.accentSecondary,
                     titleSize = 14,
@@ -104,6 +201,43 @@ generalFrame.GetOptions = function(self, unit)
             getDisplayValue = getTextureDisplayValue('statusBarTexture'),
             onChange = function(value)
                 core:UpdateValueForUnit(unit, 'overrideStatusBarTexture', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 50
+        },
+        {
+            type = 'spacer',
+            width = 50
+        },
+        {
+            type = 'dropdown',
+            name = 'overrideBackgroundTexture',
+            label = 'Background Texture',
+            getOptions = function()
+                local list = LSM:List('statusbar')
+                local options = {
+                    [''] = {
+                        label = 'Use Default',
+                        order = 0
+                    }
+                }
+                local order = 1
+                for _, texture in EXUI.utils.spairs(list, function(t, a, b) return t[a] < t[b] end) do
+                    options[texture] = {
+                        label = texture,
+                        order = order
+                    }
+                    order = order + 1
+                end
+                return options
+            end,
+            isTextureDropdown = true,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'overrideBackgroundTexture')
+            end,
+            getDisplayValue = getBackgroundDisplayValue(unit),
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'overrideBackgroundTexture', value)
                 core:UpdateFrameForUnit(unit)
             end,
             width = 50

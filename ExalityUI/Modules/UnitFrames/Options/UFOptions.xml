@@ -11,6 +11,7 @@
 	<Script file="AuraEditor/LoadOptions.lua"/>
 	<Script file="AuraEditor/Editor.lua"/>
 	
+	<Script file="Clipboard.lua"/>
 	<Script file="Core.lua"/>
 	<Script file="Elements/SizeAndPosition.lua"/>
 	<Script file="Elements/GenericText.lua"/>

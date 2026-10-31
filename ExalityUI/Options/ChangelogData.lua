@@ -7,6 +7,16 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.9',
+            changes = {
+                { 'Unit Frames', 'Added different shapes for the unitframes - Rounded (4px, 6px, 10px), Cut (4px, 6px, 10px)' },
+                {
+                    'Unit Frames',
+                    'Color options for UF borders. Adjust backdrop texture for the UF',
+                },
+            }
+        },
+        {
             version = '0.9.8',
             changes = {
                 { 'Options', 'Bunch of changes visually and functionality wise for tabs and side option items.', {

@@ -5,6 +5,9 @@ local LSM = LibStub('LibSharedMedia-3.0')
 
 local castBar = EXUI:GetModule('uf-element-cast-bar')
 
+---@class EXUIUnitFramesElementsShape
+local shape = EXUI:GetModule('uf-element-shape')
+
 local function applyCastBarDrawLayers(castBarFrame)
     local statusBarTexture = castBarFrame:GetStatusBarTexture()
     if statusBarTexture then
@@ -176,11 +179,13 @@ castBar.Create = function(self, frame, unit)
         line:SetVertexColor(db.castbarEmpoweredStageColor.r or 1, db.castbarEmpoweredStageColor.g or 1,
             db.castbarEmpoweredStageColor.b or 1, db.castbarEmpoweredStageColor.a or 1)
         pip.line = line
+        shape:MaskPip(self, pip)
 
         return pip
     end
     castBar.UpdatePips = updatePips
     castBar.layoutSize = 180
+    castBar.Shape = shape:CreateCastbar(castBar, castBarContainer)
 
     return castBar
 end
@@ -255,6 +260,7 @@ castBar.Update = function(self, frame)
 
     Castbar:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
     applyCastBarDrawLayers(Castbar)
+    shape:UpdateCastbar(frame)
 
     container:ClearAllPoints()
     if (db.castbarAnchorToFrame) then
@@ -295,6 +301,7 @@ castBar.Update = function(self, frame)
             Enum.StatusBarTimerDirection.ElapsedTime)
         Castbar.Text:SetText('Preview Spell')
         Castbar.Icon:SetTexture(656176)
+        Castbar.Spark:Show()
         Castbar:Show()
     elseif (not frame:IsElementPreviewEnabled('castbar') and Castbar.isPreview) then
         Castbar:Hide()

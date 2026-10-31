@@ -82,6 +82,8 @@ health.PostUpdateColor = function(self, unit, color)
         end
         self.bg:SetVertexColor(color:GetRGB())
     end
+
+    EXUI:GetModule('uf-element-shape'):RefreshBorderColor(baseFrame)
 end
 
 health.Update = function(self, frame)
@@ -120,5 +122,5 @@ health.Update = function(self, frame)
         generalDB.statusBarTexture
 
     health:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
-    health.bg:SetTexture(LSM:Fetch('statusbar', statusBarTexture))
+    health.bg:SetTexture(LSM:Fetch('statusbar', EXUI:GetModule('uf-core'):GetBackgroundTexture(frame, statusBarTexture)))
 end

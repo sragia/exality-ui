@@ -10,6 +10,9 @@ local apply = EXUI:GetModule('uf-auras-apply')
 ---@class EXUIUnitFramesElementsDispelOverlay
 local dispelOverlay = EXUI:GetModule('uf-element-dispel-overlay')
 
+---@class EXUIUnitFramesElementsShape
+local shape = EXUI:GetModule('uf-element-shape')
+
 local SLOT_KEY = 'dispelOverlay'
 
 local DISPEL_STYLE = Enum and Enum.CustomAuraButtonDispelTypeTextureStyle
@@ -56,13 +59,14 @@ local function GetPreviewColor()
     return DEBUFF_TYPE_MAGIC_COLOR
 end
 
-local function GetHardSignature(db)
-    db = db or {}
+local function GetHardSignature(frame)
+    local db = frame.db or {}
     -- Size/anchor are applied live on IconHost; only structural mode changes need rebuild.
     return table.concat({
         GetFilterString(db.dispelOverlayFilter),
         ShowOverlay(db) and 'o' or '-',
         ShowIcon(db) and 'i' or '-',
+        shape:GetActiveMask(frame) and 's' or '-',
     }, '|')
 end
 
@@ -191,7 +195,7 @@ function dispelOverlay:EnsureContainer(frame)
         return nil
     end
 
-    local hardSig = GetHardSignature(db)
+    local hardSig = GetHardSignature(frame)
     if frame.DispelOverlayContainer then
         if frame.DispelOverlayContainer._dispelOverlayHardSig == hardSig then
             return frame.DispelOverlayContainer
@@ -244,6 +248,10 @@ function dispelOverlay:EnsureContainer(frame)
                 live:SetVertexColor(0, 0, 0, 0)
                 live:SetAlpha(alpha)
                 live:Hide()
+                local mask = shape:GetActiveMask(frame)
+                if mask then
+                    SafeCall(live, 'AddMaskTexture', mask)
+                end
                 AddDispelTexture(button, live, DISPEL_STYLE_PRESERVE)
                 frame.DispelOverlayLive = live
             else

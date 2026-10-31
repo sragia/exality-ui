@@ -31,7 +31,9 @@ local function PostUpdate(self, role)
 end
 
 groupRoleIndicator.Create = function(self, frame)
-    local groupRoleIndicator = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
+    local holder = core:CreateElementHolder(frame)
+    local groupRoleIndicator = holder:CreateTexture(nil, 'OVERLAY')
+    groupRoleIndicator.holder = holder
     EXUI:SetSize(groupRoleIndicator, 16, 16)
     groupRoleIndicator:SetPoint('CENTER')
 
@@ -54,6 +56,7 @@ groupRoleIndicator.Update = function(self, frame)
     GroupRoleIndicator.hideDamager = db.groupRoleIndicatorHideDamager
 
     core:EnableElementForFrame(frame, 'GroupRoleIndicator')
+    core:ApplyElementFrameLevel(frame, GroupRoleIndicator.holder, db.groupRoleIndicatorFrameLevel or 0)
 
     EXUI:SetSize(GroupRoleIndicator, 16 * db.groupRoleIndicatorScale, 16 * db.groupRoleIndicatorScale)
     GroupRoleIndicator:ClearAllPoints()

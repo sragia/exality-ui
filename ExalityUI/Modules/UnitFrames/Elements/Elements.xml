@@ -20,4 +20,5 @@
 	<Script file="DispelOverlay.lua"/>
 	<Script file="SelectionHighlight.lua"/>
 	<Script file="Portrait.lua"/>
+	<Script file="Shape.lua"/>
 </Ui>

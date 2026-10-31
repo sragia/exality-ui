@@ -23,13 +23,15 @@ preview.contextUnit = nil
 preview.activeDisplayID = nil
 preview.forcedUnit = nil
 preview.activeStateKeys = {}
+preview.toggled = {}
+preview.manual = {}
+preview.userDisabled = {}
 preview._pendingSync = false
 
-local function frameStateKey(frame)
-    -- One preview container per unit frame so switching displays always
-    -- re-anchors/relayouts instead of stacking stale per-display containers.
+local function frameStateKey(frame, displayID)
+    -- One preview container per display on each unit frame so several can show at once.
     local name = frame.GetName and frame:GetName()
-    return ('uf:%s'):format(name or tostring(frame))
+    return ('uf:%s:%s'):format(name or tostring(frame), displayID)
 end
 
 local function previewGrave()
@@ -41,8 +43,9 @@ local function previewGrave()
     return preview._grave
 end
 
-local function ensurePreviewHost(frame)
-    local host = frame._exuiAuraPreviewHost
+local function ensurePreviewHost(frame, displayID)
+    frame._exuiAuraPreviewHosts = frame._exuiAuraPreviewHosts or {}
+    local host = frame._exuiAuraPreviewHosts[displayID]
     if host then
         return host
     end
@@ -56,7 +59,7 @@ local function ensurePreviewHost(frame)
     end
     host._exuiAuraPreviewHost = true
     host:Hide()
-    frame._exuiAuraPreviewHost = host
+    frame._exuiAuraPreviewHosts[displayID] = host
     return host
 end
 
@@ -64,7 +67,7 @@ end
 -- AuraContainer children of the unit frame, so parking this host off the
 -- unit frame while testing leaves the editor preview intact.
 local function positionPreviewContainer(container, frame, display)
-    local host = ensurePreviewHost(frame)
+    local host = ensurePreviewHost(frame, display.displayID)
     if host:GetParent() ~= frame then
         host:SetParent(frame)
     end
@@ -99,16 +102,16 @@ end
 function preview:ParkHosts(unitType)
     local grave = previewGrave()
     for _, frame in ipairs(self:GetFramesForUnit(unitType)) do
-        local host = frame._exuiAuraPreviewHost
-        if host then
+        for _, host in pairs(frame._exuiAuraPreviewHosts or {}) do
             host:Hide()
             host:SetParent(grave)
         end
     end
 end
 
-local function layoutDisplayForFrame(display, frame)
+local function layoutDisplayForFrame(display, frame, displayID)
     return {
+        displayID = displayID,
         containerAnchorPoint = display.containerAnchorPoint,
         horizontalGrowth = display.horizontalGrowth,
         verticalGrowth = display.verticalGrowth,
@@ -228,7 +231,7 @@ function preview:SuppressRealAuras(frame, displayID)
         return
     end
     -- Hide all live UF aura containers on this frame while editing so the
-    -- selected display's fake preview is readable.
+    -- fake previews are readable.
     for id, container in pairs(frame.UFAuraContainers) do
         if container then
             if container.SetEnabled then
@@ -246,6 +249,47 @@ function preview:ClearPreviewStates()
     wipe(self.activeStateKeys)
 end
 
+function preview:HideDisplay(displayID)
+    for stateKey, activeID in pairs(self.activeStateKeys) do
+        if activeID == displayID then
+            adPreview:HidePreview(stateKey)
+            self.activeStateKeys[stateKey] = nil
+        end
+    end
+end
+
+function preview:IsToggled(displayID)
+    return self.toggled[displayID] == true
+end
+
+function preview:SetToggled(displayID, enabled)
+    self.toggled[displayID] = enabled or nil
+    self.manual[displayID] = enabled or nil
+    self.userDisabled[displayID] = not enabled or nil
+    self:Sync()
+end
+
+function preview:ClearUserDisabled(displayID)
+    self.userDisabled[displayID] = nil
+end
+
+function preview:ClearAutoPreviews(exceptID)
+    for displayID in pairs(self.toggled) do
+        if displayID ~= exceptID and not self.manual[displayID] then
+            self.toggled[displayID] = nil
+        end
+    end
+end
+
+function preview:SyncPreviewToggles()
+    local editor = EXUI:GetModule('uf-aura-editor')
+    if editor and editor.splitView and editor.splitView.SyncPreviewToggles then
+        editor.splitView:SyncPreviewToggles(function(displayID)
+            return self:IsToggled(displayID)
+        end)
+    end
+end
+
 function preview:SetContext(unitType)
     self.contextUnit = unitType
 end
@@ -256,6 +300,9 @@ function preview:Clear()
 
     self:ClearPreviewStates()
     self:ParkHosts(forcedUnit or unitType)
+    wipe(self.toggled)
+    wipe(self.manual)
+    wipe(self.userDisabled)
     self.activeDisplayID = nil
     self.forcedUnit = nil
     self.contextUnit = nil
@@ -272,66 +319,71 @@ function preview:Clear()
     end
 end
 
-function preview:Refresh(displayID)
+local function getPreviewGroup(displayID, display)
+    local editor = EXUI:GetModule('uf-aura-editor')
+    local groupID = editor and editor.currItemID == displayID and ufAuras.currGroupID
+    local group = groupID and display.groups and display.groups[groupID]
+    if group and group.visual then
+        return group
+    end
+    -- Fall back to first group if editor has not selected one yet.
+    local firstID = display.groupOrder and display.groupOrder[1]
+    group = firstID and display.groups and display.groups[firstID]
+    return group and group.visual and group or nil
+end
+
+function preview:RefreshDisplay(displayID)
+    local display = ufAuras:GetDisplay(displayID)
+    local group = display and display.enable ~= false and getPreviewGroup(displayID, display)
+    if not group then
+        self:HideDisplay(displayID)
+        return
+    end
+
+    for _, frame in ipairs(self:GetFramesForUnit(self.contextUnit)) do
+        if frame:IsShown() or frame.isFake then
+            self:SuppressRealAuras(frame, displayID)
+            local stateKey = frameStateKey(frame, displayID)
+            local layoutDisplay = layoutDisplayForFrame(display, frame, displayID)
+            adPreview:BuildPreviewOnFrame(
+                stateKey,
+                frame,
+                layoutDisplay,
+                group.visual,
+                positionPreviewContainer,
+                adPreview:GetPreviewCount(group)
+            )
+            self.activeStateKeys[stateKey] = displayID
+        end
+    end
+end
+
+function preview:Refresh()
     if not self:IsEditorOpen() then
         self:Clear()
         return
     end
 
-    local unitType = self.contextUnit
-    if not unitType or not displayID then
+    if not self.contextUnit then
         self:ClearPreviewStates()
-        self.activeDisplayID = nil
         return
     end
 
-    local display = ufAuras:GetDisplay(displayID)
-    if not display or display.enable == false then
-        self:ClearPreviewStates()
-        self.activeDisplayID = displayID
-        return
-    end
-
-    local groupID = ufAuras.currGroupID
-    local group = groupID and display.groups and display.groups[groupID]
-    if not group or not group.visual then
-        -- Fall back to first group if editor has not selected one yet.
-        local firstID = display.groupOrder and display.groupOrder[1]
-        group = firstID and display.groups and display.groups[firstID]
-        if not group or not group.visual then
-            self:ClearPreviewStates()
-            self.activeDisplayID = displayID
-            return
+    for _, displayID in pairs(self.activeStateKeys) do
+        if not self.toggled[displayID] then
+            self:HideDisplay(displayID)
         end
     end
 
-    local frames = self:GetFramesForUnit(unitType)
-    local visual = group.visual
-
-    -- Same display keeps its preview buttons. Clearing here used to abandon
-    -- them on every color change.
-    if self.activeDisplayID ~= displayID then
-        self:ClearPreviewStates()
-    end
-
-    for _, frame in ipairs(frames) do
-        if frame:IsShown() or frame.isFake then
-            self:SuppressRealAuras(frame, displayID)
-            local stateKey = frameStateKey(frame)
-            local layoutDisplay = layoutDisplayForFrame(display, frame)
-            adPreview:BuildPreviewOnFrame(
-                stateKey,
-                frame,
-                layoutDisplay,
-                visual,
-                positionPreviewContainer,
-                adPreview:GetPreviewCount(group)
-            )
-            self.activeStateKeys[stateKey] = true
+    for displayID in pairs(self.toggled) do
+        if ufAuras:GetDisplay(displayID) then
+            self:RefreshDisplay(displayID)
+        else
+            self.toggled[displayID] = nil
+            self.manual[displayID] = nil
+            self:HideDisplay(displayID)
         end
     end
-
-    self.activeDisplayID = displayID
 end
 
 function preview:Sync(displayID)
@@ -348,9 +400,15 @@ function preview:Sync(displayID)
 
     self:EnsureForceShow(unitType)
 
-    if not displayID then
+    self:ClearAutoPreviews(displayID)
+    if displayID and not self.userDisabled[displayID] then
+        self.toggled[displayID] = true
+    end
+    self:SyncPreviewToggles()
+
+    if not next(self.toggled) then
         self:ClearPreviewStates()
-        self.activeDisplayID = nil
+        self.activeDisplayID = displayID
         return
     end
 
@@ -360,8 +418,8 @@ function preview:Sync(displayID)
         if not self:IsEditorOpen() or self.contextUnit ~= unitType then
             return
         end
-        local editor = EXUI:GetModule('uf-aura-editor')
-        self:Refresh(self._queuedDisplayID or (editor and editor.currItemID))
+        self:Refresh()
+        self.activeDisplayID = self._queuedDisplayID
     end
 
     -- Defer when ForceShowing party, or when switching displays so anchors

@@ -7,7 +7,9 @@ local core = EXUI:GetModule('uf-core')
 local raidTargetIndicator = EXUI:GetModule('uf-element-raid-target-indicator')
 
 raidTargetIndicator.Create = function(self, frame)
-    local raidTargetIndicator = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
+    local holder = core:CreateElementHolder(frame)
+    local raidTargetIndicator = holder:CreateTexture(nil, 'OVERLAY')
+    raidTargetIndicator.holder = holder
     raidTargetIndicator:SetSize(16, 16)
     raidTargetIndicator:SetPoint('CENTER', frame.ElementFrame, 'CENTER', 0, 0)
 
@@ -21,6 +23,7 @@ raidTargetIndicator.Update = function(self, frame)
         core:DisableElementForFrame(frame, 'RaidTargetIndicator')
         return
     end
+    core:ApplyElementFrameLevel(frame, RaidTargetIndicator.holder, db.raidTargetIndicatorFrameLevel or 0)
 
     if (frame:IsElementPreviewEnabled('markericon') and not RaidTargetIndicator:IsShown()) then
         RaidTargetIndicator.PostUpdate = function(self, index)

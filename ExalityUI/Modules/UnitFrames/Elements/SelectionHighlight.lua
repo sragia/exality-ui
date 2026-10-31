@@ -7,7 +7,8 @@ local core = EXUI:GetModule('uf-core')
 ---@class EXUIUnitFramesElementsSelectionHighlight
 local selectionHighlight = EXUI:GetModule('uf-element-selection-highlight')
 
-local DEFAULT_BORDER = { r = 0, g = 0, b = 0, a = 1 }
+---@class EXUIUnitFramesElementsShape
+local shape = EXUI:GetModule('uf-element-shape')
 
 local eventsRegistered = false
 
@@ -17,6 +18,7 @@ local function ApplyBorderColor(frame, color)
         return
     end
     border:SetBorderColor(color.r, color.g, color.b, color.a)
+    frame.FrameShape.Border:SetVertexColor(color.r, color.g, color.b, color.a)
 end
 
 local function GetUnitToken(frame)
@@ -32,21 +34,21 @@ selectionHighlight.Update = function(self, frame)
 
     local unit = GetUnitToken(frame)
     if not unit then
-        ApplyBorderColor(frame, DEFAULT_BORDER)
+        ApplyBorderColor(frame, shape:GetBorderColor(frame))
         return
     end
 
     if db.targetBorderEnable and UnitExists('target') and UnitIsUnit(unit, 'target') then
-        ApplyBorderColor(frame, db.targetBorderColor or DEFAULT_BORDER)
+        ApplyBorderColor(frame, db.targetBorderColor or shape:GetBorderColor(frame))
         return
     end
 
     if db.mouseoverBorderEnable and UnitExists('mouseover') and UnitIsUnit(unit, 'mouseover') then
-        ApplyBorderColor(frame, db.mouseoverBorderColor or DEFAULT_BORDER)
+        ApplyBorderColor(frame, db.mouseoverBorderColor or shape:GetBorderColor(frame))
         return
     end
 
-    ApplyBorderColor(frame, DEFAULT_BORDER)
+    ApplyBorderColor(frame, shape:GetBorderColor(frame))
 end
 
 local function UpdateFrameList(frames)

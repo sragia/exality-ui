@@ -7,7 +7,9 @@ local core = EXUI:GetModule('uf-core')
 local phaseIndicator = EXUI:GetModule('uf-element-phase-indicator')
 
 phaseIndicator.Create = function(self, frame)
-    local phaseIndicator = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
+    local holder = core:CreateElementHolder(frame)
+    local phaseIndicator = holder:CreateTexture(nil, 'OVERLAY')
+    phaseIndicator.holder = holder
     EXUI:SetSize(phaseIndicator, 24, 24)
     phaseIndicator:SetPoint('CENTER')
 
@@ -24,6 +26,7 @@ phaseIndicator.Update = function(self, frame)
     end
 
     core:EnableElementForFrame(frame, 'PhaseIndicator')
+    core:ApplyElementFrameLevel(frame, PhaseIndicator.holder, db.phaseIndicatorFrameLevel or 0)
 
     EXUI:SetSize(PhaseIndicator, 24 * db.phaseIndicatorScale, 24 * db.phaseIndicatorScale)
     PhaseIndicator:ClearAllPoints()

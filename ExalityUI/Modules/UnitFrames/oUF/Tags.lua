@@ -53,13 +53,34 @@ tags.DESCRIPTIONS = {
 
     -- Custom
     ['curhp:formatted'] = 'Current Health in abbreviated format',
-    ['classcolor'] = 'Add Class Color to the next tag. e.g [classcolor][name]',
+    ['classcolor'] = 'Add Class Color to the next tag, NPCs use Reaction Color. e.g [classcolor][name]',
     ['difficultycolor'] = 'Add level difficulty color to the next tag for any unit. e.g [difficultycolor][level]',
     ['nsrt-name'] = 'Nickname provided by Northern Sky Raid Tools addon'
 }
 
 local classMarkup = {}
+local reactionMarkup = {}
 local whiteMarkup
+
+local function getWhiteMarkup()
+    if not whiteMarkup then
+        whiteMarkup = CreateColor(1, 1, 1):GenerateHexColorMarkup()
+    end
+    return whiteMarkup
+end
+
+local function getReactionMarkup(unit)
+    local reaction = UnitReaction(unit, 'player')
+    if not reaction or issecretvalue(reaction) then
+        return getWhiteMarkup()
+    end
+    local markup = reactionMarkup[reaction]
+    if not markup then
+        markup = EXUI.oUF.colors.reaction[reaction]:GenerateHexColorMarkup()
+        reactionMarkup[reaction] = markup
+    end
+    return markup
+end
 
 local function formatPerhp(unit, decimals)
     local pct = UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
@@ -102,6 +123,9 @@ tags.TAGS = {
     {
         name = 'classcolor',
         method = function(unit)
+            if not (UnitIsPlayer(unit) or UnitInPartyIsAI(unit)) then
+                return getReactionMarkup(unit)
+            end
             local _, class = UnitClass(unit)
             if (class) then
                 if (issecretvalue(class)) then
@@ -114,12 +138,9 @@ tags.TAGS = {
                 end
                 return markup
             end
-            if not whiteMarkup then
-                whiteMarkup = CreateColor(1, 1, 1):GenerateHexColorMarkup()
-            end
-            return whiteMarkup
+            return getWhiteMarkup()
         end,
-        events = 'UNIT_NAME_UPDATE'
+        events = 'UNIT_NAME_UPDATE UNIT_FACTION'
     },
     {
         name = 'difficultycolor',

@@ -165,7 +165,7 @@ dispelOverlay.GetOptions = function(self, unit)
                 width = 50
             },
         })
-        append(fields, genericPosition:GetOptions(unit, 'dispelOverlay'))
+        append(fields, genericPosition:GetOptions(unit, 'dispelOverlay', true))
     end
 
     return fields

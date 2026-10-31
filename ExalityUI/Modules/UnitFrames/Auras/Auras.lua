@@ -669,6 +669,8 @@ end
 
 function ufAuras:GetSplitViewItems(contextUnit)
     contextUnit = contextUnit or self.contextUnit
+    local preview = EXUI:GetModule('uf-auras-preview')
+    local icons = EXUI.const.textures.frame.icons
     local items = {}
     local seen = {}
 
@@ -707,6 +709,14 @@ function ufAuras:GetSplitViewItems(contextUnit)
                     icon = node.ref.icon or LIST_ICON,
                     depth = depth,
                     parentID = parentID,
+                    preview = {
+                        enabled = preview:IsToggled(node.id),
+                        iconOn = icons.eye,
+                        iconOff = icons.eyeOff,
+                        onToggle = function(itemID, enabled)
+                            preview:SetToggled(itemID, enabled)
+                        end,
+                    },
                     contextMenuItems = self:DisplayContextMenu(),
                 }
                 if not self:IsDisplayActiveForUnit(node.id, contextUnit) then

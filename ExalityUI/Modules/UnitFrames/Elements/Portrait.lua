@@ -229,7 +229,8 @@ portrait.Update = function(self, frame)
     end
 
     -- Shaped portraits float above the UF border, attached ones sit beneath it
-    local level = style == 'attached' and frame:GetFrameLevel() + 50 or frame.ElementFrame:GetFrameLevel() + 5
+    local level = style == 'attached' and frame:GetFrameLevel() + 50 or
+        frame.ElementFrame:GetFrameLevel() + (db.portraitFrameLevel or 5)
     holder:SetFrameLevel(level)
     holder.Model:SetFrameLevel(level + 1)
     holder.BorderFrame:SetFrameLevel(level + 2)

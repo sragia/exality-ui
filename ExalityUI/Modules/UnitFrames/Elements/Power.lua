@@ -43,6 +43,7 @@ power.Update = function(self, frame)
     local statusBarTexture = db.overrideStatusBarTexture ~= '' and db.overrideStatusBarTexture or
         generalDB.statusBarTexture
     powerBar:SetStatusBarTexture(LSM:Fetch('statusbar', statusBarTexture))
+    powerBar.bg:SetTexture(LSM:Fetch('statusbar', core:GetBackgroundTexture(frame, statusBarTexture)))
 
     powerBar:SetFrameLevel(frame.Health:GetFrameLevel() + 5)
 end

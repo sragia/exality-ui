@@ -42,6 +42,9 @@ customTexts.Update = function(self, frame)
         unit = frame.originalUnit
     end
 
+    -- Party/raid frame showing the player has 'player' as its unit
+    unit = frame.exuiUnitType or unit
+
     if (unit:match('^boss%d+$')) then
         unit = 'boss'
     elseif unit:match('^arena%d+$') then

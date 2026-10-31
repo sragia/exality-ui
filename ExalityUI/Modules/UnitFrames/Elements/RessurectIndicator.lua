@@ -7,7 +7,9 @@ local core = EXUI:GetModule('uf-core')
 local resurrectIndicator = EXUI:GetModule('uf-element-ressurect-indicator')
 
 resurrectIndicator.Create = function(self, frame)
-    local ResurrectIndicator = frame.ElementFrame:CreateTexture(nil, 'OVERLAY')
+    local holder = core:CreateElementHolder(frame)
+    local ResurrectIndicator = holder:CreateTexture(nil, 'OVERLAY')
+    ResurrectIndicator.holder = holder
     EXUI:SetSize(ResurrectIndicator, 24, 24)
     ResurrectIndicator:SetPoint('CENTER')
 
@@ -23,6 +25,7 @@ resurrectIndicator.Update = function(self, frame)
         return
     end
     core:EnableElementForFrame(frame, 'ResurrectIndicator')
+    core:ApplyElementFrameLevel(frame, ResurrectIndicator.holder, db.ressurectFrameLevel or 0)
 
     EXUI:SetSize(ResurrectIndicator, 24 * db.ressurectScale, 24 * db.ressurectScale)
     ResurrectIndicator:ClearAllPoints()

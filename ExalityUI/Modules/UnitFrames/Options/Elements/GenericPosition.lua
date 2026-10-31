@@ -7,8 +7,14 @@ local core = EXUI:GetModule('uf-core')
 ---@class EXUIUnitFramesOptionsGenericPosition
 local genericPosition = EXUI:GetModule('uf-options-generic-position')
 
-genericPosition.GetOptions = function(self, unit, prefix)
-    return {
+-- Matches where each element sits when nothing has been set
+local DEFAULT_FRAME_LEVELS = {
+    raidRoles = 1,
+    portrait = 5,
+}
+
+genericPosition.GetOptions = function(self, unit, prefix, hideFrameLevel)
+    local fields = {
         {
             type = 'title',
             width = 100,
@@ -78,4 +84,26 @@ genericPosition.GetOptions = function(self, unit, prefix)
             width = 23
         }
     }
+
+    if not hideFrameLevel then
+        table.insert(fields, {
+            type = 'range',
+            label = 'Frame Level',
+            name = prefix .. 'FrameLevel',
+            min = 0,
+            max = 50,
+            step = 1,
+            width = 23,
+            tooltip = { text = 'Offset above the unit frame overlay (border). Shaped portraits sit at 5-7 by default.' },
+            currentValue = function()
+                return core:GetValueForUnit(unit, prefix .. 'FrameLevel') or DEFAULT_FRAME_LEVELS[prefix] or 0
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, prefix .. 'FrameLevel', value)
+                core:UpdateFrameForUnit(unit)
+            end
+        })
+    end
+
+    return fields
 end

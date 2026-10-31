@@ -338,6 +338,32 @@ castBar.GetOptions = function(self, unit)
             size = 18
         },
         {
+            type = 'dropdown',
+            name = 'castbarStyle',
+            label = 'Cast Bar Style',
+            getOptions = function()
+                return EXUI:GetModule('uf-element-shape'):GetStyleOptions(true)
+            end,
+            currentValue = function()
+                return core:GetValueForUnit(unit, 'castbarStyle')
+            end,
+            getDisplayValue = function(value)
+                if value ~= '' then
+                    return value
+                end
+                return core:GetValueForUnit('general', 'castbarStyle')
+            end,
+            onChange = function(value)
+                core:UpdateValueForUnit(unit, 'castbarStyle', value)
+                core:UpdateFrameForUnit(unit)
+            end,
+            width = 50
+        },
+        {
+            type = 'spacer',
+            width = 50
+        },
+        {
             type = 'color-picker',
             label = 'Background Color',
             name = 'castbarBackgroundColor',

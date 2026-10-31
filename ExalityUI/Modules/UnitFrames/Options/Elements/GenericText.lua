@@ -180,7 +180,7 @@ genericText.GetOptions = function(self, unit, prefix)
             max = 50,
             step = 1,
             width = 23,
-            tooltip = 'Offset above the unit frame overlay (border). Shaped portraits sit at 5-7.',
+            tooltip = { text = 'Offset above the unit frame overlay (border). Shaped portraits sit at 5-7.' },
             currentValue = function()
                 return core:GetValueForUnit(unit, prefix .. 'FrameLevel') or 1
             end,
