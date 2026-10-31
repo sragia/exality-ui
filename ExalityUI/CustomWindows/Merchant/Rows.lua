@@ -23,6 +23,8 @@ local ICON_INSET = 11 * ROW_SCALE
 local CART_SIZE = 16
 local CART_SCALE = 0.36
 local TEXT_INSET = 8
+local COST_ICON_SIZE = 14
+local COST_GAP = 6
 local MAX_COST_ITEMS = 3
 
 rows.perPage = 12
@@ -73,6 +75,36 @@ local function CreateCart(row)
     row.cart = cart
 end
 
+local function CreateCostItem(row, costIndex)
+    local frame = CreateFrame('Frame', nil, row)
+    frame:SetHeight(COST_ICON_SIZE)
+    -- Motion only, so clicks fall through to the row and still buy.
+    frame:SetMouseClickEnabled(false)
+    frame:SetMouseMotionEnabled(true)
+
+    local icon = frame:CreateTexture(nil, 'ARTWORK')
+    icon:SetSize(COST_ICON_SIZE, COST_ICON_SIZE)
+    icon:SetPoint('LEFT')
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    frame.icon = icon
+
+    local value = frame:CreateFontString(nil, 'OVERLAY')
+    value:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
+    value:SetPoint('LEFT', icon, 'RIGHT', 3, 0)
+    frame.value = value
+
+    frame:SetScript('OnEnter', function(self)
+        SetHover(row, true)
+        GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
+        GameTooltip:SetMerchantCostItem(row:GetID(), costIndex)
+    end)
+    frame:SetScript('OnLeave', function()
+        SetHover(row, false)
+        GameTooltip_Hide()
+    end)
+    return frame
+end
+
 local function CreateRow(parent)
     local theme = EXUI.const.theme
     local row = CreateFrame('Button', nil, parent)
@@ -112,12 +144,14 @@ local function CreateRow(parent)
     questIcon:Hide()
     row.questIcon = questIcon
 
-    local count = row:CreateFontString(nil, 'OVERLAY', nil, 1)
+    local count = row:CreateFontString(nil, 'OVERLAY')
+    count:SetDrawLayer('OVERLAY', 1)
     count:SetFont(EXUI.const.fonts.DEFAULT, 14, 'OUTLINE')
     count:SetPoint('TOPRIGHT', icon, 'TOPRIGHT', -3, -3)
     row.countText = count
 
-    local stock = row:CreateFontString(nil, 'OVERLAY', nil, 1)
+    local stock = row:CreateFontString(nil, 'OVERLAY')
+    stock:SetDrawLayer('OVERLAY', 1)
     stock:SetFont(EXUI.const.fonts.DEFAULT, 9, 'OUTLINE')
     stock:SetPoint('TOPLEFT', icon, 'TOPLEFT', 3, -3)
     stock:SetTextColor(unpack(theme.inProgress))
@@ -135,11 +169,13 @@ local function CreateRow(parent)
 
     local cost = row:CreateFontString(nil, 'OVERLAY')
     cost:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
-    cost:SetPoint('BOTTOMRIGHT', row, 'BOTTOMRIGHT', -TEXT_INSET, TEXT_INSET)
-    cost:SetPoint('LEFT', row.cart, 'RIGHT', 4, 0)
-    cost:SetJustifyH('RIGHT')
     cost:SetWordWrap(false)
     row.costText = cost
+
+    row.costItems = {}
+    for costIndex = 1, MAX_COST_ITEMS do
+        row.costItems[costIndex] = CreateCostItem(row, costIndex)
+    end
 
     row:SetScript('OnClick', function(self, button)
         local isMerchantTab = MerchantFrame.selectedTab == 1
@@ -233,6 +269,44 @@ local function BuildCost(index, price, multiplier)
 end
 rows.BuildCost = BuildCost
 
+-- Laid out right to left: cost items hug the row's corner with the money text before them.
+local function ApplyCost(row, index, price, color)
+    local previous
+    for costIndex = MAX_COST_ITEMS, 1, -1 do
+        local frame = row.costItems[costIndex]
+        local texture, value
+        if (index) then
+            texture, value = GetMerchantItemCostItem(index, costIndex)
+        end
+        if (texture) then
+            frame.icon:SetTexture(texture)
+            frame.value:SetText(value)
+            frame.value:SetTextColor(unpack(color))
+            frame:SetWidth(COST_ICON_SIZE + 3 + frame.value:GetStringWidth())
+            frame:ClearAllPoints()
+            if (previous) then
+                frame:SetPoint('RIGHT', previous, 'LEFT', -COST_GAP, 0)
+            else
+                frame:SetPoint('BOTTOMRIGHT', row, 'BOTTOMRIGHT', -TEXT_INSET, TEXT_INSET)
+            end
+            frame:Show()
+            previous = frame
+        else
+            frame:Hide()
+        end
+    end
+
+    local cost = row.costText
+    cost:SetText(price and price > 0 and C_CurrencyInfo.GetCoinTextureString(price) or '')
+    cost:SetTextColor(unpack(color))
+    cost:ClearAllPoints()
+    if (previous) then
+        cost:SetPoint('RIGHT', previous, 'LEFT', -COST_GAP, 0)
+    else
+        cost:SetPoint('BOTTOMRIGHT', row, 'BOTTOMRIGHT', -TEXT_INSET, TEXT_INSET)
+    end
+end
+
 local function ApplyIconTint(row, r, g, b)
     row.icon:SetVertexColor(r, g, b)
 end
@@ -271,8 +345,7 @@ rows.FillMerchant = function(self, row, index)
 
     local theme = EXUI.const.theme
     local canAfford = CanAffordMerchantItem(index)
-    row.costText:SetText(BuildCost(index, info.price))
-    row.costText:SetTextColor(unpack(canAfford == false and theme.danger or theme.text))
+    ApplyCost(row, index, info.price, canAfford == false and theme.danger or theme.text)
     row.questIcon:SetShown(info.isQuestStartItem)
     row.cart:Show()
 
@@ -309,8 +382,7 @@ rows.FillBuyback = function(self, row, index)
     row.showNonrefundablePrompt = nil
     ApplyCommon(row, index, name, texture, quantity, numAvailable)
 
-    row.costText:SetText(C_CurrencyInfo.GetCoinTextureString(price))
-    row.costText:SetTextColor(unpack(EXUI.const.theme.text))
+    ApplyCost(row, nil, price, EXUI.const.theme.text)
     row.questIcon:Hide()
     row.cart:Hide()
     row.icon:SetDesaturated(false)
