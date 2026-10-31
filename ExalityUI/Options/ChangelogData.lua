@@ -12,20 +12,21 @@ EXUI.GetChangelog = function()
                 { 'Options', 'Bunch of changes visually and functionality wise for tabs and side option items.', {
                     'Now you can group up and adjust ordering of Resource Displays, Cooldowns, Aura Displays, Aura Editors for UF/NP. Also add icons to them.',
                 } },
-                { 'Options', 'Import and export a single item or a whole group for Aura Displays, Unit Frame auras, Nameplate auras, Resource Displays, and Cooldowns.' },
-                { 'Auras', 'Add glow type for Unit Frame auras.' },
-                { 'Auras', 'Adjust/Fix load conditions for aura displays across the board.' },
-                { 'Auras', 'Add Encounter load condition, so you can load aura only for specific encounters.' },
+                { 'Options',                                     'Import and export a single item or a whole group for Aura Displays, Unit Frame auras, Nameplate auras, Resource Displays, and Cooldowns.' },
+                { 'Auras',                                       'Add glow type for Unit Frame auras.' },
+                { 'Auras',                                       'Adjust/Fix load conditions for aura displays across the board.' },
+                { 'Auras',                                       'Add Encounter load condition, so you can load aura only for specific encounters.' },
                 { { 'Auras', 'Cooldowns', 'Resource Displays' }, 'Add option to export/import individual items/groups from them.' },
-                { 'Character Frame', 'Add same styling for Inspect UI too. As well as when viewing other players talents use talent UI if enabled.' },
-                { 'Profiles', 'Fix toggle that somehow got broken.' },
-                { 'Unit Frames', 'Add portrait element with 4 different styles - circle, square, hexagon as separate elements and attached as part of the unitframe.' },
-                { 'Unit Frames', 'Add option to change frame level for all text elements' },
-                { 'Misc', 'Default font - DMSans, now supports Cyrillic characters.' },
-                { 'Nameplates', 'Add options to modify friendly nameplates font.' },
-                { 'Skins', 'Re-skin LFG frame (LFG/PvP/M+) with much more polish. And some small added features like filtering of LFG.' },
-                { 'Objective Tracker', 'Fix category underline color option and adjust texture used' },
-                { 'Changelog', 'Adjust/Improve look of changelog window'}, 
+                { 'Character Frame',                             'Add same styling for Inspect UI too. As well as when viewing other players talents use talent UI if enabled.' },
+                { 'Profiles',                                    'Fix toggle that somehow got broken.' },
+                { 'Unit Frames',                                 'Add portrait element with 4 different styles - circle, square, hexagon as separate elements and attached as part of the unitframe.' },
+                { 'Unit Frames',                                 'Add option to change frame level for all text elements' },
+                { 'Misc',                                        'Default font - DMSans, now supports Cyrillic characters.' },
+                { 'Nameplates',                                  'Add options to modify friendly nameplates font.' },
+                { 'Skins',                                       'Re-skin LFG frame (LFG/PvP/M+) with much more polish. And some small added features like filtering of LFG.' },
+                { 'Objective Tracker',                           'Fix category underline color option and adjust texture used' },
+                { 'Changelog',                                   'Adjust/Improve look of changelog window' },
+                { 'Action Bars',                                 'Fix Ctrl+Click spell menu not working' }
             },
             sections = {
                 {
@@ -47,7 +48,7 @@ EXUI.GetChangelog = function()
                     title = 'Forever',
                     forever = true,
                     changes = {
-                        { 'Bags', 'Remove Crest currency display from bags' },
+                        { 'Bags',            'Remove Crest currency display from bags' },
                         { 'Character Frame', 'Use item rarity instead of ILvL for the equipment slots' },
                     },
                 },
@@ -56,16 +57,16 @@ EXUI.GetChangelog = function()
         {
             version = '0.9.7',
             changes = {
-                { 'Minimap', 'Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.' },
-                { 'Minimap', 'Fix mail icon on minimap not being hidden after closing options. Add Difficulty preview while we are viewing it\'s options.' },
-                { 'BW Skin', 'Fix icon not showing after latest update.' },
-                { 'Action Bars', 'Fix taint issue after going into keybind mode.' },
+                { 'Minimap',       'Add PoI scale option. Scales Point of Interest pins like quest/repair/portal etc icons in minimap.' },
+                { 'Minimap',       'Fix mail icon on minimap not being hidden after closing options. Add Difficulty preview while we are viewing it\'s options.' },
+                { 'BW Skin',       'Fix icon not showing after latest update.' },
+                { 'Action Bars',   'Fix taint issue after going into keybind mode.' },
                 { 'Pixel Perfect', 'Updates using new 12.1.5 API for better support for native rounding.' },
-                { 'Auras', 'Add support for pandemic glows.' },
-                { 'Minimap', 'Add coordinates display. And hide default one by default.' },
+                { 'Auras',         'Add support for pandemic glows.' },
+                { 'Minimap',       'Add coordinates display. And hide default one by default.' },
                 { 'Damage Meters', 'Move overall enable/disable out of window options' },
-                { 'Unit Frames', 'Hide filtered auras when unit is not visible to you.' },
-                { 'Unit Frames', 'Add an option to fade boss frames when they are out of range.' },
+                { 'Unit Frames',   'Hide filtered auras when unit is not visible to you.' },
+                { 'Unit Frames',   'Add an option to fade boss frames when they are out of range.' },
             },
             sections = {
                 {
@@ -84,10 +85,10 @@ EXUI.GetChangelog = function()
         {
             version = '0.9.6',
             changes = {
-                { 'Action Bars', 'Add our own keybind mode dialog instead of using Blizzard one.' },
-                { 'Options', 'Visul rework of options. Probably more to come to improve UX more.' },
-                { 'Misc', 'Bunch of small fixes and improvements.' },
-                { 'Nameplates', 'Add bunch of options for friendly nameplates.' },
+                { 'Action Bars',       'Add our own keybind mode dialog instead of using Blizzard one.' },
+                { 'Options',           'Visul rework of options. Probably more to come to improve UX more.' },
+                { 'Misc',              'Bunch of small fixes and improvements.' },
+                { 'Nameplates',        'Add bunch of options for friendly nameplates.' },
                 { 'Objective Tracker', 'Add "affixes" display for delves.' },
             },
             sections = {
@@ -101,18 +102,18 @@ EXUI.GetChangelog = function()
         {
             version = '0.9.5',
             changes = {
-                { 'Action Bars', 'Allow to ping action bars.' },
-                { 'Bags', 'Add keystone level text to the item.' },
+                { 'Action Bars',   'Allow to ping action bars.' },
+                { 'Bags',          'Add keystone level text to the item.' },
                 { 'Mythic+ Timer', 'Add historic data and keep timer visible until you leave key.' },
             },
         },
         {
             version = '0.9.4',
             changes = {
-                { 'Minimap', 'Instance difficulty is now overlay text instead of a minimap button.' },
+                { 'Minimap',     'Instance difficulty is now overlay text instead of a minimap button.' },
                 { 'Action Bars', 'Fix issue where sometimes possess bar buttons are not shown.' },
                 { 'Unit Frames', 'Override player castbar with pet/vehicle if player is possessed.' },
-                { 'General', 'A lot of small optimizations to improve FPS.' },
+                { 'General',     'A lot of small optimizations to improve FPS.' },
                 { 'Action Bars', 'Fix pet bar not showing up' },
             },
             sections = {
@@ -136,21 +137,21 @@ EXUI.GetChangelog = function()
             changes = {
                 { 'Objective Tracker', 'Update delve display to show remaining lives' },
                 { 'Objective Tracker', 'Show auto completable quests in tracker.' },
-                { 'XP Bar', 'Add reputation watch inside of XP bar. Supports rep/hr' },
-                { 'Unit Frames', 'Fix group role indicator hide to work after update.' },
-                { 'Action Bars', 'Add Leave Vehicle button that was missed.' },
+                { 'XP Bar',            'Add reputation watch inside of XP bar. Supports rep/hr' },
+                { 'Unit Frames',       'Fix group role indicator hide to work after update.' },
+                { 'Action Bars',       'Add Leave Vehicle button that was missed.' },
             },
         },
         {
             version = '0.9.2',
             changes = {
-                { 'Action Bars', 'Fix issue with button highlight going out of container' },
+                { 'Action Bars',       'Fix issue with button highlight going out of container' },
                 { 'Resource Displays', 'Fix issue with preview staying shown after options switch/window close' },
-                { 'Action Bars', 'Possess Bar replaces Bar 1' },
+                { 'Action Bars',       'Possess Bar replaces Bar 1' },
                 { 'Objective Tracker', 'Fix issue of scenarios missing timer.' },
                 { 'Objective Tracker', 'Show delve tier.' },
-                { 'Unit Frames', 'Keep Blizzard party/raid frames hidden across roster changes in combat.' },
-                { 'Skins', 'Some fixes for taints happening all over the place. Still more to do, i know...' },
+                { 'Unit Frames',       'Keep Blizzard party/raid frames hidden across roster changes in combat.' },
+                { 'Skins',             'Some fixes for taints happening all over the place. Still more to do, i know...' },
             },
         },
         {
@@ -270,7 +271,7 @@ EXUI.GetChangelog = function()
             version = '0.2.8',
             changes = {
                 { 'Unit Frames', 'Update oUF to 13.4.5.' },
-                { 'General', 'Fix missing LibDBIcon library.' },
+                { 'General',     'Fix missing LibDBIcon library.' },
             },
             notes = {
                 'If after the patch you can\'t target anyone by clicking on the unit frame, go into Options > Gameplay Enhancements > Click Casting > Set keybind to Target Unit Frame.',
@@ -285,15 +286,15 @@ EXUI.GetChangelog = function()
         {
             version = '0.2.6',
             changes = {
-                { 'Skins', 'Add basic bigwigs bar skin. Basically adds border and darker background.' },
+                { 'Skins',       'Add basic bigwigs bar skin. Basically adds border and darker background.' },
                 { 'Unit Frames', 'Update oUF to 13.3.2 to fix private aura issues.' },
             },
         },
         {
             version = '0.2.5',
             changes = {
-                { 'Unit Frames', 'Add missed preview option for Dispel Overlay.' },
-                { 'Unit Frames', 'Fix issue where player frame previews wouldn\'t hide on window close.' },
+                { 'Unit Frames',     'Add missed preview option for Dispel Overlay.' },
+                { 'Unit Frames',     'Fix issue where player frame previews wouldn\'t hide on window close.' },
                 { 'Character Frame', 'Equipment popout now limits to 10 items due to some issue where it causes freezes with more items.' },
                 { 'Character Frame', 'Increase window height slightly to accomodate specs with more stats showing.' },
             },
@@ -302,11 +303,11 @@ EXUI.GetChangelog = function()
             version = '0.2.4',
             changes = {
                 { 'Character Frame', 'Equipment popout small improvements' },
-                { 'Unit Frames', 'Fix issue where party/raid frames still enabled elements in background when they should be disabled. Should improve performance a bit.' },
-                { 'Unit Frames', 'New UF element - Dispel Overlay. Shows a colored overlay on the unit frame when dispellable auras are present, that you can dispel. This is enabled by default for Raid and Party frames.' },
-                { 'Unit Frames', 'Update oUF to 13.3.1' },
-                { 'Brezz', 'Only show in encounters in raid' },
-                { 'Media', 'Add new absorb bar texture' },
+                { 'Unit Frames',     'Fix issue where party/raid frames still enabled elements in background when they should be disabled. Should improve performance a bit.' },
+                { 'Unit Frames',     'New UF element - Dispel Overlay. Shows a colored overlay on the unit frame when dispellable auras are present, that you can dispel. This is enabled by default for Raid and Party frames.' },
+                { 'Unit Frames',     'Update oUF to 13.3.1' },
+                { 'Brezz',           'Only show in encounters in raid' },
+                { 'Media',           'Add new absorb bar texture' },
                 { 'Character Frame', 'Add crest display' },
             },
         },
@@ -319,11 +320,11 @@ EXUI.GetChangelog = function()
         {
             version = '0.2.2',
             changes = {
-                { 'Broker', 'Fix issue with guild broker throwing error when API doesnt return zone for player' },
+                { 'Broker',      'Fix issue with guild broker throwing error when API doesnt return zone for player' },
                 { 'Unit Frames', 'Update oUF to 13.3.0' },
-                { 'Skins', 'Adjust tooltip skinning to not taint from loot frame' },
+                { 'Skins',       'Adjust tooltip skinning to not taint from loot frame' },
                 { 'Unit Frames', 'Update NSRT nickname tag on nickname update' },
-                { 'Tweaks', 'Remove quest tracking bugfix which is causing more issues than it fixes.' },
+                { 'Tweaks',      'Remove quest tracking bugfix which is causing more issues than it fixes.' },
             },
         },
         {

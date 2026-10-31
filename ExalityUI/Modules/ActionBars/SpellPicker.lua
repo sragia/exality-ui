@@ -319,15 +319,11 @@ spellPicker.UpdateFilterButtons = function(self)
 
     local theme = EXUI.const.theme
     local function apply(btn, enabled)
-        if enabled then
-            btn.icon:SetAlpha(1)
-            btn.PPBorder:SetBorderColor(theme.accent[1], theme.accent[2], theme.accent[3], 1)
-            btn.bg:SetVertexColor(theme.backgroundLight[1], theme.backgroundLight[2], theme.backgroundLight[3], 1)
-        else
-            btn.icon:SetAlpha(0.35)
-            btn.PPBorder:SetBorderColor(theme.border[1], theme.border[2], theme.border[3], 1)
-            btn.bg:SetVertexColor(theme.backgroundDeep[1], theme.backgroundDeep[2], theme.backgroundDeep[3], 1)
-        end
+        btn.icon:SetAlpha(enabled and 1 or 0.35)
+        btn.normalBg = enabled and theme.backgroundLight or theme.backgroundDeep
+        btn.normalBorder = enabled and theme.accent or theme.border
+        btn.bg:SetVertexColor(unpack(btn.normalBg))
+        btn.border:SetVertexColor(unpack(btn.normalBorder))
     end
 
     apply(frame.spellFilter, self.showSpells)
