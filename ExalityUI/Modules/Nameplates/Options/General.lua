@@ -40,8 +40,17 @@ function general:GetMenu()
                     helpers.TextureDropdown('Status Bar Texture', 'statusBarTexture', 50),
                     { type = 'title', label = 'Style', width = 100, size = 18 },
                     helpers.Dropdown('Frame Style', 'frameStyle', function()
-                        return EXUI:GetModule('uf-element-shape'):GetStyleOptions()
+                        return EXUI:GetModule('styles'):GetDropdownOptions()
                     end, 50),
+                    {
+                        type = 'button',
+                        label = 'Manage Styles',
+                        name = 'manageStyles',
+                        width = 25,
+                        onClick = function()
+                            EXUI:GetModule('styles-options'):Open()
+                        end,
+                    },
                     { type = 'title', label = 'Border', width = 100, size = 18 },
                     helpers.Range('Thickness', 'borderThickness', 0, 4, 1, 50),
                     helpers.Color('Color', 'borderColor', 50),

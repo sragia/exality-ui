@@ -7,6 +7,9 @@ local npCore = EXUI:GetModule('np-core')
 ---@class EXUIUnitFramesElementsShape
 local ufShape = EXUI:GetModule('uf-element-shape')
 
+---@class EXUIStyles
+local styles = EXUI:GetModule('styles')
+
 ---@class EXUINameplatesElementShape
 local shape = EXUI:GetModule('np-element-shape')
 
@@ -24,18 +27,18 @@ end
 
 shape.IsShaped = function(self, frame)
     local db = frame.db or npCore:GetDB()
-    return ufShape:IsStyle(db.frameStyle) and not npCore:IsFriendlyNameOnly(frame)
+    return styles:IsStyle(db.frameStyle) and not npCore:IsFriendlyNameOnly(frame)
 end
 
-shape.GetStyleSize = function(self, frame)
+shape.GetStyleID = function(self, frame)
     if not self:IsShaped(frame) then
         return nil
     end
-    return ufShape:GetStyleSize((frame.db or npCore:GetDB()).frameStyle)
+    return (frame.db or npCore:GetDB()).frameStyle
 end
 
 shape.IsCastbarShaped = function(self, db)
-    return ufShape:IsStyle(db and db.castbarStyle)
+    return styles:IsStyle(db and db.castbarStyle)
 end
 
 shape.SetBorderColor = function(self, frame, color)

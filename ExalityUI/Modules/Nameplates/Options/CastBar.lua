@@ -16,7 +16,7 @@ function castBar:GetMenu()
                 return {
                     helpers.Toggle('Enable', 'castbarEnable'),
                     helpers.Dropdown('Cast Bar Style', 'castbarStyle', function()
-                        return EXUI:GetModule('uf-element-shape'):GetStyleOptions()
+                        return EXUI:GetModule('styles'):GetDropdownOptions()
                     end, 50),
                     helpers.Range('Height', 'castbarHeight', 4, 40, 1, 50),
                     helpers.Range('Y Offset', 'castbarYOff', -40, 40, 1, 50),

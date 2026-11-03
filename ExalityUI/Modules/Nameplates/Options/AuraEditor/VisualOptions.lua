@@ -530,6 +530,20 @@ function visualOptions:GetOptions(displayID, groupID)
                         displayID)
                 end,
             },
+            {
+                type = 'dropdown',
+                label = 'Icon Style',
+                name = 'iconStyle',
+                width = 50,
+                getOptions = function()
+                    return EXUI:GetModule('styles'):GetDropdownOptions()
+                end,
+                currentValue = function()
+                    return auraDisplays:GetGroupVisual(displayID, groupID, 'iconStyle') or 'default'
+                end,
+                onChange = function(v) updateVisual(displayID, groupID, 'iconStyle', v) end,
+            },
+            { type = 'spacer', width = 50 },
             { type = 'title', label = 'Icon Border', width = 100 },
             {
                 type = 'toggle',

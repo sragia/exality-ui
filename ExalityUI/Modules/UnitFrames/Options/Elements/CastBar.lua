@@ -342,7 +342,7 @@ castBar.GetOptions = function(self, unit)
             name = 'castbarStyle',
             label = 'Cast Bar Style',
             getOptions = function()
-                return EXUI:GetModule('uf-element-shape'):GetStyleOptions(true)
+                return EXUI:GetModule('styles'):GetDropdownOptions(true)
             end,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'castbarStyle')

@@ -129,6 +129,12 @@ EXUI.const = {
         minimap = {
             drawerOpen = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/open.png]],
             mail = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/mail.png]],
+            maskRoundSmall = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/mask-round-small.tga]],
+            maskRoundMedium = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/mask-round-medium.tga]],
+            maskRoundLarge = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/mask-round-large.tga]],
+            maskRoundSmallBorder = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/mask-round-small-border.tga]],
+            maskRoundMediumBorder = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/mask-round-medium-border.tga]],
+            maskRoundLargeBorder = [[Interface/Addons/ExalityUI/Assets/Images/Minimap/mask-round-large-border.tga]],
         },
         unitFrames = {
             dispelOverlay = [[Interface/Addons/ExalityUI/Assets/Images/UnitFrames/dispel-overlay.png]],

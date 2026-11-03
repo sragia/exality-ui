@@ -478,7 +478,7 @@ core:AddOption({
                     name = 'frameStyle',
                     label = 'Frame Style',
                     getOptions = function()
-                        return EXUI:GetModule('uf-element-shape'):GetStyleOptions()
+                        return EXUI:GetModule('styles'):GetDropdownOptions()
                     end,
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'frameStyle')
@@ -491,8 +491,17 @@ core:AddOption({
                     width = 50,
                 },
                 {
+                    type = 'button',
+                    label = 'Manage Styles',
+                    name = 'manageStyles',
+                    width = 25,
+                    onClick = function()
+                        EXUI:GetModule('styles-options'):Open()
+                    end,
+                },
+                {
                     type = 'spacer',
-                    width = 50,
+                    width = 25,
                 },
                 {
                     type = 'toggle',
@@ -536,7 +545,7 @@ core:AddOption({
                     name = 'castbarStyle',
                     label = 'Cast Bar Style',
                     getOptions = function()
-                        return EXUI:GetModule('uf-element-shape'):GetStyleOptions()
+                        return EXUI:GetModule('styles'):GetDropdownOptions()
                     end,
                     currentValue = function()
                         return ufCore:GetValueForUnit('general', 'castbarStyle')

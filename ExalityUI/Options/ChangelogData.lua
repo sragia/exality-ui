@@ -9,11 +9,22 @@ EXUI.GetChangelog = function()
         {
             version = '0.9.9',
             changes = {
-                { { 'Unit Frames', 'Nameplates' }, 'Added different shapes for the unitframes - Rounded (4px, 6px, 10px), Cut (4px, 6px, 10px)' },
+                { { 'Unit Frames', 'Nameplates' }, 'Added different shapes for the unitframes - Rounded (4px, 6px, 10px), Cut (4px, 6px, 10px). See Styles' },
                 {
                     'Unit Frames',
                     'Color options for UF borders. Adjust backdrop texture for the UF',
                 },
+                {
+                    'Minimap', 'Added Rounded corners styles for minimap'
+                }
+            },
+            sections = {
+                {
+                    title = 'Styles',
+                    new = true,
+                    text = { 'Added support to add styling for shapes and borders of unitframes, nameplates, auras.',
+                        'Super basic functionality for now to be ready for Forever release, but you can customize the look of things however you want by providing your own masks and borders' }
+                }
             }
         },
         {

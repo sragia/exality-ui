@@ -31,6 +31,28 @@ nameplates.Init = function(self)
     EXUI:GetModule('np-auras'):Init()
     EXUI:GetModule('np-preview'):Init()
     optionsController:RegisterModule(self)
+    local styles = EXUI:GetModule('styles')
+    styles:RegisterCallback(function()
+        if self.enabled then
+            npCore:UpdateAllPlates()
+        end
+    end)
+    for order, target in ipairs({
+        { 'np-frames', 'Nameplates', 'frameStyle' },
+        { 'np-castbars', 'Nameplate Cast Bars', 'castbarStyle' },
+    }) do
+        styles:RegisterTarget(target[1], {
+            label = target[2],
+            order = 10 + order,
+            get = function() return npCore:GetValue(target[3]) end,
+            set = function(styleID)
+                npCore:SetValue(target[3], styleID)
+                if self.enabled then
+                    npCore:UpdateAllPlates()
+                end
+            end,
+        })
+    end
 
     if npCore:GetValue('enable') then
         self:Enable()

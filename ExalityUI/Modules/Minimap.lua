@@ -40,6 +40,13 @@ minimap.previewMail = false
 minimap.previewDifficulty = false
 
 local MASK_TEXTURE = [[Interface\BUTTONS\WHITE8X8]]
+-- Minimap masks stretch over the whole map, so these are drawn at map size.
+local MAP_MASK_SHAPES = {
+    square = { label = 'Square', order = 1 },
+    ['round-small'] = { label = 'Rounded (Small)', order = 2, mask = 'maskRoundSmall', border = 'maskRoundSmallBorder' },
+    ['round-medium'] = { label = 'Rounded (Medium)', order = 3, mask = 'maskRoundMedium', border = 'maskRoundMediumBorder' },
+    ['round-large'] = { label = 'Rounded (Large)', order = 4, mask = 'maskRoundLarge', border = 'maskRoundLargeBorder' },
+}
 local SQUARE_SHAPE = 'SQUARE'
 local MINIMAP_BUTTON_ICON_SIZE = 20
 local MINIMAP_MAIL_ICON_SIZE = 16
@@ -740,6 +747,7 @@ minimap.GetDefaults = function(self)
         poiScale = 1,
         borderSize = 1,
         borderColor = { r = 38 / 255, g = 41 / 255, b = 34 / 255, a = 1 },
+        shape = 'square',
         anchorPoint = 'TOPRIGHT',
         relativeAnchor = 'TOPRIGHT',
         xOffset = -10,
@@ -1147,6 +1155,71 @@ minimap.GetOptions = function(self, currTabID, currItemID)
             },
             {
                 type = 'title',
+                label = 'Style',
+                width = 100,
+                depends = function() return self.Data:GetValue('enable') end,
+            },
+            {
+                type = 'dropdown',
+                label = 'Shape',
+                name = 'shape',
+                depends = function() return self.Data:GetValue('enable') end,
+                getOptions = function()
+                    local options = {}
+                    for key, shape in pairs(MAP_MASK_SHAPES) do
+                        options[key] = { label = shape.label, order = shape.order }
+                    end
+                    return options
+                end,
+                currentValue = function() return self.Data:GetValue('shape') or 'square' end,
+                onChange = function(value)
+                    self.Data:SetValue('shape', value)
+                    self:ConfigureIfEnabled()
+                    self:RefreshOptionsView()
+                end,
+                width = 20,
+            },
+            {
+                type = 'spacer',
+                width = 80,
+                depends = function() return self.Data:GetValue('enable') end,
+            },
+            {
+                type = 'range',
+                label = 'Border Size',
+                name = 'borderSize',
+                min = 0,
+                max = 10,
+                step = 1,
+                depends = function()
+                    return self.Data:GetValue('enable') and not select(2, self:GetMaskTexture())
+                end,
+                currentValue = function() return self.Data:GetValue('borderSize') end,
+                onChange = function(value)
+                    self.Data:SetValue('borderSize', value)
+                    self:ConfigureIfEnabled()
+                end,
+                width = 20,
+            },
+            {
+                type = 'color-picker',
+                label = 'Border Color',
+                name = 'borderColor',
+                depends = function() return self.Data:GetValue('enable') end,
+                currentValue = function() return self.Data:GetValue('borderColor') end,
+                onChange = function(value)
+                    self.Data:SetValue('borderColor', PackColor(value))
+                    self:ConfigureIfEnabled()
+                end,
+                width = 20,
+            },
+            {
+                type = 'spacer',
+                width = 60,
+                depends = function() return self.Data:GetValue('enable') end,
+            },
+            {
+                type = 'title',
                 label = 'Size & Position',
                 width = 100,
                 depends = function() return self.Data:GetValue('enable') end,
@@ -1168,21 +1241,6 @@ minimap.GetOptions = function(self, currTabID, currItemID)
             },
             {
                 type = 'range',
-                label = 'Border Size',
-                name = 'borderSize',
-                min = 0,
-                max = 10,
-                step = 1,
-                depends = function() return self.Data:GetValue('enable') end,
-                currentValue = function() return self.Data:GetValue('borderSize') end,
-                onChange = function(value)
-                    self.Data:SetValue('borderSize', value)
-                    self:ConfigureIfEnabled()
-                end,
-                width = 20,
-            },
-            {
-                type = 'range',
                 label = 'POI Scale',
                 name = 'poiScale',
                 min = 0.5,
@@ -1197,20 +1255,8 @@ minimap.GetOptions = function(self, currTabID, currItemID)
                 width = 20,
             },
             {
-                type = 'color-picker',
-                label = 'Border Color',
-                name = 'borderColor',
-                depends = function() return self.Data:GetValue('enable') end,
-                currentValue = function() return self.Data:GetValue('borderColor') end,
-                onChange = function(value)
-                    self.Data:SetValue('borderColor', PackColor(value))
-                    self:ConfigureIfEnabled()
-                end,
-                width = 20,
-            },
-            {
                 type = 'spacer',
-                width = 20,
+                width = 60,
                 depends = function() return self.Data:GetValue('enable') end,
             },
             {
@@ -1844,8 +1890,18 @@ end
 -- Runtime
 --------------------------------
 
+minimap.GetMaskTexture = function(self)
+    local shape = MAP_MASK_SHAPES[self.Data:GetValue('shape')]
+    if (shape and shape.mask) then
+        local textures = EXUI.const.textures.minimap
+        return textures[shape.mask], textures[shape.border]
+    end
+    return MASK_TEXTURE
+end
+
+-- Rounded shapes still report SQUARE so addon buttons keep orbiting the square edge.
 minimap.ApplySquareShape = function(self)
-    Minimap:SetMaskTexture(MASK_TEXTURE)
+    Minimap:SetMaskTexture((self:GetMaskTexture()))
     if (HybridMinimap and HybridMinimap.MapCanvas and HybridMinimap.CircleMask) then
         self:ApplyHybridMinimap()
     end
@@ -1865,7 +1921,7 @@ minimap.ApplyHybridMinimap = function(self)
         HybridMinimap:SetFrameLevel(1)
     end
     HybridMinimap.MapCanvas:SetUseMaskTexture(false)
-    HybridMinimap.CircleMask:SetTexture(MASK_TEXTURE)
+    HybridMinimap.CircleMask:SetTexture((self:GetMaskTexture()))
     HybridMinimap.MapCanvas:SetUseMaskTexture(true)
     if (HybridMinimap.MapCanvas.EnableMouse) then
         HybridMinimap.MapCanvas:EnableMouse(false)
@@ -1914,6 +1970,13 @@ minimap.SetupMinimapFrame = function(self)
     end
     self.borderContainer:EnableMouse(false)
     self.border = EXUI:AddPixelPerfectBorder(self.borderContainer, 1, { layer = 'BACKGROUND' })
+    -- Rounded shapes draw their outline over the map's edge, it stretches with the map like the mask.
+    self.roundBorderFrame = CreateFrame('Frame', nil, Minimap)
+    self.roundBorderFrame:SetAllPoints(Minimap)
+    self.roundBorderFrame:EnableMouse(false)
+    self.roundBorder = self.roundBorderFrame:CreateTexture(nil, 'OVERLAY')
+    self.roundBorder:SetAllPoints()
+    self.roundBorderFrame:Hide()
 
     self.orbitButtonLayer = CreateFrame('Frame', nil, Minimap)
     self.orbitButtonLayer:SetAllPoints(Minimap)
@@ -3658,8 +3721,19 @@ minimap.ConfigureMinimap = function(self)
     Minimap:Show()
     Minimap:EnableMouse(true)
 
+    local _, roundBorder = self:GetMaskTexture()
+    if (self.roundBorderFrame) then
+        if (roundBorder) then
+            self.roundBorder:SetTexture(roundBorder)
+            self.roundBorder:SetVertexColor(UnpackColor(db.borderColor))
+            self.roundBorderFrame:Show()
+        else
+            self.roundBorderFrame:Hide()
+        end
+    end
+
     if (self.borderContainer) then
-        if (borderSize > 0) then
+        if (borderSize > 0 and not roundBorder) then
             local borderThickness = EXUI:ScalePixels(borderSize, Minimap)
             local outerSize = db.size + (borderThickness * 2)
             EXUI:SetSize(self.borderContainer, outerSize, outerSize)
@@ -3767,6 +3841,7 @@ minimap.Disable = function(self)
     self:CloseCompartmentMenu()
     if (AddonCompartmentFrame) then AddonCompartmentFrame:Hide() end
     if (self.borderContainer) then self.borderContainer:Hide() end
+    if (self.roundBorderFrame) then self.roundBorderFrame:Hide() end
     if (self.zoneFrame) then self.zoneFrame:Hide() end
     if (self.clockFrame) then self.clockFrame:Hide() end
     if (self.coordsFrame) then self.coordsFrame:Hide() end

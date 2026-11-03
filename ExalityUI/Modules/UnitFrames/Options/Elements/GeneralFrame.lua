@@ -97,7 +97,7 @@ generalFrame.GetOptions = function(self, unit)
             name = 'overrideFrameStyle',
             label = 'Frame Style',
             getOptions = function()
-                return EXUI:GetModule('uf-element-shape'):GetStyleOptions(true)
+                return EXUI:GetModule('styles'):GetDropdownOptions(true)
             end,
             currentValue = function()
                 return core:GetValueForUnit(unit, 'overrideFrameStyle')

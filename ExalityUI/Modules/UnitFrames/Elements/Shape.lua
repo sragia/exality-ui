@@ -4,14 +4,8 @@ local EXUI = select(2, ...)
 ---@class EXUIUnitFramesElementsShape
 local shape = EXUI:GetModule('uf-element-shape')
 
-local STYLES = {
-    ['round-4'] = { label = 'Rounded (4px)', order = 2, mask = 'shapeRound4', border = 'shapeRound4Border', margin = 5, size = 4 },
-    ['round-6'] = { label = 'Rounded (6px)', order = 3, mask = 'shapeRound6', border = 'shapeRound6Border', margin = 7, size = 6 },
-    ['round-10'] = { label = 'Rounded (10px)', order = 4, mask = 'shapeRound10', border = 'shapeRound10Border', margin = 11, size = 10 },
-    ['cut-4'] = { label = 'Cut (4px)', order = 5, mask = 'shapeCut4', border = 'shapeCut4Border', margin = 5, size = 4 },
-    ['cut-6'] = { label = 'Cut (6px)', order = 6, mask = 'shapeCut6', border = 'shapeCut6Border', margin = 7, size = 6 },
-    ['cut-10'] = { label = 'Cut (10px)', order = 7, mask = 'shapeCut10', border = 'shapeCut10Border', margin = 11, size = 10 },
-}
+---@class EXUIStyles
+local styles = EXUI:GetModule('styles')
 
 local function SetMasked(state, texture, enabled)
     if not texture or (state.masked[texture] or false) == enabled then
@@ -33,39 +27,27 @@ local function SetBarMasked(state, bar, enabled)
 end
 
 local function ApplyTextures(state, style)
-    local textures = EXUI.const.textures.unitFrames
-    local margin = style.margin
-
     local mask = state.Mask
-    mask:SetTexture(textures[style.mask], 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
-    mask:SetTextureSliceMargins(margin, margin, margin, margin)
-    mask:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    mask:SetTexture(style.mask, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    styles:ApplySlices(mask, style.margins)
 
     local border = state.Border
-    border:SetTexture(textures[style.border])
-    border:SetTextureSliceMargins(margin, margin, margin, margin)
-    border:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    border:SetTexture(style.border)
+    styles:ApplySlices(border, style.margins)
 end
 
 local function SelectStyle(state, styleKey)
-    local style = STYLES[styleKey]
-    if style and state.styleKey ~= styleKey then
+    local style = styles:Get(styleKey)
+    local version = styles:GetVersion()
+    if style and (state.styleKey ~= styleKey or state.styleVersion ~= version) then
         ApplyTextures(state, style)
     end
     state.styleKey = styleKey
+    state.styleVersion = version
     return style ~= nil
 end
 
--- Styles and masking are shared with Nameplates
-shape.IsStyle = function(self, styleKey)
-    return STYLES[styleKey] ~= nil
-end
-
-shape.GetStyleSize = function(self, styleKey)
-    local style = STYLES[styleKey]
-    return style and style.size
-end
-
+-- Masking is shared with Nameplates and aura icons
 shape.SelectStyle = function(self, state, styleKey)
     return SelectStyle(state, styleKey)
 end
@@ -76,19 +58,6 @@ end
 
 shape.SetBarMasked = function(self, state, bar, enabled)
     SetBarMasked(state, bar, enabled)
-end
-
-shape.GetStyleOptions = function(self, includeUseDefault)
-    local options = {
-        ['default'] = { label = 'Default', order = 1 },
-    }
-    if includeUseDefault then
-        options[''] = { label = 'Use Default', order = 0 }
-    end
-    for key, style in pairs(STYLES) do
-        options[key] = { label = style.label, order = style.order }
-    end
-    return options
 end
 
 local function UsesClassColor(frame)
@@ -154,7 +123,7 @@ end
 -- For textures that can only be masked when created
 shape.GetActiveMask = function(self, frame)
     local state = frame.FrameShape
-    return STYLES[state.styleKey] and state.Mask or nil
+    return styles:IsStyle(state.styleKey) and state.Mask or nil
 end
 
 shape.Create = function(self, frame)
@@ -174,12 +143,9 @@ shape.CreateCastbar = function(self, bar, container)
     local mask = bar:CreateMaskTexture()
     mask:SetAllPoints(container)
 
-    local borderFrame = CreateFrame('Frame', nil, bar)
-    borderFrame:SetAllPoints(container)
-    borderFrame:SetFrameLevel(bar:GetFrameLevel() + 5)
-
-    local border = borderFrame:CreateTexture(nil, 'OVERLAY')
-    border:SetAllPoints()
+    -- Lowest OVERLAY sublevel keeps it over the fill and icon but under the bar's texts.
+    local border = bar:CreateTexture(nil, 'OVERLAY', nil, -8)
+    border:SetAllPoints(container)
     border:Hide()
 
     return { Mask = mask, Border = border, masked = {} }
@@ -187,7 +153,7 @@ end
 
 shape.MaskPip = function(self, bar, pip)
     local state = bar.Shape
-    SetMasked(state, pip.line, STYLES[state.styleKey] ~= nil)
+    SetMasked(state, pip.line, styles:IsStyle(state.styleKey))
 end
 
 shape.ApplyCastbarShape = function(self, bar, styleKey, color, showBorder)

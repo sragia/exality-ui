@@ -51,7 +51,11 @@ Options/EditorOptionBar.lua
 Options/Main.lua
 Options/ModuleSelector.lua
 Options/Frames/ResourceColorCurve.lua
+Options/Frames/StylePreview.lua
 Options/Fields.lua
+
+# Styles
+Styles/Styles.xml
 
 # Modules
 Modules/Notifications.lua

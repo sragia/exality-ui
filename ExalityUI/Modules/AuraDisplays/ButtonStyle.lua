@@ -1061,7 +1061,7 @@ function buttonStyle:CreateAuraTypeBorder(button)
     end
 
     border:SetDrawLayer('OVERLAY', AURA_TYPE_BORDER_DRAW_LEVEL)
-    border:SetTexture(self:GetAuraTypeBorderTexturePath())
+    self:ApplyShapeBorderArt(button, border)
     border:SetTexCoord(0, 1, 0, 1)
     border:ClearAllPoints()
     border:SetAllPoints(parent)
@@ -1147,7 +1147,7 @@ function buttonStyle:CreateDispelAuraTypeTexture(button)
         button.DispelAuraTypeTexture = border
     end
     border:SetDrawLayer('OVERLAY', DISPEL_BORDER_DRAW_LEVEL)
-    border:SetTexture(self:GetAuraTypeBorderTexturePath())
+    self:ApplyShapeBorderArt(button, border)
     border:SetTexCoord(0, 1, 0, 1)
     if border.SetSnapToPixelGrid then
         border:SetSnapToPixelGrid(true)
@@ -1371,6 +1371,57 @@ function buttonStyle:BuildDurationTextOptions(visual)
     return options
 end
 
+-- Same masks and borders as the unit frame styles. Buttons are only masked while initialized.
+function buttonStyle:ApplyIconShape(button, visual)
+    local ufShape = EXUI:GetModule('uf-element-shape')
+    local styleKey = visual.displayStyle ~= 'bar' and visual.iconStyle
+    local shape = button._exuiShape
+    if not shape then
+        if not EXUI:GetModule('styles'):IsStyle(styleKey) then
+            return
+        end
+        local mask = self:GetAuraButtonFrame(button):CreateMaskTexture()
+        mask:SetAllPoints(button.Icon)
+        local border = self:EnsureIconBorderOverlay(button):CreateTexture(nil, 'OVERLAY')
+        border:SetDrawLayer('OVERLAY', ICON_BORDER_DRAW_LEVEL)
+        border:SetAllPoints()
+        shape = { Mask = mask, Border = border, masked = {} }
+        button._exuiShape = shape
+    end
+    shape.enabled = ufShape:SelectStyle(shape, styleKey)
+    ufShape:SetMasked(shape, button.Icon, shape.enabled)
+    shape.Border:Hide()
+end
+
+function buttonStyle:IsIconShaped(button)
+    return button._exuiShape ~= nil and button._exuiShape.enabled
+end
+
+-- Aura type textures only get recolored by Blizzard, so they can take the shape's border art.
+function buttonStyle:ApplyShapeBorderArt(button, texture)
+    if self:IsIconShaped(button) then
+        local styles = EXUI:GetModule('styles')
+        local _, border, margins = styles:GetArt(button._exuiShape.styleKey)
+        texture:SetTexture(border)
+        styles:ApplySlices(texture, margins)
+        texture:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    else
+        texture:SetTexture(self:GetAuraTypeBorderTexturePath())
+        texture:SetTextureSliceMargins(0, 0, 0, 0)
+    end
+end
+
+function buttonStyle:ApplyCooldownShape(button, cooldown)
+    if self:IsIconShaped(button) then
+        local mask = EXUI:GetModule('styles'):GetArt(button._exuiShape.styleKey)
+        cooldown:SetSwipeTexture(mask)
+        cooldown._exuiShapedSwipe = true
+    elseif cooldown._exuiShapedSwipe then
+        cooldown:SetSwipeTexture(EXUI.const.textures.frame.solidBg)
+        cooldown._exuiShapedSwipe = nil
+    end
+end
+
 function buttonStyle:ApplyIconBorder(button, visual)
     local parent = self:GetAuraButtonFrame(button)
     if not parent then
@@ -1388,6 +1439,19 @@ function buttonStyle:ApplyIconBorder(button, visual)
 
     local borderParent = self:EnsureIconBorderOverlay(button)
     borderParent:Show()
+
+    if self:IsIconShaped(button) then
+        local color = visual.iconBorderColor or { r = 0, g = 0, b = 0, a = 1 }
+        self:SetIconBorderVisibility(button.IconPPBorder, false)
+        button._exuiShape.Border:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+        button._exuiShape.Border:Show()
+        if visual.iconBorderColorByAuraType then
+            self:CreateAuraTypeBorder(button)
+        else
+            self:SetAuraTypeBorderVisibility(button, false)
+        end
+        return
+    end
 
     if not button.IconPPBorder or button.IconPPBorder.anchor ~= borderParent then
         if button.IconPPBorder then
@@ -1648,6 +1712,7 @@ function buttonStyle:Apply(button, visual)
     self:ClearFrameGlow(button)
 
     if visual.displayStyle == 'bar' then
+        self:ApplyIconShape(button, visual)
         self:ApplyBarStyle(button, visual)
         return
     end
@@ -1672,6 +1737,7 @@ function buttonStyle:Apply(button, visual)
     local icon = self:CreateIcon(button, visual)
     EXUI:SetSize(icon, iconWidth, iconHeight)
     self:ApplyIconTexCoord(icon, visual)
+    self:ApplyIconShape(button, visual)
     self:ApplyIconBorder(button, visual)
 
     if visual.showStacks and button.SetApplicationCount then
@@ -1689,7 +1755,9 @@ function buttonStyle:Apply(button, visual)
     end
 
     if visual.showDurationCooldown and button.SetDurationCooldown then
-        button:SetDurationCooldown(self:CreateCooldown(button))
+        local cooldown = self:CreateCooldown(button)
+        self:ApplyCooldownShape(button, cooldown)
+        button:SetDurationCooldown(cooldown)
     elseif button.ClearDurationCooldown then
         button:ClearDurationCooldown()
     end
@@ -1745,6 +1813,24 @@ local function invalidateHardSignatures()
         ufApply:InvalidateHardSignatures()
     end
 end
+
+-- Shaped icons are set up with their containers, so a style change rebuilds them.
+EXUI:GetModule('styles'):RegisterCallback(function()
+    buttonStyle:InvalidateStyleSignatures()
+    invalidateHardSignatures()
+    if InCombatLockdown() then
+        return
+    end
+    EXUI:GetModule('aura-displays'):RefreshAll()
+    local npApply = EXUI:GetModule('np-auras-apply')
+    if npApply and npApply.RefreshAll then
+        npApply:RefreshAll()
+    end
+    local ufApply = EXUI:GetModule('uf-auras-apply')
+    if ufApply and ufApply.RefreshAll then
+        ufApply:RefreshAll()
+    end
+end)
 
 local function getTalentStateKey()
     local getSpec = GetSpecialization or (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization)

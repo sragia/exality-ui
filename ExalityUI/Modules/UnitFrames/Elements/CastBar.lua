@@ -136,7 +136,7 @@ castBar.Create = function(self, frame, unit)
     castBar.Text = spellText
 
     -- Icon
-    local icon = castBar:CreateTexture(nil, 'OVERLAY')
+    local icon = castBar:CreateTexture(nil, 'ARTWORK')
     icon:SetSize(20, 20)
     icon:SetPoint('TOPLEFT', castBarContainer, 'TOPLEFT', 0, 0)
     icon:SetTexCoord(EXUI.utils.getTexCoords(1, 1, 30))

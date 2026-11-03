@@ -9,13 +9,7 @@ local GLOW_WIDTH, GLOW_HEIGHT = 512, 96
 local GLOW_SLICE = 16
 -- Texture pixels of the art's band, the cutout lands on the plate edge when they match.
 local GLOW_OUTSET = 14
-local GLOW_BAND = 14
 local GLOW_PIECES = { 'TopLeft', 'Top', 'TopRight', 'Left', 'Right', 'BottomLeft', 'Bottom', 'BottomRight' }
-local SHAPED_GLOWS = {
-    [4] = 'glow4',
-    [6] = 'glow6',
-    [10] = 'glow10',
-}
 local hoverSeen = {}
 local pollAccum = 0
 
@@ -48,23 +42,25 @@ local function ensureGlow(frame)
     return glow
 end
 
-local function layoutGlow(frame, glow, slice)
+-- slices: left, top, right, bottom in texture pixels
+local function layoutGlow(glow, host, slices)
     local npCore = EXUI:GetModule('np-core')
-    local host = frame.HealthHost or frame
     local outset = npCore:GetChromeInset(GLOW_OUTSET)
-    local size = npCore:GetChromeInset(slice)
-    local u, v = slice / GLOW_WIDTH, slice / GLOW_HEIGHT
+    local left, top = npCore:GetChromeInset(slices[1]), npCore:GetChromeInset(slices[2])
+    local right, bottom = npCore:GetChromeInset(slices[3]), npCore:GetChromeInset(slices[4])
+    local uL, vT = slices[1] / GLOW_WIDTH, slices[2] / GLOW_HEIGHT
+    local uR, vB = 1 - slices[3] / GLOW_WIDTH, 1 - slices[4] / GLOW_HEIGHT
 
-    local function corner(tex, point, x, y, left, right, top, bottom)
+    local function corner(tex, point, x, y, width, height, l, r, t, b)
         tex:ClearAllPoints()
         tex:SetPoint(point, host, point, x, y)
-        tex:SetSize(size, size)
-        tex:SetTexCoord(left, right, top, bottom)
+        tex:SetSize(width, height)
+        tex:SetTexCoord(l, r, t, b)
     end
-    corner(glow.TopLeft, 'TOPLEFT', -outset, outset, 0, u, 0, v)
-    corner(glow.TopRight, 'TOPRIGHT', outset, outset, 1 - u, 1, 0, v)
-    corner(glow.BottomLeft, 'BOTTOMLEFT', -outset, -outset, 0, u, 1 - v, 1)
-    corner(glow.BottomRight, 'BOTTOMRIGHT', outset, -outset, 1 - u, 1, 1 - v, 1)
+    corner(glow.TopLeft, 'TOPLEFT', -outset, outset, left, top, 0, uL, 0, vT)
+    corner(glow.TopRight, 'TOPRIGHT', outset, outset, right, top, uR, 1, 0, vT)
+    corner(glow.BottomLeft, 'BOTTOMLEFT', -outset, -outset, left, bottom, 0, uL, vB, 1)
+    corner(glow.BottomRight, 'BOTTOMRIGHT', outset, -outset, right, bottom, uR, 1, vB, 1)
 
     local function edge(tex, fromTex, fromPoint, toTex, toPoint, left, right, top, bottom)
         tex:ClearAllPoints()
@@ -72,31 +68,38 @@ local function layoutGlow(frame, glow, slice)
         tex:SetPoint('BOTTOMRIGHT', toTex, toPoint)
         tex:SetTexCoord(left, right, top, bottom)
     end
-    edge(glow.Top, glow.TopLeft, 'TOPRIGHT', glow.TopRight, 'BOTTOMLEFT', u, 1 - u, 0, v)
-    edge(glow.Bottom, glow.BottomLeft, 'TOPRIGHT', glow.BottomRight, 'BOTTOMLEFT', u, 1 - u, 1 - v, 1)
-    edge(glow.Left, glow.TopLeft, 'BOTTOMLEFT', glow.BottomLeft, 'TOPRIGHT', 0, u, v, 1 - v)
-    edge(glow.Right, glow.TopRight, 'BOTTOMLEFT', glow.BottomRight, 'TOPRIGHT', 1 - u, 1, v, 1 - v)
+    edge(glow.Top, glow.TopLeft, 'TOPRIGHT', glow.TopRight, 'BOTTOMLEFT', uL, uR, 0, vT)
+    edge(glow.Bottom, glow.BottomLeft, 'TOPRIGHT', glow.BottomRight, 'BOTTOMLEFT', uL, uR, vB, 1)
+    edge(glow.Left, glow.TopLeft, 'BOTTOMLEFT', glow.BottomLeft, 'TOPRIGHT', 0, uL, vT, vB)
+    edge(glow.Right, glow.TopRight, 'BOTTOMLEFT', glow.BottomRight, 'TOPRIGHT', uR, 1, vT, vB)
 end
 
-local function getGlowLayout(frame)
-    local textures = EXUI.const.textures.nameplates
-    local size = EXUI:GetModule('np-element-shape'):GetStyleSize(frame)
-    if SHAPED_GLOWS[size] then
-        return textures[SHAPED_GLOWS[size]], GLOW_BAND + size + 1
+local function getGlowLayout(styleID)
+    local styles = EXUI:GetModule('styles')
+    local glow, band = styles:GetGlow(styleID)
+    if glow then
+        local _, _, margins = styles:GetArt(styleID)
+        return glow, { band + margins[1], band + margins[2], band + margins[3], band + margins[4] }
     end
-    return textures.glow, GLOW_SLICE
+    return EXUI.const.textures.nameplates.glow, { GLOW_SLICE, GLOW_SLICE, GLOW_SLICE, GLOW_SLICE }
+end
+
+-- Shared with the Styles preview so it draws the glow exactly like a plate does.
+highlight.ApplyGlow = function(self, owner, host, styleID, color)
+    local glow = ensureGlow(owner)
+    local texture, slices = getGlowLayout(styleID)
+    layoutGlow(glow, host, slices)
+    for _, tex in pairs(glow) do
+        tex:SetTexture(texture)
+        tex:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+        tex:Show()
+    end
 end
 
 local function showGlow(frame, db)
-    local glow = ensureGlow(frame)
-    local c = db.targetHighlightColor or { r = 1, g = 0.82, b = 0.2, a = 1 }
-    local texture, slice = getGlowLayout(frame)
-    layoutGlow(frame, glow, slice)
-    for _, tex in pairs(glow) do
-        tex:SetTexture(texture)
-        tex:SetVertexColor(c.r, c.g, c.b, c.a or 1)
-        tex:Show()
-    end
+    local color = db.targetHighlightColor or { r = 1, g = 0.82, b = 0.2, a = 1 }
+    local styleID = EXUI:GetModule('np-element-shape'):GetStyleID(frame)
+    highlight:ApplyGlow(frame, frame.HealthHost or frame, styleID, color)
 end
 
 local function stopGlow(frame)
@@ -313,18 +316,19 @@ end
 highlight.RefreshHover = function(self)
     local npCore = EXUI:GetModule('np-core')
     local db = npCore:GetDB()
-    local targetGuid = UnitExists('target') and UnitGUID('target') or nil
+    local targetFrame = plateFrameForUnit('target')
+    -- Target GUID is secret when unit identity is restricted, the plate frame never is.
+    local targetKey = targetFrame or UnitExists('target')
     local dimOthers = db and db.targetHighlightEnable and db.targetHighlightDimOthers
-    if dimOthers and self.prevTargetGuid ~= targetGuid then
-        self.prevTargetGuid = targetGuid
+    if dimOthers and self.prevTargetKey ~= targetKey then
+        self.prevTargetKey = targetKey
         npCore:UpdateTargetHighlight()
-        self.prevTargetFrame = plateFrameForUnit('target')
+        self.prevTargetFrame = targetFrame
         self.prevHoverFrame = self.plateCursorFrame or self.stickyHoverFrame or self.hoverFrame
         return
     end
-    self.prevTargetGuid = targetGuid
+    self.prevTargetKey = targetKey
 
-    local targetFrame = plateFrameForUnit('target')
     local hoverFrame = self.plateCursorFrame or self.stickyHoverFrame or self.hoverFrame
     if not hoverFrame and UnitExists('mouseover') then
         hoverFrame = plateFrameForUnit('mouseover')

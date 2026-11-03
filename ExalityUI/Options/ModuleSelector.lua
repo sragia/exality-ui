@@ -383,7 +383,9 @@ optionsModuleSelector.BuildTree = function(self)
     end
     local modules = optionsController:GetAllModules()
     for _, module in pairs(modules) do
-        if (module.module.GetCategory) then
+        if (module.module.hideFromMenu) then
+            -- Opened from elsewhere, e.g. a footer link
+        elseif (module.module.GetCategory) then
             local category = module.module:GetCategory()
             if (tree[category]) then
                 table.insert(tree[category].subMenu, {

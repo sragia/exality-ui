@@ -56,6 +56,26 @@ core.Init = function(self)
     tags:RegisterCustomTags()
     EXUI.oUF:RegisterStyle("ExalityUI", self.SharedStyle)
     EXUI.oUF:Factory(self.Factory)
+    local styles = EXUI:GetModule('styles')
+    styles:RegisterCallback(function()
+        self:UpdateAllFrames()
+        self:UpdateFrameForUnit('arena')
+    end)
+    for order, target in ipairs({
+        { 'uf-frames', 'Unit Frames', 'frameStyle' },
+        { 'uf-castbars', 'Unit Frame Cast Bars', 'castbarStyle' },
+    }) do
+        styles:RegisterTarget(target[1], {
+            label = target[2],
+            order = order,
+            get = function() return self:GetValueForUnit('general', target[3]) end,
+            set = function(styleID)
+                self:UpdateValueForUnit('general', target[3], styleID)
+                self:UpdateAllFrames()
+                self:UpdateFrameForUnit('arena')
+            end,
+        })
+    end
 end
 
 core.RegisterUnit = function(self, unit, isGroup, numUnits)

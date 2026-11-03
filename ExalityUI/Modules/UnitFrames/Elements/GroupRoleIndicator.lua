@@ -30,6 +30,33 @@ local function PostUpdate(self, role)
     self:Show()
 end
 
+-- oUF hands PostUpdate no role on clients that set the icon through UnitFrameUtil, so
+-- hidden roles are left out of the texture map instead. Blizzard handles secret roles.
+local function Override(frame)
+    local element = frame.GroupRoleIndicator
+    local state = element.roleState
+    if not state then
+        state = { roleIcon = element, optionTable = { displayRoleIcon = true, textureMap = {} } }
+        if EXUI.IsForever() then
+            state.optionTable.displayVehicleRoleIcon = false
+        else
+            state.optionTable.textureMap.VEHICLE = ''
+        end
+        element.roleState = state
+    end
+
+    local textureMap = state.optionTable.textureMap
+    textureMap.TANK = element.hideTank and '' or atlases[1]
+    textureMap.HEALER = element.hideHealer and '' or atlases[2]
+    textureMap.DAMAGER = element.hideDamager and '' or atlases[3]
+    state.unit = frame.__unit
+    UnitFrameUtil.UpdateUnitFrameRoleIcon(state)
+
+    if element.PostUpdate then
+        element:PostUpdate()
+    end
+end
+
 groupRoleIndicator.Create = function(self, frame)
     local holder = core:CreateElementHolder(frame)
     local groupRoleIndicator = holder:CreateTexture(nil, 'OVERLAY')
@@ -38,6 +65,9 @@ groupRoleIndicator.Create = function(self, frame)
     groupRoleIndicator:SetPoint('CENTER')
 
     groupRoleIndicator.PostUpdate = PostUpdate
+    if UnitFrameUtil and UnitFrameUtil.UpdateUnitFrameRoleIcon then
+        groupRoleIndicator.Override = Override
+    end
 
     return groupRoleIndicator
 end

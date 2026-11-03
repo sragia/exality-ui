@@ -317,6 +317,13 @@ optionsMain.CreateWindow = function(self)
         hoverColor = HEADER_BUTTON.editMode.hover,
     })
 
+    window:AddFooterLink({
+        label = 'Styles',
+        onClick = function()
+            EXUI:GetModule('styles-options'):Open()
+        end,
+    })
+
     self:ApplyHeaderButtonChrome(window)
 
     self:CreateSidebar(window)
