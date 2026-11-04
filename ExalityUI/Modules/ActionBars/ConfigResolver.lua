@@ -80,6 +80,7 @@ resolver.GetBarConfig = function(self, db, barId)
         showBorder = useGlobalAppearance and global.showBorder or bar.showBorder,
         useMasque = useGlobalAppearance and global.useMasque or bar.useMasque,
         masqueSkin = useGlobalAppearance and global.masqueSkin or bar.masqueSkin,
+        buttonStyle = bar.useGlobalStyle ~= false and global.buttonStyle or bar.buttonStyle,
         showCooldownSwipe = useGlobalAppearance and global.showCooldownSwipe or bar.showCooldownSwipe,
         showCooldownText = useGlobalAppearance and global.showCooldownText or bar.showCooldownText,
         hideCooldownCharge = useGlobalAppearance and global.hideCooldownCharge == true,

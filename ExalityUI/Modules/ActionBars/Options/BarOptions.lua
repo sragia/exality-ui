@@ -389,6 +389,19 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 end,
             },
             {
+                type = 'toggle',
+                label = 'Use Global Style',
+                name = 'useGlobalStyle',
+                width = 100,
+                currentValue = function() return bar.useGlobalStyle ~= false end,
+                onChange = function(v)
+                    bar.useGlobalStyle = v
+                    mod.Data:SetDB(db)
+                    mod:RefreshBar(barId)
+                    optionsFields:RefreshOptions()
+                end,
+            },
+            {
                 type = 'range',
                 label = 'Width',
                 name = 'width',
@@ -420,6 +433,24 @@ barOptions.GetBarOptions = function(self, mod, barId, section)
                 onChange = function(v) bar.zoom = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
                 min = 0,
                 max = 80,
+            },
+            {
+                type = 'dropdown',
+                label = 'Button Style',
+                name = 'buttonStyle',
+                width = 50,
+                depends = function() return bar.useGlobalStyle == false end,
+                getOptions = function() return EXUI:GetModule('styles'):GetDropdownOptions() end,
+                currentValue = function() return bar.buttonStyle or 'default' end,
+                onChange = function(v) bar.buttonStyle = v; mod.Data:SetDB(db); mod:RefreshBar(barId) end,
+            },
+            {
+                type = 'button',
+                label = 'Manage Styles',
+                name = 'manageStyles',
+                width = 25,
+                depends = function() return bar.useGlobalStyle == false end,
+                onClick = function() EXUI:GetModule('styles-options'):Open() end,
             },
             {
                 type = 'toggle',

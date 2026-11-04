@@ -373,6 +373,26 @@ globalOptions.GetOptions = function(self, mod, section)
                 end,
             },
             {
+                type = 'dropdown',
+                label = 'Button Style',
+                name = 'global_buttonStyle',
+                width = 50,
+                depends = function() return not db.global.useMasque end,
+                getOptions = function() return EXUI:GetModule('styles'):GetDropdownOptions() end,
+                currentValue = function() return db.global.buttonStyle or 'default' end,
+                onChange = function(v)
+                    db.global.buttonStyle = v; mod.Data:SetDB(db); mod:RefreshBars()
+                end,
+            },
+            {
+                type = 'button',
+                label = 'Manage Styles',
+                name = 'global_manageStyles',
+                width = 25,
+                depends = function() return not db.global.useMasque end,
+                onClick = function() EXUI:GetModule('styles-options'):Open() end,
+            },
+            {
                 type = 'toggle',
                 label = 'Use Masque',
                 name = 'global_useMasque',

@@ -17,6 +17,12 @@ local buttonMod = EXUI:GetModule('action-bars-button')
 ---@class EXUIActionBarsPing
 local ping = EXUI:GetModule('action-bars-ping')
 
+---@class EXUIStyles
+local styles = EXUI:GetModule('styles')
+
+---@class EXUIUnitFramesElementsShape
+local ufShape = EXUI:GetModule('uf-element-shape')
+
 style.masqueGroups = {}
 
 -- Resolved bar configs are rebuilt on every SetDB, so signatures can be memoized per config table.
@@ -206,12 +212,15 @@ style.GetStyleSignature = function(self, barConfig)
     if not barConfig then
         return ''
     end
+    -- Style version stays out of the cache so edits to a style re-apply.
+    local version = styles:GetVersion()
     local cached = styleSigCache[barConfig]
     if cached then
-        return cached
+        return cached .. ':' .. version
     end
     local backdrop = barConfig.backdropColor or {}
     local sig = table.concat({
+        tostring(barConfig.buttonStyle or ''),
         tostring(barConfig.width or 0),
         tostring(barConfig.height or 0),
         tostring(barConfig.zoom or 0),
@@ -226,7 +235,7 @@ style.GetStyleSignature = function(self, barConfig)
         tostring(backdrop.a or 0),
     }, ':')
     styleSigCache[barConfig] = sig
-    return sig
+    return sig .. ':' .. version
 end
 
 style.BuildLABConfig = function(self, barConfig, commandName)
@@ -426,12 +435,101 @@ style.ApplyCooldownSettings = function(self, button, barConfig, force)
     end
 end
 
+-- Styles are ignored where other art owns the button.
+style.GetButtonStyle = function(self, barConfig)
+    local styleKey = barConfig.buttonStyle
+    if self:ShouldUseMasque(barConfig) or barConfig.showBlizzardArtwork or not styles:IsStyle(styleKey) then
+        return nil
+    end
+    return styleKey
+end
+
+style.IsButtonShaped = function(self, button)
+    return button.exuiShape ~= nil and button.exuiShape.enabled
+end
+
+local function getShapedTextures(button)
+    local textures = { button.icon, button:GetHighlightTexture() }
+    if button.GetPushedTexture then
+        table.insert(textures, button:GetPushedTexture())
+    end
+    if button.GetCheckedTexture then
+        table.insert(textures, button:GetCheckedTexture())
+    end
+    table.insert(textures, button.Flash)
+    table.insert(textures, button.SpellHighlightTexture)
+    if button.AutoCastOverlay then
+        table.insert(textures, button.AutoCastOverlay.Shine)
+        table.insert(textures, button.AutoCastOverlay.Corners)
+    end
+    return textures
+end
+
+local function applySwipeShape(cooldown, mask)
+    if not cooldown or not cooldown.SetSwipeTexture then
+        return
+    end
+    if mask then
+        if cooldown.exuiShapedSwipe ~= mask then
+            cooldown:SetSwipeTexture(mask)
+            cooldown.exuiShapedSwipe = mask
+        end
+    elseif cooldown.exuiShapedSwipe then
+        cooldown:SetSwipeTexture(EXUI.const.textures.frame.solidBg)
+        cooldown.exuiShapedSwipe = nil
+    end
+end
+
+-- Same masks and borders as unit frames and aura icons. Glows sit outside the button and stay as they are.
+style.ApplyButtonShape = function(self, button, barConfig)
+    local styleKey = self:GetButtonStyle(barConfig)
+    local shape = button.exuiShape
+    if not shape then
+        if not styleKey then
+            return
+        end
+        local mask = button:CreateMaskTexture()
+        mask:SetAllPoints(button)
+        -- Below the button's texts.
+        local border = button:CreateTexture(nil, 'OVERLAY', nil, -8)
+        border:SetAllPoints()
+        border:Hide()
+        shape = { Mask = mask, Border = border, masked = {} }
+        button.exuiShape = shape
+    end
+
+    shape.enabled = styleKey ~= nil and ufShape:SelectStyle(shape, styleKey)
+    for _, texture in ipairs(getShapedTextures(button)) do
+        ufShape:SetMasked(shape, texture, shape.enabled)
+    end
+
+    local mask = shape.enabled and styles:GetArt(styleKey) or nil
+    applySwipeShape(button.cooldown, mask)
+    applySwipeShape(button.Cooldown, mask)
+    applySwipeShape(button.lossOfControlCooldown, mask)
+
+    if not shape.enabled then
+        shape.Border:Hide()
+    end
+end
+
 style.ApplyDefaultBorder = function(self, button, alpha)
     if button.NormalTexture then
         button.NormalTexture:SetAlpha(0)
     end
     if button.PPBorder then
         button.PPBorder:Hide()
+    end
+
+    if self:IsButtonShaped(button) then
+        if button.exuiBorderTexture then
+            button.exuiBorderTexture:Hide()
+        end
+        local shapeBorder = button.exuiShape.Border
+        shapeBorder:SetVertexColor(0, 0, 0, 1)
+        shapeBorder:SetAlpha(alpha or 1)
+        shapeBorder:Show()
+        return
     end
 
     local border = self:EnsureBorderTexture(button)
@@ -451,6 +549,9 @@ style.HideDefaultBorder = function(self, button)
     end
     if button.exuiBorderOverlay then
         button.exuiBorderOverlay:Hide()
+    end
+    if button.exuiShape then
+        button.exuiShape.Border:Hide()
     end
     if button.PPBorder then
         button.PPBorder:Hide()
@@ -655,7 +756,27 @@ style.UpdateSlotBackdrop = function(self, button, barConfig)
 
     local slotBackdrop = self:EnsureSlotBackdrop(button)
     local c = barConfig.backdropColor or { r = 0, g = 0, b = 0, a = 0.55 }
-    slotBackdrop:SetBackdropColor(c.r, c.g, c.b, c.a)
+    if self:IsButtonShaped(button) then
+        -- The mask art doubles as a shaped fill.
+        local fill = slotBackdrop.exuiShapeFill
+        if not fill then
+            fill = slotBackdrop:CreateTexture(nil, 'BACKGROUND')
+            fill:SetAllPoints()
+            slotBackdrop.exuiShapeFill = fill
+        end
+        local mask, _, margins = styles:GetArt(button.exuiShape.styleKey)
+        fill:SetTexture(mask)
+        styles:ApplySlices(fill, margins)
+        fill:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+        fill:SetVertexColor(c.r, c.g, c.b, c.a)
+        fill:Show()
+        slotBackdrop:SetBackdropColor(0, 0, 0, 0)
+    else
+        if slotBackdrop.exuiShapeFill then
+            slotBackdrop.exuiShapeFill:Hide()
+        end
+        slotBackdrop:SetBackdropColor(c.r, c.g, c.b, c.a)
+    end
     slotBackdrop:Show()
 end
 
@@ -754,6 +875,7 @@ style.ApplyButtonStyle = function(self, button, barConfig)
     button.exuiStyleSig = self:GetStyleSignature(barConfig)
     button.exuiLastEmpty = self:ButtonIsEmpty(button)
     self:ApplyIconLayout(button, barConfig, true)
+    self:ApplyButtonShape(button, barConfig)
 
     if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
         self:StyleMasqueButton(button, barConfig)
@@ -793,6 +915,7 @@ style.OnLABButtonUpdate = function(self, button, barConfig)
         button.exuiLayoutApplied = false
         button.exuiCooldownSig = nil
         self:ApplyIconLayout(button, barConfig, true)
+        self:ApplyButtonShape(button, barConfig)
     end
 
     if self:ShouldUseMasque(barConfig) and button.MasqueSkinned then
@@ -1023,6 +1146,7 @@ style.StyleBlizzardAbilityButton = function(self, button, barId, barConfig)
     self:ApplyIconLayout(button, barConfig)
     self:ApplyButtonHighlight(button)
     self:HideBlizzardButtonChrome(button)
+    self:ApplyButtonShape(button, barConfig)
 
     if button.style then
         button.style:SetShown(barConfig.showBlizzardArtwork == true)

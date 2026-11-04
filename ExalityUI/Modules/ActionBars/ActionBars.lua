@@ -85,6 +85,24 @@ actionBars.Init = function(self)
     manager:Init()
     optionsController:RegisterModule(self)
 
+    local styles = EXUI:GetModule('styles')
+    styles:RegisterCallback(function()
+        if not InCombatLockdown() then
+            self:RefreshBars()
+        end
+    end)
+    styles:RegisterTarget('ab-buttons', {
+        label = 'Action Bars',
+        order = 21,
+        get = function() return self:GetDB().global.buttonStyle end,
+        set = function(styleID)
+            local db = self:GetDB()
+            db.global.buttonStyle = styleID
+            self.Data:SetDB(db)
+            self:RefreshBars()
+        end,
+    })
+
     if self.Data:GetValue('enable') then
         self:Enable()
     end

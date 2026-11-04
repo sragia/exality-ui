@@ -100,7 +100,7 @@ stylePreview.CreateHost = function(self, window)
     icon:SetTexCoord(EXUI.utils.getTexCoords(1, 1, 10))
     host.Icon.icon = icon
     host.Icon:SetPoint('TOP', host.Frame, 'BOTTOM', 0, -50)
-    CreateLabel(content, host.Icon, 'Aura Icon')
+    CreateLabel(content, host.Icon, 'Icon')
 
     host.Plate = CreateSample(content, 200, 24)
     CreateBar(host.Plate, 0.45)

@@ -143,6 +143,9 @@ editor.GetOptions = function(self, id)
             name = 'tag',
             currentValue = function() return ctCore:GetValue(id, 'tag') end,
             onChange = function(value)
+                if (not EXUI:GetModule('oUF-Tags'):IsValidTagString(value)) then
+                    return
+                end
                 ctCore:UpdateValue(id, 'tag', value)
                 npCore:UpdateAllPlates()
             end,

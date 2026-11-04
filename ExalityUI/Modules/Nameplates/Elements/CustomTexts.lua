@@ -78,9 +78,6 @@ customTexts.Update = function(self, frame)
         text:ClearAllPoints()
         textContainer:SetPoint(db.anchorPoint, frame.ElementFrame, db.relativeAnchorPoint, db.XOffset, db.YOffset)
         text:SetPoint(db.anchorPoint, textContainer, db.relativeAnchorPoint)
-        if db.maxWidth then
-            text:SetWidth(Round((frame.db.sizeWidth or 140) * db.maxWidth / 100))
-        end
         frame:Tag(text, db.tag)
     end
 end
