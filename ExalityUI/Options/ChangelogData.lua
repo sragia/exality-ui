@@ -7,7 +7,7 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
-            version = '0.9.11',
+            version = '0.9.10',
             changes = {
                 { 'Misc', 'Various Lua error fixes for Forever and styles fixes for icon masks', forever = true }
             }
