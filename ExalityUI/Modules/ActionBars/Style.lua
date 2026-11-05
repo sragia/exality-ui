@@ -494,7 +494,7 @@ style.ApplyButtonShape = function(self, button, barConfig)
         local border = button:CreateTexture(nil, 'OVERLAY', nil, -8)
         border:SetAllPoints()
         border:Hide()
-        shape = { Mask = mask, Border = border, masked = {} }
+        shape = { Mask = mask, Border = border, masked = {}, isIcon = true }
         button.exuiShape = shape
     end
 

@@ -1385,7 +1385,7 @@ function buttonStyle:ApplyIconShape(button, visual)
         local border = self:EnsureIconBorderOverlay(button):CreateTexture(nil, 'OVERLAY')
         border:SetDrawLayer('OVERLAY', ICON_BORDER_DRAW_LEVEL)
         border:SetAllPoints()
-        shape = { Mask = mask, Border = border, masked = {} }
+        shape = { Mask = mask, Border = border, masked = {}, isIcon = true }
         button._exuiShape = shape
     end
     shape.enabled = ufShape:SelectStyle(shape, styleKey)

@@ -158,8 +158,11 @@ tags.TAGS = {
         name = 'nsrt-name',
         method = function(unit)
             local name, surnameF = UnitName(unit)
+            if (not name) then
+                return
+            end
             local nameFormatted = name
-            if (EXUI:IsForever()) then
+            if (EXUI:IsForever() and surnameF) then
                 nameFormatted = string.format('%s %s', name, surnameF)
             end
             if (not NSAPI) then

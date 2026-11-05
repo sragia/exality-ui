@@ -7,6 +7,12 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.11',
+            changes = {
+                { 'Misc', 'Various Lua error fixes for Forever and styles fixes for icon masks', forever = true }
+            }
+        },
+        {
             version = '0.9.9',
             changes = {
                 { { 'Unit Frames', 'Nameplates', 'Action Bars', 'Auras' }, 'Added different shapes for the unitframes - Rounded (4px, 6px, 10px), Cut (4px, 6px, 10px). See Styles' },

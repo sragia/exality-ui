@@ -94,6 +94,7 @@ stylePreview.CreateHost = function(self, window)
     CreateLabel(content, host.Frame, 'Unit Frame')
 
     host.Icon = CreateSample(content, 40, 40)
+    host.Icon.state.isIcon = true
     local icon = host.Icon:CreateTexture(nil, 'ARTWORK')
     icon:SetAllPoints()
     icon:SetTexture(PREVIEW_ICON)

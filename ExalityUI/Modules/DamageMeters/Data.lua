@@ -69,6 +69,7 @@ local function buildAbbreviateOptions(decimals)
             breakpoint(1e9, 'B'),
             breakpoint(1e6, 'M'),
             breakpoint(1e3, 'K'),
+            breakpoint(1, ''),
         },
     }
 end

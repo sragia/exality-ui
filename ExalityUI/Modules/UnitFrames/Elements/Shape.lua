@@ -29,7 +29,12 @@ end
 local function ApplyTextures(state, style)
     local mask = state.Mask
     mask:SetTexture(style.mask, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
-    styles:ApplySlices(mask, style.margins)
+    -- Forever squeezes some masked icons into the mask's corner slice, so icon masks stretch whole there.
+    if state.isIcon and EXUI.IsForever() then
+        mask:ClearTextureSlice()
+    else
+        styles:ApplySlices(mask, style.margins)
+    end
 
     local border = state.Border
     border:SetTexture(style.border)

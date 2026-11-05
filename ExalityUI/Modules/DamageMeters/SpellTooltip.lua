@@ -114,10 +114,6 @@ end
 
 function tooltip:GetSpellTexture(spell)
     local details = spell.combatSpellDetails
-    if details and details.specIconID and details.specIconID ~= 0 then
-        return details.specIconID, false
-    end
-
     local spellID = spell.spellID
     if spellID and not meterData:IsSecret(spellID) and C_Spell and C_Spell.GetSpellTexture then
         return C_Spell.GetSpellTexture(spellID), false
@@ -233,14 +229,12 @@ function tooltip:LayoutHeader(frame, source, extraText)
     frame.titleHint:SetWidth(0)
 
     local iconSize = math.max(14, fontSize + 1)
-    local specIconID = source and source.specIconID
     local classFilename = source and source.classFilename
-    local showIcon = specIconID and specIconID ~= 0
     local classAtlas
-    if not showIcon and classFilename and classFilename ~= '' and GetClassAtlas then
+    if classFilename and classFilename ~= '' and GetClassAtlas then
         classAtlas = GetClassAtlas(classFilename)
-        showIcon = classAtlas ~= nil
     end
+    local showIcon = classAtlas ~= nil
 
     frame.titleIcon:ClearAllPoints()
     frame.title:ClearAllPoints()
@@ -249,11 +243,7 @@ function tooltip:LayoutHeader(frame, source, extraText)
     if showIcon then
         EXUI:SetSize(frame.titleIcon, iconSize, iconSize)
         frame.titleIcon:SetPoint('TOPLEFT', frame, 'TOPLEFT', PADDING, -PADDING)
-        if specIconID and specIconID ~= 0 then
-            frame.titleIcon:SetTexture(specIconID)
-        else
-            frame.titleIcon:SetAtlas(classAtlas)
-        end
+        frame.titleIcon:SetAtlas(classAtlas)
         bars:ApplyIconCrop(frame.titleIcon, iconSize, iconSize, 8)
         frame.titleIcon:Show()
         frame.title:SetPoint('LEFT', frame.titleIcon, 'RIGHT', 4, 0)

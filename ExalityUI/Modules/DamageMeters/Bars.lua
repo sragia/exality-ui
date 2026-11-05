@@ -367,14 +367,6 @@ function bars:UpdateIcon(row, source, db, meterType)
     end
 
     local icon = db.icon or defaults.WINDOW.icon
-    local specIconID = source.specIconID
-    if specIconID and specIconID ~= 0 then
-        row.icon:SetTexture(specIconID)
-        self:ApplyIconCrop(row.icon, icon.width, icon.height, icon.zoom)
-        row.icon:Show()
-        return
-    end
-
     local classFilename = source.classFilename
     if classFilename and classFilename ~= '' and GetClassAtlas then
         local atlas = GetClassAtlas(classFilename)
