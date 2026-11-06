@@ -26,6 +26,7 @@ display.lineFrames = {}
 display.progressBarFrames = {}
 display.challengeModeBlockFrames = {}
 display.scenarioHeaderTimerFrames = {}
+display.questTimerFrames = {}
 display.SCENARIO_CATEGORY_ID = 'scenario'
 display.inEncounter = false
 
@@ -491,6 +492,7 @@ function display:GetStructureKey(categories, db)
             signatureParts[#signatureParts + 1] = spellCount
             signatureParts[#signatureParts + 1] = hasReward and '1' or '0'
             signatureParts[#signatureParts + 1] = block.challengeMode and '1' or '0'
+            signatureParts[#signatureParts + 1] = block.questTimer and '1' or '0'
             signatureParts[#signatureParts + 1] = block.isAutoQuestPopUp and '1' or '0'
             signatureParts[#signatureParts + 1] = (block.untrackType == 'quest' and not block.isAutoQuestPopUp) and '1' or
             '0'
@@ -509,6 +511,7 @@ function display:GetContentSignature(categories)
             signatureParts[#signatureParts + 1] = block.isComplete
             signatureParts[#signatureParts + 1] = block.isSuperTracked
             signatureParts[#signatureParts + 1] = block.isAutoQuestPopUp
+            signatureParts[#signatureParts + 1] = block.questTimer and block.questTimer.duration
             for _, objective in ipairs(block.objectives or {}) do
                 signatureParts[#signatureParts + 1] = objective.text
                 signatureParts[#signatureParts + 1] = objective.finished
@@ -697,6 +700,7 @@ end
 
 function display:ReleaseLayout()
     self:StopChallengeModeTimerWatch()
+    self:StopQuestTimerWatch()
     self:StopScenarioHeaderTimerWatch()
     self:StopDelveSpellCountWatch()
 
@@ -714,6 +718,7 @@ function display:ReleaseLayout()
     for _, frame in ipairs(self.blockFrames) do
         frame.challengeModeTimer = nil
         frame.scenarioHeaderTimer = nil
+        frame.questTimer = nil
         frame.ownedRows = nil
         frame.ownedStageLine = nil
         frame.ownedDescLine = nil
@@ -737,6 +742,7 @@ function display:ReleaseLayout()
     wipe(self.categoryFrames)
     wipe(self.challengeModeBlockFrames)
     wipe(self.scenarioHeaderTimerFrames)
+    wipe(self.questTimerFrames)
     self.lastContentSignature = nil
     self.lastStructureKey = nil
     self.lastSettingsSignature = nil
@@ -823,11 +829,24 @@ function display:AttachQuestPOI(frame, block, db)
     return self.POI_ICON_OFFSET
 end
 
+-- Same as Blizzard's tracker: quest titles take the quest's difficulty color.
+function display:GetQuestDifficultyColors(block, db)
+    if not db.questDifficultyColor or not block or block.untrackType ~= 'quest' or block.isWorldQuest then
+        return nil
+    end
+    return GetDifficultyColor(C_PlayerInfo.GetContentDifficultyQuestForPlayer(block.id))
+end
+
 function display:GetBlockTitleColor(block, db)
     if block.isSuperTracked then
         return db.superTrackColor
     end
-    return self:GetColor(db, 'BlockHeader')
+    return self:GetQuestDifficultyColors(block, db) or self:GetColor(db, 'BlockHeader')
+end
+
+function display:GetBlockTitleHighlightColor(block, db)
+    local _, highlight = self:GetQuestDifficultyColors(block, db)
+    return highlight or self:GetColor(db, 'BlockHeaderHighlight')
 end
 
 function display:SetBlockTitleColor(frame, block, db)
@@ -1974,6 +1993,59 @@ function display:StopChallengeModeTimerWatch()
     end
 end
 
+function display:UpdateQuestTimer(timer, db)
+    local timeRemaining = timer.duration - (GetTime() - timer.startTime)
+    if timeRemaining < -1 then
+        return false
+    end
+    timeRemaining = math.max(0, timeRemaining)
+    if timer.duration > 0 then
+        timer.progressFrame.bar:SetValue((timeRemaining / timer.duration) * 100)
+    end
+    self:UpdateChallengeModeTimerLabel(timer.progressFrame, math.floor(timeRemaining), db)
+    return true
+end
+
+function display:UpdateQuestTimers()
+    local db = objectiveTracker.Data:GetDB()
+    local needsRebuild = false
+
+    for _, timer in ipairs(self.questTimerFrames) do
+        if not self:UpdateQuestTimer(timer, db) and not timer.expired then
+            timer.expired = true
+            needsRebuild = true
+        end
+    end
+
+    if needsRebuild then
+        self:RequestUpdate('QUEST_LOG_UPDATE')
+    end
+end
+
+function display:StartQuestTimerWatch()
+    if #self.questTimerFrames == 0 then
+        self:StopQuestTimerWatch()
+        return
+    end
+
+    if self.questTimerTicker then
+        self:UpdateQuestTimers()
+        return
+    end
+
+    self.questTimerTicker = C_Timer.NewTicker(0.25, function()
+        display:UpdateQuestTimers()
+    end)
+    self:UpdateQuestTimers()
+end
+
+function display:StopQuestTimerWatch()
+    if self.questTimerTicker then
+        self.questTimerTicker:Cancel()
+        self.questTimerTicker = nil
+    end
+end
+
 function display:AppendChallengeModeSection(frame, block, db, blockHeight, blockWidth, lineIndent, spacing)
     local challengeMode = block.challengeMode
     if not challengeMode then
@@ -2759,7 +2831,7 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
     frame.titleButton:RegisterForClicks('LeftButtonUp', 'MiddleButtonUp')
     frame.titleButton:SetScript('OnEnter', function()
         local currentDb = objectiveTracker.Data:GetDB()
-        local hover = display:GetColor(currentDb, 'BlockHeaderHighlight')
+        local hover = display:GetBlockTitleHighlightColor(frame.blockData, currentDb)
         frame.title:SetTextColor(hover.r, hover.g, hover.b)
         if frame.blockData and frame.blockData.isAutoQuestPopUp then
             display:ApplyAutoQuestPopUpStyle(frame, true)
@@ -2833,6 +2905,20 @@ function display:CreateBlockFrame(parent, block, db, blockWidth)
             self:TrackOwnedRow(frame, progressFrame)
             frame.ownedProgressBars[#frame.ownedProgressBars + 1] = progressFrame
         end
+    end
+
+    if block.questTimer then
+        local progressFrame = self:AcquireProgressBar(frame, blockWidth, lineIndent, isRightAlign, db)
+        frame.questTimer = {
+            progressFrame = progressFrame,
+            duration = block.questTimer.duration,
+            startTime = block.questTimer.startTime,
+        }
+        self:UpdateQuestTimer(frame.questTimer, db)
+        blockHeight = self:AppendBlockRow(frame, progressFrame, blockHeight, spacing, db)
+        self.progressBarFrames[#self.progressBarFrames + 1] = progressFrame
+        self:TrackOwnedRow(frame, progressFrame)
+        self.questTimerFrames[#self.questTimerFrames + 1] = frame.questTimer
     end
 
     frame:SetHeight(blockHeight + contentPad)
@@ -3043,6 +3129,13 @@ function display:PatchBlockFrame(frame, block, db, blockWidth)
             self:SetProgressBarPercent(progressFrame, percent or 0)
             barIndex = barIndex + 1
         end
+    end
+
+    if frame.questTimer and block.questTimer then
+        frame.questTimer.duration = block.questTimer.duration
+        frame.questTimer.startTime = block.questTimer.startTime
+        frame.questTimer.expired = nil
+        self:UpdateQuestTimer(frame.questTimer, db)
     end
 
     local blockHeight = contentPad + self:MeasureFontString(frame.title, fontSize, titleWidth, fontFlag)
@@ -3437,6 +3530,7 @@ function display:Update()
     if self:IsSuppressedByMythicPlusTimer() then
         self.frame:Hide()
         self:StopChallengeModeTimerWatch()
+        self:StopQuestTimerWatch()
         self:StopScenarioHeaderTimerWatch()
         return
     end
@@ -3444,6 +3538,7 @@ function display:Update()
     if self:ShouldHideInMythicPlus(db) then
         self.frame:Hide()
         self:StopChallengeModeTimerWatch()
+        self:StopQuestTimerWatch()
         self:StopScenarioHeaderTimerWatch()
         return
     end
@@ -3457,6 +3552,7 @@ function display:Update()
     if db.containerCollapsed then
         self:ApplyTrackerVisibility(db, categories)
         self:StopChallengeModeTimerWatch()
+        self:StopQuestTimerWatch()
         self:StopScenarioHeaderTimerWatch()
         self:StopDelveSpellCountWatch()
         return
@@ -3465,6 +3561,7 @@ function display:Update()
     if #categories == 0 and db.autoHideWhenEmpty and not objectiveTracker.editorShowing then
         self.frame:Hide()
         self:StopChallengeModeTimerWatch()
+        self:StopQuestTimerWatch()
         self:StopScenarioHeaderTimerWatch()
         self:StopDelveSpellCountWatch()
         return
@@ -3479,6 +3576,7 @@ function display:Update()
         and settingsSignature == self.lastSettingsSignature
         and structureKey == self.lastStructureKey then
         self:StartChallengeModeTimerWatch()
+        self:StartQuestTimerWatch()
         self:StartScenarioHeaderTimerWatch()
         self:StartDelveSpellCountWatch()
         return
@@ -3489,6 +3587,7 @@ function display:Update()
         self.lastStructureKey = structureKey
         self.lastSettingsSignature = settingsSignature
         self:StartChallengeModeTimerWatch()
+        self:StartQuestTimerWatch()
         self:StartScenarioHeaderTimerWatch()
         self:StartDelveSpellCountWatch()
         return
@@ -3499,6 +3598,7 @@ function display:Update()
     self.lastStructureKey = structureKey
     self.lastSettingsSignature = settingsSignature
     self:StartChallengeModeTimerWatch()
+    self:StartQuestTimerWatch()
     self:StartScenarioHeaderTimerWatch()
     self:StartDelveSpellCountWatch()
 end
@@ -3512,6 +3612,7 @@ end
 function display:Hide()
     self:CancelPendingUpdate()
     self:StopChallengeModeTimerWatch()
+    self:StopQuestTimerWatch()
     self:StopScenarioHeaderTimerWatch()
     self:StopSmoothScroll()
     self.scrollTarget = nil

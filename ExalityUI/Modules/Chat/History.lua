@@ -165,10 +165,7 @@ function history:LineMatches(tab, line)
     if group == 'CHANNEL' then
         return self:ChannelListed(tab, line.channel)
     end
-    if not tab.groups[group] then
-        return false
-    end
-    return true
+    return util.TabShowsGroup(tab, group)
 end
 
 function history:MatchingLines()

@@ -83,6 +83,10 @@ local function recycleCategoryBlocks(blocks)
         if block and not block.isAutoQuestPopUp then
             recycleObjectives(block.objectives)
             block.objectives = nil
+            if block.questTimer then
+                releaseTable(block.questTimer)
+                block.questTimer = nil
+            end
             if block.delve then
                 recycleDelve(block.delve)
                 block.delve = nil
@@ -138,6 +142,17 @@ local function getQuestObjectives(questID)
     end
 
     return objectives
+end
+
+local function getQuestTimer(questID)
+    local timeTotal, timeElapsed = C_QuestLog.GetTimeAllowed(questID)
+    if not timeTotal or not timeElapsed or timeElapsed >= timeTotal then
+        return nil
+    end
+    local timer = acquireTable()
+    timer.duration = timeTotal
+    timer.startTime = GetTime() - timeElapsed
+    return timer
 end
 
 local function getQuestClassification(questID)
@@ -451,6 +466,7 @@ function trackerData:CollectQuestBlocks(categoryId, filterFn)
                 isAutoComplete = isAutoComplete,
                 isWorldQuest = isWorldQuest(questID),
                 objectives = objectives,
+                questTimer = getQuestTimer(questID),
             })
         end
     end

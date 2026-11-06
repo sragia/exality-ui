@@ -20,7 +20,24 @@ util.PICK = {
     { key = 'GUILD',         label = 'Guild' },
     { key = 'OFFICER',       label = 'Officer' },
     { key = 'SYSTEM',        label = 'System' },
+    { key = 'SKILL',                 label = 'Skill-ups' },
+    { key = 'COMBAT_XP_GAIN',        label = 'Experience' },
+    { key = 'COMBAT_HONOR_GAIN',     label = 'Honor' },
+    { key = 'COMBAT_FACTION_CHANGE', label = 'Reputation' },
+    { key = 'COMBAT_MISC_INFO',      label = 'Misc Info' },
+    { key = 'PET_INFO',              label = 'Pet Info' },
+    { key = 'BG_SYSTEM_NEUTRAL',     label = 'Battleground' },
+    { key = 'TARGETICONS',           label = 'Target Icons' },
 }
+
+-- Tabs saved before a group existed follow their System setting
+util.TabShowsGroup = function(tab, key)
+    local value = tab.groups[key]
+    if value == nil then
+        return tab.groups.SYSTEM and true or false
+    end
+    return value and true or false
+end
 
 util.TYPE_GROUP = {
     SAY = 'SAY',
@@ -55,6 +72,16 @@ util.TYPE_GROUP = {
     CHANNEL_LIST = 'CHANNEL',
     COMMUNITIES_CHANNEL = 'CHANNEL',
     SYSTEM = 'SYSTEM',
+    SKILL = 'SKILL',
+    COMBAT_XP_GAIN = 'COMBAT_XP_GAIN',
+    COMBAT_HONOR_GAIN = 'COMBAT_HONOR_GAIN',
+    COMBAT_FACTION_CHANGE = 'COMBAT_FACTION_CHANGE',
+    COMBAT_MISC_INFO = 'COMBAT_MISC_INFO',
+    PET_INFO = 'PET_INFO',
+    BG_SYSTEM_HORDE = 'BG_SYSTEM_NEUTRAL',
+    BG_SYSTEM_ALLIANCE = 'BG_SYSTEM_NEUTRAL',
+    BG_SYSTEM_NEUTRAL = 'BG_SYSTEM_NEUTRAL',
+    TARGETICONS = 'TARGETICONS',
 }
 
 util.LABEL = {

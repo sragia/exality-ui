@@ -7,6 +7,26 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.11',
+            changes = {
+                { { 'Resource Displays', 'XP Bar' }, 'Added Styles support. See Styles' },
+                { 'Objective Tracker',               'Show timer bar for quests that have time limit' },
+                { 'Objective Tracker',               'Added option to color quest titles by difficulty' },
+                { 'Chat',                            'Added Skill-ups, Experience, Honor, Reputation, Misc Info, Pet Info, Battleground and Target Icons groups to chat tabs. Existing tabs follow their System setting' },
+                { 'Chat',                            'Fix map pin links not being clickable in system messages' },
+                { 'Quest Log',                       'Expand quest headers of the zone currently shown on the map, same as Blizzard quest log' },
+                { 'Map',                             'Map now resets back to current zone whenever it is opened' },
+                { 'Talents',                         'Show talent rank in talent tooltips' },
+                { 'Nameplates',                      'Added coloring by level difference (+1, +2, +3, +4 and above) outside of instances. Miniboss coloring no longer treats +1 level units as minibosses outside of instances' },
+                { 'Action Bars',                     'Snap action bars to pixel grid' },
+                { 'Bags',                            'Fix Lua errors when buying bank tab or when gold amount changes after visiting bank' },
+                { 'Character Frame',                 'Added Skills panel',                                                                                                                                               forever = true },
+                { 'Action Bars',                     'Fix Lua error when hovering micro menu in combat while it is set to show on hover',                                                                                forever = true },
+                { 'Talents',                         'Disable PvP talents sidebar as it is not available',                                                                                                               forever = true },
+                { 'Unit Frames',                     'Fix castbar icon getting squished when using styles',                                                                                                              forever = true },
+            }
+        },
+        {
             version = '0.9.10',
             changes = {
                 { 'Misc', 'Various Lua error fixes for Forever and styles fixes for icon masks', forever = true }

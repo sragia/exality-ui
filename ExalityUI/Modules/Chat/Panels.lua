@@ -680,7 +680,7 @@ function panels:BuildConfig()
             check:SetOptionData({
                 label = entry.label,
                 currentValue = function()
-                    return tab.groups[key] and true or false
+                    return util.TabShowsGroup(tab, key)
                 end,
                 onChange = function(value)
                     tab.groups[key] = value and true or false

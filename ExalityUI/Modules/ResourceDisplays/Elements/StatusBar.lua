@@ -15,6 +15,9 @@ local helpers = EXUI:GetModule('resource-displays-helpers')
 ---@class EXUIResourceDisplaysDefaults
 local defaults = EXUI:GetModule('resource-displays-defaults')
 
+---@class EXUIUnitFramesElementsShape
+local ufShape = EXUI:GetModule('uf-element-shape')
+
 local statusBar = EXUI:GetModule('resource-displays-elements-status-bar')
 
 statusBar.ApplyInsets = function(self, statusBarFrame, parent)
@@ -64,6 +67,9 @@ statusBar.UpdateTickMarks = function(self, frame)
             local width = bar:GetWidth() or 100
             line:ClearAllPoints()
             line:SetPoint('BOTTOMLEFT', bar, 'BOTTOMLEFT', width * ratio, 0)
+            if frame.exuiShape then
+                ufShape:SetMasked(frame.exuiShape, line, frame.exuiShape.enabled)
+            end
             line:Show()
         end
     end

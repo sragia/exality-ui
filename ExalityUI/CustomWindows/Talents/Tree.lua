@@ -342,6 +342,39 @@ local function ShowApexTooltip(button)
     GameTooltip:Show()
 end
 
+local function AddRankLine(button)
+    if (button.isStep or not GameTooltip_AddHighlightLine) then
+        return
+    end
+    local node = button.ownerNode
+    if (button.isChoiceOption) then
+        node = tree.choicePopup and tree.choicePopup.node
+    end
+    local nodeInfo = node and node.nodeInfo
+    if (not nodeInfo) then
+        return
+    end
+
+    local rank = nodeInfo.currentRank or 0
+    local maxRanks = nodeInfo.maxRanks or 0
+    if (button.isChoiceOption) then
+        rank = button.isSelected and rank or 0
+        maxRanks = button.entryMaxRanks or maxRanks
+    end
+
+    local line
+    if (Enum.TraitNodeFlag and HasNodeFlag(nodeInfo.flags, Enum.TraitNodeFlag.HideMaxRank)) then
+        if (type(TALENT_BUTTON_TOOLTIP_RANK_NO_MAX_FORMAT) == 'string') then
+            line = TALENT_BUTTON_TOOLTIP_RANK_NO_MAX_FORMAT:format(rank)
+        end
+    elseif (maxRanks > 0 and type(TALENT_BUTTON_TOOLTIP_RANK_FORMAT) == 'string') then
+        line = TALENT_BUTTON_TOOLTIP_RANK_FORMAT:format(rank, maxRanks)
+    end
+    if (line) then
+        GameTooltip_AddHighlightLine(GameTooltip, line)
+    end
+end
+
 local function ShowEntryTooltip(button)
     if (button.ownerNode and button.ownerNode.isApex and not button.isStep) then
         ShowApexTooltip(button)
@@ -353,6 +386,7 @@ local function ShowEntryTooltip(button)
     elseif (button.entryName) then
         GameTooltip:SetText(button.entryName)
     end
+    AddRankLine(button)
     GameTooltip:Show()
 end
 
@@ -613,6 +647,7 @@ local function ApplyTalentButton(button, visual, nodeInfo, picked, showArrows, c
     button.entryID = visual.entryID
     button.spellID = visual.spellID
     button.entryName = visual.name
+    button.entryMaxRanks = visual.maxRanks
     button.isSelected = picked
 end
 

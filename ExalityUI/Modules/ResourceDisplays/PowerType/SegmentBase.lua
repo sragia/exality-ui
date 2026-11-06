@@ -48,7 +48,7 @@ function segmentBase:ApplySegmentVisuals(segment, db, config, index, isCharged)
     if textureKey and db[textureKey] then
         segment.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db[textureKey]))
     end
-    core:ApplySegmentChrome(segment, db[bgKey], db[borderKey])
+    core:ApplySegmentChrome(segment, db[bgKey], db[borderKey], db.style)
     segment.FillAnimation = db.fillAnimation or db.smoothFill
 end
 

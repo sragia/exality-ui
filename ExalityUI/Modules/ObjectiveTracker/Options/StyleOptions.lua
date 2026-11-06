@@ -286,6 +286,23 @@ function styleOptions:GetOptions()
     })
 
     table.insert(options, {
+        type = 'toggle',
+        label = 'Color Quests by Difficulty',
+        name = 'questDifficultyColor',
+        depends = function()
+            return objectiveTracker.Data:GetValue('enable')
+        end,
+        currentValue = function()
+            return objectiveTracker.Data:GetValue('questDifficultyColor')
+        end,
+        onChange = function(value)
+            objectiveTracker.Data:SetValue('questDifficultyColor', value)
+            objectiveTracker:Configure()
+        end,
+        width = 50,
+    })
+
+    table.insert(options, {
         type = 'title',
         label = 'Header Styling',
         width = 100,

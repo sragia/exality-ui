@@ -255,7 +255,7 @@ essence.Update = function(frame)
             essenceFrame.StatusBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
         end
         essenceFrame.StatusBar:SetStatusBarTexture(LSM:Fetch('statusbar', db.essenceBarTexture))
-        core:ApplySegmentChrome(essenceFrame, db.essenceBackgroundColor, db.essenceBorderColor)
+        core:ApplySegmentChrome(essenceFrame, db.essenceBackgroundColor, db.essenceBorderColor, db.style)
         essenceFrame.Text:SetFont(LSM:Fetch('font', db.essenceFont), db.essenceFontSize, db.essenceFontFlag)
         essenceFrame.Text:SetVertexColor(db.essenceTextColor.r, db.essenceTextColor.g, db.essenceTextColor.b,
             db.essenceTextColor.a)

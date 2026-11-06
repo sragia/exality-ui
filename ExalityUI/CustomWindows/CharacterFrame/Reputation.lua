@@ -16,6 +16,9 @@ local reputation = EXUI:GetModule('character-frame-reputation')
 ---@class EXUICharacterFrameCurrencies
 local currencies = EXUI:GetModule('character-frame-currencies')
 
+---@class EXUICharacterFrameSkills
+local skills = EXUI:GetModule('character-frame-skills')
+
 reputation.panel = nil
 reputation.toggle = nil
 reputation.optionsPopup = nil
@@ -1040,10 +1043,11 @@ local function HideEdgeToggles()
         reputation.toggle:SetAlpha(1)
         reputation.toggle:Hide()
     end
+    skills:HideToggle()
 end
 
 local function RevealEdgeToggles(animated)
-    if currencies.isOpen or reputation.isOpen then
+    if currencies.isOpen or reputation.isOpen or skills.isOpen then
         return
     end
     if currencies.RevealToggle then
@@ -1052,6 +1056,7 @@ local function RevealEdgeToggles(animated)
     if reputation.RevealToggle then
         reputation:RevealToggle(animated)
     end
+    skills:RevealToggle(animated)
 end
 
 reputation.StopAnimations = function(self)
@@ -1093,6 +1098,9 @@ reputation.ShowPanel = function(self)
     self.isOpen = true
     if currencies and currencies.isOpen and currencies.HidePanel then
         currencies:HidePanel(true)
+    end
+    if skills.isOpen then
+        skills:HidePanel(true)
     end
 
     self:StopAnimations()

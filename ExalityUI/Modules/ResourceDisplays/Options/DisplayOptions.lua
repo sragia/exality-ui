@@ -230,6 +230,41 @@ function displayOptions:GetOptions(displayID)
         },
     })
 
+    local styles = EXUI:GetModule('styles')
+    append(fields, {
+        {
+            type = 'title',
+            label = 'Shape',
+            size = 14,
+            width = 100,
+        },
+        {
+            type = 'dropdown',
+            label = 'Style',
+            name = 'style',
+            getOptions = function()
+                return styles:GetDropdownOptions()
+            end,
+            currentValue = function()
+                return core:GetValueForDisplay(displayID, 'style') or styles.NONE
+            end,
+            onChange = function(value)
+                core:UpdateValueForDisplay(displayID, 'style', value)
+                core:RefreshDisplayByID(displayID)
+            end,
+            width = 40,
+        },
+        {
+            type = 'button',
+            label = 'Manage Styles',
+            name = 'manageStyles',
+            onClick = function()
+                EXUI:GetModule('styles-options'):Open()
+            end,
+            width = 20,
+        },
+    })
+
     local control = core:GetPowerTypeControl(currentItem.resourceType)
     if control then
         append(fields, control:GetOptions(displayID))

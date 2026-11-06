@@ -78,21 +78,34 @@ microMenu.ApplyOrientation = function(self, config)
     MicroMenu.alwaysUpdateLayout = true
 end
 
+microMenu.GetHolder = function(self)
+    if not self.holder then
+        self.holder = CreateFrame('Frame', nil, MicroMenuContainer)
+        self.holder:SetAllPoints(MicroMenuContainer)
+    end
+    return self.holder
+end
+
+-- MicroMenu lives in our holder so Blizzard's MicroMenuContainer:Layout() bails out
+-- before its SetSize, which gets blocked in combat once our writes taint MicroMenu.
 microMenu.ApplyLayout = function(self)
-    if MicroMenu and MicroMenu:GetParent() ~= MicroMenuContainer then
-        MicroMenu:SetParent(MicroMenuContainer)
+    if not MicroMenu or not MicroMenuContainer then
+        return
     end
 
-    if MicroMenu and MicroMenu.Layout then
-        MicroMenu:Layout()
-    end
-    if MicroMenuContainer and MicroMenuContainer.Layout then
-        MicroMenuContainer:Layout()
+    local holder = self:GetHolder()
+    if MicroMenu:GetParent() ~= holder then
+        MicroMenu:SetParent(holder)
     end
 
-    if MicroMenu then
-        MicroMenu.alwaysUpdateLayout = nil
-    end
+    MicroMenu:Layout()
+    MicroMenu:ClearAllPoints()
+    MicroMenu:SetPoint('TOPLEFT', holder, 'TOPLEFT')
+
+    local scale = MicroMenu:GetScale()
+    MicroMenuContainer:SetSize(math.max(MicroMenu:GetWidth() * scale, 1), math.max(MicroMenu:GetHeight() * scale, 1))
+
+    MicroMenu.alwaysUpdateLayout = nil
 end
 
 microMenu.UpdateMicroVisibilityAlpha = function(self, config, isHovering)
@@ -100,12 +113,14 @@ microMenu.UpdateMicroVisibilityAlpha = function(self, config, isHovering)
         return
     end
 
-    if config.visibility == 'hidden' then
-        MicroMenuContainer:Hide()
+    local shouldShow = config.visibility ~= 'hidden'
+    if MicroMenuContainer:IsShown() ~= shouldShow and not InCombatLockdown() then
+        MicroMenuContainer:SetShown(shouldShow)
+    end
+    if not shouldShow then
         return
     end
 
-    MicroMenuContainer:Show()
     if isEditorActive(MicroMenuContainer) then
         MicroMenuContainer:SetAlpha(1)
     elseif config.visibility == 'hover' then
@@ -120,12 +135,14 @@ microMenu.UpdateBagsVisibilityAlpha = function(self, config, isHovering)
         return
     end
 
-    if config.enable == false or config.visibility == 'hidden' then
-        BagsBar:Hide()
+    local shouldShow = config.enable ~= false and config.visibility ~= 'hidden'
+    if BagsBar:IsShown() ~= shouldShow and not InCombatLockdown() then
+        BagsBar:SetShown(shouldShow)
+    end
+    if not shouldShow then
         return
     end
 
-    BagsBar:Show()
     if isEditorActive(BagsBar) then
         BagsBar:SetAlpha(1)
     elseif config.visibility == 'hover' then
@@ -224,6 +241,12 @@ microMenu.Apply = function(self, db)
     if not MicroMenuContainer then
         return
     end
+
+    if InCombatLockdown() then
+        self.pendingApply = true
+        return
+    end
+    self.pendingApply = false
 
     local config = db.microMenu or {}
 
@@ -431,6 +454,21 @@ microMenu.Init = function(self)
     EXUI:RegisterEventHandler('PLAYER_ENTERING_WORLD', 'action-bars-micro-menu-reapply', function()
         C_Timer.After(0, reapply)
     end)
+
+    EXUI:RegisterEventHandler('PLAYER_REGEN_ENABLED', 'action-bars-micro-menu-pending', function()
+        if self.pendingApply then
+            reapply()
+        end
+    end)
+
+    -- Vehicle exit puts MicroMenu back into Blizzard's container, reclaim it
+    if MicroMenu and MicroMenu.ResetMicroMenuPosition then
+        hooksecurefunc(MicroMenu, 'ResetMicroMenuPosition', function()
+            if manager.enabled then
+                C_Timer.After(0, reapply)
+            end
+        end)
+    end
 
     if EditModeManagerFrame then
         hooksecurefunc(EditModeManagerFrame, 'UpdateSystems', function()

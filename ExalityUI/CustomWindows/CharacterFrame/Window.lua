@@ -28,6 +28,9 @@ local currencies = EXUI:GetModule('character-frame-currencies')
 ---@class EXUICharacterFrameReputation
 local reputation = EXUI:GetModule('character-frame-reputation')
 
+---@class EXUICharacterFrameSkills
+local skills = EXUI:GetModule('character-frame-skills')
+
 ---@class ExalityFramesTooltipInput
 local tooltip = EXFrames:GetFrame('tooltip')
 
@@ -800,11 +803,13 @@ characterFrame.Create = function(self)
     sets:Create(setsPanel)
     currencies:Create(window)
     reputation:Create(window)
+    skills:Create(window)
 
     window.onClose = function()
         sets:HideCreatePopup()
         currencies:Hide()
         reputation:Hide()
+        skills:Hide()
     end
 
     self:SetSideTab('stats')

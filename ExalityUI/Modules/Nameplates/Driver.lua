@@ -425,6 +425,7 @@ driver.RegisterSupportEvents = function(self)
     frame:RegisterEvent('UPDATE_MOUSEOVER_UNIT')
     frame:RegisterEvent('UNIT_CLASSIFICATION_CHANGED')
     frame:RegisterEvent('QUEST_LOG_UPDATE')
+    frame:RegisterEvent('PLAYER_LEVEL_UP')
     frame:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
     frame:RegisterEvent('UNIT_FACTION')
     frame:RegisterEvent('DUEL_FINISHED')
@@ -461,7 +462,7 @@ driver.RegisterSupportEvents = function(self)
             if driver.engineSizeDirty and arg2 == Enum.AddOnRestrictionState.Inactive then
                 driver:ApplyEnginePlateSize()
             end
-        elseif event == 'UNIT_CLASSIFICATION_CHANGED' or event == 'QUEST_LOG_UPDATE' then
+        elseif event == 'UNIT_CLASSIFICATION_CHANGED' or event == 'QUEST_LOG_UPDATE' or event == 'PLAYER_LEVEL_UP' then
             npCore:RefreshPlateHealthColors()
         elseif event == 'INSTANCE_ENCOUNTER_ENGAGE_UNIT' then
             npCore:RefreshPlateHealthColors()

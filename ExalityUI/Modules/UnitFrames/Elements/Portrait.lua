@@ -118,6 +118,8 @@ portrait.Create = function(self, frame)
     local bg = holder:CreateTexture(nil, 'BACKGROUND')
     bg:SetAllPoints()
     bg:SetColorTexture(0, 0, 0, 1)
+    -- Stays opaque when the UF fades out of range so the border doesn't show through
+    bg:SetIgnoreParentAlpha(true)
     bg:AddMaskTexture(mask)
     holder.Bg = bg
 

@@ -8,6 +8,7 @@
     <Script file="Sets.lua"/>
     <Script file="Currencies.lua"/>
     <Script file="Reputation.lua"/>
+    <Script file="Skills.lua"/>
     <Script file="Window.lua"/>
     <Script file="Inspect.lua"/>
 </Ui>

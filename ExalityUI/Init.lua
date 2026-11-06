@@ -107,6 +107,7 @@ EXUI.const = {
             check = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/check.png]],
             coins = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/coins.png]],
             users = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/users.png]],
+            skills = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/skills.png]],
             tabGlow = EXFrames.assets.textures.tabs.glow,
             input = {
                 bg = [[Interface/Addons/ExalityUI/Assets/Images/CharacterFrame/input-bg.png]],

@@ -160,6 +160,8 @@ defaults.DISPLAY = {
 
     individualSegmentColors = false,
 
+    style = 'default',
+
 }
 
 

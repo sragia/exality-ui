@@ -333,6 +333,15 @@ bags.HideBlizzardBank = function(self)
         BankPanel:Hide()
     end
     self.hidingBankFrame = false
+
+    -- Hiding inside BankFrame's OnShow still lets MoneyDisplay's OnShow register PLAYER_MONEY with no OnHide after,
+    -- and its refresh then errors in Blizzard code with no active bank type
+    C_Timer.After(0, function()
+        local moneyDisplay = BankPanel and BankPanel.MoneyDisplay
+        if moneyDisplay and not moneyDisplay:IsVisible() then
+            moneyDisplay:UnregisterEvent('PLAYER_MONEY')
+        end
+    end)
 end
 
 local BANK_INTERACTIONS = {

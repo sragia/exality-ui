@@ -60,6 +60,47 @@ local function refreshEnv()
     envTank = spec and GetSpecializationRole and GetSpecializationRole(spec) == 'TANK' or false
 end
 
+local function inDungeonOrRaid()
+    refreshEnv()
+    return envDungeonOrRaid
+end
+
+local function inDungeon()
+    refreshEnv()
+    return envDungeon
+end
+
+local function playerIsTank()
+    refreshEnv()
+    return envTank
+end
+
+local LEVEL_DIFF_COLORS = {
+    'levelDiffColor1',
+    'levelDiffColor2',
+    'levelDiffColor3',
+    'levelDiffColor4',
+}
+
+-- Levels above the player, capped at 4. Skull (??) units count as 4.
+local function getLevelDiff(unit)
+    if UnitIsPlayer(unit) or UnitPlayerControlled(unit) then
+        return 0
+    end
+    local unitLevel = UnitEffectiveLevel(unit)
+    local playerLevel = UnitEffectiveLevel('player')
+    if issecretvalue(unitLevel) or issecretvalue(playerLevel) then
+        return 0
+    end
+    if unitLevel < 0 then
+        return 4
+    end
+    if unitLevel == 0 then
+        return 0
+    end
+    return math.max(0, math.min(4, unitLevel - playerLevel))
+end
+
 local function isMiniboss(unit, frame)
     if frame and frame._exuiMinibossUnit == unit and frame._exuiIsMiniboss ~= nil then
         return frame._exuiIsMiniboss
@@ -70,7 +111,7 @@ local function isMiniboss(unit, frame)
             result = true
         elseif UnitIsLieutenant and UnitIsLieutenant(unit) then
             result = true
-        else
+        elseif inDungeonOrRaid() then
             local unitLevel = UnitEffectiveLevel(unit)
             local playerLevel = UnitEffectiveLevel('player')
             if not (issecretvalue(unitLevel) or issecretvalue(playerLevel)) then
@@ -87,21 +128,6 @@ end
 
 local function unitHasMana(unit)
     return UnitPowerType(unit) == Enum.PowerType.Mana
-end
-
-local function inDungeonOrRaid()
-    refreshEnv()
-    return envDungeonOrRaid
-end
-
-local function inDungeon()
-    refreshEnv()
-    return envDungeon
-end
-
-local function playerIsTank()
-    refreshEnv()
-    return envTank
 end
 
 local function getCurveValues(db)
@@ -214,6 +240,17 @@ local function applyMinibossColor(bar, db, unit)
     return applyColor(bar, db.minibossColor)
 end
 
+local function applyLevelDiffColor(bar, db, unit)
+    if not db.colorLevelDiff or inDungeonOrRaid() then
+        return false
+    end
+    local diff = getLevelDiff(unit)
+    if diff == 0 then
+        return false
+    end
+    return applyColor(bar, db[LEVEL_DIFF_COLORS[diff]])
+end
+
 health.PostUpdateColor = function(self, unit)
     local db = self.__owner and self.__owner.db
     unit = unit or (self.__owner and (self.__owner.unit or self.__owner.__unit))
@@ -286,6 +323,10 @@ health.PostUpdateColor = function(self, unit)
 
     if not applied then
         applied = applyMinibossColor(self, db, unit)
+    end
+
+    if not applied then
+        applied = applyLevelDiffColor(self, db, unit)
     end
 
     if not applied and db.colorClassification then

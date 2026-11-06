@@ -65,7 +65,10 @@ formatter.StatusTextWithPlayerLinks = function(text)
         text = text:gsub('||', '|')
     end
     local links = {}
-    text = text:gsub('|H(B?N?player[%a]*:[^|]+)|h(.-)|h', function(link, label)
+    text = text:gsub('|H((%a+):[^|]+)|h(.-)|h', function(link, kind, label)
+        if kind ~= 'worldmap' and not kind:find('^B?N?player') then
+            return nil
+        end
         links[#links + 1] = '|H' .. link .. '|h' .. label .. '|h'
         return '#EXUILINK' .. #links .. '#'
     end)

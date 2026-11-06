@@ -13,6 +13,12 @@ local optionsFields = EXUI:GetModule('options-fields')
 ---@class EXUIOptionsEditor
 local editor = EXUI:GetModule('editor')
 
+---@class EXUIStyles
+local styles = EXUI:GetModule('styles')
+
+---@class EXUIUnitFramesElementsShape
+local ufShape = EXUI:GetModule('uf-element-shape')
+
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
 -----------------------------------
@@ -87,9 +93,27 @@ xpBar.Init = function(self)
         showWatchedReputation = false,
         xpBarColor = { r = 1, g = 210 / 255, b = 0, a = 1 },
         restedBarColor = { r = 0, g = 162 / 255, b = 1, a = 0.2 },
-        completedQuestBarColor = { r = 1, g = 72 / 255, b = 0, a = 1 }
+        completedQuestBarColor = { r = 1, g = 72 / 255, b = 0, a = 1 },
+        style = styles.NONE,
     })
     optionsController:RegisterModule(self)
+
+    styles:RegisterCallback(function()
+        if self.frame and self.Data:GetValue('enable') then
+            self:ApplyShape()
+        end
+    end)
+    styles:RegisterTarget('xp-bar', {
+        label = 'XP Bar',
+        order = 30,
+        get = function() return self.Data:GetValue('style') end,
+        set = function(styleID)
+            self.Data:SetValue('style', styleID)
+            if self.frame and self.Data:GetValue('enable') then
+                self:ApplyShape()
+            end
+        end,
+    })
     self.maxLevel = GetMaxLevelForExpansionLevel(GetExpansionLevel())
     if (self.Data:GetValue('enable')) then
         self:Enable()
@@ -424,6 +448,44 @@ xpBar.GetOptions = function(self)
             end,
             width = 16
         },
+        {
+            type = 'spacer',
+            width = 52,
+            depends = function()
+                return self.Data:GetValue('enable')
+            end,
+        },
+        {
+            type = 'dropdown',
+            label = 'Bar Style',
+            name = 'style',
+            getOptions = function()
+                return styles:GetDropdownOptions()
+            end,
+            depends = function()
+                return self.Data:GetValue('enable')
+            end,
+            currentValue = function()
+                return self.Data:GetValue('style')
+            end,
+            onChange = function(value)
+                self.Data:SetValue('style', value)
+                self:ApplyShape()
+            end,
+            width = 40
+        },
+        {
+            type = 'button',
+            label = 'Manage Styles',
+            name = 'manageStyles',
+            depends = function()
+                return self.Data:GetValue('enable')
+            end,
+            onClick = function()
+                EXUI:GetModule('styles-options'):Open()
+            end,
+            width = 20
+        },
     }
 end
 
@@ -516,6 +578,17 @@ xpBar.CreateFrame = function(self)
     predictionText:SetText('15m - 100.2K XP/h')
     self.frame.Texts.Prediction = predictionText
 
+    -- Texts and the style border sit above the bars
+    elementFrame:SetFrameLevel(statusBar:GetFrameLevel() + 1)
+
+    local shapeMask = self.frame:CreateMaskTexture()
+    shapeMask:SetAllPoints(self.frame)
+    local shapeBorder = elementFrame:CreateTexture(nil, 'OVERLAY', nil, -8)
+    shapeBorder:SetAllPoints(self.frame)
+    shapeBorder:SetVertexColor(0, 0, 0, 1)
+    shapeBorder:Hide()
+    self.frame.Shape = { Mask = shapeMask, Border = shapeBorder, masked = {} }
+
     self:SetLogic(self.frame)
     self:ApplyContentInsets()
     self.frame.ApplyContentInsets = function()
@@ -570,6 +643,29 @@ xpBar.Configure = function(self)
         db.restedBarColor.a)
     self.frame.CompletedQuestBar:SetStatusBarColor(db.completedQuestBarColor.r, db.completedQuestBarColor.g,
         db.completedQuestBarColor.b, db.completedQuestBarColor.a)
+    self:ApplyShape()
+end
+
+xpBar.ApplyShape = function(self)
+    local frame = self.frame
+    if not frame then return end
+
+    local state = frame.Shape
+    local enabled = ufShape:SelectStyle(state, self.Data:GetValue('style'))
+    ufShape:SetMasked(state, frame.Background, enabled)
+    ufShape:SetMasked(state, frame.Spark, enabled)
+    ufShape:SetBarMasked(state, frame.XPBar, enabled)
+    ufShape:SetBarMasked(state, frame.RestedBar, enabled)
+    ufShape:SetBarMasked(state, frame.CompletedQuestBar, enabled)
+    -- Clipping shrinks the masked corners; the mask already hides the overflow
+    frame.StatusBarContainer:SetClipsChildren(not enabled)
+
+    state.Border:SetShown(enabled)
+    if enabled then
+        frame.PPBorder:Hide()
+    else
+        frame.PPBorder:Show()
+    end
 end
 
 xpBar.GetWatchedFaction = function(self)

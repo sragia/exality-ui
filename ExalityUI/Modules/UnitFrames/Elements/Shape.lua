@@ -37,8 +37,10 @@ local function ApplyTextures(state, style)
     end
 
     local border = state.Border
-    border:SetTexture(style.border)
-    styles:ApplySlices(border, style.margins)
+    if border then
+        border:SetTexture(style.border)
+        styles:ApplySlices(border, style.margins)
+    end
 end
 
 local function SelectStyle(state, styleKey)
@@ -153,7 +155,12 @@ shape.CreateCastbar = function(self, bar, container)
     border:SetAllPoints(container)
     border:Hide()
 
-    return { Mask = mask, Border = border, masked = {} }
+    local state = { Mask = mask, Border = border, masked = {} }
+    -- Forever squeezes the icon into the bar mask's slices, so the icon gets its own mask there.
+    if EXUI.IsForever() then
+        state.Icon = { Mask = bar:CreateMaskTexture(), masked = {}, isIcon = true }
+    end
+    return state
 end
 
 shape.MaskPip = function(self, bar, pip)
@@ -166,7 +173,12 @@ shape.ApplyCastbarShape = function(self, bar, styleKey, color, showBorder)
     local enabled = SelectStyle(state, styleKey)
 
     SetBarMasked(state, bar, enabled)
-    SetMasked(state, bar.Icon, enabled)
+    if state.Icon and bar.Icon then
+        state.Icon.Mask:SetAllPoints(bar.Icon)
+        SetMasked(state.Icon, bar.Icon, SelectStyle(state.Icon, styleKey))
+    else
+        SetMasked(state, bar.Icon, enabled)
+    end
     SetMasked(state, bar.Spark, enabled)
     SetMasked(state, bar.Uninterruptible, enabled)
     for _, pip in pairs(bar.Pips or {}) do

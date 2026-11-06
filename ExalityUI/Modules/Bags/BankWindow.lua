@@ -125,8 +125,8 @@ local function FormatMoney(copper)
     )
 end
 
-local function CreateHeaderButton(parent, label, iconTexture)
-    local button = CreateFrame('Button', nil, parent)
+local function CreateHeaderButton(parent, label, iconTexture, template)
+    local button = CreateFrame('Button', nil, parent, template)
     local muted = EXUI.const.theme.textMuted
 
     local text = button:CreateFontString(nil, 'OVERLAY')
@@ -346,11 +346,10 @@ bankWindow.CreateHeaderBar = function(self, parent)
         C_Bank.AutoDepositItemsIntoBank(bankType)
     end)
 
-    local buyBtn = CreateHeaderButton(bar, 'Buy Tab', EXUI.const.textures.bags.buyTab)
+    -- Blizzard's template shows the purchase popup from secure code, so PurchaseBankTab isn't blocked
+    local buyBtn = CreateHeaderButton(bar, 'Buy Tab', EXUI.const.textures.bags.buyTab,
+        'BankPanelPurchaseButtonScriptTemplate')
     self.buyTabButton = buyBtn
-    buyBtn:SetScript('OnClick', function()
-        StaticPopup_Show('CONFIRM_BUY_BANK_TAB', nil, nil, { bankType = GetBankType() })
-    end)
 
     self.searchBox = slots:CreateSearchBox(bar, 'bank')
 
@@ -402,6 +401,7 @@ bankWindow.LayoutHeaderButtons = function(self, bagSize)
     local canBuy = C_Bank.CanPurchaseBankTab and C_Bank.CanPurchaseBankTab(bankType)
         and not (C_Bank.HasMaxBankTabs and C_Bank.HasMaxBankTabs(bankType))
     self.buyTabButton:SetShown(canBuy)
+    self.buyTabButton:SetAttribute('overrideBankType', bankType)
 
     self.buyTabButton.tooltip = nil
     self.buyTabButton.tooltipLines = nil

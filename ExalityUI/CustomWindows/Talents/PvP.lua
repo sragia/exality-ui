@@ -264,7 +264,8 @@ pvp.SetButtonOpen = function(self, open)
 end
 
 pvp.Hide = function(self)
-    if (self.sidebar) then
+    -- The secure War Mode button makes the sidebar protected
+    if (self.sidebar and self.sidebar:IsShown() and not InCombatLockdown()) then
         self.sidebar:Hide()
     end
 end
@@ -632,6 +633,9 @@ local function CreateSlotButton(parent, index)
 end
 
 pvp.Create = function(self, window)
+    if (EXUI.IsForever()) then
+        return
+    end
     local sidebar = CreateFrame('Frame', nil, window)
     sidebar:SetWidth(SIDEBAR_WIDTH)
     sidebar:SetPoint('TOPLEFT', window, 'TOPRIGHT', SIDEBAR_GAP, 0)
@@ -763,13 +767,15 @@ local function OnPvpEvent(event)
     end
 end
 
-EXUI:RegisterEventHandler({
-    'PLAYER_PVP_TALENT_UPDATE',
-    'WAR_MODE_STATUS_UPDATE',
-    'PLAYER_FLAGS_CHANGED',
-    'ZONE_CHANGED',
-    'ZONE_CHANGED_NEW_AREA',
-    'ACTIVE_PLAYER_SPECIALIZATION_CHANGED',
-    'PLAYER_LEVEL_CHANGED',
-    'TRAIT_CONFIG_UPDATED',
-}, 'talents-pvp-refresh', OnPvpEvent)
+if (not EXUI.IsForever()) then
+    EXUI:RegisterEventHandler({
+        'PLAYER_PVP_TALENT_UPDATE',
+        'WAR_MODE_STATUS_UPDATE',
+        'PLAYER_FLAGS_CHANGED',
+        'ZONE_CHANGED',
+        'ZONE_CHANGED_NEW_AREA',
+        'ACTIVE_PLAYER_SPECIALIZATION_CHANGED',
+        'PLAYER_LEVEL_CHANGED',
+        'TRAIT_CONFIG_UPDATED',
+    }, 'talents-pvp-refresh', OnPvpEvent)
+end

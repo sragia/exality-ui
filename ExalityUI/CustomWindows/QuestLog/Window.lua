@@ -856,12 +856,12 @@ questLog.TrackPlayerMap = function(self)
     return mapID
 end
 
-questLog.ApplyPendingMap = function(self)
+questLog.ApplyPendingMap = function(self, resetToPlayer)
     local mapID = self.pendingMapID
     self.pendingMapID = nil
     local moved = self:TrackPlayerMap()
     if (not mapID) then
-        if (self.canvas and self.canvas.mapID and not moved) then
+        if (not resetToPlayer and self.canvas and self.canvas.mapID and not moved) then
             return
         end
         mapID = moved or self:PlayerMapID()
@@ -2259,6 +2259,16 @@ questLog.Create = function(self)
     end)
 end
 
+-- Same as Blizzard's quest log: headers for the shown map's zone open up.
+questLog.ExpandMapHeaders = function(self)
+    for index = C_QuestLog.GetNumQuestLogEntries(), 1, -1 do
+        local info = C_QuestLog.GetInfo(index)
+        if (info and info.isHeader and info.isOnMap and info.isCollapsed) then
+            ExpandQuestHeader(index, true)
+        end
+    end
+end
+
 questLog.Show = function(self)
     if (not self.enabled) then
         return
@@ -2269,7 +2279,8 @@ questLog.Show = function(self)
     if (not wasShown) then
         self.window:ClearAllPoints()
         self.window:SetPoint(OPEN_POINT[1], UIParent, OPEN_POINT[2], OPEN_POINT[3], OPEN_POINT[4])
-        self:ApplyPendingMap()
+        self:ApplyPendingMap(true)
+        self:ExpandMapHeaders()
         self.window:Show()
         if (self.canvas) then
             self.canvas:Show()

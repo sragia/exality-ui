@@ -80,6 +80,12 @@ local loadOptions = EXUI:GetModule('resource-displays-load-options')
 
 local core = EXUI:GetModule('resource-displays-core')
 
+---@class EXUIStyles
+local styles = EXUI:GetModule('styles')
+
+---@class EXUIUnitFramesElementsShape
+local ufShape = EXUI:GetModule('uf-element-shape')
+
 
 
 core.powerTypes = {}
@@ -164,6 +170,38 @@ core.Init = function(self)
 
     optionsController:RegisterModule(self)
 
+    styles:RegisterCallback(function()
+        self:RefreshAllFrames()
+    end)
+    styles:RegisterTarget('resource-displays', {
+        label = 'Resource Displays',
+        order = 25,
+        get = function() return self:GetSharedStyle() end,
+        set = function(styleID)
+            for displayID, display in pairs(self:GetDB()) do
+                if self:IsDisplayEntry(displayID, display) then
+                    self:UpdateValueForDisplay(displayID, 'style', styleID)
+                end
+            end
+            self:RefreshAllFrames()
+        end,
+    })
+
+end
+
+-- The style every display uses, or nil when they differ
+core.GetSharedStyle = function(self)
+    local shared
+    for displayID, display in pairs(self:GetDB()) do
+        if self:IsDisplayEntry(displayID, display) then
+            local style = display.style or styles.NONE
+            if shared and shared ~= style then
+                return nil
+            end
+            shared = style
+        end
+    end
+    return shared
 end
 
 
@@ -536,6 +574,60 @@ end
 
 
 
+local function EnsureShape(frame)
+    if frame.exuiShape then
+        return frame.exuiShape
+    end
+    local mask = frame:CreateMaskTexture()
+    mask:SetAllPoints(frame)
+    local background = frame:CreateTexture(nil, 'BACKGROUND')
+    background:SetAllPoints(frame)
+    background:AddMaskTexture(mask)
+    background:Hide()
+    local overlay = frame.ElementFrame
+    if not overlay then
+        overlay = CreateFrame('Frame', nil, frame)
+        overlay:SetAllPoints()
+        overlay:SetFrameLevel((frame.StatusBar or frame):GetFrameLevel() + 1)
+        frame.ShapeOverlay = overlay
+    end
+    local border = overlay:CreateTexture(nil, 'OVERLAY', nil, -8)
+    border:SetAllPoints(frame)
+    border:Hide()
+    frame.exuiShape = { Mask = mask, Background = background, Border = border, masked = {} }
+    return frame.exuiShape
+end
+
+-- Returns true when the style replaced the backdrop and pixel border
+core.ApplyShape = function(self, frame, styleID, bgColor, borderColor)
+    if not frame.exuiShape and not styles:IsStyle(styleID) then
+        return false
+    end
+    local state = EnsureShape(frame)
+    local enabled = ufShape:SelectStyle(state, styleID)
+    state.enabled = enabled
+    ufShape:SetBarMasked(state, frame.StatusBar, enabled)
+    ufShape:SetMasked(state, frame.ReadyGlow, enabled)
+    for _, line in ipairs(frame.TickLines or {}) do
+        ufShape:SetMasked(state, line, enabled)
+    end
+    state.Background:SetShown(enabled)
+    state.Border:SetShown(enabled)
+    if not enabled then
+        return false
+    end
+    frame:SetBackdrop(nil)
+    if frame.PPBorder then
+        frame.PPBorder:Hide()
+    end
+    state.Background:SetColorTexture(bgColor.r or 0, bgColor.g or 0, bgColor.b or 0, bgColor.a or 0)
+    state.Border:SetVertexColor(borderColor.r or 0, borderColor.g or 0, borderColor.b or 0, borderColor.a or 0)
+    return true
+end
+
+local DISPLAY_BACKGROUND = { r = 0, g = 0, b = 0, a = 0.5 }
+local DISPLAY_BORDER = { r = 0, g = 0, b = 0, a = 1 }
+
 core.ApplyDisplayChrome = function(self, frame, resourceType)
 
     resourceType = resourceType or (frame.db and frame.db.resourceType)
@@ -548,7 +640,9 @@ core.ApplyDisplayChrome = function(self, frame, resourceType)
 
     end
 
-
+    if self:ApplyShape(frame, frame.db and frame.db.style, DISPLAY_BACKGROUND, DISPLAY_BORDER) then
+        return
+    end
 
     frame:SetBackdrop(EXUI.const.backdrop.backgroundOnly)
 
@@ -578,7 +672,7 @@ end
 
 
 
-core.ApplySegmentChrome = function(self, segmentFrame, bgColor, borderColor)
+core.ApplySegmentChrome = function(self, segmentFrame, bgColor, borderColor, styleID)
 
     local bgR = bgColor and bgColor.r or 0
 
@@ -596,15 +690,22 @@ core.ApplySegmentChrome = function(self, segmentFrame, bgColor, borderColor)
 
     local borderA = borderColor and borderColor.a or 0
 
-    local chromeSig = table.concat({ bgR, bgG, bgB, bgA, borderR, borderG, borderB, borderA }, ':')
+    local chromeSig = table.concat({ bgR, bgG, bgB, bgA, borderR, borderG, borderB, borderA,
+        tostring(styleID), styles:GetVersion() }, ':')
 
-    if segmentFrame._exuiChromeSig == chromeSig and segmentFrame.PPBorder then
+    if segmentFrame._exuiChromeSig == chromeSig and (segmentFrame.PPBorder or segmentFrame.exuiShape) then
 
         return
 
     end
 
     segmentFrame._exuiChromeSig = chromeSig
+
+    local shapeBg = { r = bgR, g = bgG, b = bgB, a = bgA }
+    local shapeBorder = { r = borderR, g = borderG, b = borderB, a = borderA }
+    if self:ApplyShape(segmentFrame, styleID, shapeBg, shapeBorder) then
+        return
+    end
 
 
 

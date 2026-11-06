@@ -54,6 +54,33 @@ local GROUPS = {
     'CURRENCY',
     'MONEY',
     'PING',
+    'SKILL',
+    'PET_INFO',
+    'COMBAT_MISC_INFO',
+    'COMBAT_XP_GAIN',
+    'COMBAT_HONOR_GAIN',
+    'COMBAT_FACTION_CHANGE',
+    'BG_HORDE',
+    'BG_ALLIANCE',
+    'BG_NEUTRAL',
+    'TARGETICONS',
+}
+
+-- Already fully formatted by the server, shown like loot
+local PLAIN_TYPES = {
+    LOOT = true,
+    CURRENCY = true,
+    MONEY = true,
+    SKILL = true,
+    PET_INFO = true,
+    COMBAT_MISC_INFO = true,
+    COMBAT_XP_GAIN = true,
+    COMBAT_HONOR_GAIN = true,
+    COMBAT_FACTION_CHANGE = true,
+    BG_SYSTEM_HORDE = true,
+    BG_SYSTEM_ALLIANCE = true,
+    BG_SYSTEM_NEUTRAL = true,
+    TARGETICONS = true,
 }
 
 local HIDE_EVENTS = {
@@ -449,7 +476,7 @@ function defaultChat:OnChatEvent(event, message, sender, _, channelString, playe
         end
         return
     end
-    if chatType == 'LOOT' or chatType == 'CURRENCY' or chatType == 'MONEY' then
+    if PLAIN_TYPES[chatType] then
         history:PushLine(chatType, message)
         return
     end

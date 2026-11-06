@@ -223,6 +223,7 @@ barMod.Configure = function(self, frame, db)
     else
         barLayout:Apply(frame, config, frame.buttons)
     end
+    EXUI:SnapFrameToPixels(frame)
 
     for i, button in ipairs(frame.buttons) do
         if button.exuiBarId and button.UpdateConfig then
