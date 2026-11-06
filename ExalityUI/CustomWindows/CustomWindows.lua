@@ -52,6 +52,7 @@ customWindows.GetDefaults = function(self)
         QuestLogEnabled = false,
         QuestLogSide = 'right',
         QuestLogMapHeight = questLogWindow.mapHeightDefault or 533,
+        QuestLogCoordinates = true,
         MerchantEnabled = false,
     }
 end
@@ -191,6 +192,19 @@ customWindows.GetOptions = function(self)
                 if (questLogWindow.Layout and questLogWindow.isCreated) then
                     questLogWindow:Layout()
                 end
+            end,
+        })
+        table.insert(options, {
+            label = 'Show Coordinates',
+            name = 'questLogCoordinates',
+            type = 'toggle',
+            width = 50,
+            currentValue = function()
+                return customWindows.Data:GetValue('QuestLogCoordinates') ~= false
+            end,
+            onChange = function(value)
+                customWindows.Data:SetValue('QuestLogCoordinates', value)
+                questLogWindow:ApplyCoordinatesSetting()
             end,
         })
         table.insert(options, {

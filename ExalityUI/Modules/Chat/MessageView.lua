@@ -344,6 +344,8 @@ function messages:FillRow(row, line)
     local keepLinks = false
     if statusLine and not action then
         body, keepLinks = formatter.StatusTextWithPlayerLinks(body)
+    elseif not action then
+        body = formatter.LinkURLs(body)
     end
 
     local hasSender = false

@@ -7,6 +7,25 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.12',
+            changes = {
+                { 'Character Frame', 'Fix enchants and gems not updating right away after applying them' },
+                { 'Auras',           'Fix Item Enchants (poisons, oils, etc.) not being visible. They now use the look of the first aura group in the display' },
+                { 'Quest Log',       'Show experience in quest rewards' },
+                { 'Quest Log',       'Fix some item rewards (mostly gear) not showing up in quest rewards' },
+                { 'Quest Log',       'Show item level for gear rewards instead of item count' },
+                { 'Quest Log',       'Item rewards glow in their rarity color' },
+                { 'Action Bars',     'Ctrl+Right Click spell picker got a new look, and spells not on any bar are highlighted in blue like in the spellbook' },
+                { 'Quest Log',       'Added player and cursor coordinates below the map. Can be turned off in Custom Windows settings' },
+                { 'Chat',            'Links in chat messages can now be clicked to open a dialog to copy them' },
+                { 'Chat',            'Shift+Click on a player name now looks them up (/who) when the chat input is closed, same as default chat' },
+                { 'Minimap',         'Added Circle shape and EXUI Style rounded shapes (Small, Medium, Large)' },
+                { 'Minimap',         'Minimap buttons can now use Square or Circle background shapes with a border and Border Color option' },
+                { 'Minimap',         'Expansion Button now only shows when the game makes it available, instead of appearing while editing the minimap' },
+                { 'Styles',          'Fix style icon previews in the styles list',                                                     forever = true },
+            }
+        },
+        {
             version = '0.9.11',
             changes = {
                 { { 'Resource Displays', 'XP Bar' }, 'Added Styles support. See Styles' },

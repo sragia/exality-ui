@@ -312,6 +312,10 @@ generalModule.ApplyStoredUIScale = function(self)
 end
 
 generalModule.UpdateUIScale = function(self, applyScale)
+    if InCombatLockdown() then
+        self.pendingUIScale = true
+        return
+    end
     if applyScale then
         self:ApplyStoredUIScale()
     end

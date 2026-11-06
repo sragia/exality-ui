@@ -13,6 +13,9 @@ local window = EXUI:GetModule('chat-window')
 ---@class EXUIChatComposer
 local composer = EXUI:GetModule('chat-composer')
 
+---@class EXUIChatFormat
+local formatter = EXUI:GetModule('chat-format')
+
 local FontPath = util.FontPath
 local IsSecret = util.IsSecret
 
@@ -505,6 +508,16 @@ function composer:BeginWhisper(name, chatType)
     self:RefreshHeader()
 end
 
+function composer:WhoPlayer(name)
+    if not C_FriendList or not C_FriendList.SendWho then
+        return
+    end
+    if C_NameUtil and C_NameUtil.ReplaceSurnameSeparatorWithLinkSeparator then
+        name = C_NameUtil.ReplaceSurnameSeparatorWithLinkSeparator(name)
+    end
+    C_FriendList.SendWho(WHO_TAG_EXACT .. name, Enum.SocialWhoOrigin.Item)
+end
+
 function composer:ClickName(line, button)
     local name = line and line.sender
     if IsSecret(name) then
@@ -515,7 +528,9 @@ function composer:ClickName(line, button)
     end
     if IsModifiedClick and IsModifiedClick('CHATLINK') then
         local edit = self.editBox
-        if not edit then
+        -- Same as Blizzard: insert into an open input, otherwise look the player up
+        if not edit or not self.open then
+            self:WhoPlayer(name)
             return
         end
         edit:SetFocus()
@@ -580,8 +595,60 @@ function composer:ClickLink(link, text, button)
     end
 end
 
+function composer:ShowURL(url)
+    local dialog = self.urlDialog
+    if not dialog then
+        dialog = EXUI.EXFrames:GetFrame('text-dialog-frame'):Create()
+        dialog:SetSize(460, 150)
+        self.urlDialog = dialog
+    end
+    dialog:Open({
+        title = 'Copy URL',
+        hint = 'Press Ctrl+C to copy.',
+        text = url,
+        highlight = true,
+        buttons = {
+            {
+                text = 'Close',
+                onClick = function()
+                    dialog:Close()
+                end,
+            },
+        },
+    })
+end
+
+-- Blizzard routes addon: links from SetItemRef to this event.
+function composer:HookURLLinks()
+    if self.urlLinksHooked then
+        return
+    end
+    self.urlLinksHooked = true
+    local prefix = formatter.URL_LINK_PREFIX
+    EventRegistry:RegisterCallback('SetItemRef', function(_, link)
+        if IsSecret(link) or type(link) ~= 'string' or link:sub(1, #prefix) ~= prefix then
+            return
+        end
+        composer:ShowURL(link:sub(#prefix + 1))
+    end, self)
+end
+
+function composer:UnhookURLLinks()
+    if not self.urlLinksHooked then
+        return
+    end
+    self.urlLinksHooked = false
+    EventRegistry:UnregisterCallback('SetItemRef', self)
+    if self.urlDialog then
+        self.urlDialog:Close()
+    end
+end
+
 function composer:ShowLinkTooltip(owner, link)
     if IsSecret(link) or type(link) ~= 'string' then
+        return
+    end
+    if link:sub(1, #formatter.URL_LINK_PREFIX) == formatter.URL_LINK_PREFIX then
         return
     end
     local kind = link:match('^([^:]+)')

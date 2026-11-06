@@ -513,9 +513,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
 
     slot:SetScript('OnShow', function(self)
         FrameUtil.RegisterFrameForEvents(self, EVENTS)
-        if self:GetID() == INVSLOT_AMMO then
-            self:RegisterUnitEvent('UNIT_INVENTORY_CHANGED', 'player')
-        end
+        self:RegisterUnitEvent('UNIT_INVENTORY_CHANGED', 'player')
         self:Update()
         self:UpdateItemContextMatching()
         ItemButtonUtil.RegisterCallback(ItemButtonUtil.Event.ItemContextChanged, self.OnItemContextChanged, self)
@@ -582,6 +580,7 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
     slot.Update = function(self)
         local textureName = GetInventoryItemTexture('player', self:GetID())
         local hasItem = textureName ~= nil
+        self.lastItemLink = hasItem and GetInventoryItemLink('player', self:GetID()) or nil
         if (hasItem) then
             local itemLocation = ItemLocation:CreateFromEquipmentSlot(self:GetID());
             local itemLink = GetInventoryItemLink("player", self:GetID())
@@ -647,7 +646,10 @@ equipmentSlot.Create = function(self, slotId, side, index, parent)
                 self:Update()
             end
         elseif (event == 'UNIT_INVENTORY_CHANGED') then
-            self:Update()
+            -- Enchant/gem changes land here after ENCHANT_SPELL_COMPLETED / SOCKET_INFO_SUCCESS
+            if (self:GetID() == INVSLOT_AMMO or GetInventoryItemLink('player', self:GetID()) ~= self.lastItemLink) then
+                self:Update()
+            end
         elseif (event == 'BAG_UPDATE_COOLDOWN') then
             self:UpdateCooldown()
         elseif (event == 'UPDATE_INVENTORY_ALERTS') then

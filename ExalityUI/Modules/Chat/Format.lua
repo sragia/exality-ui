@@ -82,6 +82,33 @@ formatter.StatusTextWithPlayerLinks = function(text)
     return text, true
 end
 
+formatter.URL_LINK_PREFIX = 'addon:exui-url:'
+
+local function URLLink(token)
+    if not token:find('^https?://') and not token:find('^www%.') then
+        return nil
+    end
+    local url, trail = token:match('^(.-)([%.,;:!%?%)%]\'"]*)$')
+    if not url or url == '' then
+        return nil
+    end
+    return '|cffffffff|H' .. formatter.URL_LINK_PREFIX .. url .. '|h[' .. url .. ']|h|r' .. trail
+end
+
+-- Tokens stop at pipes, so existing hyperlinks and color codes are left alone.
+formatter.LinkURLs = function(text)
+    if IsSecret(text) or type(text) ~= 'string' then
+        return text
+    end
+    if C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown() then
+        return text
+    end
+    if not text:find('://', 1, true) and not text:find('www.', 1, true) then
+        return text
+    end
+    return (text:gsub('[^%s|]+', URLLink))
+end
+
 local function ShowText(fontString, value)
     if IsSecret(value) then
         fontString:SetText(value)

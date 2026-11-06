@@ -1780,6 +1780,15 @@ local function AcquireReward(pool, parent, index)
         icon:SetPoint('LEFT', 6, 0)
         icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         row.icon = icon
+        local iconMask = row:CreateMaskTexture()
+        iconMask:SetAllPoints(icon)
+        iconMask:SetTexture(EXUI.const.textures.bags.slotMask, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+        row.iconMask = iconMask
+        local iconBorder = row:CreateTexture(nil, 'OVERLAY', nil, 1)
+        iconBorder:SetPoint('TOPLEFT', icon, 'TOPLEFT', -1, 1)
+        iconBorder:SetPoint('BOTTOMRIGHT', icon, 'BOTTOMRIGHT', 1, -1)
+        iconBorder:SetTexture(EXUI.const.textures.bags.slotBorder)
+        row.iconBorder = iconBorder
         local count = row:CreateFontString(nil, 'OVERLAY')
         count:SetFont(FontPath(), LINE_SIZE, 'OUTLINE')
         count:SetPoint('RIGHT', -8, 0)
@@ -1794,7 +1803,7 @@ local function AcquireReward(pool, parent, index)
         row.name = name
         row:SetScript('OnEnter', function(self)
             ApplyAtlas(self.glow, 'simpleGlowOn', true)
-            self.glow:SetAlpha(0.8)
+            self.glow:SetAlpha(self.glowHoverAlpha)
             if (not self.itemID and not self.currencyID and not self.spellID) then
                 return
             end
@@ -1812,14 +1821,22 @@ local function AcquireReward(pool, parent, index)
         end)
         row:SetScript('OnLeave', function(self)
             ApplyAtlas(self.glow, 'simpleGlowOff', true)
-            self.glow:SetAlpha(0.65)
+            self.glow:SetAlpha(self.glowAlpha)
             GameTooltip:Hide()
         end)
         pool[index] = row
     end
     ApplyAtlas(row.bg, 'simpleBg', true)
     ApplyAtlas(row.glow, 'simpleGlowOff', true)
-    row.glow:SetAlpha(0.65)
+    row.glowAlpha = 0.65
+    row.glowHoverAlpha = 0.8
+    row.glow:SetAlpha(row.glowAlpha)
+    row.glow:SetVertexColor(1, 1, 1)
+    if (row.iconMasked) then
+        row.icon:RemoveMaskTexture(row.iconMask)
+        row.iconMasked = false
+    end
+    row.iconBorder:Hide()
     ApplyAtlas(row.border, 'simpleBorderOff', true)
     row.itemID = nil
     row.currencyID = nil
@@ -2045,12 +2062,50 @@ questLog.RefreshDetails = function(self)
     self.rewardButtons = self.rewardButtons or {}
     self.rewardCount = 0
 
-    local function AddItemRewards(count, getter)
+    local function RefreshWhenItemLoads(itemID)
+        local item = Item:CreateFromItemID(itemID)
+        if (item:IsItemEmpty() or item:IsItemDataCached()) then
+            return
+        end
+        item:ContinueOnItemLoad(function()
+            if (self.rewardRefreshQueued) then
+                return
+            end
+            self.rewardRefreshQueued = true
+            C_Timer.After(0, function()
+                self.rewardRefreshQueued = false
+                if (self.selectedQuestID == questID and self.window and self.window:IsShown()) then
+                    self:RefreshDetails()
+                end
+            end)
+        end)
+    end
+
+    -- Uncached rewards (usually gear) come back without name/texture until the item loads
+    -- Retail returns item level from the getter; Forever doesn't, so read it from the reward link
+    local function RewardItemLevel(linkType, itemIndex, itemID, itemLevel)
+        if (type(itemLevel) == 'number' and itemLevel > 0) then
+            return itemLevel
+        end
+        if (GetQuestLogItemLink and C_Item.GetDetailedItemLevelInfo) then
+            local ok, link = pcall(GetQuestLogItemLink, linkType, itemIndex)
+            if (ok and link) then
+                local level = C_Item.GetDetailedItemLevelInfo(link)
+                if (level and level > 0) then
+                    return level
+                end
+            end
+        end
+        local level = C_Item.GetDetailedItemLevelInfo and C_Item.GetDetailedItemLevelInfo(itemID)
+        return level and level > 0 and level or nil
+    end
+
+    local function AddItemRewards(count, getter, linkType)
         if (not count or count < 1 or not getter) then
             return
         end
         for itemIndex = 1, count do
-            local results = { pcall(getter, itemIndex) }
+            local results = { pcall(getter, itemIndex, questID) }
             if (not results[1]) then
                 break
             end
@@ -2058,22 +2113,49 @@ questLog.RefreshDetails = function(self)
             local texture = results[3]
             local numItems = results[4]
             local itemID = results[7]
+            if (itemID and (not texture or not name)) then
+                texture = texture or C_Item.GetItemIconByID(itemID)
+                name = name or C_Item.GetItemNameByID(itemID)
+                RefreshWhenItemLoads(itemID)
+            end
+            local rightText = numItems and numItems > 1 and numItems or nil
+            local isGear = itemID and C_Item.IsEquippableItem and C_Item.IsEquippableItem(itemID)
+            if (isGear) then
+                rightText = RewardItemLevel(linkType, itemIndex, itemID, results[8]) or rightText
+            end
             if (texture) then
-                self:AddRewardIcon(name, texture, numItems, 'item', itemID)
+                local row = self:AddRewardIcon(name or '', texture, rightText, 'item', itemID)
+                local quality = results[5]
+                if ((type(quality) ~= 'number' or quality < 0) and itemID) then
+                    quality = C_Item.GetItemQualityByID(itemID)
+                end
+                local color = quality and ITEM_QUALITY_COLORS[quality]
+                if (color) then
+                    row.glow:SetVertexColor(color.r, color.g, color.b)
+                    row.glowAlpha = 0.85
+                    row.glowHoverAlpha = 1
+                    row.glow:SetAlpha(row.glowAlpha)
+                end
+                if (isGear) then
+                    row.icon:AddMaskTexture(row.iconMask)
+                    row.iconMasked = true
+                    row.iconBorder:SetVertexColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
+                    row.iconBorder:Show()
+                end
             end
         end
     end
 
     if (GetNumQuestLogRewards and GetQuestLogRewardInfo) then
-        local ok, count = pcall(GetNumQuestLogRewards)
+        local ok, count = pcall(GetNumQuestLogRewards, questID)
         if (ok) then
-            AddItemRewards(count, GetQuestLogRewardInfo)
+            AddItemRewards(count, GetQuestLogRewardInfo, 'reward')
         end
     end
     if (GetNumQuestLogChoices and GetQuestLogChoiceInfo) then
-        local ok, count = pcall(GetNumQuestLogChoices)
+        local ok, count = pcall(GetNumQuestLogChoices, questID)
         if (ok) then
-            AddItemRewards(count, GetQuestLogChoiceInfo)
+            AddItemRewards(count, GetQuestLogChoiceInfo, 'choice')
         end
     end
     if (C_QuestLog.GetQuestRewardCurrencies) then
@@ -2093,6 +2175,12 @@ questLog.RefreshDetails = function(self)
                     self:AddRewardIcon(spellInfo.name, spellInfo.texture, nil, 'spell', spellID)
                 end
             end
+        end
+    end
+    if (GetQuestLogRewardXP) then
+        local ok, xp = pcall(GetQuestLogRewardXP, questID)
+        if (ok and IsReadable(xp) and type(xp) == 'number' and xp > 0) then
+            self:AddRewardIcon(BreakUpLargeNumbers(xp) .. ' Experience', [[Interface\Icons\XP_Icon]], nil, 'xp')
         end
     end
     if (GetQuestLogRewardMoney and GetMoneyString) then
@@ -2143,6 +2231,81 @@ questLog.CreateQuestList = function(self, panel)
     emptyList:SetTextColor(theme.textMuted[1], theme.textMuted[2], theme.textMuted[3], 1)
     emptyList:Hide()
     self.emptyText = emptyList
+end
+
+local COORDS_WIDTH = 140
+local COORDS_HEIGHT = 40
+local COORDS_UPDATE_INTERVAL = 0.1
+
+local function FormatCoords(x, y)
+    if (type(x) ~= 'number' or type(y) ~= 'number') then
+        return '-'
+    end
+    return string.format('%.1f, %.1f', x * 100, y * 100)
+end
+
+questLog.UpdateCoordinates = function(self)
+    local coords = self.coordsFrame
+    if (not coords) then
+        return
+    end
+    local canvas = self.canvas
+    local mapID = canvas and canvas:GetMapID()
+    local playerX, playerY
+    if (mapID) then
+        -- nil inside instances
+        local position = C_Map.GetPlayerMapPosition(mapID, 'player')
+        if (position) then
+            playerX, playerY = position:GetXY()
+        end
+    end
+    local cursorX, cursorY
+    if (canvas and canvas.ScrollContainer:IsMouseOver()) then
+        cursorX, cursorY = canvas:GetNormalizedCursorPosition()
+    end
+    coords.player:SetText('Player: ' .. FormatCoords(playerX, playerY))
+    coords.cursor:SetText('Cursor: ' .. FormatCoords(cursorX, cursorY))
+end
+
+questLog.ApplyCoordinatesSetting = function(self)
+    if (self.coordsFrame) then
+        self.coordsFrame:SetShown(self.canvas ~= nil and customWindows.Data:GetValue('QuestLogCoordinates') ~= false)
+    end
+end
+
+questLog.CreateCoordinates = function(self, mapHost)
+    local theme = Theme()
+    local coords = CreateFrame('Frame', nil, self.window)
+    coords:SetSize(COORDS_WIDTH, COORDS_HEIGHT)
+    coords:SetPoint('TOPRIGHT', mapHost, 'BOTTOMRIGHT', 0, -GAP)
+    ApplyQuestChrome(coords)
+
+    local function Line(offsetY)
+        local text = coords:CreateFontString(nil, 'OVERLAY')
+        text:SetFont(FontPath(), LINE_SIZE - 1, 'OUTLINE')
+        text:SetPoint('RIGHT', coords, 'RIGHT', -PAD, offsetY)
+        text:SetJustifyH('RIGHT')
+        text:SetTextColor(theme.text[1], theme.text[2], theme.text[3], 1)
+        return text
+    end
+    coords.player = Line(7)
+    coords.cursor = Line(-7)
+
+    local elapsed = 0
+    coords:SetScript('OnUpdate', function(_, delta)
+        elapsed = elapsed + delta
+        if (elapsed < COORDS_UPDATE_INTERVAL) then
+            return
+        end
+        elapsed = 0
+        questLog:UpdateCoordinates()
+    end)
+    coords:SetScript('OnShow', function()
+        elapsed = 0
+        questLog:UpdateCoordinates()
+    end)
+    self.coordsFrame = coords
+    self:ApplyCoordinatesSetting()
 end
 
 questLog.Create = function(self)
@@ -2245,6 +2408,7 @@ questLog.Create = function(self)
     self.returnButton = returnButton
     self:UpdateReturnButton()
 
+    self:CreateCoordinates(mapHost)
     self:CreateQuestList(panel)
 
     window:HookScript('OnHide', function()

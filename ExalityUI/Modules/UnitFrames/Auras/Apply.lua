@@ -514,6 +514,10 @@ function apply:ApplyItemEnchantments(container, containerConfig, display)
 
     layout:ApplyItemEnchantmentLayout(container, containerConfig, display)
 
+    local visual = resolver:GetItemEnchantVisual(display, function(load)
+        return loadConditions:ShouldIncludeGroup(load)
+    end)
+
     local slots = {
         { key = 'itemEnchantMainHand', slot = ITEM_ENCHANT_SLOT.MainHand },
         { key = 'itemEnchantOffHand',  slot = ITEM_ENCHANT_SLOT.OffHand },
@@ -525,8 +529,10 @@ function apply:ApplyItemEnchantments(container, containerConfig, display)
             container:AddItemEnchantment(entry.slot, {
                 hidePermanent = containerConfig.itemEnchantHidePermanent,
                 initializeFrame = function(auraButton)
-                    if auraButton.EnableMouse then auraButton:EnableMouse(false) end
-                    if auraButton.SetMouseMotionEnabled then auraButton:SetMouseMotionEnabled(false) end
+                    buttonStyle:Apply(auraButton, visual)
+                    if not visual then
+                        buttonStyle:ApplyMouseInteraction(auraButton)
+                    end
                 end,
             })
         end

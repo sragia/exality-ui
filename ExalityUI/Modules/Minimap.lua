@@ -46,12 +46,24 @@ local MAP_MASK_SHAPES = {
     ['round-small'] = { label = 'Rounded (Small)', order = 2, mask = 'maskRoundSmall', border = 'maskRoundSmallBorder' },
     ['round-medium'] = { label = 'Rounded (Medium)', order = 3, mask = 'maskRoundMedium', border = 'maskRoundMediumBorder' },
     ['round-large'] = { label = 'Rounded (Large)', order = 4, mask = 'maskRoundLarge', border = 'maskRoundLargeBorder' },
+    -- EXUI art includes a shadow outside the mask; maskSize/borderSize are the file canvas sizes in px.
+    ['round-small-exui'] = { label = 'Rounded (Small) - EXUI Style', order = 5, mask = 'maskRoundSmallExui', border = 'maskRoundSmallExuiBorder', maskSize = 512, borderSize = 536 },
+    ['round-medium-exui'] = { label = 'Rounded (Medium) - EXUI Style', order = 6, mask = 'maskRoundMediumExui', border = 'maskRoundMediumExuiBorder', maskSize = 512, borderSize = 536 },
+    ['round-large-exui'] = { label = 'Rounded (Large) - EXUI Style', order = 7, mask = 'maskRoundLargeExui', border = 'maskRoundLargeExuiBorder', maskSize = 512, borderSize = 536 },
+    circle = { label = 'Circle', order = 8, mask = 'maskCircle', border = 'maskCircleBorder', maskSize = 512, borderSize = 536, round = true },
 }
 local SQUARE_SHAPE = 'SQUARE'
 local MINIMAP_BUTTON_ICON_SIZE = 20
 local MINIMAP_MAIL_ICON_SIZE = 16
 local MINIMAP_ICON_BG_PAD = 4
 local MINIMAP_BUTTON_BG_SLICE = 6
+
+-- Border art includes a shadow outside the shape; bgSize/borderSize are the file canvas sizes in px.
+local BUTTON_SHAPES = {
+    default = { label = 'Default', order = 1 },
+    square = { label = 'Square', order = 2, bg = 'buttonSquareBg', border = 'buttonSquareBorder', bgSize = 32, borderSize = 46 },
+    circle = { label = 'Circle', order = 3, bg = 'buttonCircleBg', border = 'buttonCircleBorder', bgSize = 32, borderSize = 46 },
+}
 local INSTANCE_DIFFICULTY_EVENTS = {
     'PLAYER_DIFFICULTY_CHANGED',
     'INSTANCE_GROUP_SIZE_CHANGED',
@@ -286,7 +298,7 @@ local function ForEachButtonTexture(btn, fn)
 end
 
 local function IsExuiMailTexture(tex, btn)
-    return tex == btn.exuiBg or tex == btn.exuiIcon
+    return tex == btn.exuiBg or tex == btn.exuiBorder or tex == btn.exuiIcon
 end
 
 local function SuppressMailChromeTexture(tex, btn)
@@ -391,7 +403,7 @@ minimap.FindButtonIcon = function(self, btn)
 
     local icon
     ForEachButtonTexture(btn, function(tex)
-        if (tex == btn.exuiBg or IsMinimapChromeTexture(tex:GetTexture())) then return end
+        if (tex == btn.exuiBg or tex == btn.exuiBorder or IsMinimapChromeTexture(tex:GetTexture())) then return end
         local layer = tex.GetDrawLayer and tex:GetDrawLayer() or 'ARTWORK'
         if (layer == 'ARTWORK' or layer == 'OVERLAY' or not icon) then
             icon = tex
@@ -439,16 +451,53 @@ minimap.GetScaledMinimapIconSize = function(self, baseSize)
     return EXUI:ScalePixel(baseSize * self:GetButtonScale())
 end
 
+minimap.GetButtonShape = function(self)
+    return BUTTON_SHAPES[self.Data:GetValue('buttonShape')] or BUTTON_SHAPES.default
+end
+
+minimap.GetButtonBorderColor = function(self)
+    local color = self.Data:GetValue('buttonBorderColor')
+    if (color) then
+        return UnpackColor(color)
+    end
+    return UnpackThemeColor(EXUI.const.theme.border)
+end
+
 minimap.ApplyButtonBackground = function(self, btn, bgTex, bgWidth, bgHeight)
     if (not btn or not bgTex) then return end
 
-    if (self:IsButtonBackgroundEnabled()) then
+    local shape = self:GetButtonShape()
+    local enabled = self:IsButtonBackgroundEnabled()
+    if (enabled) then
         local r, g, b, a = self:GetButtonAppearanceColor()
-        self:ApplyMinimapButtonBackground(bgTex, bgWidth, r, g, b, a, bgHeight)
+        if (shape.bg) then
+            bgTex:SetTexture(EXUI.const.textures.minimap[shape.bg])
+            bgTex:ClearTextureSlice()
+            bgTex:SetSize(bgWidth, bgWidth)
+            bgTex:SetVertexColor(r, g, b, a)
+        else
+            self:ApplyMinimapButtonBackground(bgTex, bgWidth, r, g, b, a, bgHeight)
+        end
         bgTex:Show()
         bgTex:SetAlpha(1)
     else
         bgTex:Hide()
+    end
+
+    if (enabled and shape.border) then
+        if (not btn.exuiBorder) then
+            btn.exuiBorder = btn:CreateTexture(nil, 'BORDER')
+        end
+        local border = btn.exuiBorder
+        local size = bgWidth * shape.borderSize / shape.bgSize
+        border:SetTexture(EXUI.const.textures.minimap[shape.border])
+        border:ClearAllPoints()
+        border:SetPoint('CENTER', bgTex, 'CENTER', 0, 0)
+        border:SetSize(size, size)
+        border:SetVertexColor(self:GetButtonBorderColor())
+        border:Show()
+    elseif (btn.exuiBorder) then
+        btn.exuiBorder:Hide()
     end
 end
 
@@ -465,7 +514,7 @@ minimap.StyleMinimapButton = function(self, btn)
     btn.exuiIcon = self:FindButtonIcon(btn)
 
     ForEachButtonTexture(btn, function(tex)
-        if (tex == btn.exuiBg or tex == btn.exuiIcon) then return end
+        if (tex == btn.exuiBg or tex == btn.exuiBorder or tex == btn.exuiIcon) then return end
         if (IsMinimapChromeTexture(tex:GetTexture())) then
             tex:Hide()
         end
@@ -495,7 +544,7 @@ minimap.StyleMinimapButton = function(self, btn)
     end
 
     ForEachButtonTexture(btn, function(tex)
-        if (tex ~= btn.exuiBg and tex ~= icon) then
+        if (tex ~= btn.exuiBg and tex ~= btn.exuiBorder and tex ~= icon) then
             tex:Hide()
         end
     end)
@@ -1686,15 +1735,55 @@ minimap.GetOptions = function(self, currTabID, currItemID)
                     width = 100,
                 },
                 {
+                    type = 'dropdown',
+                    label = 'Button Shape',
+                    name = 'buttonShape',
+                    depends = function()
+                        return buttonDepends() and self:IsButtonBackgroundEnabled()
+                    end,
+                    getOptions = function()
+                        local options = {}
+                        for key, shape in pairs(BUTTON_SHAPES) do
+                            options[key] = { label = shape.label, order = shape.order }
+                        end
+                        return options
+                    end,
+                    currentValue = function() return self.Data:GetValue('buttonShape') or 'default' end,
+                    onChange = function(value)
+                        self.Data:SetValue('buttonShape', value)
+                        self:ConfigureIfEnabled()
+                        self:RefreshOptionsView()
+                    end,
+                    width = 20,
+                },
+                {
                     type = 'color-picker',
                     label = 'Background Color',
                     name = 'buttonBgColor',
-                    depends = buttonDepends,
+                    depends = function()
+                        return buttonDepends() and self:IsButtonBackgroundEnabled()
+                    end,
                     currentValue = function()
                         return self.Data:GetValue('buttonBgColor')
                     end,
                     onChange = function(value)
                         self.Data:SetValue('buttonBgColor', PackColor(value))
+                        self:ConfigureIfEnabled()
+                    end,
+                    width = 20,
+                },
+                {
+                    type = 'color-picker',
+                    label = 'Border Color',
+                    name = 'buttonBorderColor',
+                    depends = function()
+                        return buttonDepends() and self:IsButtonBackgroundEnabled() and self:GetButtonShape().border ~= nil
+                    end,
+                    currentValue = function()
+                        return self.Data:GetValue('buttonBorderColor') or PackColor(EXUI.const.theme.border)
+                    end,
+                    onChange = function(value)
+                        self.Data:SetValue('buttonBorderColor', PackColor(value))
                         self:ConfigureIfEnabled()
                     end,
                     width = 20,
@@ -1894,19 +1983,21 @@ minimap.GetMaskTexture = function(self)
     local shape = MAP_MASK_SHAPES[self.Data:GetValue('shape')]
     if (shape and shape.mask) then
         local textures = EXUI.const.textures.minimap
-        return textures[shape.mask], textures[shape.border]
+        return textures[shape.mask], textures[shape.border], shape
     end
     return MASK_TEXTURE
 end
 
--- Rounded shapes still report SQUARE so addon buttons keep orbiting the square edge.
+-- Rounded shapes still report SQUARE so addon buttons keep orbiting the square edge; circle reports ROUND.
 minimap.ApplySquareShape = function(self)
+    local _, _, shape = self:GetMaskTexture()
     Minimap:SetMaskTexture((self:GetMaskTexture()))
     if (HybridMinimap and HybridMinimap.MapCanvas and HybridMinimap.CircleMask) then
         self:ApplyHybridMinimap()
     end
+    local reportedShape = shape and shape.round and 'ROUND' or SQUARE_SHAPE
     GetMinimapShape = function()
-        return SQUARE_SHAPE
+        return reportedShape
     end
 end
 
@@ -2059,6 +2150,9 @@ minimap.RepositionMissionsButton = function(self)
     local blizzButtons = db.blizzButtons or {}
     if (blizzButtons.missions ~= 'outside') then return end
 
+    -- Blizzard owns visibility (feature unlocks, game rules); only place it when it wants to show
+    if (not self.missionsAvailable) then return end
+
     self.repositioningMissions = true
     PrepareOrbitButton(btn)
     btn:Show()
@@ -2073,6 +2167,18 @@ minimap.SetupBlizzButtonFixes = function(self)
     local missionsBtn = GetBlizzButton('missions')
     if (missionsBtn and not self.missionsHooksSetup) then
         self.missionsHooksSetup = true
+        self.missionsAvailable = missionsBtn:IsShown()
+        hooksecurefunc(missionsBtn, 'Show', function()
+            if (minimap.repositioningMissions or minimap.applyingBlizzButton) then return end
+            minimap.missionsAvailable = true
+            if (minimap.enabled) then
+                minimap:ApplyBlizzButton('missions')
+            end
+        end)
+        hooksecurefunc(missionsBtn, 'Hide', function()
+            if (minimap.repositioningMissions or minimap.applyingBlizzButton) then return end
+            minimap.missionsAvailable = false
+        end)
         if (ExpansionLandingPageMinimapButton) then
             hooksecurefunc(ExpansionLandingPageMinimapButton, 'SetParent', function(_, parent)
                 if (minimap.repositioningMissions) then return end
@@ -3190,7 +3296,7 @@ minimap.GetDrawerMenuEntries = function(self)
     for key, label in EXUI.utils.spairs(BLIZZ_BUTTON_LABELS, function(t, a, b) return t[a] < t[b] end) do
         if (blizzButtons[key] == 'drawer') then
             local btn = GetBlizzButton(key)
-            if (btn) then
+            if (btn and (key ~= 'missions' or self.missionsAvailable)) then
                 table.insert(entries, {
                     text = label,
                     icon = self:GetButtonListIcon(btn, key),
@@ -3421,12 +3527,16 @@ minimap.ApplyBlizzButton = function(self, key)
     local angles = db.blizzButtonAngles or {}
 
     if (placement == 'hidden') then
+        self.applyingBlizzButton = true
         btn:Hide()
+        self.applyingBlizzButton = false
         return
     end
 
     if (placement == 'drawer') then
+        self.applyingBlizzButton = true
         btn:Hide()
+        self.applyingBlizzButton = false
         if (self.drawerOpen) then
             self:RefreshDrawerMenu()
         end
@@ -3721,9 +3831,16 @@ minimap.ConfigureMinimap = function(self)
     Minimap:Show()
     Minimap:EnableMouse(true)
 
-    local _, roundBorder = self:GetMaskTexture()
+    local _, roundBorder, shape = self:GetMaskTexture()
     if (self.roundBorderFrame) then
         if (roundBorder) then
+            local outset = 0
+            if (shape.maskSize and shape.borderSize) then
+                outset = Minimap:GetWidth() * ((shape.borderSize - shape.maskSize) / 2) / shape.maskSize
+            end
+            self.roundBorderFrame:ClearAllPoints()
+            self.roundBorderFrame:SetPoint('TOPLEFT', Minimap, 'TOPLEFT', -outset, outset)
+            self.roundBorderFrame:SetPoint('BOTTOMRIGHT', Minimap, 'BOTTOMRIGHT', outset, -outset)
             self.roundBorder:SetTexture(roundBorder)
             self.roundBorder:SetVertexColor(UnpackColor(db.borderColor))
             self.roundBorderFrame:Show()

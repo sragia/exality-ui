@@ -10,15 +10,55 @@ local spellPicker = EXUI:GetModule('action-bars-spell-picker')
 local PICKER_WIDTH = 220
 local PICKER_HEIGHT = 280
 local SEARCH_HEIGHT = 24
-local ROW_HEIGHT = 24
-local ROW_ICON = 18
+local ROW_HEIGHT = 26
+local ROW_ICON = 16
 local PAD = 6
-local LIST_GAP = 2
+local LIST_GAP = 4
 local ICON_ZOOM = 15
 local FILTER_SIZE = 26
 local FILTER_GAP = 4
 local FILTER_COL = FILTER_SIZE + 4
 local CONSUMABLE_ICON = 136000
+
+-- Same row art as the quest log rewards
+local ATLAS_W, ATLAS_H = 472, 329
+local SLICE = 4
+local RECTS = {
+    simpleBg = { 6, 117, 199, 140 },
+    simpleBorderOff = { 6, 144, 199, 167 },
+    simpleGlowOff = { 6, 171, 135, 194 },
+    simpleGlowOn = { 6, 225, 135, 248 },
+}
+local GLOW_ALPHA = 0.65
+local GLOW_HOVER_ALPHA = 0.8
+local MISSING_COLOR = { 0.3, 0.65, 1 }
+local MISSING_FILL_ALPHA = 0.45
+local MISSING_ALPHA = 1
+local MISSING_HOVER_ALPHA = 1
+
+local function applyAtlas(tex, key)
+    local rect = RECTS[key]
+    tex:SetTexture(EXFrames.assets.textures.splitOptions.atlas)
+    EXFrames.utils.texture.applySlice(tex, SLICE, tex:GetParent(), Enum.UITextureSliceMode.Stretched)
+    tex:SetTexCoord(rect[1] / ATLAS_W, (rect[3] + 1) / ATLAS_W, rect[2] / ATLAS_H, (rect[4] + 1) / ATLAS_H)
+end
+
+-- Spellbook rule: highlight spells that aren't in any action slot; stances live on their own bar.
+local function isMissingFromBars(spellID)
+    local slots = C_ActionBar.FindSpellActionButtons(spellID)
+    if slots and #slots > 0 then
+        return false
+    end
+    if C_ActionBar.IsHighestSpellRank and not C_ActionBar.IsHighestSpellRank(spellID) then
+        return false
+    end
+    for index = 1, GetNumShapeshiftForms() do
+        if select(4, GetShapeshiftFormInfo(index)) == spellID then
+            return false
+        end
+    end
+    return true
+end
 
 -- Spec first, then class, then general, then other spells, then bag consumables.
 local CATEGORY_SPEC = 1
@@ -268,25 +308,50 @@ spellPicker.AcquireRow = function(self)
 
         local bg = row:CreateTexture(nil, 'BACKGROUND')
         bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0)
         row.bg = bg
+
+        local glow = row:CreateTexture(nil, 'BACKGROUND', nil, 1)
+        glow:SetAllPoints()
+        row.glow = glow
+
+        -- Inset keeps the square fill inside the rounded border
+        local missingFill = row:CreateTexture(nil, 'BACKGROUND', nil, 2)
+        missingFill:SetPoint('TOPLEFT', 2, -2)
+        missingFill:SetPoint('BOTTOMRIGHT', -2, 2)
+        missingFill:SetColorTexture(1, 1, 1, 1)
+        missingFill:SetGradient('HORIZONTAL',
+            CreateColor(MISSING_COLOR[1], MISSING_COLOR[2], MISSING_COLOR[3], MISSING_FILL_ALPHA),
+            CreateColor(MISSING_COLOR[1], MISSING_COLOR[2], MISSING_COLOR[3], 0))
+        missingFill:Hide()
+        row.missingFill = missingFill
+
+        local border = row:CreateTexture(nil, 'OVERLAY')
+        border:SetAllPoints()
+        row.border = border
 
         local icon = row:CreateTexture(nil, 'ARTWORK')
         icon:SetSize(ROW_ICON, ROW_ICON)
-        icon:SetPoint('LEFT', 4, 0)
+        icon:SetPoint('LEFT', 6, 0)
         icon:SetTexCoord(EXUI.utils.getTexCoords(1, 1, ICON_ZOOM))
         row.icon = icon
+
+        local count = row:CreateFontString(nil, 'OVERLAY')
+        count:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
+        count:SetPoint('RIGHT', -8, 0)
+        count:SetJustifyH('RIGHT')
+        count:SetTextColor(unpack(EXUI.const.theme.text))
+        row.count = count
 
         local name = row:CreateFontString(nil, 'OVERLAY')
         name:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
         name:SetPoint('LEFT', icon, 'RIGHT', 6, 0)
-        name:SetPoint('RIGHT', -4, 0)
         name:SetJustifyH('LEFT')
         name:SetWordWrap(false)
         row.name = name
 
         row:SetScript('OnEnter', function(self)
-            self.bg:SetColorTexture(1, 1, 1, 0.08)
+            applyAtlas(self.glow, 'simpleGlowOn')
+            self.glow:SetAlpha(self.glowHoverAlpha)
             GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
             if self.entryType == 'item' and self.itemID then
                 GameTooltip:SetItemByID(self.itemID)
@@ -297,7 +362,8 @@ spellPicker.AcquireRow = function(self)
         end)
 
         row:SetScript('OnLeave', function(self)
-            self.bg:SetColorTexture(0, 0, 0, 0)
+            applyAtlas(self.glow, 'simpleGlowOff')
+            self.glow:SetAlpha(self.glowAlpha)
             GameTooltip:Hide()
         end)
 
@@ -407,12 +473,38 @@ spellPicker.RefreshList = function(self, filterText)
         row.spellID = entry.spellID
         row.itemID = entry.itemID
         row.icon:SetTexture(entry.icon)
-        if row.entryType == 'item' and entry.count and entry.count > 1 then
-            row.name:SetText(string.format('%s (%d)', entry.name, entry.count))
-        else
-            row.name:SetText(entry.name)
-        end
+        row.name:SetText(entry.name)
         row.name:SetTextColor(unpack(EXUI.const.theme.text))
+        row.name:ClearAllPoints()
+        row.name:SetPoint('LEFT', row.icon, 'RIGHT', 6, 0)
+        if row.entryType == 'item' and entry.count and entry.count > 1 then
+            row.count:SetText(entry.count)
+            row.count:Show()
+            row.name:SetPoint('RIGHT', row.count, 'LEFT', -6, 0)
+        else
+            row.count:Hide()
+            row.name:SetPoint('RIGHT', -8, 0)
+        end
+
+        -- Slice margins clamp to the row size, so apply once the row is anchored
+        local missing = row.entryType == 'spell' and isMissingFromBars(entry.spellID)
+        applyAtlas(row.bg, 'simpleBg')
+        applyAtlas(row.border, 'simpleBorderOff')
+        applyAtlas(row.glow, 'simpleGlowOff')
+        if missing then
+            row.glow:SetVertexColor(unpack(MISSING_COLOR))
+            row.glow:SetBlendMode('ADD')
+            row.border:SetVertexColor(unpack(MISSING_COLOR))
+            row.missingFill:Show()
+            row.glowAlpha, row.glowHoverAlpha = MISSING_ALPHA, MISSING_HOVER_ALPHA
+        else
+            row.glow:SetVertexColor(1, 1, 1)
+            row.glow:SetBlendMode('BLEND')
+            row.border:SetVertexColor(1, 1, 1)
+            row.missingFill:Hide()
+            row.glowAlpha, row.glowHoverAlpha = GLOW_ALPHA, GLOW_HOVER_ALPHA
+        end
+        row.glow:SetAlpha(row.glowAlpha)
         y = y + ROW_HEIGHT + LIST_GAP
     end
 

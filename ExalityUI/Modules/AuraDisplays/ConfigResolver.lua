@@ -393,6 +393,16 @@ function resolver:IterActiveGroups(display, shouldLoadGroup)
     return active
 end
 
+-- Item enchant buttons have no visual settings of their own; borrow the first active non-glow group's.
+function resolver:GetItemEnchantVisual(display, shouldLoadGroup)
+    for _, entry in ipairs(self:IterActiveGroups(display, shouldLoadGroup)) do
+        local visual = entry.group.visual
+        if visual and visual.displayStyle ~= 'glow' then
+            return visual
+        end
+    end
+end
+
 -- Glow color, speed, and size are applied on the existing button. They must not
 -- change the signature or every color pick discards the container.
 local function visualForHardSignature(visual)

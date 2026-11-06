@@ -120,7 +120,12 @@ local function iconDecorator(styleID)
         holder.exuiStyleMask = mask
         mask:SetAllPoints(icon)
         mask:SetTexture(maskPath, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
-        styles:ApplySlices(mask, margins)
+        -- Same as Shape.lua: Forever squeezes sliced icon masks into a corner
+        if EXUI.IsForever() then
+            mask:ClearTextureSlice()
+        else
+            styles:ApplySlices(mask, margins)
+        end
         icon:AddMaskTexture(mask)
 
         local border = holder.exuiStyleBorder or holder:CreateTexture(nil, 'OVERLAY')
