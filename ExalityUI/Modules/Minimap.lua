@@ -75,7 +75,7 @@ local ORBIT_BUTTON_FRAME_LEVEL = 10
 local MINIMAP_BORDER_FRAME_LEVEL = 0
 local MINIMAP_OVERLAY_FRAME_STRATA = 'MEDIUM'
 local MINIMAP_OVERLAY_FRAME_LEVEL = 30
-local LIST_MENU_ROW_HEIGHT = 24
+local LIST_MENU_ROW_HEIGHT = 26
 local LIST_MENU_PADDING = 6
 local LIST_MENU_ROW_GAP = 2
 local LIST_MENU_MIN_WIDTH = 180
@@ -83,6 +83,27 @@ local LIST_MENU_MAX_WIDTH = 320
 local LIST_MENU_ICON_COLUMN = 28
 local LIST_MENU_TEXT_PADDING = 12
 local LIST_MENU_GAP = 4
+local LIST_MENU_ICON_SIZE = 16
+local LIST_MENU_GLOW_ALPHA = 0.65
+local LIST_MENU_GLOW_HOVER_ALPHA = 0.8
+
+-- Same row art as the quest log rewards and the action bar spell picker
+local ROW_ATLAS_W, ROW_ATLAS_H = 472, 329
+local ROW_ATLAS_SLICE = 4
+local ROW_ATLAS_RECTS = {
+    simpleBg = { 6, 117, 199, 140 },
+    simpleBorderOff = { 6, 144, 199, 167 },
+    simpleGlowOff = { 6, 171, 135, 194 },
+    simpleGlowOn = { 6, 225, 135, 248 },
+}
+
+local function ApplyRowAtlas(tex, key)
+    local rect = ROW_ATLAS_RECTS[key]
+    tex:SetTexture(EXUI.EXFrames.assets.textures.splitOptions.atlas)
+    EXUI.EXFrames.utils.texture.applySlice(tex, ROW_ATLAS_SLICE, tex:GetParent(), Enum.UITextureSliceMode.Stretched)
+    tex:SetTexCoord(rect[1] / ROW_ATLAS_W, (rect[3] + 1) / ROW_ATLAS_W, rect[2] / ROW_ATLAS_H,
+        (rect[4] + 1) / ROW_ATLAS_H)
+end
 local MINIMAP_CHROME_TEXTURES = {
     [136430] = true,
     [136467] = true,
@@ -1717,7 +1738,7 @@ minimap.GetOptions = function(self, currTabID, currItemID)
                 },
                 {
                     type = 'description',
-                    label = 'Applies to LibDBIcon minimap buttons and the mail indicator.',
+                    label = 'Applies to LibDBIcon minimap buttons, the mail indicator and the button drawer.',
                     width = 100,
                     depends = buttonDepends,
                 },
@@ -2906,10 +2927,8 @@ minimap.CreateDrawer = function(self)
     EXUI:SetSize(self.drawerButton, 22, 22)
     self.drawerButton:SetFrameLevel(25)
 
-    local drawerBgSize = EXUI:ScalePixel(22)
     local bg = self.drawerButton:CreateTexture(nil, 'BACKGROUND')
     bg:SetPoint('CENTER')
-    self:ApplyMinimapButtonBackground(bg, drawerBgSize, self:GetMinimapButtonBgColor())
     self.drawerButton.bg = bg
 
     local icon = self.drawerButton:CreateTexture(nil, 'ARTWORK')
@@ -3065,23 +3084,25 @@ local function PositionListMenuPanel(panel, anchorBtn)
     end
 end
 
-local function ConfigureListMenuRow(row, entry, theme, parentPanel)
-    local bgR, bgG, bgB, bgA = UnpackThemeColor(theme.backgroundLight)
-    local accentR, accentG, accentB, accentA = UnpackThemeColor(theme.accent)
-
+local function ConfigureListMenuRow(row, entry, parentPanel)
     SetListMenuRowIcon(row.icon, entry.icon)
     row.label:SetText(entry.text or '')
     row.listEntry = entry
 
-    row.bg:SetVertexColor(bgR, bgG, bgB, bgA)
+    ApplyRowAtlas(row.bg, 'simpleBg')
+    ApplyRowAtlas(row.border, 'simpleBorderOff')
+    ApplyRowAtlas(row.glow, 'simpleGlowOff')
+    row.glow:SetAlpha(LIST_MENU_GLOW_ALPHA)
     row:SetScript('OnEnter', function(btn)
-        btn.bg:SetVertexColor(accentR, accentG, accentB, accentA)
+        ApplyRowAtlas(btn.glow, 'simpleGlowOn')
+        btn.glow:SetAlpha(LIST_MENU_GLOW_HOVER_ALPHA)
         if (btn.listEntry and btn.listEntry.onEnter) then
             pcall(btn.listEntry.onEnter, btn)
         end
     end)
     row:SetScript('OnLeave', function(btn)
-        btn.bg:SetVertexColor(bgR, bgG, bgB, bgA)
+        ApplyRowAtlas(btn.glow, 'simpleGlowOff')
+        btn.glow:SetAlpha(LIST_MENU_GLOW_ALPHA)
         if (btn.listEntry and btn.listEntry.onLeave) then
             pcall(btn.listEntry.onLeave, btn)
         end
@@ -3146,12 +3167,20 @@ local function CreateListMenuPanel(frameName)
 
             if (not row.bg) then
                 local rowBg = row:CreateTexture(nil, 'BACKGROUND')
-                ApplyListMenuSliceTexture(rowBg, GetListMenuPanelBgTexture(), UnpackThemeColor(theme.backgroundLight))
+                rowBg:SetAllPoints()
                 row.bg = rowBg
 
+                local glow = row:CreateTexture(nil, 'BACKGROUND', nil, 1)
+                glow:SetAllPoints()
+                row.glow = glow
+
+                local rowBorder = row:CreateTexture(nil, 'OVERLAY')
+                rowBorder:SetAllPoints()
+                row.border = rowBorder
+
                 local icon = row:CreateTexture(nil, 'ARTWORK')
-                icon:SetSize(18, 18)
-                icon:SetPoint('LEFT', row, 'LEFT', 4, 0)
+                icon:SetSize(LIST_MENU_ICON_SIZE, LIST_MENU_ICON_SIZE)
+                icon:SetPoint('LEFT', row, 'LEFT', 6, 0)
                 row.icon = icon
 
                 local label = row:CreateFontString(nil, 'OVERLAY')
@@ -3163,7 +3192,7 @@ local function CreateListMenuPanel(frameName)
                 row.label = label
             end
 
-            ConfigureListMenuRow(row, entry, theme, f)
+            ConfigureListMenuRow(row, entry, f)
 
             if (previous) then
                 row:SetPoint('TOPLEFT', previous, 'BOTTOMLEFT', 0, -LIST_MENU_ROW_GAP)
@@ -3503,6 +3532,7 @@ minimap.ConfigureDrawer = function(self)
         return
     end
 
+    self:ApplyButtonBackground(self.drawerButton, self.drawerButton.bg, EXUI:ScalePixel(22))
     self.drawerButton:Show()
     self.drawerButton:ClearAllPoints()
     EXUI:SetPoint(self.drawerButton, db.drawerAnchor, Minimap, db.drawerRelativeAnchor, db.drawerXOff,

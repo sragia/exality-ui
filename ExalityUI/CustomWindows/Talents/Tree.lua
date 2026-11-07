@@ -15,14 +15,16 @@ local STEP_COUNT = 3
 local STEP_INSET = 6
 local STEP_DROP = 4
 local STEP_POINTS = {
-    { 'TOPLEFT', -APEX_OVERHANG + STEP_INSET, APEX_OVERHANG - STEP_DROP },
-    { 'TOP', 0, APEX_OVERHANG },
-    { 'TOPRIGHT', APEX_OVERHANG - STEP_INSET, APEX_OVERHANG - STEP_DROP },
+    { 'TOPLEFT',  -APEX_OVERHANG + STEP_INSET, APEX_OVERHANG - STEP_DROP },
+    { 'TOP',      0,                           APEX_OVERHANG },
+    { 'TOPRIGHT', APEX_OVERHANG - STEP_INSET,  APEX_OVERHANG - STEP_DROP },
 }
 local FIT_PAD = 20
 local HERO_GAP = 48
 local CHOICE_GAP = 8
 local UNPICKED_COLOR = 0.4
+local GATED_ALPHA = 0.3
+local GATED_LINE_ALPHA = 0.15
 local LINE_COLOR = { 0xfc / 255, 0xcc / 255, 0x10 / 255 }
 local LINE_AVAILABLE = { 0x9b / 255, 0xd2 / 255, 0x08 / 255 }
 local LINE_INACTIVE = { 0.28, 0.28, 0.28 }
@@ -375,6 +377,71 @@ local function AddRankLine(button)
     end
 end
 
+-- Strictest unmet points-spent condition; Forever doesn't flag these as gates.
+local function GateCondition(configID, nodeInfo)
+    if (not configID or not nodeInfo or nodeInfo.isAvailable ~= false) then
+        return nil
+    end
+    local best
+    local function check(conditionIDs)
+        for _, conditionID in ipairs(conditionIDs or {}) do
+            local info = C_Traits.GetConditionInfo(configID, conditionID)
+            if (info and not info.isMet and info.spentAmountRequired
+                    and (not best or info.spentAmountRequired > best.spentAmountRequired)) then
+                best = info
+            end
+        end
+    end
+    check(nodeInfo.conditionIDs)
+    for _, entryID in ipairs(nodeInfo.entryIDs or {}) do
+        local entryInfo = C_Traits.GetEntryInfo(configID, entryID)
+        check(entryInfo and entryInfo.conditionIDs)
+    end
+    return best
+end
+
+-- Same lookup as Blizzard's Forever talent frame; Retail formats take an empty name.
+local function TreeGroupName(groupIDs)
+    if (not groupIDs or not tree.treeID or not C_Traits.GetGroupDisplayInfoByTreeID) then
+        return ''
+    end
+    for _, displayInfo in pairs(C_Traits.GetGroupDisplayInfoByTreeID(tree.treeID) or {}) do
+        for _, groupID in ipairs(groupIDs) do
+            if (displayInfo.groupID == groupID) then
+                return displayInfo.displayName or ''
+            end
+        end
+    end
+    return ''
+end
+
+local function IsGated(nodeInfo)
+    return nodeInfo ~= nil and nodeInfo.isAvailable == false and (nodeInfo.currentRank or 0) == 0
+end
+
+local function AddGateLine(button)
+    if (button.isStep or not GameTooltip_AddErrorLine) then
+        return
+    end
+    local node = button.ownerNode
+    if (button.isChoiceOption) then
+        node = tree.choicePopup and tree.choicePopup.node
+    end
+    local info = node and GateCondition(node.configID, node.nodeInfo)
+    if (not info) then
+        return
+    end
+    local ok, text
+    if (type(info.tooltipFormat) == 'string') then
+        ok, text = pcall(string.format, info.tooltipFormat, info.spentAmountRequired, TreeGroupName(node.groupIDs))
+    end
+    if (not ok or type(text) ~= 'string' or text == '') then
+        text = string.format('Spend %d more points to unlock', info.spentAmountRequired)
+    end
+    GameTooltip_AddBlankLineToTooltip(GameTooltip)
+    GameTooltip_AddErrorLine(GameTooltip, text)
+end
+
 local function ShowEntryTooltip(button)
     if (button.ownerNode and button.ownerNode.isApex and not button.isStep) then
         ShowApexTooltip(button)
@@ -387,6 +454,7 @@ local function ShowEntryTooltip(button)
         GameTooltip:SetText(button.entryName)
     end
     AddRankLine(button)
+    AddGateLine(button)
     GameTooltip:Show()
 end
 
@@ -649,6 +717,7 @@ local function ApplyTalentButton(button, visual, nodeInfo, picked, showArrows, c
     button.entryName = visual.name
     button.entryMaxRanks = visual.maxRanks
     button.isSelected = picked
+    button:SetAlpha(IsGated(nodeInfo) and GATED_ALPHA or 1)
 end
 
 local function ApplyRank(button, nodeInfo)
@@ -1716,7 +1785,8 @@ tree.FitForever = function(self)
     else
         local contentWidth = math.max(maxX - minX, 1)
         local contentHeight = math.max(maxY - minY, 1)
-        scale = math.min((clipWidth - pad * 2) / contentWidth, (clipHeight - pad * 2 - headerRoom) / contentHeight) * 0.82
+        scale = math.min((clipWidth - pad * 2) / contentWidth, (clipHeight - pad * 2 - headerRoom) / contentHeight) *
+            0.82
         local visualWidth = contentWidth * scale
         local visualHeight = contentHeight * scale
         local originX = (clipWidth - visualWidth) / 2
@@ -1945,7 +2015,8 @@ local function LayoutForeverBackground(self)
     local file = info.file or info.filename
     if (file) then
         texture:SetTexture(file)
-        texture:SetTexCoord(info.leftTexCoord or 0, info.rightTexCoord or 1, info.topTexCoord or 0, info.bottomTexCoord or 1)
+        texture:SetTexCoord(info.leftTexCoord or 0, info.rightTexCoord or 1, info.topTexCoord or 0,
+            info.bottomTexCoord or 1)
     else
         texture:SetAtlas(self.backgroundAtlas)
     end
@@ -2006,7 +2077,8 @@ tree.Refresh = function(self, configID, treeID, specID)
                         self.edgeCount = self.edgeCount + 1
                         local edge = AcquireEdge(self)
                         local color = LineColor(source, target)
-                        edge:SetColorTexture(color[1], color[2], color[3], 1)
+                        local gatedLine = IsGated(source.nodeInfo) or IsGated(target.nodeInfo)
+                        edge:SetColorTexture(color[1], color[2], color[3], gatedLine and GATED_LINE_ALPHA or 1)
                         edge:SetStartPoint('CENTER', source)
                         edge:SetEndPoint('CENTER', target)
                     end
