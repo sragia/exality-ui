@@ -442,6 +442,8 @@ function worldMapSkin:Install()
 end
 
 worldMapSkin.Init = function(self)
+    -- Temporarily disabled until the skin is fixed
+    do return end
     if (not skins:IsEnabled('WorldMap')) then return end
 
     if (WorldMapFrame) then

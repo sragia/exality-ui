@@ -20,6 +20,8 @@ questLog.enabled = false
 questLog.isCreated = false
 questLog.suppressHook = false
 questLog.selectedQuestID = nil
+-- Header title -> collapsed. Other addons (e.g. RXPGuides) expand all headers, so the list follows this instead.
+questLog.collapsedHeaders = {}
 
 local MAP_HEIGHT_DEFAULT = 533
 local MAP_HEIGHT_MIN = 400
@@ -39,6 +41,11 @@ local DETAIL_TITLE_SIZE = 16
 local LINE_SIZE = 12
 local REWARD_ROW_HEIGHT = 26
 local REWARD_ROW_GAP = 4
+local COMPLETE_GLOW_ALPHA = 0.25
+local COMPLETE_GLOW_CORNER = 3
+local QUEST_ROW_PAD = 5
+local QUEST_POI_SIZE = 20
+local QUEST_ROW_MIN = QUEST_POI_SIZE + QUEST_ROW_PAD * 2
 local BINDING_COMMANDS = { 'TOGGLEWORLDMAP', 'TOGGLEQUESTLOG' }
 
 local function MapHeight()
@@ -698,21 +705,45 @@ questLog.DetachHandyNotes = function(self)
     self.handyNotesRestore = false
 end
 
-local HBD_PIN_TEMPLATE = 'HereBeDragonsPinsTemplate'
+-- Questie ships a renamed HereBeDragons fork with its own provider and pin template.
+-- Its RefreshAllData skips work while the map ID is unchanged, so moving it needs forceUpdate.
+local PIN_LIBS = {
+    { key = 'hbd',     lib = 'HereBeDragons-Pins-2.0',        template = 'HereBeDragonsPinsTemplate' },
+    { key = 'questie', lib = 'HereBeDragonsQuestie-Pins-2.0', template = 'HereBeDragonsPinsTemplateQuestie', forceUpdate = true },
+}
 
-local function HereBeDragonsPins()
+local function PinLib(spec)
     if (not LibStub) then
         return nil
     end
-    local ok, lib = pcall(LibStub, 'HereBeDragons-Pins-2.0', true)
+    local ok, lib = pcall(LibStub, spec.lib, true)
     if (not ok or type(lib) ~= 'table') then
         return nil
     end
     return lib
 end
 
-questLog.AttachHereBeDragons = function(self)
-    local lib = HereBeDragonsPins()
+local function RefreshPinProvider(spec, provider)
+    if (spec.forceUpdate) then
+        provider.forceUpdate = true
+    end
+    if (provider.RefreshAllData) then
+        pcall(provider.RefreshAllData, provider)
+    end
+end
+
+local function RestorePinPool(state, pool)
+    if (state.createFunc) then
+        pool.createFunc = state.createFunc
+        pool.creationFunc = state.createFunc
+        pool.parent = state.poolParent
+        state.createFunc = nil
+        state.poolParent = nil
+    end
+end
+
+questLog.AttachPinLib = function(self, spec)
+    local lib = PinLib(spec)
     local canvas = self.canvas
     local provider = lib and lib.worldmapProvider
     local pool = lib and lib.worldmapPinsPool
@@ -723,11 +754,15 @@ questLog.AttachHereBeDragons = function(self)
     if (not pinParent) then
         return
     end
-    if (not self.hbdCreateFunc) then
-        self.hbdCreateFunc = pool.createFunc
-        self.hbdPoolParent = pool.parent
+    self.pinLibState = self.pinLibState or {}
+    local state = self.pinLibState[spec.key] or {}
+    self.pinLibState[spec.key] = state
+
+    if (not state.createFunc) then
+        state.createFunc = pool.createFunc
+        state.poolParent = pool.parent
     end
-    local original = self.hbdCreateFunc
+    local original = state.createFunc
     pool.parent = pinParent
     pool.createFunc = function()
         local frame = original()
@@ -738,64 +773,72 @@ questLog.AttachHereBeDragons = function(self)
         return frame
     end
     pool.creationFunc = pool.createFunc
-    canvas.pinPools[HBD_PIN_TEMPLATE] = pool
+    canvas.pinPools[spec.template] = pool
 
     local owner = provider.GetMap and provider:GetMap()
     if (owner == canvas) then
-        if (provider.RefreshAllData) then
-            pcall(provider.RefreshAllData, provider)
-        end
+        RefreshPinProvider(spec, provider)
         return
     end
     if (owner and owner.RemoveDataProvider) then
-        self.hbdRestore = (owner == WorldMapFrame)
+        state.restore = (owner == WorldMapFrame)
         local removed = pcall(owner.RemoveDataProvider, owner, provider)
         if (not removed) then
-            pool.createFunc = original
-            pool.creationFunc = original
-            pool.parent = self.hbdPoolParent
-            self.hbdCreateFunc = nil
-            self.hbdPoolParent = nil
-            canvas.pinPools[HBD_PIN_TEMPLATE] = nil
+            RestorePinPool(state, pool)
+            canvas.pinPools[spec.template] = nil
             return
         end
     else
-        self.hbdRestore = false
+        state.restore = false
     end
     local added = pcall(canvas.AddDataProvider, canvas, provider)
-    if (added and provider.RefreshAllData) then
-        pcall(provider.RefreshAllData, provider)
+    if (added) then
+        RefreshPinProvider(spec, provider)
     end
 end
 
-questLog.DetachHereBeDragons = function(self)
-    local lib = HereBeDragonsPins()
+questLog.DetachPinLib = function(self, spec)
+    local lib = PinLib(spec)
     local canvas = self.canvas
     local provider = lib and lib.worldmapProvider
     local pool = lib and lib.worldmapPinsPool
+    local state = self.pinLibState and self.pinLibState[spec.key]
     if (provider and canvas and canvas.RemoveDataProvider and provider.GetMap and provider:GetMap() == canvas) then
         pcall(canvas.RemoveDataProvider, canvas, provider)
     end
     if (canvas and canvas.pinPools) then
-        canvas.pinPools[HBD_PIN_TEMPLATE] = nil
+        canvas.pinPools[spec.template] = nil
     end
-    if (pool and self.hbdCreateFunc) then
-        pool.createFunc = self.hbdCreateFunc
-        pool.creationFunc = self.hbdCreateFunc
-        pool.parent = self.hbdPoolParent
-        self.hbdCreateFunc = nil
-        self.hbdPoolParent = nil
+    if (not state) then
+        return
     end
-    if (self.hbdRestore and provider and WorldMapFrame and WorldMapFrame.AddDataProvider) then
+    if (pool) then
+        RestorePinPool(state, pool)
+    end
+    if (state.restore and provider and WorldMapFrame and WorldMapFrame.AddDataProvider) then
         local onBlizzard = WorldMapFrame.dataProviders and WorldMapFrame.dataProviders[provider]
         if (not onBlizzard) then
             pcall(WorldMapFrame.AddDataProvider, WorldMapFrame, provider)
         end
-        if (provider.RefreshAllData and WorldMapFrame:IsShown()) then
-            pcall(provider.RefreshAllData, provider)
+        if (WorldMapFrame:IsShown()) then
+            RefreshPinProvider(spec, provider)
+        elseif (spec.forceUpdate) then
+            provider.forceUpdate = true
         end
     end
-    self.hbdRestore = false
+    state.restore = false
+end
+
+questLog.AttachHereBeDragons = function(self)
+    for _, spec in ipairs(PIN_LIBS) do
+        self:AttachPinLib(spec)
+    end
+end
+
+questLog.DetachHereBeDragons = function(self)
+    for _, spec in ipairs(PIN_LIBS) do
+        self:DetachPinLib(spec)
+    end
 end
 
 local function QuestMapID(questID)
@@ -989,6 +1032,33 @@ end
 
 local IsCampaignHeader
 
+local function HeaderKey(info)
+    if (info and IsReadable(info.title)) then
+        return info.title
+    end
+end
+
+local function IsHeaderCollapsed(info)
+    local key = HeaderKey(info)
+    local collapsed = key and questLog.collapsedHeaders[key]
+    if (collapsed ~= nil) then
+        return collapsed
+    end
+    return info.isCollapsed and true or false
+end
+
+questLog.SetHeaderCollapsed = function(self, info, collapsed)
+    local key = HeaderKey(info)
+    if (key) then
+        self.collapsedHeaders[key] = collapsed
+    end
+    if (collapsed) then
+        CollapseQuestHeader(info.questLogIndex)
+    else
+        ExpandQuestHeader(info.questLogIndex)
+    end
+end
+
 questLog.BuildEntries = function(self)
     local entries = {}
     local numEntries = C_QuestLog.GetNumQuestLogEntries()
@@ -1016,7 +1086,7 @@ questLog.BuildEntries = function(self)
                 entries[#entries + 1] = { info = pendingHeader, isHeader = true, logIndex = pendingIndex }
                 headerShown = true
             end
-            if (not pendingHeader.isCollapsed) then
+            if (not IsHeaderCollapsed(pendingHeader)) then
                 entries[#entries + 1] = { info = info, isHeader = false }
             end
         end
@@ -1159,7 +1229,7 @@ questLog.AttachPOI = function(self, row, questID, style, selected)
     poi:SetParent(row)
     poi:SetFrameLevel(row:GetFrameLevel() + 2)
     poi:ClearAllPoints()
-    poi:SetPoint('TOPLEFT', row, 'TOPLEFT', 4, -2)
+    poi:SetPoint('TOPLEFT', row, 'TOPLEFT', 4, -QUEST_ROW_PAD)
     poi:SetQuestID(questID)
     poi:SetStyle(style)
     poi:SetSelected(selected)
@@ -1302,11 +1372,9 @@ local function ConfigureHeader(row)
         if (not info or not info.isHeader) then
             return
         end
-        if (info.isCollapsed) then
-            ExpandQuestHeader(index)
-        else
-            CollapseQuestHeader(index)
-        end
+        info.questLogIndex = index
+        questLog:SetHeaderCollapsed(info, not IsHeaderCollapsed(info))
+        questLog:RefreshList()
     end)
 end
 
@@ -1416,7 +1484,7 @@ questLog.BindHeader = function(self, row, info, logIndex)
     row.questLogIndex = row.logIndex
     local campaign = IsCampaignHeader(info) and CampaignObject(info) or nil
     local showArt = campaign and ApplyCampaignArt(row, campaign)
-    local collapsed = info.isCollapsed and true or false
+    local collapsed = IsHeaderCollapsed(info)
     ApplyAtlas(row.chevron, collapsed and 'chevronDown' or 'chevronUp', false)
     row.usesSimpleChrome = not showArt
     row.glow:SetShown(not showArt)
@@ -1511,13 +1579,24 @@ questLog.BindHeader = function(self, row, info, logIndex)
 end
 
 local function ConfigureQuest(row)
-    row:SetHeight(28)
+    row:SetHeight(QUEST_ROW_MIN)
 
     local hover = row:CreateTexture(nil, 'BACKGROUND')
     hover:SetAllPoints()
     hover:SetColorTexture(1, 1, 1, 0.06)
     hover:Hide()
     row.hover = hover
+
+    local success = Theme().success
+    local completeGlow = row:CreateTexture(nil, 'BACKGROUND', nil, -1)
+    completeGlow:SetAllPoints()
+    completeGlow:SetColorTexture(1, 1, 1, 1)
+    completeGlow:SetGradient('HORIZONTAL',
+        CreateColor(success[1], success[2], success[3], COMPLETE_GLOW_ALPHA),
+        CreateColor(success[1], success[2], success[3], 0))
+    completeGlow:AddMaskTexture(PanelMask(row, COMPLETE_GLOW_CORNER))
+    completeGlow:Hide()
+    row.completeGlow = completeGlow
 
     local title = row:CreateFontString(nil, 'OVERLAY')
     title:SetFont(FontPath(), TITLE_SIZE, 'OUTLINE')
@@ -1565,6 +1644,21 @@ questLog.AcquireQuest = function(self, index)
     return row
 end
 
+local function AcquireObjectiveLine(row, index, cursor)
+    local line = row.lines[index]
+    if (not line) then
+        line = row:CreateFontString(nil, 'OVERLAY')
+        line:SetFont(FontPath(), LINE_SIZE, 'OUTLINE')
+        line:SetJustifyH('LEFT')
+        line:SetJustifyV('TOP')
+        row.lines[index] = line
+    end
+    line:ClearAllPoints()
+    line:SetPoint('TOPLEFT', 28, -cursor)
+    line:SetPoint('RIGHT', -8, 0)
+    return line
+end
+
 questLog.BindQuest = function(self, row, info, superID)
     local theme = Theme()
     local questID = info.questID
@@ -1576,12 +1670,12 @@ questLog.BindQuest = function(self, row, info, superID)
     SetAtlasIcon(row.eye.icon, QuestWatched(questID) and 'eye' or 'eyeOff', 14)
 
     row.label:ClearAllPoints()
-    row.label:SetPoint('TOPLEFT', 28, -4)
+    row.label:SetPoint('TOPLEFT', 28, -(QUEST_ROW_PAD + 2))
     row.label:SetPoint('RIGHT', row.eye, 'LEFT', -4, 0)
     SetLineText(row.label, QuestTitleText(info))
     ApplyQuestTitleColor(row.label, questID)
 
-    local cursor = 4 + StringHeight(row.label, TITLE_SIZE) + 2
+    local cursor = QUEST_ROW_PAD + 2 + StringHeight(row.label, TITLE_SIZE) + 2
     local objectives = nil
     local ok, result = pcall(C_QuestLog.GetQuestObjectives, questID)
     if (ok and result and IsReadable(result)) then
@@ -1592,17 +1686,7 @@ questLog.BindQuest = function(self, row, info, superID)
     if (objectives) then
         for _, objective in ipairs(objectives) do
             count = count + 1
-            local line = row.lines[count]
-            if (not line) then
-                line = row:CreateFontString(nil, 'OVERLAY')
-                line:SetFont(FontPath(), LINE_SIZE, 'OUTLINE')
-                line:SetJustifyH('LEFT')
-                line:SetJustifyV('TOP')
-                row.lines[count] = line
-            end
-            line:ClearAllPoints()
-            line:SetPoint('TOPLEFT', 28, -cursor)
-            line:SetPoint('RIGHT', -8, 0)
+            local line = AcquireObjectiveLine(row, count, cursor)
             SetLineText(line, objective.text)
             local finished = IsReadable(objective.finished) and objective.finished
             if (finished) then
@@ -1614,12 +1698,24 @@ questLog.BindQuest = function(self, row, info, superID)
             cursor = cursor + StringHeight(line, LINE_SIZE) + 2
         end
     end
+
+    local failedOk, failed = pcall(C_QuestLog.IsFailed, questID)
+    if (failedOk and IsReadable(failed) and failed) then
+        count = count + 1
+        local line = AcquireObjectiveLine(row, count, cursor)
+        SetLineText(line, FAILED)
+        line:SetTextColor(RED_FONT_COLOR:GetRGB())
+        line:Show()
+        cursor = cursor + StringHeight(line, LINE_SIZE) + 2
+    end
+
     for index = count + 1, #row.lines do
         row.lines[index]:Hide()
     end
 
     row.hover:SetShown(row.isSelected)
-    row:SetHeight(math.max(cursor + 4, 28))
+    row.completeGlow:SetShown(QuestComplete(questID))
+    row:SetHeight(math.max(cursor + QUEST_ROW_PAD, QUEST_ROW_MIN))
 end
 
 questLog.RefreshList = function(self)
@@ -2427,8 +2523,14 @@ end
 questLog.ExpandMapHeaders = function(self)
     for index = C_QuestLog.GetNumQuestLogEntries(), 1, -1 do
         local info = C_QuestLog.GetInfo(index)
-        if (info and info.isHeader and info.isOnMap and info.isCollapsed) then
-            ExpandQuestHeader(index, true)
+        if (info and info.isHeader and info.isOnMap) then
+            local key = HeaderKey(info)
+            if (key) then
+                self.collapsedHeaders[key] = nil
+            end
+            if (info.isCollapsed) then
+                ExpandQuestHeader(index, true)
+            end
         end
     end
 end
@@ -2517,7 +2619,7 @@ questLog.Init = function(self)
         if (addon == 'Blizzard_WorldMap' or addon == 'Blizzard_UIPanels_Game') then
             questLog:InstallHooks()
         end
-        if ((addon == 'HandyNotes' or addon == 'TomTom') and questLog.window and questLog.window:IsShown()) then
+        if ((addon == 'HandyNotes' or addon == 'TomTom' or addon == 'Questie') and questLog.window and questLog.window:IsShown()) then
             C_Timer.After(0, function()
                 if (questLog.window and questLog.window:IsShown()) then
                     questLog:AttachHandyNotes()

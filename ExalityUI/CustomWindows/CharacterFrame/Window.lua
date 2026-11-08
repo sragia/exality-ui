@@ -313,13 +313,19 @@ characterFrame.UpdateBackground = function(self)
         return
     end
     if (EXUI.IsForever()) then
-        art:Hide()
-        if (self.backgroundBacking) then
-            self.backgroundBacking:Hide()
-        end
+        -- Art carries its own rounded corners, so it replaces the window chrome unmasked
         if (window.Texture) then
-            window.Texture:Show()
+            window.Texture:Hide()
         end
+        if (window.PPBorder) then
+            window.PPBorder:Hide()
+        end
+        art:ClearAllPoints()
+        art:SetAllPoints()
+        art:SetTexture(EXUI.const.textures.characterFrame.foreverBackground)
+        art:SetTexCoord(0, 1, 0, 1)
+        art:SetVertexColor(1, 1, 1, 1)
+        art:Show()
         return
     end
     if (not ClassTalentUtil and not self.spellBookLoadTried and C_AddOns and C_AddOns.LoadAddOn) then
@@ -668,7 +674,9 @@ characterFrame.Create = function(self)
     background:SetAllPoints()
     background:Hide()
     self.background = background
-    background:AddMaskTexture(cornerMask)
+    if (not EXUI.IsForever()) then
+        background:AddMaskTexture(cornerMask)
+    end
     window:HookScript('OnSizeChanged', function()
         characterFrame:FitBackground()
     end)

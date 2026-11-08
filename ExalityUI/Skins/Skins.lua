@@ -12,8 +12,10 @@ skins.list = {
     { key = 'GameMenu',         label = 'Game Menu' },
     { key = 'StaticPopup',      label = 'Dialog' },
     { key = 'DeathRecap',       label = 'Death Recap' },
-    { key = 'WorldMap',         label = 'World Map' },
-    { key = 'PlayerSpells',     label = 'Talents' },
+    -- Temporarily disabled, see WorldMap.lua Init
+    -- { key = 'WorldMap',         label = 'World Map' },
+    -- Temporarily disabled, see PlayerSpells.lua Init
+    -- { key = 'PlayerSpells',     label = 'Talents' },
     { key = 'ProfessionsBook',  label = 'Professions Book' },
     { key = 'EncounterJournal', label = 'Encounter Journal' },
     { key = 'PVEFrame',         label = 'Group Finder' },

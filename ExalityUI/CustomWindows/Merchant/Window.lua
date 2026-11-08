@@ -34,6 +34,7 @@ local merchant = EXUI:GetModule('merchant-window')
 merchant.enabled = false
 merchant.isOpen = false
 merchant.hiddenParent = nil
+merchant.originalPanelWidth = nil
 merchant.window = nil
 merchant.refreshQueued = false
 merchant.itemDataPending = false
@@ -46,6 +47,8 @@ local PAGER_BOTTOM = 24
 local WINDOW_WIDTH = rows.gridWidth + GRID_SIDE * 2
 local WINDOW_HEIGHT = GRID_TOP + rows.gridHeight + PAGER_GAP + pagination.height + PAGER_BOTTOM
 local WINDOW_ANCHOR = { 'TOPLEFT', UIParent, 'TOPLEFT', 40, -120 }
+local UIPANEL_LEFT_OFFSET = 16
+local PANEL_WIDTH = WINDOW_ANCHOR[4] + WINDOW_WIDTH - UIPANEL_LEFT_OFFSET
 local BACKGROUND_ALPHA = 0.95
 local PORTRAIT_SCALE = 0.8
 local PORTRAIT_SIZE = 87 * PORTRAIT_SCALE
@@ -580,6 +583,9 @@ merchant.Enable = function(self)
         self.hiddenParent:Hide()
     end
     MerchantFrame:SetParent(self.hiddenParent)
+    -- UI panel manager offsets centre panels by MerchantFrame's width
+    self.originalPanelWidth = self.originalPanelWidth or MerchantFrame:GetWidth()
+    MerchantFrame:SetWidth(PANEL_WIDTH)
 
     EXUI:RegisterEventHandler(EVENTS, EVENT_ID, function(event)
         if (event == 'MERCHANT_SHOW') then
@@ -599,6 +605,7 @@ merchant.Disable = function(self)
     self:Close()
     EXUI:UnregisterEventHandler(EVENTS, EVENT_ID)
     MerchantFrame:SetParent(UIParent)
+    MerchantFrame:SetWidth(self.originalPanelWidth)
 end
 
 merchant.Init = function(self)

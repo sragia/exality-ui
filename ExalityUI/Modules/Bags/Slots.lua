@@ -439,6 +439,10 @@ slots.UpdateItemButton = function(self, button)
     if button.isDropSlot then
         return
     end
+    if button.missingItemID then
+        self:ShowMissing(button)
+        return
+    end
     local bagID, slotID = ButtonBagID(button), button:GetID()
     if not bagID or not slotID or slotID == 0 then
         self:SetButtonShown(button, false)
@@ -471,7 +475,7 @@ slots.UpdateItemButton = function(self, button)
         return
     end
 
-    local count = info.stackCount or 1
+    local count = button.countOverride or info.stackCount or 1
     local keystoneLevel = GetKeystoneLevel(info)
     if snap
         and not snap.empty
@@ -561,7 +565,7 @@ end
 
 slots.UpdateCooldown = function(self, button)
     local bagID = ButtonBagID(button)
-    if not bagID then
+    if not bagID or button.missingItemID then
         return
     end
     local start, duration, enable = C_Container.GetContainerItemCooldown(bagID, button:GetID())
@@ -744,6 +748,13 @@ local function OnBagButtonEnter(button)
     GameTooltip:Show()
 end
 
+local function OnBagButtonLeave(button)
+    SetHovered(button, false)
+    if GameTooltip:IsOwned(button) then
+        GameTooltip:Hide()
+    end
+end
+
 slots.UpdateBagButton = function(self, button)
     local texture
     if button.isBackpack then
@@ -786,6 +797,30 @@ slots.ShowEmpty = function(self, button)
     self:SetButtonShown(button, true)
 end
 
+-- Pinned item that is not in the bags (or whose stack can't be re-targeted in combat)
+slots.ShowMissing = function(self, button)
+    local itemID = button.missingItemID
+    button.itemSnap = nil
+    button.EmptyTexture:Hide()
+    button.Icon:SetTexture(C_Item.GetItemIconByID(itemID) or 134400)
+    button.Icon:SetDesaturated(true)
+    button.Icon:Show()
+    button.ItemLevel:SetText('')
+    button.StackCount:SetText(button.missingCount or 0)
+    if button.QualityIcon then
+        button.QualityIcon:Hide()
+    end
+    UpdateJunkIcon(button)
+    if button.Cooldown then
+        button.Cooldown:Clear()
+        button.Cooldown:Hide()
+    end
+    ApplyBorderColor(button, unpack(DEFAULT_BORDER))
+    local query = self:GetSearch(button.poolName)
+    local name = C_Item.GetItemNameByID(itemID)
+    self:ApplySearchDim(button, self:MatchesSearch(name and { itemName = name, itemID = itemID }, query))
+end
+
 slots.CreateBagButton = function(self, parent, bagID)
     local button = CreateFrame('ItemButton', nil, parent)
     self:StyleItemButton(button)
@@ -798,7 +833,8 @@ slots.CreateBagButton = function(self, parent, bagID)
     button:SetScript('OnDragStart', OnBagButtonDrag)
     button:SetScript('OnReceiveDrag', OnBagButtonClick)
     button:SetScript('OnEnter', OnBagButtonEnter)
-    button:SetScript('OnLeave', OnItemLeave)
+    button:SetScript('OnLeave', OnBagButtonLeave)
+    button:SetScript('OnHide', OnBagButtonLeave)
     self:UpdateBagButton(button)
     return button
 end
@@ -816,6 +852,71 @@ slots.UpdateBagBar = function(self)
     for i = 1, #self.bagButtons do
         self:UpdateBagButton(self.bagButtons[i])
     end
+end
+
+local function BankBagLocation(button)
+    if button.bankType == Enum.BankType.Account then
+        return Enum.BagIndex.Accountbanktab, button.bankSlot
+    end
+    return Enum.BagIndex.Characterbanktab, button.bankSlot
+end
+
+local function OnBankBagButtonClick(button)
+    if button.locked then
+        return
+    end
+    C_Container.PickupContainerItem(BankBagLocation(button))
+end
+
+local function OnBankBagButtonEnter(button)
+    SetHovered(button, true)
+    GameTooltip:SetOwner(button, 'ANCHOR_RIGHT')
+    if button.locked then
+        GameTooltip:SetText(BANK_BAG_PURCHASE)
+    elseif not GameTooltip:SetBagItem(BankBagLocation(button)) then
+        GameTooltip:SetText(BANK_BAG)
+    end
+    GameTooltip:Show()
+end
+
+slots.CreateBankBagButton = function(self, parent)
+    local button = CreateFrame('ItemButton', nil, parent)
+    self:StyleItemButton(button)
+    button:RegisterForDrag('LeftButton')
+
+    local lock = button.Overlay:CreateTexture(nil, 'ARTWORK')
+    button.LockIcon = lock
+    lock:SetAtlas('bankslot-icon-lock')
+    lock:SetPoint('TOPLEFT', 3, -3)
+    lock:SetPoint('BOTTOMRIGHT', -3, 3)
+    lock:Hide()
+
+    button:SetScript('OnClick', OnBankBagButtonClick)
+    button:SetScript('OnDragStart', OnBankBagButtonClick)
+    button:SetScript('OnReceiveDrag', OnBankBagButtonClick)
+    button:SetScript('OnEnter', OnBankBagButtonEnter)
+    button:SetScript('OnLeave', OnBagButtonLeave)
+    button:SetScript('OnHide', OnBagButtonLeave)
+    return button
+end
+
+slots.UpdateBankBagButton = function(self, button, bankType, bankSlot, locked)
+    button.bankType = bankType
+    button.bankSlot = bankSlot
+    button.locked = locked
+    button.LockIcon:SetShown(locked)
+
+    local texture
+    if not locked then
+        local info = C_Container.GetContainerItemInfo(BankBagLocation(button))
+        texture = info and info.iconFileID
+    end
+    button.Icon:SetTexture(texture)
+    button.Icon:SetShown(texture ~= nil)
+    button.EmptyTexture:SetShown(texture == nil)
+    button.EmptyTexture:SetDesaturated(locked)
+    button.EmptyTexture:SetAlpha(locked and 0.5 or 1)
+    ApplyBorderColor(button, unpack(DEFAULT_BORDER))
 end
 
 slots.IsReagentBagEquipped = function(self)

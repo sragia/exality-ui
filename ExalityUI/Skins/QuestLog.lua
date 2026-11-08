@@ -181,6 +181,8 @@ function questLogSkin:Install()
 end
 
 questLogSkin.Init = function(self)
+    -- Temporarily disabled with the WorldMap skin, see WorldMap.lua Init
+    do return end
     if (not skins:IsEnabled('WorldMap')) then return end
 
     if (QuestMapFrame) then

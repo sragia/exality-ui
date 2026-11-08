@@ -7,6 +7,24 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.13',
+            changes = {
+                { 'Bags',      'Fix bag tooltip staying on screen after closing bags while hovering an equipped bag' },
+                { 'Bags',      'Pinned items now show the total count of all stacks in your bags and use the first stack found. Pins no longer disappear when you run out, they show desaturated with 0 count' },
+                { 'Quest Log', 'Failed quests now show a red "Failed" line under their objectives' },
+                { 'Quest Log', 'Completed quests have a green glow in the background' },
+                { 'Quest Log', 'Fix collapsed headers re-opening when other addons (e.g. RXPGuides) expand the quest log' },
+                { 'XP Bar',    'Added Bar Texture option' },
+                { 'Skins',     'Talents/Spellbook skin is temporarily disabled while it gets fixed' },
+                { 'Skins',     'World Map skin is temporarily disabled while it gets fixed' },
+                { 'Merchant',  'Fix other windows (professions, etc.) opening on top of the merchant window' },
+                { 'Bags',      'Bank now shows its bag slots. Locked slots can be bought by clicking the next one, and bags can be put into bought slots', forever = true },
+                { 'Character Frame', 'Added background art', forever = true },
+                { 'Map',       'Added Questie support. Questie icons now show on the map',                                                                  forever = true },
+                { 'Minimap',   'Fix mail icon showing up in the top left corner until hovered',                                                             forever = true },
+            }
+        },
+        {
             version = '0.9.12',
             changes = {
                 { 'Character Frame', 'Fix enchants and gems not updating right away after applying them' },

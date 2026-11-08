@@ -878,6 +878,8 @@ function playerSpellsSkin:Install()
 end
 
 playerSpellsSkin.Init = function(self)
+    -- Temporarily disabled until the skin is fixed
+    do return end
     if (not skins:IsEnabled('PlayerSpells')) then return end
 
     if (PlayerSpellsFrame) then

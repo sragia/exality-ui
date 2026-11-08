@@ -2249,6 +2249,15 @@ minimap.SetupBlizzButtonFixes = function(self)
                     minimap:ApplyBlizzButton('mail')
                 end
             end)
+            -- Blizzard's mail event calls the indicator layout frame's Layout() after Show, re-anchoring the icon
+            local indicator = mailBtn:GetParent()
+            if (indicator and indicator.Layout) then
+                hooksecurefunc(indicator, 'Layout', function()
+                    if (minimap.enabled and not minimap.applyingBlizzButton and mailBtn:IsShown()) then
+                        minimap:ApplyBlizzButton('mail')
+                    end
+                end)
+            end
             if (not self.mailEventRegistered and self.eventFrame) then
                 self.mailEventRegistered = true
                 self.eventFrame:RegisterEvent('UPDATE_PENDING_MAIL')

@@ -48,6 +48,9 @@ bankWindow.activeMode = 'personal'
 bankWindow.layoutSignature = nil
 bankWindow.tabButtons = {}
 bankWindow.modeButtons = {}
+bankWindow.bagBar = nil
+bankWindow.bankBagButtons = {}
+bankWindow.purchaseSlotButton = nil
 
 local function GetBags()
     bags = bags or EXUI:GetModule('bags')
@@ -351,6 +354,10 @@ bankWindow.CreateHeaderBar = function(self, parent)
         'BankPanelPurchaseButtonScriptTemplate')
     self.buyTabButton = buyBtn
 
+    if EXUI.IsForever() then
+        self:CreateBankBagBar(bar)
+    end
+
     self.searchBox = slots:CreateSearchBox(bar, 'bank')
 
     local closeBtn = CreateFrame('Button', nil, bar)
@@ -384,7 +391,99 @@ bankWindow.CreateHeaderBar = function(self, parent)
     end)
 end
 
-bankWindow.LayoutHeaderButtons = function(self, bagSize)
+bankWindow.CreateBankBagBar = function(self, parent)
+    local bagBar = CreateFrame('Frame', nil, parent)
+    self.bagBar = bagBar
+    bagBar:SetPoint('TOPLEFT')
+    bagBar:SetPoint('BOTTOMLEFT')
+
+    local purchase = CreateFrame('Button', nil, bagBar, 'BankPanelPurchaseButtonScriptTemplate')
+    self.purchaseSlotButton = purchase
+    purchase:SetScript('OnEnter', function()
+        if purchase.target then
+            purchase.target.Border:SetVertexColor(1, 1, 1, 1)
+        end
+        GameTooltip:SetOwner(purchase, 'ANCHOR_RIGHT')
+        GameTooltip:SetText(BANK_BAG_PURCHASE, 1, 1, 1, 1, true)
+        local tabData = C_Bank.FetchNextPurchasableBankTabData(GetBankType())
+        if tabData and tabData.tabCost then
+            GameTooltip:AddLine(C_CurrencyInfo.GetCoinTextureString(tabData.tabCost), 1, 1, 1, true)
+        end
+        GameTooltip:Show()
+    end)
+    purchase:SetScript('OnLeave', function()
+        if purchase.target then
+            purchase.target.Border:SetVertexColor(purchase.target.borderR or 1, purchase.target.borderG or 1,
+                purchase.target.borderB or 1, 1)
+        end
+        GameTooltip:Hide()
+    end)
+end
+
+bankWindow.LayoutBankBagBar = function(self, bagSize)
+    if not self.bagBar then
+        return 0
+    end
+    local bankType = GetBankType()
+    local maxTabs = C_Bank.FetchMaxNumBankTabs(bankType) or 0
+    local x = 0
+    for slot = 2, maxTabs do
+        local index = slot - 1
+        local button = self.bankBagButtons[index]
+        if not button then
+            button = slots:CreateBankBagButton(self.bagBar)
+            self.bankBagButtons[index] = button
+        end
+        button:SetSize(bagSize, bagSize)
+        button:ClearAllPoints()
+        button:SetPoint('LEFT', self.bagBar, 'LEFT', x, 0)
+        button:Show()
+        x = x + bagSize + 4
+    end
+    for i = math.max(maxTabs, 1), #self.bankBagButtons do
+        self.bankBagButtons[i]:Hide()
+    end
+    local width = math.max(x - 4, 0)
+    self.bagBar:SetWidth(math.max(width, 1))
+    self:RefreshBankBagBar()
+    return width
+end
+
+bankWindow.RefreshBankBagBar = function(self)
+    if not self.bagBar then
+        return
+    end
+    local bankType = GetBankType()
+    local purchased = C_Bank.FetchNumPurchasedBankTabs(bankType) or 0
+    local canBuy = C_Bank.CanPurchaseBankTab(bankType) and not C_Bank.HasMaxBankTabs(bankType)
+        and not (bankType == Enum.BankType.Account and purchased == 0)
+
+    local purchase = self.purchaseSlotButton
+    purchase.target = nil
+    for i = 1, #self.bankBagButtons do
+        local button = self.bankBagButtons[i]
+        if button:IsShown() then
+            local slot = i + 1
+            local locked = slot > purchased
+            slots:UpdateBankBagButton(button, bankType, slot, locked)
+            if locked and canBuy and not purchase.target then
+                purchase.target = button
+            end
+        end
+    end
+
+    if purchase.target then
+        purchase:SetAttribute('overrideBankType', bankType)
+        purchase:ClearAllPoints()
+        purchase:SetAllPoints(purchase.target)
+        purchase:SetFrameLevel(purchase.target:GetFrameLevel() + 10)
+        purchase:Show()
+    else
+        purchase:Hide()
+    end
+end
+
+bankWindow.LayoutHeaderButtons = function(self, bagSize, barWidth)
     SizeHeaderButton(self.sortButton, bagSize)
     SizeHeaderButton(self.depositButton, bagSize)
     SizeHeaderButton(self.buyTabButton, bagSize)
@@ -400,7 +499,7 @@ bankWindow.LayoutHeaderButtons = function(self, bagSize)
 
     local canBuy = C_Bank.CanPurchaseBankTab and C_Bank.CanPurchaseBankTab(bankType)
         and not (C_Bank.HasMaxBankTabs and C_Bank.HasMaxBankTabs(bankType))
-    self.buyTabButton:SetShown(canBuy)
+    self.buyTabButton:SetShown(canBuy and not self.bagBar)
     self.buyTabButton:SetAttribute('overrideBankType', bankType)
 
     self.buyTabButton.tooltip = nil
@@ -434,7 +533,18 @@ bankWindow.LayoutHeaderButtons = function(self, bagSize)
         end
     end
 
-    self.searchBox:SetSize(150, math.max(20, bagSize))
+    local searchWidth = 150
+    local bagBarWidth = self:LayoutBankBagBar(bagSize)
+    if bagBarWidth > 0 and barWidth then
+        local used = self.closeButton:GetWidth()
+        for i = 1, #order do
+            if order[i]:IsShown() then
+                used = used + order[i]:GetWidth() + HEADER_BTN_GAP
+            end
+        end
+        searchWidth = math.max(60, math.min(searchWidth, barWidth - used - bagBarWidth - 24))
+    end
+    self.searchBox:SetSize(searchWidth, math.max(20, bagSize))
     self.searchBox:ClearAllPoints()
     if prev then
         self.searchBox:SetPoint('RIGHT', prev, 'LEFT', -12, 0)
@@ -662,7 +772,7 @@ bankWindow.ApplySize = function(self, bagsHeight)
     self.main:SetPoint('BOTTOMRIGHT', -TAB_WIDTH, 0)
 
     local bagSize = math.max(20, math.floor(layout.slotSize * 0.62))
-    self:LayoutHeaderButtons(bagSize)
+    self:LayoutHeaderButtons(bagSize, mainWidth - PAD * 2)
 end
 
 bankWindow.ClampToScreen = function(self)
@@ -739,6 +849,7 @@ end
 
 bankWindow.RefreshContents = function(self)
     slots:UpdateVisible(POOL)
+    self:RefreshBankBagBar()
     self:UpdateFooter()
 end
 

@@ -46,3 +46,4 @@ State briefly what was missing in WoWUI when you resort to the web.
 - Match **retail / Mainline** paths unless the task is explicitly for Classic.
 - When hooking or replacing Blizzard UI, read the target frame’s `.lua` / `.xml` in WoWUI first.
 - Reuse patterns already in workspace addons when they match the Blizzard source.
+- At the end note down change/fixes/features in ChangelogData.lua with similar language as is written there. If change after the tagged version also add new version there by increaseing patch version. 

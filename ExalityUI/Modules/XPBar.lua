@@ -89,6 +89,7 @@ xpBar.Init = function(self)
         font = 'DMSans',
         fontSize = 12,
         fontFlag = 'OUTLINE',
+        barTexture = 'ExalityUI Status Bar',
         showAtMaxLevel = false,
         showWatchedReputation = false,
         xpBarColor = { r = 1, g = 210 / 255, b = 0, a = 1 },
@@ -394,11 +395,28 @@ xpBar.GetOptions = function(self)
             width = 20
         },
         {
-            type = 'spacer',
-            width = 40,
+            type = 'dropdown',
+            label = 'Bar Texture',
+            name = 'barTexture',
+            isTextureDropdown = true,
+            getOptions = function()
+                local options = {}
+                for _, texture in ipairs(LSM:List('statusbar')) do
+                    options[texture] = texture
+                end
+                return options
+            end,
             depends = function()
                 return self.Data:GetValue('enable')
             end,
+            currentValue = function()
+                return self.Data:GetValue('barTexture')
+            end,
+            onChange = function(value)
+                self.Data:SetValue('barTexture', value)
+                self:Configure()
+            end,
+            width = 40
         },
         {
             type = 'color-picker',
@@ -637,6 +655,11 @@ xpBar.Configure = function(self)
     self.frame.Texts.CurrentXPPercent:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)
     self.frame.Texts.ThisLevel:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)
     self.frame.Texts.Prediction:SetFont(LSM:Fetch('font', db.font), db.fontSize, db.fontFlag)
+
+    local barTexture = LSM:Fetch('statusbar', db.barTexture)
+    self.frame.XPBar:SetStatusBarTexture(barTexture)
+    self.frame.RestedBar:SetStatusBarTexture(barTexture)
+    self.frame.CompletedQuestBar:SetStatusBarTexture(barTexture)
 
     self.frame.XPBar:SetStatusBarColor(db.xpBarColor.r, db.xpBarColor.g, db.xpBarColor.b, db.xpBarColor.a)
     self.frame.RestedBar:SetStatusBarColor(db.restedBarColor.r, db.restedBarColor.g, db.restedBarColor.b,

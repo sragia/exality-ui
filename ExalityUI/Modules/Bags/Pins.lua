@@ -39,9 +39,13 @@ local function BuildItemIndex()
         for slot = 1, numSlots do
             local itemID = C_Container.GetContainerItemID(bag, slot)
             if itemID then
-                if not byID[itemID] then
-                    byID[itemID] = { bag, slot }
+                local entry = byID[itemID]
+                if not entry then
+                    entry = { bag = bag, slot = slot, total = 0 }
+                    byID[itemID] = entry
                 end
+                local info = C_Container.GetContainerItemInfo(bag, slot)
+                entry.total = entry.total + (info and info.stackCount or 1)
                 if not keyBag and C_Item.IsItemKeystoneByID(itemID) then
                     keyBag, keySlot, keyID = bag, slot, itemID
                 end
@@ -68,6 +72,26 @@ local function HookPinButton(button)
             pins:TryPinCursorItem()
         end
     end)
+    button.UpdateTooltip = function(btn)
+        if not btn.missingItemID then
+            ContainerFrameItemButtonMixin.OnUpdate(btn)
+            return
+        end
+        GameTooltip:SetOwner(btn, 'ANCHOR_RIGHT')
+        GameTooltip:SetItemByID(btn.missingItemID)
+        GameTooltip:Show()
+    end
+    button:HookScript('OnEnter', function(btn)
+        if btn.missingItemID then
+            btn:UpdateTooltip()
+        end
+    end)
+end
+
+local function ClearPinState(button)
+    button.missingItemID = nil
+    button.missingCount = nil
+    button.countOverride = nil
 end
 
 pins.Create = function(self, parent)
@@ -192,7 +216,6 @@ pins.Layout = function(self, parent, slotSize, spacing)
     local used = 0
     for i = 1, #list do
         local found = byID[list[i]]
-        local bag, slot = found and found[1], found and found[2]
         used = used + 1
         local button = self.buttons[used]
         if button then
@@ -205,15 +228,24 @@ pins.Layout = function(self, parent, slotSize, spacing)
             button.itemID = list[i]
             button.isKeystone = false
             button.isDropSlot = false
-            if bag then
-                slots:Assign(button, bag, slot)
-                slots:SetButtonShown(button, true)
-                slots:UpdateItemButton(button)
-                shown = shown + 1
-                y = y + slotSize + spacing
-            else
-                slots:SetButtonShown(button, false)
+            ClearPinState(button)
+            if found then
+                slots:Assign(button, found.bag, found.slot)
+            elseif not InCombatLockdown() then
+                button:SetID(0)
             end
+            -- Assign is skipped in combat, so the button may still point at an old slot
+            local onFirstStack = found and button:GetBagID() == found.bag and button:GetID() == found.slot
+            if onFirstStack then
+                button.countOverride = found.total
+            else
+                button.missingItemID = list[i]
+                button.missingCount = found and found.total or 0
+            end
+            slots:SetButtonShown(button, true)
+            slots:UpdateItemButton(button)
+            shown = shown + 1
+            y = y + slotSize + spacing
         end
     end
 
@@ -228,6 +260,7 @@ pins.Layout = function(self, parent, slotSize, spacing)
         drop:SetPoint('TOPLEFT', parent, 'TOPLEFT', 0, -y)
         drop.isKeystone = false
         drop.isDropSlot = true
+        ClearPinState(drop)
         slots:ShowEmpty(drop)
         shown = shown + 1
         y = y + slotSize + spacing
@@ -237,6 +270,7 @@ pins.Layout = function(self, parent, slotSize, spacing)
     for i = used + 1, #self.buttons do
         slots:SetButtonShown(self.buttons[i], false)
         self.buttons[i].isDropSlot = false
+        ClearPinState(self.buttons[i])
     end
 
     return slotSize, math.max(y - spacing, slotSize)
