@@ -7,6 +7,21 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.14',
+            changes = {
+                { 'Bags',      'Added Keys section below reagents that shows keys in your keyring. Hidden when you have no keys', forever = true },
+                { 'Quest Log', 'Clicking a quest on the map now opens its details and scrolls the quest list to it' },
+                { 'Bags',      'Item tooltips now show how many you have in your bags, bank and warband bank, along with the total when it is in more than one place. Can be turned off in Bags options' },
+                { 'Objective Tracker', 'Added option to group quests by the same categories as the quest log. Quests from your current zone are always on top, followed by the closest ones. Categories can be collapsed and have their own underline options' },
+                { 'Chat',      'Fix level up messages (and stat increases on Forever) not showing in chat' },
+                { 'Bags',      'Hovering an equipped bag now highlights the slots that belong to it' },
+                { 'Tweaks',    'Added Flight timer. Shows where you are flying from and to, every stop along the way, and how much time is left to each of them. Times get more accurate the more you fly. Can be moved in the editor' },
+                { 'Broker',    'Fix Guild broker not coloring members in your zone green' },
+                { 'Resource Displays', 'Fix Combo Points not updating when changing targets', forever = true },
+                { 'Map',       'Fix Questie icons not showing on the map with the latest Questie version', forever = true },
+            }
+        },
+        {
             version = '0.9.13',
             changes = {
                 { 'Bags',      'Fix bag tooltip staying on screen after closing bags while hovering an equipped bag' },

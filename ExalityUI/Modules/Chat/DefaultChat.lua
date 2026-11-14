@@ -89,6 +89,10 @@ local HIDE_EVENTS = {
     'PLAYER_ENTERING_WORLD',
 }
 
+local function LevelEvent()
+    return EXUI.IsForever() and 'PLAYER_LEVEL_UP' or 'PLAYER_LEVEL_CHANGED'
+end
+
 defaultChat.silenced = false
 
 local function CopyList(list)
@@ -458,6 +462,18 @@ function defaultChat:ShowTimePlayed(totalTime, levelTime)
     end
 end
 
+local levelUpTarget = {
+    AddMessage = function(_, message)
+        history:PushLine('SYSTEM', message).notice = true
+    end,
+}
+
+function defaultChat:ShowLevelUp(...)
+    if ChatFrameUtil and ChatFrameUtil.DisplayLevelUp then
+        pcall(ChatFrameUtil.DisplayLevelUp, levelUpTarget, ...)
+    end
+end
+
 function defaultChat:OnChatEvent(event, message, sender, _, channelString, playerName2, _, _, channelIndex, channelBase,
                                  _, lineID, guid, bnSenderID, _, _, _, suppressRaidIcons)
     if event == 'GUILD_MOTD' then
@@ -604,6 +620,11 @@ function defaultChat:RegisterEvents()
             defaultChat:ShowTimePlayed(totalTime, levelTime)
         end
     end)
+    EXUI:RegisterEventHandler(LevelEvent(), 'exui-chat-window-level', function(_, ...)
+        if defaultChat.silenced then
+            defaultChat:ShowLevelUp(...)
+        end
+    end)
     EXUI:RegisterEventHandler('PLAYER_LOGOUT', 'exui-chat-window-logout', function()
         if defaultChat.silenced then
             defaultChat:Restore()
@@ -618,5 +639,6 @@ function defaultChat:UnregisterEvents()
     end
     EXUI:UnregisterEventHandler(HIDE_EVENTS, 'exui-chat-window-hide')
     EXUI:UnregisterEventHandler('TIME_PLAYED_MSG', 'exui-chat-window-played')
+    EXUI:UnregisterEventHandler(LevelEvent(), 'exui-chat-window-level')
     EXUI:UnregisterEventHandler('PLAYER_LOGOUT', 'exui-chat-window-logout')
 end

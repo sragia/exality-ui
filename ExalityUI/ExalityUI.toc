@@ -73,6 +73,7 @@ Modules/MythicPlusTimer/MythicPlusTimer.xml [AllowLoadGameType standard]
 Modules/DamageMeters/DamageMeters.xml
 Modules/ActionBars/ActionBars.xml
 Modules/TweaksAndBugfixes.lua
+Modules/FlightTimer/FlightTimer.xml
 
 # UF Options
 Modules/UnitFrames/Options/UFOptions.xml

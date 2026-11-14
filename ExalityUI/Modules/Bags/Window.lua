@@ -589,6 +589,10 @@ window.GetLayoutSignature = function(self)
     for bag = Enum.BagIndex.Backpack, Enum.BagIndex.ReagentBag do
         parts[#parts + 1] = C_Container.GetContainerNumSlots(bag) or 0
     end
+    local keys = slots:GetKeyringSlots()
+    for i = 1, #keys do
+        parts[#parts + 1] = 'k' .. keys[i]
+    end
     return table.concat(parts, ':')
 end
 

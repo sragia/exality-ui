@@ -96,6 +96,11 @@ data.GetMythicPlusHistory = function(self)
     return self.data.mythicPlusHistory
 end
 
+data.GetFlightTimes = function(self)
+    self.data.flightTimes = self.data.flightTimes or { hops = {} }
+    return self.data.flightTimes
+end
+
 local function CopyProfileValue(value)
     if type(value) == 'table' then
         return CopyTable(value)

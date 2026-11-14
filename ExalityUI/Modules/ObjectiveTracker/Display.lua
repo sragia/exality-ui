@@ -37,6 +37,8 @@ display.categoryPool = CreateFramePool('Frame', UIParent, 'BackdropTemplate')
 display.blockPool = CreateFramePool('Frame', UIParent, 'BackdropTemplate')
 display.linePool = CreateFramePool('Frame', UIParent)
 display.progressBarPool = CreateFramePool('Frame', UIParent)
+display.subHeaderPool = CreateFramePool('Button', UIParent)
+display.subHeaderFrames = {}
 display.poiPool = nil
 display.scrollTarget = nil
 display.updateScheduled = false
@@ -391,6 +393,15 @@ function display:GetSettingsSignature(db)
         signatureParts[#signatureParts + 1] = lineColor.b
         signatureParts[#signatureParts + 1] = lineColor.a
     end
+    signatureParts[#signatureParts + 1] = db.showQuestGroupLine
+    signatureParts[#signatureParts + 1] = db.questGroupLineThickness
+    local groupLineColor = db.questGroupLineColor
+    if groupLineColor then
+        signatureParts[#signatureParts + 1] = groupLineColor.r
+        signatureParts[#signatureParts + 1] = groupLineColor.g
+        signatureParts[#signatureParts + 1] = groupLineColor.b
+        signatureParts[#signatureParts + 1] = groupLineColor.a
+    end
     signatureParts[#signatureParts + 1] = db.categorySpacing
     signatureParts[#signatureParts + 1] = db.customHeaderStyle
     signatureParts[#signatureParts + 1] = db.blockHeaderFont
@@ -449,6 +460,7 @@ function display:GetStructureKey(categories, db)
         signatureParts[#signatureParts + 1] = self:IsCategoryCollapsed(category.id, db) and '1' or '0'
         for _, block in ipairs(category.blocks) do
             signatureParts[#signatureParts + 1] = block.id
+            signatureParts[#signatureParts + 1] = block.collapsed and '1' or '0'
             local textCount, barCount = 0, 0
             for _, objective in ipairs(block.objectives or {}) do
                 if objective.text and objective.text ~= '' then
@@ -732,10 +744,15 @@ function display:ReleaseLayout()
         self:ClearAutoQuestPopUpStyle(frame)
         self.blockPool:Release(frame)
     end
+    for _, frame in ipairs(self.subHeaderFrames) do
+        frame.blockData = nil
+        self.subHeaderPool:Release(frame)
+    end
     for _, frame in ipairs(self.categoryFrames) do
         frame.ownedBlockFrames = nil
         self.categoryPool:Release(frame)
     end
+    wipe(self.subHeaderFrames)
     wipe(self.lineFrames)
     wipe(self.progressBarFrames)
     wipe(self.blockFrames)
@@ -2196,6 +2213,17 @@ function display:ToggleCategoryCollapsed(categoryId)
     objectiveTracker:Update()
 end
 
+function display:ToggleQuestGroupCollapsed(block)
+    if not block or not block.isSubHeader then
+        return
+    end
+    trackerData:ToggleQuestGroupCollapsed(block.title)
+    if PlaySound then
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end
+    objectiveTracker:Update()
+end
+
 function display:ToggleContainerCollapsed()
     local db = objectiveTracker.Data:GetDB()
     objectiveTracker.Data:SetValue('containerCollapsed', not db.containerCollapsed)
@@ -2755,7 +2783,95 @@ function display:CreateCategoryFrame(parent, category, db, categoryWidth)
     return frame
 end
 
+function display:LayoutSubHeaderFrame(frame, block, db, blockWidth)
+    frame.blockData = block
+    frame:SetWidth(blockWidth)
+
+    local align = self:GetTextAlign(db)
+    local fontPath, fontSize, fontFlag = self:GetFont(db.blockHeaderFont, db.blockHeaderFontSize, db.blockHeaderFontFlag)
+    local showToggle = not db.hideModuleMinimizeButtons
+    local toggleWidth = showToggle and (self.COLLAPSE_BUTTON_SIZE + 4) or 0
+
+    frame.title:SetFont(fontPath, fontSize, fontFlag)
+    frame.title:SetText(block.title or '')
+    frame.title:SetJustifyH(align)
+    frame.title:ClearAllPoints()
+    frame.title:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+    frame.title:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -toggleWidth, 0)
+    local color = self:GetColor(db, frame:IsMouseOver() and 'QuestGroupHeaderHighlight' or 'QuestGroupHeader')
+    frame.title:SetTextColor(color.r, color.g, color.b)
+    local titleHeight = self:MeasureFontString(frame.title, fontSize, blockWidth - toggleWidth, fontFlag)
+
+    frame.toggle:SetShown(showToggle)
+    frame.toggle:ClearAllPoints()
+    frame.toggle:SetPoint('RIGHT', frame, 'TOPRIGHT', 0, -titleHeight / 2)
+    frame.toggle:SetCollapsedState(block.collapsed)
+
+    local height = titleHeight
+    local lineHeight = db.showQuestGroupLine and self:LayoutScalePixel(db.questGroupLineThickness or 1) or 0
+    if lineHeight > 0 then
+        local lineGap = self:LayoutScalePixel(2)
+        local lineColor = db.questGroupLineColor or self:GetColor(db, 'QuestGroupHeader')
+        frame.line:Show()
+        frame.line:SetHeight(lineHeight)
+        frame.line:ClearAllPoints()
+        frame.line:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, -(titleHeight + lineGap))
+        frame.line:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, -(titleHeight + lineGap))
+        frame.line:SetTexture(EXUI.const.textures.frame.gradient)
+        if align == 'RIGHT' then
+            frame.line:SetTexCoord(1, 0, 0, 1)
+        else
+            frame.line:SetTexCoord(0, 1, 0, 1)
+        end
+        frame.line:SetVertexColor(lineColor.r, lineColor.g, lineColor.b, lineColor.a or 1)
+        height = height + lineGap + lineHeight
+    else
+        frame.line:Hide()
+    end
+
+    frame:SetHeight(height)
+    return height
+end
+
+function display:CreateSubHeaderFrame(parent, block, db, blockWidth)
+    local frame = self.subHeaderPool:Acquire()
+    frame:SetParent(parent)
+    frame:Show()
+    frame.isSubHeaderFrame = true
+
+    if not frame.title then
+        frame.title = frame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+        frame.title:SetWordWrap(true)
+        frame.title:SetMaxLines(0)
+        frame.line = frame:CreateTexture(nil, 'ARTWORK')
+        frame.toggle = self:CreateMinimizeButton(frame)
+        frame.toggle:SetScript('OnClick', function(btn)
+            display:ToggleQuestGroupCollapsed(btn:GetParent().blockData)
+        end)
+        frame:RegisterForClicks('LeftButtonUp')
+        frame:SetScript('OnClick', function(btn)
+            display:ToggleQuestGroupCollapsed(btn.blockData)
+        end)
+        frame:SetScript('OnEnter', function(btn)
+            local hover = display:GetColor(objectiveTracker.Data:GetDB(), 'QuestGroupHeaderHighlight')
+            btn.title:SetTextColor(hover.r, hover.g, hover.b)
+        end)
+        frame:SetScript('OnLeave', function(btn)
+            local normal = display:GetColor(objectiveTracker.Data:GetDB(), 'QuestGroupHeader')
+            btn.title:SetTextColor(normal.r, normal.g, normal.b)
+        end)
+    end
+    frame.toggle:SetFrameLevel(frame:GetFrameLevel() + 2)
+
+    local height = self:LayoutSubHeaderFrame(frame, block, db, blockWidth)
+    self.subHeaderFrames[#self.subHeaderFrames + 1] = frame
+    return frame, height
+end
+
 function display:CreateBlockFrame(parent, block, db, blockWidth)
+    if block.isSubHeader then
+        return self:CreateSubHeaderFrame(parent, block, db, blockWidth)
+    end
     local spacing = self:GetSpacing(db)
     local frame = self.blockPool:Acquire()
     frame:SetParent(parent)
@@ -2982,7 +3098,13 @@ function display:LayoutCategories(categories, db)
 end
 
 function display:PatchBlockFrame(frame, block, db, blockWidth)
-    if not frame or not frame.ownedRows then
+    if not frame or (frame.isSubHeaderFrame == true) ~= (block.isSubHeader == true) then
+        return nil
+    end
+    if block.isSubHeader then
+        return self:LayoutSubHeaderFrame(frame, block, db, blockWidth)
+    end
+    if not frame.ownedRows then
         return nil
     end
 

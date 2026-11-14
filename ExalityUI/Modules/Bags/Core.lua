@@ -22,6 +22,9 @@ local slots = EXUI:GetModule('bags-slots')
 ---@class EXUIBagsPins
 local pins = EXUI:GetModule('bags-pins')
 
+---@class EXUIBagsTooltip
+local tooltip = EXUI:GetModule('bags-tooltip')
+
 ---@class EXUIBags
 local bags = EXUI:GetModule('bags')
 
@@ -75,6 +78,9 @@ local function IsPlayerBag(id)
     if id == nil then
         return true
     end
+    if id == Enum.BagIndex.Keyring then
+        return EXUI.IsForever()
+    end
     return id >= PLAYER_BAG_MIN and id <= PLAYER_BAG_MAX
 end
 
@@ -121,6 +127,7 @@ bags.GetDefaults = function()
         slotSize = 32,
         columns = 14,
         spacing = 5,
+        tooltipCounts = true,
         bankSlotSize = 32,
         bankColumns = 32,
         bankSpacing = 5,
@@ -224,6 +231,20 @@ bags.GetOptions = function(self)
             onChange = function(value)
                 self.Data:SetValue('spacing', value)
                 self:Refresh()
+            end,
+        },
+        {
+            type = 'toggle',
+            label = 'Show Item Counts In Tooltip',
+            name = 'tooltipCounts',
+            width = 100,
+            depends = enabled,
+            currentValue = function()
+                return self.Data:GetValue('tooltipCounts')
+            end,
+            onChange = function(value)
+                self.Data:SetValue('tooltipCounts', value)
+                self:UpdateTooltip()
             end,
         },
         {
@@ -763,11 +784,20 @@ bags.Refresh = function(self)
     end
 end
 
+bags.UpdateTooltip = function(self)
+    if self.enabled and self.Data:GetValue('tooltipCounts') then
+        tooltip:Enable()
+    else
+        tooltip:Disable()
+    end
+end
+
 bags.Enable = function(self)
     if self.enabled then
         return
     end
     self.enabled = true
+    self:UpdateTooltip()
     self:EnsureCreated()
     self:ReplaceBlizzard()
     self:RegisterBankEvents()
@@ -819,4 +849,5 @@ bags.Disable = function(self)
     EXUI:UnregisterEventHandler('PLAYER_REGEN_ENABLED', 'bags-untaint')
     EXUI:UnregisterEventHandler('ADDON_LOADED', 'bags-bank-hook')
     self.enabled = false
+    self:UpdateTooltip()
 end

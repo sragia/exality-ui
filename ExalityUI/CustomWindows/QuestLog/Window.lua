@@ -600,6 +600,17 @@ questLog.CreateMap = function(self, host)
         MapCanvasMixin.OnMapChanged(self)
     end
 
+    canvas.AcquirePin = function(self, pinTemplate, ...)
+        local pin = MapCanvasMixin.AcquirePin(self, pinTemplate, ...)
+        if (pinTemplate == 'QuestPinTemplate' and pin and not pin.exuiClickHooked) then
+            pin.exuiClickHooked = true
+            hooksecurefunc(pin, 'OnMouseClickAction', function(clicked, button)
+                questLog:OnQuestPinClick(clicked, button)
+            end)
+        end
+        return pin
+    end
+
     canvas:SetShouldZoomInOnClick(false)
     canvas:SetShouldPanOnClick(false)
     canvas:SetShouldNavigateOnClick(true)
@@ -705,14 +716,21 @@ questLog.DetachHandyNotes = function(self)
     self.handyNotesRestore = false
 end
 
--- Questie ships a renamed HereBeDragons fork with its own provider and pin template.
+-- Questie ships a HereBeDragons fork with its own provider and pin template. Newer versions keep it
+-- as a QuestieLoader module instead of a LibStub library.
 -- Its RefreshAllData skips work while the map ID is unchanged, so moving it needs forceUpdate.
 local PIN_LIBS = {
     { key = 'hbd',     lib = 'HereBeDragons-Pins-2.0',        template = 'HereBeDragonsPinsTemplate' },
-    { key = 'questie', lib = 'HereBeDragonsQuestie-Pins-2.0', template = 'HereBeDragonsPinsTemplateQuestie', forceUpdate = true },
+    { key = 'questie', lib = 'HereBeDragonsQuestie-Pins-2.0', template = 'HereBeDragonsPinsTemplateQuestie', questieModule = 'HBDPins', forceUpdate = true },
 }
 
 local function PinLib(spec)
+    if (spec.questieModule and type(QuestieLoader) == 'table' and type(QuestieLoader._modules) == 'table') then
+        local module = QuestieLoader._modules[spec.questieModule]
+        if (type(module) == 'table' and module.worldmapProvider) then
+            return module
+        end
+    end
     if (not LibStub) then
         return nil
     end
@@ -721,6 +739,10 @@ local function PinLib(spec)
         return nil
     end
     return lib
+end
+
+local function PinTemplate(spec, lib)
+    return (lib and lib.worldmapPinTemplate) or spec.template
 end
 
 local function RefreshPinProvider(spec, provider)
@@ -773,7 +795,8 @@ questLog.AttachPinLib = function(self, spec)
         return frame
     end
     pool.creationFunc = pool.createFunc
-    canvas.pinPools[spec.template] = pool
+    local template = PinTemplate(spec, lib)
+    canvas.pinPools[template] = pool
 
     local owner = provider.GetMap and provider:GetMap()
     if (owner == canvas) then
@@ -785,7 +808,7 @@ questLog.AttachPinLib = function(self, spec)
         local removed = pcall(owner.RemoveDataProvider, owner, provider)
         if (not removed) then
             RestorePinPool(state, pool)
-            canvas.pinPools[spec.template] = nil
+            canvas.pinPools[template] = nil
             return
         end
     else
@@ -807,7 +830,7 @@ questLog.DetachPinLib = function(self, spec)
         pcall(canvas.RemoveDataProvider, canvas, provider)
     end
     if (canvas and canvas.pinPools) then
-        canvas.pinPools[spec.template] = nil
+        canvas.pinPools[PinTemplate(spec, lib)] = nil
     end
     if (not state) then
         return
@@ -1743,6 +1766,7 @@ questLog.RefreshList = function(self)
         row:ClearAllPoints()
         row:SetPoint('TOPLEFT', child, 'TOPLEFT', 0, -y)
         row:SetPoint('RIGHT', child, 'RIGHT', 0, 0)
+        row.listOffset = y
         y = y + row:GetHeight() + ROW_GAP
     end
 
@@ -1784,18 +1808,68 @@ questLog.Refresh = function(self)
     end
 end
 
-questLog.SelectQuest = function(self, questID)
+questLog.SelectQuest = function(self, questID, keepMap)
     self.selectedQuestID = questID
     self.refreshing = true
     pcall(C_QuestLog.SetSelectedQuest, questID)
     self.refreshing = false
-    local mapID = QuestMapID(questID)
+    local mapID = not keepMap and QuestMapID(questID)
     if (mapID) then
         self:ShowMap(mapID)
     end
     self:Layout()
     self:Refresh()
     self:PingQuest(questID)
+end
+
+questLog.ExpandQuestHeader = function(self, questID)
+    local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+    if (not logIndex) then
+        return
+    end
+    for index = logIndex - 1, 1, -1 do
+        local info = C_QuestLog.GetInfo(index)
+        if (info and info.isHeader) then
+            if (IsHeaderCollapsed(info)) then
+                self:SetHeaderCollapsed(info, false)
+            end
+            return
+        end
+    end
+end
+
+questLog.ScrollToQuest = function(self, questID)
+    local scroll = self.listScroll
+    if (not scroll or not self.questRows) then
+        return
+    end
+    for _, row in ipairs(self.questRows) do
+        if (row:IsShown() and row.listOffset and SameID(row.questID, questID)) then
+            local current = scroll:GetVerticalScroll() or 0
+            local viewport = scroll:GetHeight() or 0
+            local top = row.listOffset
+            local bottom = top + row:GetHeight()
+            if (top < current) then
+                scroll:SmoothScrollTo(top)
+            elseif (bottom > current + viewport) then
+                scroll:SmoothScrollTo(bottom - viewport)
+            end
+            return
+        end
+    end
+end
+
+questLog.OnQuestPinClick = function(self, pin, button)
+    if (button ~= 'LeftButton' or IsShiftKeyDown() or not self.window or not self.window:IsShown()) then
+        return
+    end
+    local questID = pin.GetQuestID and pin:GetQuestID()
+    if (not IsReadable(questID) or not C_QuestLog.GetLogIndexForQuestID(questID)) then
+        return
+    end
+    self:ExpandQuestHeader(questID)
+    self:SelectQuest(questID, true)
+    self:ScrollToQuest(questID)
 end
 
 questLog.ShowQuest = function(self, questID)

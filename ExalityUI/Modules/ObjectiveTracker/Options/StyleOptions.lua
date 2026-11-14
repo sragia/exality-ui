@@ -10,6 +10,9 @@ local styleOptions = EXUI:GetModule('objective-tracker-style-options')
 ---@class EXUIOptionsFields
 local optionsFields = EXUI:GetModule('options-fields')
 
+---@class EXUIObjectiveTrackerDefaults
+local defaults = EXUI:GetModule('objective-tracker-defaults')
+
 local LSM = LibStub('LibSharedMedia-3.0', true)
 
 local function customHeaderStyleEnabled()
@@ -20,6 +23,7 @@ end
 local COLOR_KEYS = {
     { key = 'CategoryHeader', label = 'Category Title' },
     { key = 'BlockHeader', label = 'Quest Title' },
+    { key = 'QuestGroupHeader', label = 'Quest Category Title' },
     { key = 'Normal', label = 'Normal Text' },
     { key = 'Complete', label = 'Complete' },
     { key = 'Failed', label = 'Failed' },
@@ -256,7 +260,7 @@ function styleOptions:GetOptions()
             end,
             currentValue = function()
                 local colors = objectiveTracker.Data:GetValue('colors')
-                return colors[colorDef.key]
+                return colors[colorDef.key] or defaults.DEFAULT_COLORS[colorDef.key]
             end,
             onChange = function(value)
                 local colors = objectiveTracker.Data:GetValue('colors')
@@ -428,6 +432,61 @@ function styleOptions:GetOptions()
         end,
         onChange = function(value)
             objectiveTracker.Data:SetValue('categoryHeaderLineThickness', value)
+            objectiveTracker:Configure()
+        end,
+        width = 50,
+    })
+
+    local function questGroupsEnabled()
+        return objectiveTracker.Data:GetValue('enable')
+            and objectiveTracker.Data:GetValue('groupQuestsByHeader')
+    end
+    table.insert(options, {
+        type = 'toggle',
+        label = 'Quest Category Underline',
+        name = 'showQuestGroupLine',
+        depends = questGroupsEnabled,
+        onChange = function(value)
+            objectiveTracker.Data:SetValue('showQuestGroupLine', value)
+            objectiveTracker:Configure()
+            optionsFields:RefreshOptionsDelayed()
+        end,
+        currentValue = function()
+            return objectiveTracker.Data:GetValue('showQuestGroupLine')
+        end,
+        width = 100,
+    })
+    table.insert(options, {
+        type = 'color-picker',
+        label = 'Quest Category Underline Color',
+        name = 'questGroupLineColor',
+        depends = function()
+            return questGroupsEnabled() and objectiveTracker.Data:GetValue('showQuestGroupLine')
+        end,
+        currentValue = function()
+            return objectiveTracker.Data:GetValue('questGroupLineColor')
+        end,
+        onChange = function(value)
+            objectiveTracker.Data:SetValue('questGroupLineColor', value)
+            objectiveTracker:Configure()
+        end,
+        width = 50,
+    })
+    table.insert(options, {
+        type = 'range',
+        label = 'Quest Category Underline Thickness',
+        name = 'questGroupLineThickness',
+        min = 1,
+        max = 4,
+        step = 1,
+        depends = function()
+            return questGroupsEnabled() and objectiveTracker.Data:GetValue('showQuestGroupLine')
+        end,
+        currentValue = function()
+            return objectiveTracker.Data:GetValue('questGroupLineThickness')
+        end,
+        onChange = function(value)
+            objectiveTracker.Data:SetValue('questGroupLineThickness', value)
             objectiveTracker:Configure()
         end,
         width = 50,

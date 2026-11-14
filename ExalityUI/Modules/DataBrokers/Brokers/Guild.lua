@@ -47,7 +47,7 @@ local function ShowTooltip(self)
 
     -- C_ColorUtil.GenerateTextColorCode(GetQuestDifficultyColor(80))
 
-    local myZone = GetSubZoneText()
+    local myZone = GetRealZoneText()
     for i = 1, GetNumGuildMembers() do
         local name, rankName, _, level, _, zone, publicNote, _, isOnline, _, class = GetGuildRosterInfo(i)
         if name and name:find("-") then

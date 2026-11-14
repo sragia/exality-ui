@@ -32,6 +32,13 @@ local SEGMENT_CONFIG = {
     individualColorCount = 7,
 }
 
+local function GetCount()
+    if EXUI:IsForever() then
+        return GetComboPoints('player', 'target')
+    end
+    return UnitPower('player', Enum.PowerType.ComboPoints)
+end
+
 comboPoints.Create = function(self, frame)
     frame.IsActive = function(self) return comboPoints:IsActive(self) end
     frame.ComboPointsFrames = {}
@@ -41,13 +48,17 @@ comboPoints.Create = function(self, frame)
         if preview:ApplySegmentPreview(self, 'Combo Points', SEGMENT_CONFIG) then
             return
         end
+        if event == 'PLAYER_TARGET_CHANGED' then
+            self:Update()
+            return
+        end
         if (unit == 'player' and powerType == 'COMBO_POINTS') or event == 'TRAIT_CONFIG_UPDATED' or event == 'UNIT_POWER_POINT_CHARGE' then
             local maxComboPoints = UnitPowerMax('player', Enum.PowerType.ComboPoints)
             if maxComboPoints ~= #self.ActiveFrames then
                 self:Update()
                 return
             end
-            local count = UnitPower('player', Enum.PowerType.ComboPoints)
+            local count = GetCount()
             local charged = helpers:GetChargedPowerPoints()
             segmentBase:SetSegmentValues(self.ActiveFrames, count, charged, self.db, SEGMENT_CONFIG)
             if self.db.showSegmentText and self.SegmentText then
@@ -58,7 +69,11 @@ comboPoints.Create = function(self, frame)
 
     frame.OnEvent = frame._segmentOnEvent
 
-    helpers:WireSegmentEnableDisable(frame, { 'UNIT_POWER_UPDATE', 'UNIT_POWER_POINT_CHARGE', 'TRAIT_CONFIG_UPDATED', 'PLAYER_ENTERING_WORLD' })
+    local events = { 'UNIT_POWER_UPDATE', 'UNIT_POWER_POINT_CHARGE', 'TRAIT_CONFIG_UPDATED', 'PLAYER_ENTERING_WORLD' }
+    if EXUI:IsForever() then
+        table.insert(events, 'PLAYER_TARGET_CHANGED')
+    end
+    helpers:WireSegmentEnableDisable(frame, events)
     frame:SetScript('OnEvent', function(self, event, unit, powerType)
         self:OnEvent(event, unit, powerType)
     end)
@@ -79,13 +94,13 @@ comboPoints.Update = function(frame)
     segmentBase:UpdateSegmentRow(frame, SEGMENT_CONFIG, function()
         return UnitPowerMax('player', Enum.PowerType.ComboPoints)
     end, Enum.PowerType.ComboPoints, function(f)
-        local count = UnitPower('player', Enum.PowerType.ComboPoints)
+        local count = GetCount()
         segmentBase:SetSegmentValues(f.ActiveFrames, count, helpers:GetChargedPowerPoints(), f.db, SEGMENT_CONFIG)
     end)
 
     if db.showSegmentText then
         frame.SegmentText:Show()
-        frame.SegmentText:SetText(helpers:FormatPowerText(db.segmentTextFormat or 'current/max', UnitPower('player', Enum.PowerType.ComboPoints), UnitPowerMax('player', Enum.PowerType.ComboPoints)))
+        frame.SegmentText:SetText(helpers:FormatPowerText(db.segmentTextFormat or 'current/max', GetCount(), UnitPowerMax('player', Enum.PowerType.ComboPoints)))
     elseif frame.SegmentText then
         frame.SegmentText:Hide()
     end

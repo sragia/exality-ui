@@ -13,6 +13,9 @@ local generalOptions = EXUI:GetModule('objective-tracker-general-options')
 ---@class EXUIObjectiveTrackerDefaults
 local defaults = EXUI:GetModule('objective-tracker-defaults')
 
+---@class EXUIObjectiveTrackerData
+local trackerData = EXUI:GetModule('objective-tracker-data')
+
 function generalOptions:GetOptions()
     local selfModule = objectiveTracker
     return {
@@ -414,6 +417,42 @@ function generalOptions:GetOptions()
             end,
             currentValue = function()
                 return selfModule.Data:GetValue('hideQuestPOI')
+            end,
+            width = 50,
+        },
+        {
+            type = 'toggle',
+            label = 'Group Quests By Quest Log Category',
+            name = 'groupQuestsByHeader',
+            depends = function()
+                return selfModule.Data:GetValue('enable')
+            end,
+            onChange = function(value)
+                selfModule.Data:SetValue('groupQuestsByHeader', value)
+                trackerData:InvalidateCollectors({ 'quests' })
+                selfModule:Configure()
+                optionsFields:RefreshOptionsDelayed()
+            end,
+            currentValue = function()
+                return selfModule.Data:GetValue('groupQuestsByHeader')
+            end,
+            width = 50,
+        },
+        {
+            type = 'toggle',
+            label = 'Sort Quest Categories By Distance',
+            name = 'sortQuestGroupsByDistance',
+            depends = function()
+                return selfModule.Data:GetValue('enable')
+                    and selfModule.Data:GetValue('groupQuestsByHeader')
+            end,
+            onChange = function(value)
+                selfModule.Data:SetValue('sortQuestGroupsByDistance', value)
+                trackerData:InvalidateCollectors({ 'quests' })
+                selfModule:Configure()
+            end,
+            currentValue = function()
+                return selfModule.Data:GetValue('sortQuestGroupsByDistance')
             end,
             width = 50,
         },

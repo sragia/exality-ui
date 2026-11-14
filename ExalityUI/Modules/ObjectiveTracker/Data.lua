@@ -7,6 +7,11 @@ local defaults = EXUI:GetModule('objective-tracker-defaults')
 ---@class EXUIObjectiveTrackerData
 local trackerData = EXUI:GetModule('objective-tracker-data')
 
+---@class EXUIObjectiveTrackerModule
+local objectiveTracker = EXUI:GetModule('objective-tracker')
+
+trackerData.collapsedQuestGroups = {}
+
 local tablePool = {}
 
 local function acquireTable()
@@ -471,6 +476,100 @@ function trackerData:CollectQuestBlocks(categoryId, filterFn)
         end
     end
     return blocks
+end
+
+local function getQuestHeader(questID)
+    local headerIndex = C_QuestLog.GetHeaderIndexForQuest and C_QuestLog.GetHeaderIndexForQuest(questID)
+    local info = headerIndex and C_QuestLog.GetInfo(headerIndex)
+    if info and info.isHeader and info.title and info.title ~= '' then
+        return info.title, headerIndex
+    end
+    return OTHER or 'Other', math.huge
+end
+
+local function isCurrentZoneHeader(title)
+    return title == GetZoneText() or title == GetRealZoneText()
+end
+
+local function getQuestDistance(questID)
+    if not C_QuestLog.GetDistanceSqToQuest then
+        return nil
+    end
+    local distanceSq, onContinent = C_QuestLog.GetDistanceSqToQuest(questID)
+    if onContinent and distanceSq then
+        return distanceSq
+    end
+end
+
+-- Quest log header groups: current zone first, then nearest (optional), then quest log order.
+function trackerData:GroupQuestBlocks(blocks)
+    local sortByDistance = objectiveTracker.Data:GetValue('sortQuestGroupsByDistance')
+    local grouped = {}
+    local groups = {}
+    local groupByTitle = {}
+    local dropped = {}
+
+    for _, block in ipairs(blocks) do
+        if block.isAutoQuestPopUp then
+            grouped[#grouped + 1] = block
+        else
+            local title, order = getQuestHeader(block.untrackId)
+            local group = groupByTitle[title]
+            if not group then
+                group = { title = title, order = order, blocks = {} }
+                if isCurrentZoneHeader(title) then
+                    group.order = -1
+                end
+                groupByTitle[title] = group
+                groups[#groups + 1] = group
+            end
+            group.blocks[#group.blocks + 1] = block
+            local distance = sortByDistance and getQuestDistance(block.untrackId)
+            if distance and (not group.distance or distance < group.distance) then
+                group.distance = distance
+            end
+        end
+    end
+
+    table.sort(groups, function(a, b)
+        if (a.order == -1) ~= (b.order == -1) then
+            return a.order == -1
+        end
+        if a.distance and b.distance then
+            if a.distance ~= b.distance then
+                return a.distance < b.distance
+            end
+        elseif a.distance or b.distance then
+            return a.distance ~= nil
+        end
+        return a.order < b.order
+    end)
+
+    for _, group in ipairs(groups) do
+        local collapsed = self.collapsedQuestGroups[group.title] == true
+        grouped[#grouped + 1] = {
+            id = 'questgroup:' .. group.title,
+            categoryId = 'quests',
+            title = group.title,
+            isSubHeader = true,
+            collapsed = collapsed,
+        }
+        for _, block in ipairs(group.blocks) do
+            if collapsed then
+                dropped[#dropped + 1] = block
+            else
+                grouped[#grouped + 1] = block
+            end
+        end
+    end
+
+    recycleCategoryBlocks(dropped)
+    return grouped
+end
+
+function trackerData:ToggleQuestGroupCollapsed(title)
+    self.collapsedQuestGroups[title] = not self.collapsedQuestGroups[title] or nil
+    self:InvalidateCollectors({ 'quests' })
 end
 
 function trackerData:CollectAchievementBlocks()
@@ -1189,7 +1288,13 @@ local COLLECTORS = {
     scenario = function(self) return self:CollectScenarioBlocks() end,
     widget = function() return {} end,
     campaign = function(self) return self:CollectQuestBlocks('campaign', isCampaignQuest) end,
-    quests = function(self) return self:CollectQuestBlocks('quests', shouldShowStandardQuest) end,
+    quests = function(self)
+        local blocks = self:CollectQuestBlocks('quests', shouldShowStandardQuest)
+        if objectiveTracker.Data:GetValue('groupQuestsByHeader') then
+            return self:GroupQuestBlocks(blocks)
+        end
+        return blocks
+    end,
     adventure = function(self) return self:CollectAdventureBlocks() end,
     achievement = function(self) return self:CollectAchievementBlocks() end,
     activities = function(self) return self:CollectActivitiesBlocks() end,

@@ -6,6 +6,7 @@ local slots = EXUI:GetModule('bags-slots')
 
 local BACKPACK = Enum.BagIndex.Backpack
 local REAGENT_BAG = Enum.BagIndex.ReagentBag
+local KEYRING_BAG = Enum.BagIndex.Keyring
 local FIRST_BAG = Enum.BagIndex.Bag_1
 local LAST_BAG = Enum.BagIndex.Bag_4
 
@@ -92,20 +93,30 @@ local function HideDefaultItemButtonArt(button)
     end
 end
 
+local BAG_HIGHLIGHT_BLEND = 0.5
+
+local function RefreshBorder(button)
+    if button.hovered then
+        button.Border:SetVertexColor(1, 1, 1, 1)
+        return
+    end
+    local r, g, b = button.borderR or 1, button.borderG or 1, button.borderB or 1
+    if button.bagHighlighted then
+        r = r + (1 - r) * BAG_HIGHLIGHT_BLEND
+        g = g + (1 - g) * BAG_HIGHLIGHT_BLEND
+        b = b + (1 - b) * BAG_HIGHLIGHT_BLEND
+    end
+    button.Border:SetVertexColor(r, g, b, 1)
+end
+
 local function ApplyBorderColor(button, r, g, b)
     button.borderR, button.borderG, button.borderB = r, g, b
-    if not button.hovered then
-        button.Border:SetVertexColor(r, g, b, 1)
-    end
+    RefreshBorder(button)
 end
 
 local function SetHovered(button, hovered)
     button.hovered = hovered
-    if hovered then
-        button.Border:SetVertexColor(1, 1, 1, 1)
-    else
-        button.Border:SetVertexColor(button.borderR or 1, button.borderG or 1, button.borderB or 1, 1)
-    end
+    RefreshBorder(button)
 end
 
 local qualityInfoCache = {}
@@ -384,6 +395,14 @@ slots.BindPlayerSlots = function(self, parent)
             index = index + 1
         end
     end
+    local keys = self:GetKeyringSlots()
+    for i = 1, #keys do
+        local button = self:Acquire(index, parent, 'bags')
+        if button then
+            self:Assign(button, KEYRING_BAG, keys[i])
+        end
+        index = index + 1
+    end
 end
 
 local gearCache = {}
@@ -604,6 +623,7 @@ slots.RequiredCount = function(self)
     for bag = BACKPACK, REAGENT_BAG do
         count = count + (C_Container.GetContainerNumSlots(bag) or 0)
     end
+    count = count + #self:GetKeyringSlots()
     return count
 end
 
@@ -727,8 +747,21 @@ local function OnBagButtonDrag(button)
     end
 end
 
+slots.HighlightBag = function(self, bagID)
+    local pool = self:GetPool('bags')
+    for i = 1, #pool do
+        local item = pool[i]
+        local highlighted = bagID ~= nil and self:IsButtonShown(item) and ButtonBagID(item) == bagID
+        if item.bagHighlighted ~= highlighted then
+            item.bagHighlighted = highlighted
+            RefreshBorder(item)
+        end
+    end
+end
+
 local function OnBagButtonEnter(button)
     SetHovered(button, true)
+    slots:HighlightBag(button.bagID)
     GameTooltip:SetOwner(button, 'ANCHOR_RIGHT')
     if button.isBackpack then
         GameTooltip_SetTitle(GameTooltip, BACKPACK_TOOLTIP)
@@ -750,6 +783,9 @@ end
 
 local function OnBagButtonLeave(button)
     SetHovered(button, false)
+    if button.bagID then
+        slots:HighlightBag(nil)
+    end
     if GameTooltip:IsOwned(button) then
         GameTooltip:Hide()
     end
@@ -921,6 +957,19 @@ end
 
 slots.IsReagentBagEquipped = function(self)
     return (C_Container.GetContainerNumSlots(REAGENT_BAG) or 0) > 0
+end
+
+slots.GetKeyringSlots = function(self)
+    local result = {}
+    if not EXUI.IsForever() or not C_ActionBar.ShouldShowKeyring() then
+        return result
+    end
+    for slot = 1, C_Container.GetContainerNumSlots(KEYRING_BAG) or 0 do
+        if C_Container.GetContainerItemID(KEYRING_BAG, slot) then
+            result[#result + 1] = slot
+        end
+    end
+    return result
 end
 
 slots.EnumerateBags = function(self)

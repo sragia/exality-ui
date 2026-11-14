@@ -12,6 +12,7 @@ local bags
 
 local BACKPACK = Enum.BagIndex.Backpack
 local REAGENT_BAG = Enum.BagIndex.ReagentBag
+local KEYRING_BAG = Enum.BagIndex.Keyring
 local TITLE_INSET = 10
 local CLIP_INSET = 2
 local TITLE_GLOW = { 61 / 255, 53 / 255, 48 / 255, 1 } -- #3d3530
@@ -287,6 +288,27 @@ views.LayoutBags = function(self, parent, context)
         y = y + self:LayoutRow(reagentButtons, parent, TITLE_INSET, y, columns, slotSize, spacing)
     end
 
+    local keys = slots:GetKeyringSlots()
+    if #keys > 0 then
+        if y > CLIP_INSET then
+            y = y + 8
+        end
+        local header = self:AcquireHeader('Keys')
+        self:PlaceHeader(header, parent, y)
+        y = y + header:GetHeight() + 6
+
+        local keyButtons = {}
+        for i = 1, #keys do
+            local button = slots:Acquire(used + 1, parent, poolName)
+            if button then
+                used = used + 1
+                slots:Assign(button, KEYRING_BAG, keys[i])
+                keyButtons[#keyButtons + 1] = button
+            end
+        end
+        y = y + self:LayoutRow(keyButtons, parent, TITLE_INSET, y, columns, slotSize, spacing)
+    end
+
     slots:ReleaseFrom(used + 1, poolName)
     return y + CLIP_INSET
 end
@@ -426,6 +448,14 @@ views.MeasureBagsHeight = function(self)
         end
         height = height + 22 + 6
         height = height + GridHeight(C_Container.GetContainerNumSlots(REAGENT_BAG) or 0, columns, slotSize, spacing)
+    end
+    local numKeys = #slots:GetKeyringSlots()
+    if numKeys > 0 then
+        if height > 0 then
+            height = height + 8
+        end
+        height = height + 22 + 6
+        height = height + GridHeight(numKeys, columns, slotSize, spacing)
     end
     return height
 end
