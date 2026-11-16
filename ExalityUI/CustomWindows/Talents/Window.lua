@@ -519,13 +519,9 @@ talents.RefreshActions = function(self, configID, treeID, specID, viewOnly)
     end
     local hasStaged = (purchases and #purchases > 0) or (refunds and #refunds > 0) or (swaps and #swaps > 0)
 
-    if (EXUI.IsForever()) then
-        self.applyButton:Hide()
-    else
-        self.applyButton:Show()
-        SetActionEnabled(self.applyButton, not viewOnly and hasStaged and canChange and true or false)
-    end
-    self.resetButton:SetShown(not EXUI.IsForever() and not viewOnly and hasStaged and true or false)
+    self.applyButton:Show()
+    SetActionEnabled(self.applyButton, not viewOnly and hasStaged and canChange and true or false)
+    self.resetButton:SetShown(not viewOnly and hasStaged and true or false)
 
     if (not configID) then
         self.statusText:SetText('Talents are not available yet.')
@@ -1204,6 +1200,10 @@ talents.Create = function(self)
         applyButton.PPBorder:SetBorderThickness(1)
     end
     applyButton:SetOnClick(function()
+        if (EXUI.IsForever()) then
+            C_ClassTalents.CommitConfig()
+            return
+        end
         local importString = builds:CurrentImportString()
         local success = C_ClassTalents.CommitConfig()
         if (success) then
@@ -1211,9 +1211,6 @@ talents.Create = function(self)
             builds:ConsumePendingConfig()
         end
     end)
-    if (EXUI.IsForever()) then
-        applyButton:Hide()
-    end
     self.applyButton = applyButton
 
     local resetButton = CreateFrame('Button', nil, bottomBar)

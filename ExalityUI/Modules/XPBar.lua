@@ -606,6 +606,7 @@ xpBar.CreateFrame = function(self)
     shapeBorder:SetVertexColor(0, 0, 0, 1)
     shapeBorder:Hide()
     self.frame.Shape = { Mask = shapeMask, Border = shapeBorder, masked = {} }
+    self.frame.EdgeShape = { Mask = self.frame:CreateMaskTexture(), masked = {} }
 
     self:SetLogic(self.frame)
     self:ApplyContentInsets()
@@ -680,6 +681,14 @@ xpBar.ApplyShape = function(self)
     ufShape:SetBarMasked(state, frame.XPBar, enabled)
     ufShape:SetBarMasked(state, frame.RestedBar, enabled)
     ufShape:SetBarMasked(state, frame.CompletedQuestBar, enabled)
+
+    local edge = frame.EdgeShape
+    ufShape:SelectStyle(edge, self.Data:GetValue('style'))
+    ufShape:SetMasked(edge, frame.Spark, enabled)
+    ufShape:SetBarMasked(edge, frame.XPBar, enabled)
+    ufShape:SetBarMasked(edge, frame.RestedBar, enabled)
+    ufShape:SetBarMasked(edge, frame.CompletedQuestBar, enabled)
+    self:UpdateLeadingEdge()
     -- Clipping shrinks the masked corners; the mask already hides the overflow
     frame.StatusBarContainer:SetClipsChildren(not enabled)
 
@@ -689,6 +698,24 @@ xpBar.ApplyShape = function(self)
     else
         frame.PPBorder:Show()
     end
+end
+
+-- Shapes the end of whichever bar reaches furthest, so the joins between bars stay straight
+xpBar.UpdateLeadingEdge = function(self)
+    local frame = self.frame
+    local tip = frame.XPBar
+    if (frame.RestedBar:IsShown()) then
+        local rested = frame.RestedBar:GetValue() or 0
+        local completed = frame.CompletedQuestBar:GetValue() or 0
+        if (rested > 0 or completed > 0) then
+            tip = rested >= completed and frame.RestedBar or frame.CompletedQuestBar
+        end
+    end
+    local mask = frame.EdgeShape.Mask
+    mask:ClearAllPoints()
+    mask:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+    mask:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, 0)
+    mask:SetPoint('RIGHT', tip:GetStatusBarTexture(), 'RIGHT', 0, 0)
 end
 
 xpBar.GetWatchedFaction = function(self)
@@ -919,6 +946,7 @@ xpBar.UpdateValues = function(self)
 
         self.frame.XPBar:SetMinMaxValues(0, maxValue)
         self.frame.XPBar:SetValue(current, Enum.StatusBarInterpolation.ExponentialEaseOut)
+        self:UpdateLeadingEdge()
         return
     end
 
@@ -951,6 +979,7 @@ xpBar.UpdateValues = function(self)
     self.frame.RestedBar:SetValue(self.values.restedXP, Enum.StatusBarInterpolation.ExponentialEaseOut)
     self.frame.CompletedQuestBar:SetMinMaxValues(0, self.values.maxXP)
     self.frame.CompletedQuestBar:SetValue(self.values.completedQuestXP, Enum.StatusBarInterpolation.ExponentialEaseOut)
+    self:UpdateLeadingEdge()
 end
 
 xpBar.GetCompletedQuestXP = function(self)

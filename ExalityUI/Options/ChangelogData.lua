@@ -7,36 +7,49 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.15',
+            changes = {
+                { 'Quest Log', 'Added search above the quest log' },
+                { 'XP Bar',    'Bar Style is now also applied to the end of the filled bar' },
+                { 'Chat',      'Fix old messages (addon prints, Guild MOTD, played time, etc.) showing up again in chat after loading screens' },
+                { 'Talents',   'Talent changes are no longer applied instantly. Pick your talents and press Apply Changes, or Reset to undo them', forever = true },
+                { 'Quest Log', 'Reward choices are now shown first with a "Choose one of" label, followed by rewards you also receive' },
+                { 'Quest Log', 'Added quest count above the quest log. Turns red when your quest log is full' },
+                { 'Quest Log', 'Map, quest list, details and coordinates now all have the same rounded corners regardless of map size' },
+                { 'Quest Log', 'Quest level is now shown as a colored tag next to the tracking icon',                                              forever = true },
+            }
+        },
+        {
             version = '0.9.14',
             changes = {
-                { 'Bags',      'Added Keys section below reagents that shows keys in your keyring. Hidden when you have no keys', forever = true },
-                { 'Quest Log', 'Clicking a quest on the map now opens its details and scrolls the quest list to it' },
-                { 'Bags',      'Item tooltips now show how many you have in your bags, bank and warband bank, along with the total when it is in more than one place. Can be turned off in Bags options' },
+                { 'Bags',              'Added Keys section below reagents that shows keys in your keyring. Hidden when you have no keys',                                                                                                                      forever = true },
+                { 'Quest Log',         'Clicking a quest on the map now opens its details and scrolls the quest list to it' },
+                { 'Bags',              'Item tooltips now show how many you have in your bags, bank and warband bank, along with the total when it is in more than one place. Can be turned off in Bags options' },
                 { 'Objective Tracker', 'Added option to group quests by the same categories as the quest log. Quests from your current zone are always on top, followed by the closest ones. Categories can be collapsed and have their own underline options' },
-                { 'Chat',      'Fix level up messages (and stat increases on Forever) not showing in chat' },
-                { 'Bags',      'Hovering an equipped bag now highlights the slots that belong to it' },
-                { 'Tweaks',    'Added Flight timer. Shows where you are flying from and to, every stop along the way, and how much time is left to each of them. Times get more accurate the more you fly. Can be moved in the editor' },
-                { 'Broker',    'Fix Guild broker not coloring members in your zone green' },
-                { 'Resource Displays', 'Fix Combo Points not updating when changing targets', forever = true },
-                { 'Map',       'Fix Questie icons not showing on the map with the latest Questie version', forever = true },
+                { 'Chat',              'Fix level up messages (and stat increases on Forever) not showing in chat' },
+                { 'Bags',              'Hovering an equipped bag now highlights the slots that belong to it' },
+                { 'Tweaks',            'Added Flight timer. Shows where you are flying from and to, every stop along the way, and how much time is left to each of them. Times get more accurate the more you fly. Can be moved in the editor' },
+                { 'Broker',            'Fix Guild broker not coloring members in your zone green' },
+                { 'Resource Displays', 'Fix Combo Points not updating when changing targets',                                                                                                                                                                  forever = true },
+                { 'Map',               'Fix Questie icons not showing on the map with the latest Questie version',                                                                                                                                             forever = true },
             }
         },
         {
             version = '0.9.13',
             changes = {
-                { 'Bags',      'Fix bag tooltip staying on screen after closing bags while hovering an equipped bag' },
-                { 'Bags',      'Pinned items now show the total count of all stacks in your bags and use the first stack found. Pins no longer disappear when you run out, they show desaturated with 0 count' },
-                { 'Quest Log', 'Failed quests now show a red "Failed" line under their objectives' },
-                { 'Quest Log', 'Completed quests have a green glow in the background' },
-                { 'Quest Log', 'Fix collapsed headers re-opening when other addons (e.g. RXPGuides) expand the quest log' },
-                { 'XP Bar',    'Added Bar Texture option' },
-                { 'Skins',     'Talents/Spellbook skin is temporarily disabled while it gets fixed' },
-                { 'Skins',     'World Map skin is temporarily disabled while it gets fixed' },
-                { 'Merchant',  'Fix other windows (professions, etc.) opening on top of the merchant window' },
-                { 'Bags',      'Bank now shows its bag slots. Locked slots can be bought by clicking the next one, and bags can be put into bought slots', forever = true },
-                { 'Character Frame', 'Added background art', forever = true },
-                { 'Map',       'Added Questie support. Questie icons now show on the map',                                                                  forever = true },
-                { 'Minimap',   'Fix mail icon showing up in the top left corner until hovered',                                                             forever = true },
+                { 'Bags',            'Fix bag tooltip staying on screen after closing bags while hovering an equipped bag' },
+                { 'Bags',            'Pinned items now show the total count of all stacks in your bags and use the first stack found. Pins no longer disappear when you run out, they show desaturated with 0 count' },
+                { 'Quest Log',       'Failed quests now show a red "Failed" line under their objectives' },
+                { 'Quest Log',       'Completed quests have a green glow in the background' },
+                { 'Quest Log',       'Fix collapsed headers re-opening when other addons (e.g. RXPGuides) expand the quest log' },
+                { 'XP Bar',          'Added Bar Texture option' },
+                { 'Skins',           'Talents/Spellbook skin is temporarily disabled while it gets fixed' },
+                { 'Skins',           'World Map skin is temporarily disabled while it gets fixed' },
+                { 'Merchant',        'Fix other windows (professions, etc.) opening on top of the merchant window' },
+                { 'Bags',            'Bank now shows its bag slots. Locked slots can be bought by clicking the next one, and bags can be put into bought slots',                                                     forever = true },
+                { 'Character Frame', 'Added background art',                                                                                                                                                         forever = true },
+                { 'Map',             'Added Questie support. Questie icons now show on the map',                                                                                                                     forever = true },
+                { 'Minimap',         'Fix mail icon showing up in the top left corner until hovered',                                                                                                                forever = true },
             }
         },
         {
@@ -57,7 +70,7 @@ EXUI.GetChangelog = function()
                 { 'Minimap',         'Minimap buttons can now use Square or Circle background shapes with a border and Border Color option, and the Button Drawer now follows these background settings' },
                 { 'Minimap',         'Button Drawer and Addon Compartment menus now use the same row look as Quest Log rewards' },
                 { 'Minimap',         'Expansion Button now only shows when the game makes it available, instead of appearing while editing the minimap' },
-                { 'Styles',          'Fix style icon previews in the styles list',                                                     forever = true },
+                { 'Styles',          'Fix style icon previews in the styles list',                                                                                                                       forever = true },
             }
         },
         {
@@ -74,10 +87,10 @@ EXUI.GetChangelog = function()
                 { 'Nameplates',                      'Added coloring by level difference (+1, +2, +3, +4 and above) outside of instances. Miniboss coloring no longer treats +1 level units as minibosses outside of instances' },
                 { 'Action Bars',                     'Snap action bars to pixel grid' },
                 { 'Bags',                            'Fix Lua errors when buying bank tab or when gold amount changes after visiting bank' },
-                { 'Character Frame',                 'Added Skills panel',                                                                                                                                               forever = true },
-                { 'Action Bars',                     'Fix Lua error when hovering micro menu in combat while it is set to show on hover',                                                                                forever = true },
-                { 'Talents',                         'Disable PvP talents sidebar as it is not available',                                                                                                               forever = true },
-                { 'Unit Frames',                     'Fix castbar icon getting squished when using styles',                                                                                                              forever = true },
+                { 'Character Frame',                 'Added Skills panel',                                                                                                                                                      forever = true },
+                { 'Action Bars',                     'Fix Lua error when hovering micro menu in combat while it is set to show on hover',                                                                                       forever = true },
+                { 'Talents',                         'Disable PvP talents sidebar as it is not available',                                                                                                                      forever = true },
+                { 'Unit Frames',                     'Fix castbar icon getting squished when using styles',                                                                                                                     forever = true },
             }
         },
         {

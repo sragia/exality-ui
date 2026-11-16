@@ -550,14 +550,17 @@ function defaultChat:AcceptDirectMessage(message, r, g, b, chatTypeID, quiet)
     end
 end
 
+-- Only once per session: after this the print hook catches everything, and re-reading ChatFrame1
+-- on later loading screens would bring back old lines that already scrolled out of the dedupe window
 function defaultChat:ImportStartupMessages()
-    if self.importingStartup then
+    if self.importingStartup or self.startupImported then
         return
     end
     local frame = _G.ChatFrame1
     if not frame or not frame.GetNumMessages or not frame.GetMessageInfo then
         return
     end
+    self.startupImported = true
     self.importingStartup = true
     local count = frame:GetNumMessages()
     if IsSecret(count) or type(count) ~= 'number' or count < 1 then

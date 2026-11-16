@@ -485,17 +485,9 @@ local function OnEntryClick(button, mouseButton)
         return
     end
 
-    local function CommitIfForever()
-        if (not EXUI.IsForever() or not C_ClassTalents or not C_ClassTalents.CommitConfig) then
-            return
-        end
-        C_ClassTalents.CommitConfig()
-    end
-
     if (mouseButton == 'RightButton') then
         HideChoicePopup()
         C_Traits.RefundRank(configID, nodeID)
-        CommitIfForever()
         return
     end
 
@@ -506,7 +498,6 @@ local function OnEntryClick(button, mouseButton)
             C_Traits.SetSelection(configID, nodeID, button.entryID)
         end
         HideChoicePopup()
-        CommitIfForever()
         return
     end
 
@@ -517,7 +508,6 @@ local function OnEntryClick(button, mouseButton)
 
     HideChoicePopup()
     C_Traits.PurchaseRank(configID, nodeID)
-    CommitIfForever()
 end
 
 local function ConfigureEntryButton(button)

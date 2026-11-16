@@ -42,10 +42,16 @@ local LINE_SIZE = 12
 local REWARD_ROW_HEIGHT = 26
 local REWARD_ROW_GAP = 4
 local COMPLETE_GLOW_ALPHA = 0.25
-local COMPLETE_GLOW_CORNER = 3
 local QUEST_ROW_PAD = 5
 local QUEST_POI_SIZE = 20
 local QUEST_ROW_MIN = QUEST_POI_SIZE + QUEST_ROW_PAD * 2
+local LEVEL_TAG_HEIGHT = 14
+local LEVEL_TAG_SIZE = 10
+local LEVEL_TAG_BG_ALPHA = 0.2
+local LEVEL_TAG_BORDER_ALPHA = 0.6
+local TAG_BG_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Tag/bg.png]]
+local TAG_BORDER_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Tag/border.png]]
+local TAG_SHADOW = 7
 local BINDING_COMMANDS = { 'TOGGLEWORLDMAP', 'TOGGLEQUESTLOG' }
 
 local function MapHeight()
@@ -66,11 +72,22 @@ local function MapWidth()
     return math.floor(MapHeight() * 3 / 2 + 0.5)
 end
 
-local MAP_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/map-canvas.png]]
+local PANEL_MASK = [[Interface/Addons/ExalityUI/Assets/Images/Map/panel-bg.png]]
+local COMPLETE_GLOW_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/completed-glow.png]]
 local MAP_ZOOM_WHEEL_FACTOR = 1.15
 local CLOSE_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/close-icon.png]]
 local HOME_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Map/home-icon.png]]
 local CAMPAIGN_MASK = [[Interface/Addons/ExalityUI/Assets/Images/Map/campaign-header.png]]
+local SEARCH_TEXTURE = [[Interface/Addons/ExalityUI/Assets/Images/Talents/search-icon.png]]
+local SEARCH_MASK = [[Interface/Addons/ExalityUI/Assets/Images/Talents/talent-mask.png]]
+local SEARCH_ICON = 18
+local SEARCH_BOX_WIDTH = 160
+local SEARCH_GAP = 6
+local SEARCH_COLLAPSED = SEARCH_ICON
+local SEARCH_EXPANDED = SEARCH_ICON + SEARCH_GAP + SEARCH_BOX_WIDTH
+local QUEST_COUNT_HEIGHT = 20
+local QUEST_COUNT_SIZE = 10
+local ABOVE_PANEL_GAP = 3
 
 local ATLAS_W, ATLAS_H = 472, 329
 local SLICE = 4
@@ -156,12 +173,12 @@ end
 
 local OPEN_POINT = { 'TOPLEFT', 'TOPLEFT', 20, -150 }
 local QUEST_BG_ALPHA = 0.88
-local CANVAS_CORNER = 5
+local CANVAS_CORNER = 6
 
 local function PanelMask(frame, slice)
     local mask = frame:CreateMaskTexture()
     mask:SetAllPoints()
-    mask:SetTexture(MAP_TEXTURE, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    mask:SetTexture(PANEL_MASK, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
     if (slice) then
         mask:SetTextureSliceMargins(slice, slice, slice, slice)
         mask:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
@@ -173,7 +190,7 @@ local function ApplyMapChrome(frame)
     local fill = frame:CreateTexture(nil, 'BACKGROUND')
     fill:SetAllPoints()
     fill:SetColorTexture(0, 0, 0, 1)
-    fill:AddMaskTexture(PanelMask(frame))
+    fill:AddMaskTexture(PanelMask(frame, CANVAS_CORNER))
 end
 
 local function CreateCloseButton(parent, onClick)
@@ -659,7 +676,9 @@ questLog.CreateMap = function(self, host)
     -- Mask before the first SetMapID so detail tiles pick it up.
     local mask = scroll:CreateMaskTexture()
     mask:SetAllPoints(scroll)
-    mask:SetTexture(MAP_TEXTURE, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    mask:SetTexture(PANEL_MASK, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    mask:SetTextureSliceMargins(CANVAS_CORNER, CANVAS_CORNER, CANVAS_CORNER, CANVAS_CORNER)
+    mask:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
     canvas:SetMaskTexture(mask)
     canvas:SetUseMaskTexture(true)
 
@@ -1082,15 +1101,46 @@ questLog.SetHeaderCollapsed = function(self, info, collapsed)
     end
 end
 
+local function ContainsText(value, text)
+    return IsReadable(value) and type(value) == 'string' and value:lower():find(text, 1, true) ~= nil
+end
+
+local function QuestMatchesSearch(info, text)
+    if (ContainsText(info.title, text)) then
+        return true
+    end
+    local ok, objectives = pcall(C_QuestLog.GetQuestObjectives, info.questID)
+    if (ok and objectives and IsReadable(objectives)) then
+        for _, objective in ipairs(objectives) do
+            if (ContainsText(objective.text, text)) then
+                return true
+            end
+        end
+    end
+    local textOk, _, logText = pcall(GetQuestLogQuestText, info.questLogIndex)
+    return textOk and ContainsText(logText, text)
+end
+
+questLog.SetSearchText = function(self, text)
+    local value = text and strtrim(text) or ''
+    value = value ~= '' and value:lower() or nil
+    if (value == self.searchText) then
+        return
+    end
+    self.searchText = value
+    self:Refresh()
+end
+
 questLog.BuildEntries = function(self)
     local entries = {}
     local numEntries = C_QuestLog.GetNumQuestLogEntries()
     local pendingHeader = nil
     local pendingIndex = nil
     local headerShown = false
+    local search = self.searchText
 
     local function FlushHeader()
-        if (pendingHeader and not headerShown and IsCampaignHeader(pendingHeader)) then
+        if (pendingHeader and not headerShown and not search and IsCampaignHeader(pendingHeader)) then
             entries[#entries + 1] = { info = pendingHeader, isHeader = true, logIndex = pendingIndex }
         end
         pendingHeader = nil
@@ -1104,12 +1154,12 @@ questLog.BuildEntries = function(self)
             FlushHeader()
             pendingHeader = info
             pendingIndex = index
-        elseif (info and pendingHeader and self:ShouldShowQuest(info)) then
+        elseif (info and pendingHeader and self:ShouldShowQuest(info) and (not search or QuestMatchesSearch(info, search))) then
             if (not headerShown) then
                 entries[#entries + 1] = { info = pendingHeader, isHeader = true, logIndex = pendingIndex }
                 headerShown = true
             end
-            if (not IsHeaderCollapsed(pendingHeader)) then
+            if (search or not IsHeaderCollapsed(pendingHeader)) then
                 entries[#entries + 1] = { info = info, isHeader = false }
             end
         end
@@ -1159,19 +1209,23 @@ local function QuestWatched(questID)
     return ok and IsReadable(watchType) and true or false
 end
 
+local function QuestLevel(info)
+    local level = info and info.level
+    if (EXUI.IsForever() and IsReadable(level) and level > 0) then
+        return level
+    end
+end
+
 local function QuestTitleText(info)
     local title = info and info.title
-    if (not EXUI.IsForever() or not info) then
-        return title
-    end
-    local level = info.level
-    if (IsReadable(level) and level > 0 and IsReadable(title)) then
+    local level = QuestLevel(info)
+    if (level and IsReadable(title)) then
         return string.format('[%s] %s', level, title)
     end
     return title
 end
 
-local function ApplyQuestTitleColor(fontString, questID)
+local function QuestDifficultyColor(questID)
     local r, g, b = 1, 0.82, 0
     if (C_PlayerInfo and C_PlayerInfo.GetContentDifficultyQuestForPlayer and GetDifficultyColor) then
         local ok, difficulty = pcall(C_PlayerInfo.GetContentDifficultyQuestForPlayer, questID)
@@ -1182,7 +1236,11 @@ local function ApplyQuestTitleColor(fontString, questID)
             end
         end
     end
-    fontString:SetTextColor(r, g, b, 1)
+    return r, g, b
+end
+
+local function ApplyQuestTitleColor(fontString, questID)
+    fontString:SetTextColor(QuestDifficultyColor(questID))
 end
 
 local function QuestPOIStyle(questID)
@@ -1613,11 +1671,9 @@ local function ConfigureQuest(row)
     local success = Theme().success
     local completeGlow = row:CreateTexture(nil, 'BACKGROUND', nil, -1)
     completeGlow:SetAllPoints()
-    completeGlow:SetColorTexture(1, 1, 1, 1)
-    completeGlow:SetGradient('HORIZONTAL',
-        CreateColor(success[1], success[2], success[3], COMPLETE_GLOW_ALPHA),
-        CreateColor(success[1], success[2], success[3], 0))
-    completeGlow:AddMaskTexture(PanelMask(row, COMPLETE_GLOW_CORNER))
+    completeGlow:SetTexture(COMPLETE_GLOW_TEXTURE)
+    completeGlow:SetVertexColor(success[1], success[2], success[3], COMPLETE_GLOW_ALPHA)
+    completeGlow:AddMaskTexture(PanelMask(row, CANVAS_CORNER))
     completeGlow:Hide()
     row.completeGlow = completeGlow
 
@@ -1640,6 +1696,30 @@ local function ConfigureQuest(row)
         end
     end)
     row.eye = eye
+
+    local levelTag = CreateFrame('Frame', nil, row)
+    levelTag:SetHeight(LEVEL_TAG_HEIGHT)
+    levelTag:SetPoint('RIGHT', eye, 'LEFT', -4, 0)
+    local levelBg = levelTag:CreateTexture(nil, 'BACKGROUND')
+    levelBg:SetTexture(TAG_BG_TEXTURE)
+    levelBg:SetTextureSliceMargins(TAG_SHADOW + 3, TAG_SHADOW + 3, TAG_SHADOW + 3, TAG_SHADOW + 3)
+    levelBg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    levelBg:SetPoint('TOPLEFT', -TAG_SHADOW, TAG_SHADOW)
+    levelBg:SetPoint('BOTTOMRIGHT', TAG_SHADOW, -TAG_SHADOW)
+    levelTag.bg = levelBg
+    local levelBorder = levelTag:CreateTexture(nil, 'BORDER')
+    levelBorder:SetTexture(TAG_BORDER_TEXTURE)
+    levelBorder:SetTextureSliceMargins(4, 4, 4, 4)
+    levelBorder:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    levelBorder:SetPoint('TOPLEFT', -1, 1)
+    levelBorder:SetPoint('BOTTOMRIGHT', 1, -1)
+    levelTag.border = levelBorder
+    local levelText = levelTag:CreateFontString(nil, 'OVERLAY')
+    levelText:SetFont(FontPath(), LEVEL_TAG_SIZE, 'OUTLINE')
+    levelText:SetPoint('CENTER', 0, 0)
+    levelTag.text = levelText
+    levelTag:Hide()
+    row.levelTag = levelTag
     row.lines = {}
 
     row:SetScript('OnEnter', function(self)
@@ -1692,10 +1772,29 @@ questLog.BindQuest = function(self, row, info, superID)
     self:AttachPOI(row, questID, QuestPOIStyle(questID), superTracked)
     SetAtlasIcon(row.eye.icon, QuestWatched(questID) and 'eye' or 'eyeOff', 14)
 
+    local level = QuestLevel(info)
+    local levelTag = row.levelTag
+    if (level) then
+        local r, g, b = QuestDifficultyColor(questID)
+        levelTag.text:SetText(level)
+        levelTag.text:SetTextColor(r, g, b, 1)
+        levelTag.bg:SetVertexColor(r, g, b, LEVEL_TAG_BG_ALPHA)
+        levelTag.border:SetVertexColor(r, g, b, LEVEL_TAG_BORDER_ALPHA)
+        local width = 12
+        local widthOk, measured = pcall(levelTag.text.GetStringWidth, levelTag.text)
+        if (widthOk and type(measured) == 'number' and measured > 1) then
+            width = measured
+        end
+        levelTag:SetWidth(math.ceil(width) + 8)
+        levelTag:Show()
+    else
+        levelTag:Hide()
+    end
+
     row.label:ClearAllPoints()
     row.label:SetPoint('TOPLEFT', 28, -(QUEST_ROW_PAD + 2))
-    row.label:SetPoint('RIGHT', row.eye, 'LEFT', -4, 0)
-    SetLineText(row.label, QuestTitleText(info))
+    row.label:SetPoint('RIGHT', level and levelTag or row.eye, 'LEFT', -4, 0)
+    SetLineText(row.label, info.title)
     ApplyQuestTitleColor(row.label, questID)
 
     local cursor = QUEST_ROW_PAD + 2 + StringHeight(row.label, TITLE_SIZE) + 2
@@ -1783,6 +1882,8 @@ questLog.RefreshList = function(self)
         end
     end
 
+    self.emptyText:SetText(self.searchText and 'No matching quests' or 'No quests')
+    self:UpdateQuestCount()
     self.emptyText:SetShown(#entries == 0)
     child:SetHeight(math.max(y, 1))
     if (self.listScroll.UpdateScrollbar) then
@@ -2099,6 +2200,17 @@ questLog.CreateDetailPanel = function(self, window)
     rewardsLabel:Hide()
     self.rewardsLabel = rewardsLabel
 
+    local function SubLabel(text)
+        local label = detailScroll.child:CreateFontString(nil, 'OVERLAY')
+        label:SetFont(FontPath(), LINE_SIZE - 2, 'OUTLINE')
+        label:SetText(text)
+        label:SetTextColor(theme.textMuted[1], theme.textMuted[2], theme.textMuted[3], 0.8)
+        label:Hide()
+        return label
+    end
+    self.rewardChoiceLabel = SubLabel('Choose one of:')
+    self.rewardAlsoLabel = SubLabel('You will also receive:')
+
     self.rewardButtons = {}
 end
 
@@ -2316,16 +2428,17 @@ questLog.RefreshDetails = function(self)
         end
     end
 
-    if (GetNumQuestLogRewards and GetQuestLogRewardInfo) then
-        local ok, count = pcall(GetNumQuestLogRewards, questID)
-        if (ok) then
-            AddItemRewards(count, GetQuestLogRewardInfo, 'reward')
-        end
-    end
     if (GetNumQuestLogChoices and GetQuestLogChoiceInfo) then
         local ok, count = pcall(GetNumQuestLogChoices, questID)
         if (ok) then
             AddItemRewards(count, GetQuestLogChoiceInfo, 'choice')
+        end
+    end
+    local choiceCount = self.rewardCount
+    if (GetNumQuestLogRewards and GetQuestLogRewardInfo) then
+        local ok, count = pcall(GetNumQuestLogRewards, questID)
+        if (ok) then
+            AddItemRewards(count, GetQuestLogRewardInfo, 'reward')
         end
     end
     if (C_QuestLog.GetQuestRewardCurrencies) then
@@ -2369,7 +2482,21 @@ questLog.RefreshDetails = function(self)
         self.rewardsLabel:ClearAllPoints()
         self.rewardsLabel:SetPoint('TOPLEFT', child, 'TOPLEFT', 0, -y)
         y = y + 16
+        local function PlaceSubLabel(label)
+            label:Show()
+            label:ClearAllPoints()
+            label:SetPoint('TOPLEFT', child, 'TOPLEFT', 0, -y)
+            y = y + 14
+        end
+        self.rewardChoiceLabel:Hide()
+        self.rewardAlsoLabel:Hide()
         for index = 1, self.rewardCount do
+            if (choiceCount > 0 and index == 1) then
+                PlaceSubLabel(self.rewardChoiceLabel)
+            elseif (choiceCount > 0 and index == choiceCount + 1) then
+                y = y + 4
+                PlaceSubLabel(self.rewardAlsoLabel)
+            end
             local reward = self.rewardButtons[index]
             reward:ClearAllPoints()
             reward:SetPoint('TOPLEFT', child, 'TOPLEFT', 0, -y)
@@ -2378,6 +2505,8 @@ questLog.RefreshDetails = function(self)
         end
     else
         self.rewardsLabel:Hide()
+        self.rewardChoiceLabel:Hide()
+        self.rewardAlsoLabel:Hide()
     end
 
     child:SetHeight(math.max(y + 8, 1))
@@ -2435,6 +2564,162 @@ questLog.UpdateCoordinates = function(self)
     end
     coords.player:SetText('Player: ' .. FormatCoords(playerX, playerY))
     coords.cursor:SetText('Cursor: ' .. FormatCoords(cursorX, cursorY))
+end
+
+questLog.AnimateSearch = function(self, expand)
+    local search = self.searchFrame
+    search.expanded = expand
+    search.animFrom = search:GetWidth()
+    search.animTo = expand and SEARCH_EXPANDED or SEARCH_COLLAPSED
+    search.animTime = 0
+    if (expand) then
+        self.searchBox:Show()
+    end
+    search:SetScript('OnUpdate', function(frame, elapsed)
+        frame.animTime = frame.animTime + elapsed
+        local t = math.min(frame.animTime / 0.18, 1)
+        frame:SetWidth(frame.animFrom + (frame.animTo - frame.animFrom) * t)
+        if (t >= 1) then
+            frame:SetScript('OnUpdate', nil)
+            frame:SetWidth(frame.animTo)
+            if (not frame.expanded) then
+                questLog.searchBox:Hide()
+            else
+                questLog.searchBox:SetFocus()
+            end
+        end
+    end)
+end
+
+questLog.CollapseSearch = function(self)
+    local search = self.searchFrame
+    if (not search) then
+        return
+    end
+    search.expanded = false
+    self.searchBox:ClearFocus()
+    self.searchBox:SetText('')
+    self:SetSearchText(nil)
+    search:SetScript('OnUpdate', nil)
+    if (search:GetWidth() > SEARCH_COLLAPSED + 0.5) then
+        self:AnimateSearch(false)
+    else
+        search:SetWidth(SEARCH_COLLAPSED)
+        self.searchBox:Hide()
+    end
+end
+
+questLog.CreateSearch = function(self, panel)
+    local search = CreateFrame('Frame', nil, self.window)
+    search:SetSize(SEARCH_COLLAPSED, SEARCH_ICON)
+    search:SetPoint('BOTTOMLEFT', panel, 'TOPLEFT', 0, ABOVE_PANEL_GAP)
+    search:SetClipsChildren(true)
+    search:SetFrameLevel(self.window:GetFrameLevel() + 100)
+    self.searchFrame = search
+
+    local searchBox = CreateFrame('EditBox', nil, search)
+    searchBox:SetAutoFocus(false)
+    searchBox:SetFont(FontPath(), 12, 'OUTLINE')
+    searchBox:SetTextColor(1, 1, 1, 1)
+    searchBox:SetSize(SEARCH_BOX_WIDTH, SEARCH_ICON)
+    searchBox:SetPoint('LEFT', SEARCH_ICON + SEARCH_GAP, 0)
+    searchBox:SetTextInsets(6, 6, 0, 0)
+    searchBox:SetMaxLetters(50)
+    searchBox:Hide()
+    local searchBg = searchBox:CreateTexture(nil, 'BACKGROUND')
+    searchBg:SetAllPoints()
+    searchBg:SetColorTexture(0, 0, 0, 0.5)
+    local searchMask = searchBox:CreateMaskTexture()
+    searchMask:SetAllPoints()
+    searchMask:SetTexture(SEARCH_MASK, 'CLAMPTOBLACKADDITIVE', 'CLAMPTOBLACKADDITIVE')
+    searchMask:SetTextureSliceMargins(10, 10, 10, 10)
+    searchMask:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    searchBg:AddMaskTexture(searchMask)
+    searchBox:SetScript('OnTextChanged', function(box)
+        questLog:SetSearchText(box:GetText())
+    end)
+    searchBox:SetScript('OnEscapePressed', function()
+        questLog:CollapseSearch()
+    end)
+    searchBox:SetScript('OnEnterPressed', function(box)
+        box:ClearFocus()
+    end)
+    self.searchBox = searchBox
+
+    local searchButton = CreateFrame('Button', nil, search)
+    searchButton:SetSize(SEARCH_ICON, SEARCH_ICON)
+    searchButton:SetPoint('LEFT', 0, 0)
+    local searchIcon = searchButton:CreateTexture(nil, 'ARTWORK')
+    searchIcon:SetAllPoints()
+    searchIcon:SetTexture(SEARCH_TEXTURE)
+    searchIcon:SetAlpha(0.85)
+    searchButton:SetScript('OnEnter', function()
+        searchIcon:SetAlpha(1)
+    end)
+    searchButton:SetScript('OnLeave', function()
+        searchIcon:SetAlpha(0.85)
+    end)
+    searchButton:SetScript('OnClick', function()
+        if (search.expanded) then
+            questLog:CollapseSearch()
+        else
+            questLog:AnimateSearch(true)
+        end
+    end)
+end
+
+local function CountedQuests()
+    local _, numQuests = C_QuestLog.GetNumQuestLogEntries()
+    if (EXUI.IsForever()) then
+        return numQuests
+    end
+    local count = 0
+    for index = 1, C_QuestLog.GetNumQuestLogEntries() do
+        local info = C_QuestLog.GetInfo(index)
+        if (info and not info.isHeader and not info.isHidden and not info.isTask and not info.isBounty and not info.isInternalOnly) then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+questLog.UpdateQuestCount = function(self)
+    local frame = self.questCountFrame
+    if (not frame) then
+        return
+    end
+    local count = CountedQuests()
+    local max = C_QuestLog.GetMaxNumQuestsCanAccept()
+    if (not IsReadable(count) or not IsReadable(max)) then
+        frame:Hide()
+        return
+    end
+    local theme = Theme()
+    frame.text:SetFormattedText('%d/%d', count, max)
+    if (count >= max) then
+        frame.text:SetTextColor(RED_FONT_COLOR:GetRGB())
+    else
+        frame.text:SetTextColor(theme.text[1], theme.text[2], theme.text[3], 1)
+    end
+    local width = 30
+    local ok, measured = pcall(frame.text.GetStringWidth, frame.text)
+    if (ok and type(measured) == 'number' and measured > 1) then
+        width = measured
+    end
+    frame:SetWidth(math.ceil(width) + PAD * 2)
+    frame:Show()
+end
+
+questLog.CreateQuestCount = function(self, panel)
+    local frame = CreateFrame('Frame', nil, self.window)
+    frame:SetHeight(QUEST_COUNT_HEIGHT)
+    frame:SetPoint('BOTTOMRIGHT', panel, 'TOPRIGHT', 0, ABOVE_PANEL_GAP)
+    ApplyQuestChrome(frame)
+    local text = frame:CreateFontString(nil, 'OVERLAY')
+    text:SetFont(FontPath(), QUEST_COUNT_SIZE, 'OUTLINE')
+    text:SetPoint('CENTER')
+    frame.text = text
+    self.questCountFrame = frame
 end
 
 questLog.ApplyCoordinatesSetting = function(self)
@@ -2580,8 +2865,11 @@ questLog.Create = function(self)
 
     self:CreateCoordinates(mapHost)
     self:CreateQuestList(panel)
+    self:CreateSearch(panel)
+    self:CreateQuestCount(panel)
 
     window:HookScript('OnHide', function()
+        questLog:CollapseSearch()
         questLog:DetachHandyNotes()
         questLog:DetachHereBeDragons()
         if (C_Map.CloseWorldMapInteraction) then

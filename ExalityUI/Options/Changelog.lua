@@ -21,6 +21,9 @@ local FOREVER_COLOR = { 35 / 255, 159 / 255, 199 / 255 }
 local FOREVER_ICON = '|TInterface/Addons/ExalityUI/Assets/Images/Generic/wow-forever.png:13:11|t '
 local FOREVER_SECTION_ICON = '|TInterface/Addons/ExalityUI/Assets/Images/Generic/wow-forever.png:17:15|t '
 local PAD = 6
+local TAG_BG_TEXTURE = 'Interface/Addons/ExalityUI/Assets/Images/Tag/bg.png'
+local TAG_BORDER_TEXTURE = 'Interface/Addons/ExalityUI/Assets/Images/Tag/border.png'
+local TAG_SHADOW = 7
 local LATEST_HEADER_HEIGHT = 34
 local HEADER_HEIGHT = 26
 
@@ -88,10 +91,21 @@ local function CreatePillFrame(parent, text, r, g, b, fontSize)
     label:SetAllPoints(pill)
     EXUI:EnableNativeRounding(label)
 
-    local bg = pill:CreateTexture(nil, 'ARTWORK')
-    bg:SetTexture(WHITE)
+    local bg = pill:CreateTexture(nil, 'BACKGROUND')
+    bg:SetTexture(TAG_BG_TEXTURE)
+    bg:SetTextureSliceMargins(TAG_SHADOW + 3, TAG_SHADOW + 3, TAG_SHADOW + 3, TAG_SHADOW + 3)
+    bg:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
     bg:SetVertexColor(r, g, b, 0.18)
-    bg:SetAllPoints()
+    bg:SetPoint('TOPLEFT', -TAG_SHADOW, TAG_SHADOW)
+    bg:SetPoint('BOTTOMRIGHT', TAG_SHADOW, -TAG_SHADOW)
+
+    local border = pill:CreateTexture(nil, 'BORDER')
+    border:SetTexture(TAG_BORDER_TEXTURE)
+    border:SetTextureSliceMargins(4, 4, 4, 4)
+    border:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    border:SetVertexColor(r, g, b, 0.6)
+    border:SetPoint('TOPLEFT', -1, 1)
+    border:SetPoint('BOTTOMRIGHT', 1, -1)
     return pill
 end
 
