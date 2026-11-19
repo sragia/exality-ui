@@ -85,8 +85,11 @@ function composer:Create(editBg)
     self.editBox = editBox
     if not editBox.exuiFocusHooked then
         editBox.exuiFocusHooked = true
-        editBox:HookScript('OnEditFocusGained', function()
+        editBox:HookScript('OnEditFocusGained', function(box)
             composer.editFocused = true
+            if box.exuiSavedAltArrows ~= nil then
+                box:SetAltArrowKeyMode(false)
+            end
         end)
         editBox:HookScript('OnEditFocusLost', function()
             composer.editFocused = false
@@ -103,6 +106,12 @@ function composer:Create(editBg)
     end
     editBox:SetFont(FontPath(), 13, '')
     editBox:SetAutoFocus(false)
+    if editBox.SetAltArrowKeyMode then
+        if editBox.exuiSavedAltArrows == nil then
+            editBox.exuiSavedAltArrows = editBox:GetAltArrowKeyMode()
+        end
+        editBox:SetAltArrowKeyMode(false)
+    end
     editBox:SetPoint('TOPLEFT', editBg, 'TOPLEFT', 4, -2)
     editBox:SetPoint('BOTTOMRIGHT', editBg, 'BOTTOMRIGHT', -4, 2)
     HideEditChrome(editBox)
@@ -132,6 +141,10 @@ function composer:Release()
         return
     end
     edit:ClearFocus()
+    if edit.exuiSavedAltArrows ~= nil then
+        edit:SetAltArrowKeyMode(edit.exuiSavedAltArrows)
+        edit.exuiSavedAltArrows = nil
+    end
     if not edit.exuiAdopted then
         return
     end

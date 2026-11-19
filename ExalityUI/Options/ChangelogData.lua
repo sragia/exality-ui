@@ -7,6 +7,12 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.16',
+            changes = {
+                { 'Quest Log', 'Map no longer switches to your current zone while open when moving between zones. Opening the map still shows your current zone' },
+                { 'Chat',      'Arrow keys now move the cursor in the chat input' },            }
+        },
+        {
             version = '0.9.15',
             changes = {
                 { 'Quest Log', 'Added search above the quest log' },

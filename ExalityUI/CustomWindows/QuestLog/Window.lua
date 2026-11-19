@@ -955,12 +955,8 @@ questLog.ApplyPendingMap = function(self, resetToPlayer)
 end
 
 questLog.FollowPlayerMap = function(self)
-    local mapID = self:TrackPlayerMap()
-    if (mapID) then
-        self:ShowMap(mapID)
-    else
-        self:UpdateReturnButton()
-    end
+    self:TrackPlayerMap()
+    self:UpdateReturnButton()
 end
 
 questLog.PingQuest = function(self, questID)
