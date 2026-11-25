@@ -132,6 +132,14 @@ local function SetActionEnabled(button, enabled)
     button:SetAlpha(enabled and 1 or 0.45)
 end
 
+local function SetActionText(button, text)
+    if (button.text:GetText() == text) then
+        return
+    end
+    button:SetText(text)
+    EXUI:SetSize(button, button.text:GetStringWidth() + 20, 24)
+end
+
 local function TabForSuggested(suggestedTab)
     if (suggestedTab == PlayerSpellsUtil.FrameTabs.SpellBook) then
         return 'spellbook'
@@ -182,16 +190,16 @@ talents.ForeverConfig = function(self)
         group = active
         self.viewGroup = group
     end
+    local inactive = group ~= active
     local configID
     if (C_SpecializationInfo.GetCombatConfigIDForSpecGroup) then
         configID = C_SpecializationInfo.GetCombatConfigIDForSpecGroup(group)
     end
     if (not configID) then
-        configID = C_ClassTalents.GetActiveConfigID()
-        self.viewGroup = active
-        return configID, false
+        -- A bought spec has no config until it's first activated, show the tree as empty
+        return C_ClassTalents.GetActiveConfigID(), inactive, inactive
     end
-    return configID, group ~= active
+    return configID, inactive, false
 end
 
 talents.DominantTreeIcon = function(self, configID)
@@ -279,15 +287,6 @@ talents.RefreshDualSpecs = function(self)
         x = x + BORDER_SIZE + SPEC_GAP
     end
     self.specRow:SetWidth(math.max(x - SPEC_GAP, 1))
-    local showActivate = self.viewGroup ~= active and self:SpecGroupUnlocked(self.viewGroup)
-    if (self.activateButton) then
-        self.activateButton:SetShown(showActivate)
-        if (showActivate) then
-            self.activateButton:ClearAllPoints()
-            self.activateButton:SetPoint('LEFT', self.specRow, 'RIGHT', 12, 0)
-            EXUI:SetSize(self.activateButton, self.activateButton.text:GetStringWidth() + 20, 24)
-        end
-    end
 end
 
 talents.RefreshSpecs = function(self, specIndex)
@@ -295,9 +294,6 @@ talents.RefreshSpecs = function(self, specIndex)
         for _, button in ipairs(self.dualSpecButtons) do
             button:Hide()
         end
-    end
-    if (self.activateButton) then
-        self.activateButton:Hide()
     end
     local classID = select(3, UnitClass('player'))
     local numSpecs = classID and C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
@@ -386,10 +382,6 @@ talents.PlaceSearch = function(self, shown)
         return
     end
     search:ClearAllPoints()
-    if (EXUI.IsForever() and self.activateButton and self.activateButton:IsShown()) then
-        search:SetPoint('LEFT', self.activateButton, 'RIGHT', 16, 0)
-        return
-    end
     local anchor = shown and shown[#shown]
     if (anchor) then
         search:SetPoint('LEFT', anchor, 'RIGHT', 10, 0)
@@ -520,14 +512,15 @@ talents.RefreshActions = function(self, configID, treeID, specID, viewOnly)
     local hasStaged = (purchases and #purchases > 0) or (refunds and #refunds > 0) or (swaps and #swaps > 0)
 
     self.applyButton:Show()
-    SetActionEnabled(self.applyButton, not viewOnly and hasStaged and canChange and true or false)
+    SetActionText(self.applyButton, viewOnly and 'Activate' or 'Apply Changes')
+    SetActionEnabled(self.applyButton, viewOnly or (hasStaged and canChange) and true or false)
     self.resetButton:SetShown(not viewOnly and hasStaged and true or false)
 
     if (not configID) then
         self.statusText:SetText('Talents are not available yet.')
     elseif (not canEdit and editError and editError ~= '') then
         self.statusText:SetText(editError)
-    elseif (hasStaged and not canChange and changeError and changeError ~= '') then
+    elseif (not viewOnly and hasStaged and not canChange and changeError and changeError ~= '') then
         self.statusText:SetText(changeError)
     else
         self.statusText:SetText('')
@@ -730,15 +723,16 @@ talents.Refresh = function(self)
 
     local configID
     local viewOnly = false
+    local showEmpty = false
     if (EXUI.IsForever()) then
         self:RefreshDualSpecs()
-        configID, viewOnly = self:ForeverConfig()
+        configID, viewOnly, showEmpty = self:ForeverConfig()
     else
         configID = C_ClassTalents.GetActiveConfigID()
         self:RefreshSpecs(specIndex)
     end
     self.talentConfigID = configID
-    tree:SetViewOnly(viewOnly)
+    tree:SetViewOnly(viewOnly, showEmpty)
     local treeID = specID and C_ClassTalents.GetTraitTreeForSpec(specID) or nil
 
     tree:Refresh(configID, treeID, specID)
@@ -1097,21 +1091,6 @@ talents.Create = function(self)
         self.dualSpecButtons[index] = button
     end
 
-    local activateButton = EXFrames:GetFrame('simple-button'):Create(bottomBar)
-    activateButton:SetText('Activate')
-    activateButton:Hide()
-    EXUI:SetSize(activateButton, activateButton.text:GetStringWidth() + 20, 24)
-    if (activateButton.PPBorder) then
-        activateButton.PPBorder:SetBorderThickness(1)
-    end
-    activateButton:SetOnClick(function()
-        local group = talents.viewGroup
-        if (group and C_SpecializationInfo.SetActiveSpecGroup) then
-            C_SpecializationInfo.SetActiveSpecGroup(group)
-        end
-    end)
-    self.activateButton = activateButton
-
     local heroRow = CreateFrame('Frame', nil, bottomBar)
     heroRow:SetPoint('LEFT', specRow, 'RIGHT', 16, 0)
     heroRow:SetPoint('RIGHT', bottomBar, 'CENTER', -90, 0)
@@ -1201,6 +1180,11 @@ talents.Create = function(self)
     end
     applyButton:SetOnClick(function()
         if (EXUI.IsForever()) then
+            local group = talents.viewGroup
+            if (group and group ~= talents:ActiveSpecGroup()) then
+                C_SpecializationInfo.SetActiveSpecGroup(group)
+                return
+            end
             C_ClassTalents.CommitConfig()
             return
         end
@@ -1479,6 +1463,9 @@ end)
 
 EXUI:RegisterEventHandler({
     'TRAIT_CONFIG_UPDATED',
+    'TRAIT_CONFIG_CREATED',
+    'ACTIVE_COMBAT_CONFIG_CHANGED',
+    'ACTIVE_TALENT_GROUP_CHANGED',
     'TRAIT_NODE_CHANGED',
     'TRAIT_NODE_CHANGED_PARTIAL',
     'TRAIT_TREE_CURRENCY_INFO_UPDATED',

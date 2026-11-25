@@ -20,6 +20,7 @@ slots.search = {
 }
 slots.buttons = slots.pools.bags
 slots.bagButtons = {}
+slots.itemButtonCallbacks = {}
 
 local SEARCH_DIM = 0.3
 
@@ -335,6 +336,26 @@ local function ButtonBagID(button)
     return button.bagID
 end
 
+local function RunItemButtonCallbacks(button, bagID, slotID, info)
+    for _, callback in pairs(slots.itemButtonCallbacks) do
+        callback(button, button.Overlay, bagID, slotID, info)
+    end
+end
+
+slots.RefreshItemButtonCallbacks = function(self)
+    if not next(self.itemButtonCallbacks) then
+        return
+    end
+    self:ForEachButton(function(button)
+        if self:IsButtonShown(button) and not button.isDropSlot and not button.missingItemID then
+            local bagID, slotID = ButtonBagID(button), button:GetID()
+            if bagID and slotID and slotID > 0 then
+                RunItemButtonCallbacks(button, bagID, slotID, C_Container.GetContainerItemInfo(bagID, slotID))
+            end
+        end
+    end)
+end
+
 -- Parent frames hold bag IDs (Baganator-style). SetBagID uses SetAttribute
 -- and taints UseContainerItem if rewritten in combat.
 slots.GetBagIndexFrame = function(self, bagID, anchor)
@@ -491,6 +512,7 @@ slots.UpdateItemButton = function(self, button)
         end
         self:ApplySearchDim(button, query == '')
         button.itemSnap = { empty = true, query = query }
+        RunItemButtonCallbacks(button, bagID, slotID, nil)
         return
     end
 
@@ -564,6 +586,7 @@ slots.UpdateItemButton = function(self, button)
         noValue = info.hasNoValue,
         query = query,
     }
+    RunItemButtonCallbacks(button, bagID, slotID, info)
 end
 
 slots.EnsureCooldown = function(self, button)
@@ -730,10 +753,8 @@ local function OnBagButtonClick(button)
         return
     end
     local invID = C_Container.ContainerIDToInventoryID(button.bagID)
-    if invID then
-        if not PutItemInBag(invID) and CursorHasItem() then
-            return
-        end
+    if invID and not PutItemInBag(invID) then
+        PickupBagFromSlot(invID)
     end
 end
 
@@ -865,6 +886,7 @@ slots.CreateBagButton = function(self, parent, bagID)
     button.isReagent = bagID == REAGENT_BAG
     button:SetID(bagID)
     button:Show()
+    button:RegisterForDrag('LeftButton')
     button:SetScript('OnClick', OnBagButtonClick)
     button:SetScript('OnDragStart', OnBagButtonDrag)
     button:SetScript('OnReceiveDrag', OnBagButtonClick)

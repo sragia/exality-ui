@@ -21,6 +21,34 @@ local ufShape = EXUI:GetModule('uf-element-shape')
 
 local LSM = LibStub:GetLibrary("LibSharedMedia-3.0", true)
 
+local SPARK_WIDTH = 50
+local SPARK_LIGHTEN = 0.2
+local SPARK_MIN_ALPHA = 0.6
+local SHADOW_WIDTH = 16
+local SHADOW_OVERLAP = 6
+local SHADOW_ALPHA = 0.6
+local UNDERLAP = 20
+
+local function CreateSpark(bar)
+    local spark = bar:CreateTexture(nil, 'OVERLAY')
+    spark:SetTexture(EXUI.const.textures.frame.solidBg)
+    spark:SetWidth(SPARK_WIDTH)
+    spark:SetPoint('TOPRIGHT', bar:GetStatusBarTexture(), 'TOPRIGHT', 0, 0)
+    spark:SetPoint('BOTTOMRIGHT', bar:GetStatusBarTexture(), 'BOTTOMRIGHT', 0, 0)
+    return spark
+end
+
+local function SetSparkColor(spark, r, g, b, a)
+    spark:SetGradient('HORIZONTAL', CreateColor(r, g, b, 0), CreateColor(r, g, b, a))
+end
+
+local function SetLightenedSparkColor(spark, color)
+    local r = color.r + (1 - color.r) * SPARK_LIGHTEN
+    local g = color.g + (1 - color.g) * SPARK_LIGHTEN
+    local b = color.b + (1 - color.b) * SPARK_LIGHTEN
+    SetSparkColor(spark, r, g, b, math.max(color.a, SPARK_MIN_ALPHA))
+end
+
 -----------------------------------
 
 ---@class EXUIXPBarModule
@@ -95,6 +123,7 @@ xpBar.Init = function(self)
         xpBarColor = { r = 1, g = 210 / 255, b = 0, a = 1 },
         restedBarColor = { r = 0, g = 162 / 255, b = 1, a = 0.2 },
         completedQuestBarColor = { r = 1, g = 72 / 255, b = 0, a = 1 },
+        sparkColor = { r = 1, g = 1, b = 1, a = 1 },
         style = styles.NONE,
     })
     optionsController:RegisterModule(self)
@@ -464,11 +493,27 @@ xpBar.GetOptions = function(self)
                 self.Data:SetValue('completedQuestBarColor', value)
                 self:Configure()
             end,
+            width = 22
+        },
+        {
+            type = 'color-picker',
+            name = 'sparkColor',
+            label = 'Spark Color',
+            depends = function()
+                return self.Data:GetValue('enable')
+            end,
+            currentValue = function()
+                return self.Data:GetValue('sparkColor')
+            end,
+            onChange = function(value)
+                self.Data:SetValue('sparkColor', value)
+                self:UpdateSparkColors()
+            end,
             width = 16
         },
         {
             type = 'spacer',
-            width = 52,
+            width = 30,
             depends = function()
                 return self.Data:GetValue('enable')
             end,
@@ -533,19 +578,14 @@ xpBar.CreateFrame = function(self)
     statusBar:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
     self.frame.XPBar = statusBar
 
-    local spark = statusBar:CreateTexture(nil, 'OVERLAY')
-    spark:SetWidth(2)
-    spark:SetPoint('TOP', statusBar:GetStatusBarTexture(), 'TOPRIGHT', 0, 0)
-    spark:SetPoint('BOTTOM', statusBar:GetStatusBarTexture(), 'BOTTOMRIGHT', 0, 0)
-    spark:SetTexture(EXUI.const.textures.frame.solidBg)
-    spark:SetVertexColor(1, 1, 1, 1)
-    self.frame.Spark = spark
+    self.frame.Spark = CreateSpark(statusBar)
 
     local restedBar = CreateFrame('StatusBar', nil, statusBarFrame)
     restedBar:SetPoint('TOPLEFT', statusBar:GetStatusBarTexture(), 'TOPRIGHT', 0, 0)
     restedBar:SetPoint('BOTTOMLEFT', statusBar:GetStatusBarTexture(), 'BOTTOMRIGHT', 0, 0)
     restedBar:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
     restedBar:SetWidth(100) -- Temp until it gets updated from config
+    restedBar.Spark = CreateSpark(restedBar)
     self.frame.RestedBar = restedBar
 
     local completedQuestBar = CreateFrame('StatusBar', nil, statusBarFrame)
@@ -553,7 +593,25 @@ xpBar.CreateFrame = function(self)
     completedQuestBar:SetPoint('BOTTOMLEFT', statusBar:GetStatusBarTexture(), 'BOTTOMRIGHT', 0, 0)
     completedQuestBar:SetStatusBarTexture(LSM:Fetch('statusbar', 'ExalityUI Status Bar'))
     completedQuestBar:SetWidth(100) -- Temp until it gets updated from config
+    completedQuestBar.Spark = CreateSpark(completedQuestBar)
     self.frame.CompletedQuestBar = completedQuestBar
+
+    -- Layered look: XP bar casts a shadow over the rested/quest bars, starting under its tip so it follows a rounded end
+    local shadowFrame = CreateFrame('Frame', nil, statusBarFrame)
+    shadowFrame:SetAllPoints()
+    local shadow = shadowFrame:CreateTexture(nil, 'ARTWORK')
+    shadow:SetTexture(EXUI.const.textures.frame.solidBg)
+    shadow:SetWidth(SHADOW_WIDTH)
+    shadow:SetPoint('TOPLEFT', statusBar:GetStatusBarTexture(), 'TOPRIGHT', -SHADOW_OVERLAP, 0)
+    shadow:SetPoint('BOTTOMLEFT', statusBar:GetStatusBarTexture(), 'BOTTOMRIGHT', -SHADOW_OVERLAP, 0)
+    shadow:SetGradient('HORIZONTAL', CreateColor(0, 0, 0, SHADOW_ALPHA), CreateColor(0, 0, 0, 0))
+    self.frame.Shadow = shadow
+
+    local baseLevel = statusBarFrame:GetFrameLevel()
+    restedBar:SetFrameLevel(baseLevel + 1)
+    completedQuestBar:SetFrameLevel(baseLevel + 1)
+    shadowFrame:SetFrameLevel(baseLevel + 2)
+    statusBar:SetFrameLevel(baseLevel + 3)
 
     -- Texts
     self.frame.Texts = {}
@@ -607,6 +665,7 @@ xpBar.CreateFrame = function(self)
     shapeBorder:Hide()
     self.frame.Shape = { Mask = shapeMask, Border = shapeBorder, masked = {} }
     self.frame.EdgeShape = { Mask = self.frame:CreateMaskTexture(), masked = {} }
+    self.frame.XPEdgeShape = { Mask = self.frame:CreateMaskTexture(), masked = {} }
 
     self:SetLogic(self.frame)
     self:ApplyContentInsets()
@@ -667,6 +726,7 @@ xpBar.Configure = function(self)
         db.restedBarColor.a)
     self.frame.CompletedQuestBar:SetStatusBarColor(db.completedQuestBarColor.r, db.completedQuestBarColor.g,
         db.completedQuestBarColor.b, db.completedQuestBarColor.a)
+    self:UpdateSparkColors()
     self:ApplyShape()
 end
 
@@ -678,14 +738,22 @@ xpBar.ApplyShape = function(self)
     local enabled = ufShape:SelectStyle(state, self.Data:GetValue('style'))
     ufShape:SetMasked(state, frame.Background, enabled)
     ufShape:SetMasked(state, frame.Spark, enabled)
+    ufShape:SetMasked(state, frame.Shadow, enabled)
+    ufShape:SetMasked(state, frame.RestedBar.Spark, enabled)
+    ufShape:SetMasked(state, frame.CompletedQuestBar.Spark, enabled)
     ufShape:SetBarMasked(state, frame.XPBar, enabled)
     ufShape:SetBarMasked(state, frame.RestedBar, enabled)
     ufShape:SetBarMasked(state, frame.CompletedQuestBar, enabled)
 
+    local xpEdge = frame.XPEdgeShape
+    ufShape:SelectStyle(xpEdge, self.Data:GetValue('style'))
+    ufShape:SetMasked(xpEdge, frame.Spark, enabled)
+    ufShape:SetBarMasked(xpEdge, frame.XPBar, enabled)
+
     local edge = frame.EdgeShape
     ufShape:SelectStyle(edge, self.Data:GetValue('style'))
-    ufShape:SetMasked(edge, frame.Spark, enabled)
-    ufShape:SetBarMasked(edge, frame.XPBar, enabled)
+    ufShape:SetMasked(edge, frame.RestedBar.Spark, enabled)
+    ufShape:SetMasked(edge, frame.CompletedQuestBar.Spark, enabled)
     ufShape:SetBarMasked(edge, frame.RestedBar, enabled)
     ufShape:SetBarMasked(edge, frame.CompletedQuestBar, enabled)
     self:UpdateLeadingEdge()
@@ -700,7 +768,33 @@ xpBar.ApplyShape = function(self)
     end
 end
 
--- Shapes the end of whichever bar reaches furthest, so the joins between bars stay straight
+xpBar.UpdateSparkColors = function(self)
+    local db = self.Data:GetDB()
+    local color = db.sparkColor
+    SetSparkColor(self.frame.Spark, color.r, color.g, color.b, color.a)
+    SetLightenedSparkColor(self.frame.RestedBar.Spark, db.restedBarColor)
+    SetLightenedSparkColor(self.frame.CompletedQuestBar.Spark, db.completedQuestBarColor)
+end
+
+-- Rested and quest bars start at the XP tip, so keep their spark within their own fill
+local function FitSpark(bar, value, maxValue, barWidth)
+    local fill = maxValue > 0 and value / maxValue * barWidth or 0
+    bar.Spark:SetShown(fill > 0)
+    bar.Spark:SetWidth(math.max(math.min(SPARK_WIDTH, fill), 1))
+end
+
+-- Starts the bar under the XP tip so a rounded XP end has the bar behind it, keeping its end in place
+local function SetUnderlappedValue(bar, xpTip, value, maxValue, underlap)
+    if value <= 0 then
+        underlap = 0
+    end
+    bar:SetPoint('TOPLEFT', xpTip, 'TOPRIGHT', -underlap, 0)
+    bar:SetPoint('BOTTOMLEFT', xpTip, 'BOTTOMRIGHT', -underlap, 0)
+    bar:SetMinMaxValues(0, maxValue)
+    bar:SetValue(value + underlap / bar:GetWidth() * maxValue, Enum.StatusBarInterpolation.ExponentialEaseOut)
+end
+
+-- XP bar has its own shaped end; the rested/quest bars share one at whichever reaches furthest
 xpBar.UpdateLeadingEdge = function(self)
     local frame = self.frame
     local tip = frame.XPBar
@@ -716,6 +810,12 @@ xpBar.UpdateLeadingEdge = function(self)
     mask:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
     mask:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, 0)
     mask:SetPoint('RIGHT', tip:GetStatusBarTexture(), 'RIGHT', 0, 0)
+
+    local xpMask = frame.XPEdgeShape.Mask
+    xpMask:ClearAllPoints()
+    xpMask:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+    xpMask:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, 0)
+    xpMask:SetPoint('RIGHT', frame.XPBar:GetStatusBarTexture(), 'RIGHT', 0, 0)
 end
 
 xpBar.GetWatchedFaction = function(self)
@@ -746,7 +846,8 @@ xpBar.GetReputationProgress = function(self)
     end
 
     local factionID = watched.factionID
-    local minBar, maxBar, value = watched.currentReactionThreshold, watched.nextReactionThreshold, watched.currentStanding
+    local minBar, maxBar, value = watched.currentReactionThreshold, watched.nextReactionThreshold,
+        watched.currentStanding
     local standingLevel = watched.reaction or 0
     local levelText = GetStandingLabel(standingLevel)
 
@@ -975,10 +1076,13 @@ xpBar.UpdateValues = function(self)
 
     self.frame.XPBar:SetMinMaxValues(0, self.values.maxXP)
     self.frame.XPBar:SetValue(self.values.currentXP, Enum.StatusBarInterpolation.ExponentialEaseOut)
-    self.frame.RestedBar:SetMinMaxValues(0, self.values.maxXP)
-    self.frame.RestedBar:SetValue(self.values.restedXP, Enum.StatusBarInterpolation.ExponentialEaseOut)
-    self.frame.CompletedQuestBar:SetMinMaxValues(0, self.values.maxXP)
-    self.frame.CompletedQuestBar:SetValue(self.values.completedQuestXP, Enum.StatusBarInterpolation.ExponentialEaseOut)
+    local barWidth = self.frame.XPBar:GetWidth()
+    local xpTip = self.frame.XPBar:GetStatusBarTexture()
+    local underlap = math.min(UNDERLAP, self.values.currentXP / self.values.maxXP * barWidth)
+    SetUnderlappedValue(self.frame.RestedBar, xpTip, self.values.restedXP, self.values.maxXP, underlap)
+    SetUnderlappedValue(self.frame.CompletedQuestBar, xpTip, self.values.completedQuestXP, self.values.maxXP, underlap)
+    FitSpark(self.frame.RestedBar, self.values.restedXP, self.values.maxXP, barWidth)
+    FitSpark(self.frame.CompletedQuestBar, self.values.completedQuestXP, self.values.maxXP, barWidth)
     self:UpdateLeadingEdge()
 end
 

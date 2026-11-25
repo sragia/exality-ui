@@ -131,7 +131,6 @@ bags.GetDefaults = function()
         bankSlotSize = 32,
         bankColumns = 32,
         bankSpacing = 5,
-        pinnedItems = {},
         posX = nil,
         posY = nil,
         bankPosX = nil,
@@ -851,3 +850,20 @@ bags.Disable = function(self)
     self.enabled = false
     self:UpdateTooltip()
 end
+
+-- Lets other addons decorate bag and bank item buttons.
+-- callback(button, overlay, bagID, slotID, info) runs whenever a slot changes; info is nil for empty slots.
+ExalityUI.Bags = {
+    RegisterItemButtonCallback = function(owner, callback)
+        slots.itemButtonCallbacks[owner] = callback
+        ExalityUI.Bags.RefreshItemButtonCallbacks()
+    end,
+    UnregisterItemButtonCallback = function(owner)
+        slots.itemButtonCallbacks[owner] = nil
+    end,
+    RefreshItemButtonCallbacks = function()
+        if bags.enabled then
+            slots:RefreshItemButtonCallbacks()
+        end
+    end,
+}

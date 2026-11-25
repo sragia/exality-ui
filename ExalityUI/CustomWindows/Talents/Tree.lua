@@ -1520,6 +1520,9 @@ local function LayoutTreeHeaders(self, configID, treeID)
     end
 
     local function SpentFor(groupID)
+        if (self.showEmpty) then
+            return 0
+        end
         local groupInfo = currencyByGroup[groupID]
         local currency = groupInfo and groupInfo.currencyInfos and groupInfo.currencyInfos[1]
         return currency and currency.spent or 0
@@ -1952,8 +1955,21 @@ tree.SetBackground = function(self, atlas)
     self.background:Show()
 end
 
-tree.SetViewOnly = function(self, viewOnly)
+tree.SetViewOnly = function(self, viewOnly, showEmpty)
     self.viewOnly = viewOnly and true or false
+    self.showEmpty = showEmpty and true or false
+end
+
+local function DisplayNodeInfo(self, configID, nodeID)
+    local nodeInfo = C_Traits.GetNodeInfo(configID, nodeID)
+    if (nodeInfo and self.showEmpty) then
+        nodeInfo.currentRank = 0
+        nodeInfo.activeRank = 0
+        nodeInfo.ranksPurchased = 0
+        nodeInfo.activeEntry = nil
+        nodeInfo.isAvailable = true
+    end
+    return nodeInfo
 end
 
 local function LayoutForeverBackground(self)
@@ -2043,7 +2059,7 @@ tree.Refresh = function(self, configID, treeID, specID)
 
     if (nodeIDs) then
         for _, nodeID in ipairs(nodeIDs) do
-            local nodeInfo = C_Traits.GetNodeInfo(configID, nodeID)
+            local nodeInfo = DisplayNodeInfo(self, configID, nodeID)
             if (ShouldDrawNode(nodeInfo)) then
                 self.nodeCount = self.nodeCount + 1
                 local node = AcquireNode(self)

@@ -60,6 +60,13 @@ local function isMissingFromBars(spellID)
     return true
 end
 
+local function getSpellRank(spellID, subName)
+    if not subName or subName == '' then
+        subName = C_Spell.GetSpellSubtext(spellID)
+    end
+    return subName and subName:match('(%d+)')
+end
+
 -- Spec first, then class, then general, then other spells, then bag consumables.
 local CATEGORY_SPEC = 1
 local CATEGORY_CLASS = 2
@@ -193,6 +200,7 @@ spellPicker.EnsureSpellList = function(self)
                                 name = itemInfo.name,
                                 nameLower = string.lower(itemInfo.name),
                                 icon = itemInfo.iconID,
+                                subName = itemInfo.subName,
                                 category = category,
                             }
                             seen[itemInfo.spellID] = entry
@@ -342,6 +350,13 @@ spellPicker.AcquireRow = function(self)
         count:SetTextColor(unpack(EXUI.const.theme.text))
         row.count = count
 
+        local rank = row:CreateFontString(nil, 'OVERLAY')
+        rank:SetFont(EXUI.const.fonts.DEFAULT, 10, 'OUTLINE')
+        rank:SetPoint('RIGHT', -8, 0)
+        rank:SetJustifyH('RIGHT')
+        rank:SetTextColor(unpack(EXUI.const.theme.textMuted))
+        row.rank = rank
+
         local name = row:CreateFontString(nil, 'OVERLAY')
         name:SetFont(EXUI.const.fonts.DEFAULT, 12, 'OUTLINE')
         name:SetPoint('LEFT', icon, 'RIGHT', 6, 0)
@@ -477,12 +492,18 @@ spellPicker.RefreshList = function(self, filterText)
         row.name:SetTextColor(unpack(EXUI.const.theme.text))
         row.name:ClearAllPoints()
         row.name:SetPoint('LEFT', row.icon, 'RIGHT', 6, 0)
+        local rank = row.entryType == 'spell' and EXUI.IsForever() and getSpellRank(entry.spellID, entry.subName)
+        row.count:Hide()
+        row.rank:Hide()
         if row.entryType == 'item' and entry.count and entry.count > 1 then
             row.count:SetText(entry.count)
             row.count:Show()
             row.name:SetPoint('RIGHT', row.count, 'LEFT', -6, 0)
+        elseif rank then
+            row.rank:SetText(RANK .. ': ' .. rank)
+            row.rank:Show()
+            row.name:SetPoint('RIGHT', row.rank, 'LEFT', -6, 0)
         else
-            row.count:Hide()
             row.name:SetPoint('RIGHT', -8, 0)
         end
 

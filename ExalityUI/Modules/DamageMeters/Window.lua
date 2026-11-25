@@ -1163,11 +1163,11 @@ end
 
 function windowMod:OpenViewMenu(frame, anchor)
     self:HideFavoriteOverlay(frame)
-    EXFrames:GetFrame('list-menu-frame'):ToggleAt(anchor or frame.viewButton, self:BuildViewMenu(frame))
+    EXFrames:GetFrame('list-menu-frame'):ToggleAt(anchor or frame.viewButton, self:BuildViewMenu(frame), 'drawer')
 end
 
 function windowMod:OpenSlotMenu(frame, slotIndex, anchor)
-    EXFrames:GetFrame('list-menu-frame'):ShowAt(anchor or frame.header, self:BuildViewMenu(frame, slotIndex))
+    EXFrames:GetFrame('list-menu-frame'):ShowAt(anchor or frame.header, self:BuildViewMenu(frame, slotIndex), 'drawer')
 end
 
 function windowMod:BuildSessionMenu(frame)
@@ -1223,5 +1223,5 @@ function windowMod:BuildSessionMenu(frame)
 end
 
 function windowMod:OpenSessionMenu(frame, anchor)
-    EXFrames:GetFrame('list-menu-frame'):ToggleAt(anchor or frame.sessionButton, self:BuildSessionMenu(frame))
+    EXFrames:GetFrame('list-menu-frame'):ToggleAt(anchor or frame.sessionButton, self:BuildSessionMenu(frame), 'drawer')
 end

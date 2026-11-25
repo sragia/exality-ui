@@ -4,4 +4,5 @@
     <Include file="Talents/Talents.xml"/>
     <Include file="QuestLog/QuestLog.xml"/>
     <Include file="Merchant/Merchant.xml"/>
+    <Include file="Loot/Loot.xml"/>
 </Ui>

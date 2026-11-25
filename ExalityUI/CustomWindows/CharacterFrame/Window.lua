@@ -78,6 +78,58 @@ local WINDOW_CORNER = 24
 local BG_CROP_TOP = 0.05
 local BG_CROP_BOTTOM = 0.04
 
+-- Forever talent trees in orderIndex order, mapped to retail spec art
+local FOREVER_TREE_BACKGROUNDS = {
+    WARRIOR = { 'warrior-arms', 'warrior-fury', 'warrior-protection' },
+    PALADIN = { 'paladin-holy', 'paladin-protection', 'paladin-retribution' },
+    HUNTER = { 'hunter-beastmastery', 'hunter-marksmanship', 'hunter-survival' },
+    ROGUE = { 'rogue-assassination', 'rogue-outlaw', 'rogue-subtlety' },
+    PRIEST = { 'priest-discipline', 'priest-holy', 'priest-shadow' },
+    SHAMAN = { 'shaman-elemental', 'shaman-enhancement', 'shaman-restoration' },
+    MAGE = { 'mage-arcane', 'mage-fire', 'mage-frost' },
+    WARLOCK = { 'warlock-affliction', 'warlock-demonology', 'warlock-destruction' },
+    DRUID = { 'druid-balance', 'druid-feral', 'druid-restoration' },
+}
+
+local function GetForeverMainTreeIndex()
+    local configID = C_ClassTalents.GetActiveConfigID()
+    local configInfo = configID and C_Traits.GetConfigInfo(configID)
+    local treeID = configInfo and configInfo.treeIDs and configInfo.treeIDs[1]
+    local displayInfos = treeID and C_Traits.GetGroupDisplayInfoByTreeID(treeID)
+    if (not displayInfos or #displayInfos == 0) then
+        return nil
+    end
+    table.sort(displayInfos, function(a, b) return a.orderIndex < b.orderIndex end)
+
+    local groupIDs = {}
+    for index, info in ipairs(displayInfos) do
+        groupIDs[index] = info.groupID
+    end
+    local spentByGroup = {}
+    for _, groupInfo in ipairs(C_Traits.GetGroupCurrencyInfo(configID, groupIDs) or {}) do
+        local currency = groupInfo.currencyInfos and groupInfo.currencyInfos[1]
+        spentByGroup[groupInfo.traitNodeGroupID] = currency and currency.spent or 0
+    end
+
+    local bestIndex, bestSpent = nil, 0
+    for index, info in ipairs(displayInfos) do
+        local spent = spentByGroup[info.groupID] or 0
+        if (spent > bestSpent) then
+            bestIndex, bestSpent = index, spent
+        end
+    end
+    return bestIndex
+end
+
+local function GetForeverBackgroundAtlas()
+    local trees = FOREVER_TREE_BACKGROUNDS[select(2, UnitClass('player'))]
+    local index = trees and GetForeverMainTreeIndex()
+    local atlas = index and trees[index] and ('talents-background-' .. trees[index])
+    if (atlas and C_Texture.GetAtlasInfo(atlas)) then
+        return atlas
+    end
+end
+
 local function BottomSlotIds()
     if not EXUI.IsForever() then
         return BOTTOM_SLOTS
@@ -306,37 +358,59 @@ characterFrame.FitAtlas = function(self, texture, atlas)
     texture:SetVertexColor(1, 1, 1, 1)
 end
 
+characterFrame.SetBackgroundMasked = function(self, masked)
+    if (self.backgroundMasked == masked or not self.backgroundMask) then
+        return
+    end
+    self.backgroundMasked = masked
+    if (masked) then
+        self.background:AddMaskTexture(self.backgroundMask)
+    else
+        self.background:RemoveMaskTexture(self.backgroundMask)
+    end
+end
+
 characterFrame.UpdateBackground = function(self)
     local art = self.background
     local window = self.window
     if (not art or not window) then
         return
     end
+    local atlas
     if (EXUI.IsForever()) then
-        -- Art carries its own rounded corners, so it replaces the window chrome unmasked
-        if (window.Texture) then
-            window.Texture:Hide()
+        atlas = GetForeverBackgroundAtlas()
+        self:SetBackgroundMasked(atlas ~= nil)
+        if (not atlas) then
+            -- Art carries its own rounded corners, so it replaces the window chrome unmasked
+            if (window.Texture) then
+                window.Texture:Hide()
+            end
+            if (window.PPBorder) then
+                window.PPBorder:Hide()
+            end
+            if (self.backgroundBacking) then
+                self.backgroundBacking:Hide()
+            end
+            self.backgroundAtlas = nil
+            art:ClearAllPoints()
+            art:SetAllPoints()
+            art:SetTexture(EXUI.const.textures.characterFrame.foreverBackground)
+            art:SetTexCoord(0, 1, 0, 1)
+            art:SetVertexColor(1, 1, 1, 1)
+            art:Show()
+            return
         end
-        if (window.PPBorder) then
-            window.PPBorder:Hide()
+    else
+        if (not ClassTalentUtil and not self.spellBookLoadTried and C_AddOns and C_AddOns.LoadAddOn) then
+            self.spellBookLoadTried = true
+            C_AddOns.LoadAddOn('Blizzard_PlayerSpells')
         end
-        art:ClearAllPoints()
-        art:SetAllPoints()
-        art:SetTexture(EXUI.const.textures.characterFrame.foreverBackground)
-        art:SetTexCoord(0, 1, 0, 1)
-        art:SetVertexColor(1, 1, 1, 1)
-        art:Show()
-        return
+        local specIndex = C_SpecializationInfo.GetSpecialization()
+        local specID = specIndex and select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
+        local visuals = specID and ClassTalentUtil and ClassTalentUtil.GetVisualsForSpecID and
+            ClassTalentUtil.GetVisualsForSpecID(specID)
+        atlas = visuals and visuals.background
     end
-    if (not ClassTalentUtil and not self.spellBookLoadTried and C_AddOns and C_AddOns.LoadAddOn) then
-        self.spellBookLoadTried = true
-        C_AddOns.LoadAddOn('Blizzard_PlayerSpells')
-    end
-    local specIndex = C_SpecializationInfo.GetSpecialization()
-    local specID = specIndex and select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
-    local visuals = specID and ClassTalentUtil and ClassTalentUtil.GetVisualsForSpecID and
-        ClassTalentUtil.GetVisualsForSpecID(specID)
-    local atlas = visuals and visuals.background
     if (not atlas or not C_Texture.GetAtlasInfo(atlas)) then
         art:Hide()
         if (self.backgroundBacking) then
@@ -674,6 +748,8 @@ characterFrame.Create = function(self)
     background:SetAllPoints()
     background:Hide()
     self.background = background
+    self.backgroundMask = cornerMask
+    self.backgroundMasked = not EXUI.IsForever()
     if (not EXUI.IsForever()) then
         background:AddMaskTexture(cornerMask)
     end
@@ -860,11 +936,21 @@ characterFrame.Enable = function(self)
             self:ReplaceItemUpgradeFrameOnShow()
         end
     end)
+    if (EXUI.IsForever()) then
+        EXUI:RegisterEventHandler('TRAIT_CONFIG_UPDATED', 'character-frame-forever-background', function()
+            if (self.window and self.window:IsShown()) then
+                self:UpdateBackground()
+            end
+        end)
+    end
     inspect:Enable()
 end
 
 characterFrame.Disable = function(self)
     self.enabled = false
+    if (EXUI.IsForever()) then
+        EXUI:UnregisterEventHandler('TRAIT_CONFIG_UPDATED', 'character-frame-forever-background')
+    end
     inspect:Disable()
 end
 

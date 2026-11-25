@@ -1,0 +1,7 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="Sprite.lua"/>
+    <Script file="Tracker.lua"/>
+    <Script file="ItemCard.lua"/>
+    <Script file="Rolls.lua"/>
+    <Script file="Window.lua"/>
+</Ui>

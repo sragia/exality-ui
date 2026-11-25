@@ -23,12 +23,13 @@ local function GetData()
 end
 
 local function GetPinnedIDs()
-    local list = GetData():GetValue('pinnedItems')
-    if type(list) ~= 'table' then
-        list = {}
-        GetData():SetValue('pinnedItems', list)
+    if type(ExalityUICharData.bagPins) ~= 'table' then
+        -- One-time move of the old profile-wide pins to the first character that loads
+        local legacy = GetData():GetValue('pinnedItems')
+        ExalityUICharData.bagPins = type(legacy) == 'table' and CopyTable(legacy) or {}
+        GetData():SetValue('pinnedItems', nil)
     end
-    return list
+    return ExalityUICharData.bagPins
 end
 
 local function BuildItemIndex()
@@ -159,7 +160,6 @@ pins.AddPin = function(self, itemID)
         return
     end
     list[#list + 1] = itemID
-    GetData():SetValue('pinnedItems', list)
     bags = bags or EXUI:GetModule('bags')
     EXUI:GetModule('bags-window').layoutSignature = nil
     bags:Refresh()
@@ -172,7 +172,6 @@ pins.RemovePin = function(self, itemID)
             table.remove(list, i)
         end
     end
-    GetData():SetValue('pinnedItems', list)
     bags = bags or EXUI:GetModule('bags')
     EXUI:GetModule('bags-window').layoutSignature = nil
     bags:Refresh()

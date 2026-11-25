@@ -9,8 +9,20 @@ EXUI.GetChangelog = function()
         {
             version = '0.9.16',
             changes = {
-                { 'Quest Log', 'Map no longer switches to your current zone while open when moving between zones. Opening the map still shows your current zone' },
-                { 'Chat',      'Arrow keys now move the cursor in the chat input' },            }
+                { 'Loot',            'Added custom loot roll frames. Shows how many and who picked Need, Greed, Transmog or Pass, and who is still deciding. Has anchor, grow direction and preview options. Enable it in Custom Windows > Loot' },
+                { 'Loot',            "Added custom loot window (/loot) with encounter selection and roll winners. Hover the winner to see everyone's rolls" },
+                { 'Custom Windows',  'Options are now split per window' },
+                { 'Damage Meters',   'Dropdowns now use the same style as the minimap button drawer' },
+                { 'Character Frame', 'Background now uses the same art as retail from talent UI per spec',                                                                                                                                       forever = true },
+                { 'Quest Log',       'Map no longer switches to your current zone while open when moving between zones. Opening the map still shows your current zone' },
+                { 'Chat',            'Arrow keys now move the cursor in the chat input' },
+                { 'Bags',            'Other addons can now add their own markers to bag and bank items' },
+                { 'Bags',            'Fix equipped bags not being able to be picked up. Bags in the bag bar can now be dragged or clicked to move, swap or unequip them' },
+                { 'Bags',            'Pinned items are now saved per character. Your current pins move to the first character you log in with' },
+                { 'XP Bar',          'Adjusted styling of the bar. Added Spark Color option' },
+                { 'Action Bars',     'Spell picker (Ctrl + Right Click) now shows spell rank next to spells that have one',                                                                                                                      forever = true },
+                { 'Talents',         'Fix not being able to view or activate second spec after buying dual spec. Spec buttons now only change which spec you are viewing, and Apply Changes turns into Activate when viewing the inactive one',  forever = true },
+            }
         },
         {
             version = '0.9.15',
