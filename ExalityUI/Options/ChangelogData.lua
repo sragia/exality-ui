@@ -7,6 +7,29 @@ local EXUI = select(2, ...)
 EXUI.GetChangelog = function()
     return {
         {
+            version = '0.9.17',
+            changes = {
+                { 'Cooldown Manager', 'Added Cooldown Manager, replacing Cooldowns. Groups lay out spells, items and equipment slots in a row or grid with grow direction, wrap, spacing and alignment. Children use group size, look and texts unless overridden' },
+                { 'Cooldown Manager', 'Add any number of texts (cooldown, charges, name or custom) and place them anywhere on the icon. Icons support Styles' },
+                { 'Cooldown Manager', 'Groups and cooldowns can be visible to one character, your class or all characters. Visibility by combat, cooldown state and usability, plus load conditions' },
+                { 'Cooldown Manager', "Pick spells from your spec's Blizzard Cooldown Manager list, or type any spell ID or name" },
+                { 'Cooldown Manager', 'Link buffs or debuffs to a cooldown. While the aura is up the icon can glow, get a border, swap to the aura icon, show the aura swipe and its own texts like remaining time or stacks' },
+                { 'Cooldown Manager', 'Track buffs and debuffs as their own icons on player, target, focus or pet. Show them always with a faded icon while missing, or only while active, with optional glow and border' },
+                { 'Cooldown Manager', 'While options are open, the selected cooldown or group is previewed with a looping cooldown, sample charges and its linked auras shown' },
+                { 'Cooldown Manager', 'Cooldowns and auras can be shown as bars, horizontal or vertical, with the icon on either end or hidden. Texture, colors, Style and full when ready options. Icons and bars can be mixed in a group' },
+                { 'Cooldown Manager', "Group Layout options show a live preview of the group. Sub-groups show with their contents. Click a child to open it, middle click to remove it, drag to reorder or to move items into and out of sub-groups, or use + to add cooldowns and auras straight from Blizzard's Cooldown Manager list" },
+                { 'Cooldown Manager', 'New Custom Lines layout: drag items into rows or columns of any length, like 3, then 2, then 5' },
+                { 'Cooldown Manager', 'Spells tint when your target is out of range and glow when the game highlights them, both optional per group or item' },
+                { 'Cooldown Manager', 'Export and import single cooldowns or whole groups. Old Cooldowns export strings can be imported too' },
+                { 'Cooldown Manager', 'New Aura Row group layout: buffs and debuffs only show while active and the rest close the gap, keeping your order and alignment, also in combat' },
+                { 'Cooldown Manager', 'New Last Seconds visibility: show a cooldown only in its final seconds and while ready' },
+                { 'Cooldown Manager', 'Remaining time texts can switch to an urgent color in their last seconds. Buff and debuff items can glow in their pandemic window' },
+                { 'Cooldown Manager', "Turns on Blizzard's Cooldown Manager only while needed and keeps it hidden, to know when buffs are missing: linked buffs can desaturate or hide a cooldown when missing, Only When Active buffs close their gap in any group, and a new Effect Active visibility shows spells only while their buff or totem is up" },
+                { 'Cooldown Manager', 'Existing Cooldowns are moved over automatically and keep their positions' },
+                { 'Options',          'Clicking a group name in the list now opens its options and expands it. The arrow on the right only expands or collapses' },
+            }
+        },
+        {
             version = '0.9.16',
             changes = {
                 { 'Loot',            'Added custom loot roll frames. Shows how many and who picked Need, Greed, Transmog or Pass, and who is still deciding. Has anchor, grow direction and preview options. Enable it in Custom Windows > Loot' },

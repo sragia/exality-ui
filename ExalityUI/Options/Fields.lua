@@ -1389,12 +1389,11 @@ optionsFields.GetField = function(self, field)
         ['icon-input'] = function()
             return EXFrames:GetFrame('icon-input'):Create({})
         end,
-        ['cooldowns-spell-id-input'] = function()
-            local f = EXUI:GetModule('cooldowns-spell-id-input'):Create({})
-            return f
+        ['cdm-designer'] = function()
+            return EXUI:GetModule('cdm-designer'):Create()
         end,
-        ['cooldowns-item-id-input'] = function()
-            local f = EXUI:GetModule('cooldowns-item-id-input'):Create({})
+        ['cdm-item-id-input'] = function()
+            local f = EXUI:GetModule('cdm-item-id-input'):Create({})
             return f
         end,
         ['checkbox'] = function()

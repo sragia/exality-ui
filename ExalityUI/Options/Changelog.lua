@@ -37,6 +37,7 @@ local TAG_COLORS = {
     ['Misc'] = '9fb0c2',
     ['Auras'] = 'c9a3ff',
     ['Cooldowns'] = '84c5f5',
+    ['Cooldown Manager'] = '84c5f5',
     ['Resource Displays'] = '7fd6c6',
     ['Unit Frames'] = '98d68f',
     ['Nameplates'] = 'bcd98a',

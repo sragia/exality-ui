@@ -343,6 +343,10 @@ function share:ImportMenu()
         EXUI.utils.printOut('Invalid export string.')
         return
     end
+    -- Adapters can take over exports from a module they replaced.
+    if data.module ~= moduleID and adapter.convert then
+        data = adapter.convert(data) or data
+    end
     if data.module ~= moduleID then
         EXUI.utils.printOut('This export is for a different list.')
         return

@@ -1,8 +1,8 @@
 ---@class ExalityUI
 local EXUI = select(2, ...)
 
----@class EXUICooldownsItemIndex
-local itemIndex = EXUI:GetModule('cooldowns-item-index')
+---@class EXUICDMItemIndex
+local itemIndex = EXUI:GetModule('cdm-item-index')
 
 local MIN_SEARCH_LENGTH = 2
 local MAX_SEARCH_RESULTS = 10
@@ -27,10 +27,11 @@ local function getBagIndices()
     return bags
 end
 
-function itemIndex:Init()
-    self.indexByID = self.indexByID or {}
-    self.built = false
+itemIndex.indexByID = {}
+itemIndex.built = false
 
+-- Only used by the options inputs, so invalidation events start with the first lookup.
+function itemIndex:Setup()
     if not self.eventFrame then
         self.eventFrame = CreateFrame('Frame')
         self.eventFrame:RegisterEvent('BAG_UPDATE')
@@ -131,29 +132,20 @@ function itemIndex:CollectFromBags()
 end
 
 function itemIndex:CollectFromSavedConfigs()
-    local cooldowns = EXUI:GetModule('cooldowns')
-    if not cooldowns or not cooldowns.GetBaseDB then
-        return
-    end
-
-    local db = cooldowns:GetBaseDB()
-    for key, entry in pairs(db) do
-        if type(entry) == 'table' and type(key) == 'string' and key:sub(1, 2) ~= '__' then
-            local source = entry.cooldownSource or (entry.isItem and 'item' or 'spell')
-            if source == 'item' then
-                local itemID = tonumber(entry.itemID)
-                if itemID then
-                    self:RegisterItemID(itemID)
-                end
-            end
+    EXUI:GetModule('cdm-data'):EachItem(function(_, node)
+        local source = node.source
+        local id = source and source.type == 'item' and tonumber(source.itemID)
+        if id then
+            self:RegisterItemID(id)
         end
-    end
+    end)
 end
 
 function itemIndex:EnsureIndex()
     if self.built then
         return
     end
+    self:Setup()
     self.built = true
     self:CollectFromEquipped()
     self:CollectFromBags()

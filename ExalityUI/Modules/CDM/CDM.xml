@@ -1,0 +1,20 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Defaults.lua"/>
+	<Script file="Data.lua"/>
+	<Script file="Migration.lua"/>
+	<Script file="Sources.lua"/>
+	<Script file="Auras.lua"/>
+	<Script file="Bridge.lua"/>
+	<Script file="Element.lua"/>
+	<Script file="Layout.lua"/>
+	<Script file="Catalog.lua"/>
+	<Script file="ItemIndex.lua"/>
+	<Script file="Options/Inputs/ItemIdInput.lua"/>
+	<Script file="Options/Builder.lua"/>
+	<Script file="Options/LoadOptions.lua"/>
+	<Script file="Options/Designer.lua"/>
+	<Script file="Options/NodeOptions.lua"/>
+	<Script file="Options/ModuleOptions.lua"/>
+	<Script file="Preview.lua"/>
+	<Script file="CDM.lua"/>
+</Ui>

@@ -4,8 +4,8 @@ local EXUI = select(2, ...)
 ---@class ExalityFrames
 local EXFrames = EXUI.EXFrames
 
----@class EXUICooldownsItemIdInput
-local itemIdInput = EXUI:GetModule('cooldowns-item-id-input')
+---@class EXUICDMItemIdInput
+local itemIdInput = EXUI:GetModule('cdm-item-id-input')
 
 local SEARCH_DEBOUNCE = 0.2
 local INPUT_HEIGHT = 28
@@ -19,7 +19,7 @@ local function trim(text)
 end
 
 local function getProvider()
-    return EXUI:GetModule('cooldowns-item-index')
+    return EXUI:GetModule('cdm-item-index')
 end
 
 local function hideAutocomplete(frame)
